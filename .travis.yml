@@ -1,14 +1,11 @@
 language: node_js
 node_js:
-  - "10"
-
-sudo: true
-dist: xenial
+  - "11"
 
 services:
   - docker
 
-script: 
+script:
  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
   - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low; else npx audit-ci --low || true; fi
   - npm run lint
