@@ -155,7 +155,7 @@ const checkClusterInfo = function(cluster_info) {
 
 const triggerWebhooksForClusterId = async(log, clusterId, deploymentId, inputDeploymentObj, req) => {
   const Clusters = req.db.collection('clusters');
-  const cluster = Clusters.findOne({ cluster_id: clusterId });
+  const cluster = await Clusters.findOne({ cluster_id: clusterId });
   if (!cluster) {
     return false;
   }

@@ -39,7 +39,6 @@ app.use(router);
 app.use(function errorHandler(err, req, res, next) {
   if (err) {
     log.error(err);
-    // req.log.error(err);
   }
 });
 
