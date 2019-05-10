@@ -15,6 +15,9 @@ script:
   - docker images
   - ./build/process-template.sh kubernetes/razeedash-api/resource.yaml >/tmp/resource.yaml
 
+before_deploy:
+  - docker login -u="${QUAY_ID}" -p="${QUAY_TOKEN}" quay.io
+  
 deploy:
   # Deploy alpha builds
   - provider: script
