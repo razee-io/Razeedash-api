@@ -42,6 +42,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: razeedash-secret
+  namespace: razee
 type: Opaque
 data:
   mongo_url: bW9uZ29kYjovL21vbmdv4oCRMC5tb25nbzoyNzAxNyxtb25nb+KAkTEubW9uZ286MjcwMTcsbW9uZ2/igJEyLm1vbmdvL215cHJvamVjdD9yZXBsaWNhU2V0PXJzMA==
