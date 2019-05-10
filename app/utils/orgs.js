@@ -29,7 +29,7 @@ const getOrg = async(req, res, next) => {
   const Orgs = req.db.collection('orgs');
   const org = await Orgs.findOne({ apiKey: orgKey });
   if (!org) {
-    res.status(403).send( `cluster ${orgKey} not found` );
+    res.status(403).send( `orgKey ${orgKey} not found` );
     return;
   }
   req.org = org;

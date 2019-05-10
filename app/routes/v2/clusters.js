@@ -43,19 +43,19 @@ router.use(asyncHandler(async (req, res, next) => {
 router.post('/:cluster_id', getOrg, asyncHandler( async(req,res,next) => {
   try {
     const Clusters = req.db.collection('clusters');
-    const cluster = Clusters.findOne( { org_id: req.org._id, cluster_id: req.params.cluster_id } );
+    const cluster = await Clusters.findOne( { org_id: req.org._id, cluster_id: req.params.cluster_id } );
     const metadata = req.body;
     if ( !cluster ) {
-      Clusters.insert( { org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() } );
+      await Clusters.insert( { org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() } );
       res.status(200).send('Welcome to Razee');
     }
     else {
       if ( cluster.dirty ) {
-        Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date(), dirty: false } } );
+        await Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date(), dirty: false } } );
         res.status(205).send('Please resync');
       }
       else {
-        Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } } );
+        await Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } } );
         res.status(200).send('Thanks for the update');
       }
     }
@@ -149,7 +149,7 @@ router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(re
             selfLink: selfLink
           };
           const searchableDataObj = buildSearchableDataForResource(resource.object);
-          const currentResource = Resources.findOne( key );
+          const currentResource = await Resources.findOne( key );
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
           if ( currentResource ) {
