@@ -11,9 +11,9 @@ Razeedash-API is the interface used by
 - Kubernetes Cluster
 - MongoDB
 
-#### OS/X
+### OS/X
 
-gettext package is default on most Linux systems.  If you are using OS/X for 
+gettext package is default on most Linux systems.  If you are using OS/X for
 local development you may need to install it in order to generate a deployment
 YAML.
 
@@ -38,8 +38,9 @@ ibmcloud ks cluster-config <cluster name>
 
 ### Create secrets and deploy
 
-Generate a base64 encoding for the `mongo_url` to be used in the razeedash-secret. The
-following is an example of local mongo deployment. Not recommended for production use.
+Generate a base64 encoding for the `mongo_url` to be used in the
+razeedash-secret. The following is an example of local mongo deployment.
+Not recommended for production use.
 
 <!--Markdownlint-disable MD013-->
 ```bash
@@ -84,12 +85,12 @@ for i in `kubectl get pods -n razee --selector=app=razeedash-api | \
 This will deploy the razeedash-api and mongo on a 3 node cluster using IBM
 Cloud Kubernetes Service.  
 
-*Note: In a production scenario it is recommended to used a managed Mongo 
+*Note: In a production scenario it is recommended to used a managed Mongo
 database service.*
 
 Requirements:
 
-- jq (jq is a lightweight and flexible command-line JSON processor)[https://stedolan.github.io/jq/]
+- jq [jq is a lightweight and flexible command-line JSON processor](https://stedolan.github.io/jq/)
 - IBM Cloud Account [IBM Cloud](https://www.ibm.com/cloud/)
 - IBM Cloud CLI [Setting up the CLI and API](https://cloud.ibm.com/docs/containers?topic=containers-cs_cli_install)
 - Kubernetes CLI [Install and Set Up kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
@@ -99,7 +100,7 @@ Requirements:
 Cluster must have a minimum of 3 nodes in order to statisfy Mongo.  You can follow
 the guide [Setting up clusters and workers](https://cloud.ibm.com/docs/containers?topic=containers-clusters#clusters)
 to deploy a clusteer or use a utility script ic_create_cluster.sh located in
-(kube-cloud-scripts)[https://github.com/razee-io/kube-cloud-scripts].
+[kube-cloud-scripts](https://github.com/razee-io/kube-cloud-scripts).
 
 ```bash
 ic_create_cluster.sh --name razeetest --workers 3
@@ -114,8 +115,8 @@ ibmcloud ks worker-pool-resize \
   --size-per-zone 3
 ```
 
-Once the cluster (`ibmcloud ks clusters`) is created and in a `normal` state, we need to
-get Kubernetes config.
+Once the cluster (`ibmcloud ks clusters`) is created and in a `normal` state, we
+need to get Kubernetes config.
 
 ```bash
 ibmcloud ks cluster-config razeetest
@@ -136,7 +137,7 @@ export KUBECONFIG=~/.bluemix/plugins/container-service/clusters/razeetest/kube-c
 ### Deploy components
 
 Deploy MongoDB and set up replica sets.  This is based on the guide
-(Deploy a MongoDB replica set using IBM Cloud Kubernetes Service)[https://developer.ibm.com/tutorials/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/]
+[Deploy a MongoDB replica set using IBM Cloud Kubernetes Service](https://developer.ibm.com/tutorials/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/)
 
 ```bash
 # Add razee namespace
@@ -148,7 +149,7 @@ kubectl apply -f samples/mongo/mongo-headless-service.yaml
 Wait until mongo pods are ready.  You can check the status via:
 
 ```bash
-kubectl get pods 
+kubectl get pods
 ```
 
 Once pods are in a `Running` state continue with the setup process
@@ -166,7 +167,7 @@ kubectl apply -f /tmp/resource.yaml
 ```
 
 Check logs across pods using `kc_logs.sh` script from
-(kube-cloud-scripts)[https://github.com/razee-io/kube-cloud-scripts]
+[kube-cloud-scripts](https://github.com/razee-io/kube-cloud-scripts)
 
 ```bash
 kc_logs.sh razee razeedash-api 1m
