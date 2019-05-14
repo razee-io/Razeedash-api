@@ -26,6 +26,8 @@ const Install = require('./install/install.js');
 const Status = require('./v2/status.js');
 const Clusters = require('./v2/clusters.js');
 
+router.use('/kube', Kube);
+
 router.use((req, res, next) => {
   const orgHeader = req.get('razee-org-key');
   if(!orgHeader){
@@ -37,6 +39,5 @@ router.use((req, res, next) => {
 router.use('/api/v2/clusters', Clusters);
 router.use('/api/v2/status', Status);
 router.use('/install', Install);
-router.use('/kube', Kube);
 
 module.exports = router;
