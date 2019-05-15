@@ -83,7 +83,7 @@ for i in `kubectl get pods -n razee --selector=app=razeedash-api | \
 ## Example deployment using IBM Cloud
 
 This will deploy the razeedash-api and mongo on a 3 node cluster using IBM
-Cloud Kubernetes Service.  
+Cloud Kubernetes Service.
 
 *Note: In a production scenario it is recommended to used a managed Mongo
 database service.*
@@ -160,8 +160,7 @@ kubectl exec -it mongo-0 -- mongo <samples/mongo/replica.mongo
 # Add razeedash secret for mongo_url
 kubectl apply -f samples/mongo/secret.yaml
 # Get latest release of razeedash-api and deploy
-VER=$(git describe --tags `git rev-list --tags --max-count=1`) \
-  curl -L "https://github.com/razee-io/razeedash-api/releases/download/${VER}/resource.yaml"
+curl -o /tmp/release.yaml -L "https://github.com/razee-io/razeedash-api/releases/latest/download/resource.yaml"
 kubectl apply -f /tmp/resource.yaml
 ```
 
