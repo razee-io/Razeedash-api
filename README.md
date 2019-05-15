@@ -161,9 +161,8 @@ kubectl exec -it mongo-0 -- mongo <samples/mongo/replica.mongo
 # Add razeedash secret for mongo_url
 kubectl apply -f samples/mongo/secret.yaml
 # Get latest release of razeedash-api and deploy
-curl -o /tmp/resource.yml -L \
-  $(curl -s https://api.github.com/repos/razee-io/razeedash-api/releases/latest \
-  | jq .assets[0].browser_download_url | sed -e 's/"//g')
+VER=$(git describe --tags `git rev-list --tags --max-count=1`) \
+  curl -L "https://github.com/razee-io/razeedash-api/releases/download/${VER}/resource.yaml"
 kubectl apply -f /tmp/resource.yaml
 ```
 
