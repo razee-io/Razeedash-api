@@ -97,3 +97,25 @@ items:
       minReplicas: 5
       maxReplicas: 15
       targetCPUUtilizationPercentage: 70
+
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: api-stats-cron
+    spec:
+      schedule: "*/5 * * * *"
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 1
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api-stats-cron
+                  image: buildpack-deps:curl
+                  args:
+                    - /bin/sh
+                    - -ec
+                    - curl https://razeedash-api-service:3333/cron/processStats
+              restartPolicy: Never
