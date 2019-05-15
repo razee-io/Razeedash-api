@@ -19,9 +19,9 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const Mustache = require('mustache');
-const queryBoolean = require('express-query-boolean');
-const uuid = require('uuid/v4');
-const _ = require('lodash');
+const readFile = require('fs-readfile-promise');
+const request = require('request-promise-native');
+
 
 const MongoClientClass = require('../../mongo/mongoClient.js');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -35,47 +35,48 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
-router.use( queryBoolean() );
-
-// /install/:org_name/:org_key
-router.get('/:org_name/:org_key', asyncHandler(async(req, res) => {
-  const orgName = req.params.org_name;
-  const orgKey = req.params.org_key;
-  const isUpdate = req.query.update;
-
+//Ensure we have a valid api key before doing anything on the install route
+router.use(asyncHandler(async(req,res,next) => {
+  const apiKey = req.query.apiKey;
+  if(!apiKey){
+    return res.status(403).send('Missing api key.');
+  }
   const Orgs = req.db.collection('orgs');
   const org = await Orgs.findOne({
-    name: orgName,
-    apiKey: orgKey
+    apiKey: apiKey
   });
-
   if (!org) {
-    res.status(403).send(`cluster ${orgName} not found or invalid key`);
-    return;
+    return res.status(403).send('Invalid api-key.');
   }
-
-  org.base64 = function () { 
-    return function ( value ) {
-      return Buffer.from(Mustache.render(value, org)).toString('base64');
-    };
-  };
-
-  org.isUpdate = isUpdate;
-  org.uuid = uuid();
-
-  const template = org.orgYaml;
-
-  // if no template, returns a 404
-  if(!template){
-    res.status(404).send('Template not defined');
-  }
-
-  // uses vars from org and org.orgYamlCustomVars
-  const vars = _.defaults({}, org, _.get(org, 'orgYamlCustomVars', {}));
-  const yaml = Mustache.render( template, vars );
-
-  res.setHeader('content-type', 'application/yaml');
-  res.send( yaml );
+  req.org = org;
+  req.apiKey = apiKey;
+  next();
 }));
+
+
+router.get('/inventory', asyncHandler(async(req, res, next) => {
+  const apiKey = req.apiKey;
+  var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
+  const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
+  try {
+    const  inventoryBuffer = await readFile(`${__dirname}/inventory.yaml`);
+    const inventory=inventoryBuffer.toString();
+    const wk = await request.get(wk_url);
+    const view = {
+      RAZEEDASH_URL: razeeapiUrl,
+      RAZEEDASH_ORG_KEY: Buffer.from(apiKey).toString('base64'),
+      WATCH_KEEPER: wk
+    };
+    const configYaml = Mustache.render( inventory, view );
+    res.setHeader('content-type', 'application/yaml');
+    res.status(200).send(configYaml);
+
+    return res.json(configYaml);
+  } catch (e) {
+    req.log.error(e);
+    next(e);
+  }
+}));
+
 
 module.exports = router;
