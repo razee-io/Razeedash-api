@@ -160,8 +160,7 @@ kubectl exec -it mongo-0 -- mongo <samples/mongo/replica.mongo
 # Add razeedash secret for mongo_url
 kubectl apply -f samples/mongo/secret.yaml
 # Get latest release of razeedash-api and deploy
-curl -o /tmp/release.yaml -L "https://github.com/razee-io/razeedash-api/releases/latest/download/resource.yaml"
-kubectl apply -f /tmp/resource.yaml
+kubectl apply -f "https://github.com/razee-io/razeedash-api/releases/latest/download/resource.yaml"
 ```
 
 Check logs across pods using `kc_logs.sh` script from
