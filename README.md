@@ -1,5 +1,8 @@
 # razeedash-api
 
+![Travis Build Status](https://api.travis-ci.com/razee-io/Razeedash-api.svg?branch=master)
+<https://travis-ci.com/razee-io/razeedash-api>
+
 Razeedash-API is the interface used by
 
 - app.razee.io
