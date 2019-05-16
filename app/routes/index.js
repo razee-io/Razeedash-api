@@ -21,8 +21,8 @@ const asyncHandler = require('express-async-handler');
 const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
 const ebl = require('express-bunyan-logger');
 
-const MongoClientClass = require('../../mongo/mongoClient.js');
-const mongoConf = require('../../conf.js').conf;
+const MongoClientClass = require('../mongo/mongoClient.js');
+const mongoConf = require('../conf.js').conf;
 const MongoClient = new MongoClientClass(mongoConf);
 
 const getOrg = require ('../utils/orgs').getOrg;
@@ -33,8 +33,6 @@ const Cron = require('./cron/cron.js');
 const Clusters = require('./v2/clusters.js');
 
 router.use('/api/kube', Kube);
-router.use('/api/install', Install);
-
 router.use(ebl(getBunyanConfig('/api/v2/')));
 
 router.use(asyncHandler(async (req, res, next) => {
@@ -48,7 +46,7 @@ router.use((req, res, next) => {
   if(!orgKey){
     orgKey = req.query.orgKey;
     if(!orgKey){
-      req.log.info( 'Missing razee-org-key' );
+      req.log.warn(`razee-org-key not specified on route ${req.url}`);
       return res.status(401).send( 'razee-org-key required' );
     }
   }
@@ -57,9 +55,9 @@ router.use((req, res, next) => {
 });
 
 router.use(getOrg);
-
+router.use('/api/install', Install);
 router.use('/api/v2/clusters', Clusters);
-router.use('/cron', Cron);
+router.use('/api/cron', Cron);
 
 async function initialize(){
   const options = {
@@ -85,12 +83,12 @@ async function initialize(){
       messages:[{keys: {org_id:1, cluster_id:1},
         options:{
           name: 'org_id.cluster_id',
-        }}, {keys: {org_id:1, cluster_id:1,level:1,data:1,message_hash:1},
+        }},
+      {keys: {org_id:1, cluster_id:1,level:1,message_hash:1},
         options:{
-          name: 'org_id.cluster_id.level.data.message_hash',
+          name: 'org_id.cluster_id.level.message_hash',
         }}]
     }};
-
   let db = await MongoClient.getClient(options);
   return db;
 }

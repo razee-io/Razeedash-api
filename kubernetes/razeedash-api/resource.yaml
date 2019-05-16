@@ -117,5 +117,5 @@ items:
                   args:
                     - /bin/sh
                     - -ec
-                    - curl https://razeedash-api-service:3333/cron/processStats
+                    - curl https://razeedash-api-service:3333/api/cron/processStats
               restartPolicy: Never

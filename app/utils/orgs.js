@@ -24,6 +24,7 @@ const getOrg = async(req, res, next) => {
     res.status(401).send( 'razee-org-key required' );
     return;
   }
+
   const Orgs = req.db.collection('orgs');
   const org = await Orgs.findOne({ apiKey: orgKey });
   if (!org) {
