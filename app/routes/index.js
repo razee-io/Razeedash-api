@@ -22,12 +22,13 @@ const bunyan = require('bunyan');
 const logger = bunyan.createLogger(getBunyanConfig('/'));
 
 const Kube = require('./kube/kube.js');
-const Install = require('./install/install.js');
+const Install = require('./install');
 const Cron = require('./cron/cron.js');
 const Status = require('./v2/status.js');
 const Clusters = require('./v2/clusters.js');
 
 router.use('/kube', Kube);
+router.use('/install', Install);
 
 router.use((req, res, next) => {
   const orgHeader = req.get('razee-org-key');
@@ -39,7 +40,6 @@ router.use((req, res, next) => {
 
 router.use('/api/v2/clusters', Clusters);
 router.use('/api/v2/status', Status);
-router.use('/install', Install);
 router.use('/cron', Cron);
 
 module.exports = router;
