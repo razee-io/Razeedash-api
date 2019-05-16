@@ -43,10 +43,12 @@ router.use(asyncHandler(async (req, res, next) => {
 router.post('/:cluster_id', getOrg, asyncHandler( async(req,res,next) => {
   try {
     const Clusters = req.db.collection('clusters');
+    const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne( { org_id: req.org._id, cluster_id: req.params.cluster_id } );
     const metadata = req.body;
     if ( !cluster ) {
-      await Clusters.insert( { org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() } );
+      await Clusters.insertOne( { org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() } );
+      Stats.updateOne( { org_id: req.org._id }, { $inc: { clusterCount: 1 }}, { upsert: true });
       res.status(200).send('Welcome to Razee');
     }
     else {
@@ -78,6 +80,7 @@ router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(re
     }
   
     const Resources = req.db.collection('resources');
+    const Stats = req.db.collection('resourceStats');
 
     for (let resource of resources) {
       const type = resource['type'] || 'other';
@@ -137,6 +140,7 @@ router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(re
               },
               { upsert: true }
             );
+            Stats.updateOne( { org_id: req.org._id }, { $inc: { deploymentCount: 1 }}, { upsert: true });
           }
           break;
         }
