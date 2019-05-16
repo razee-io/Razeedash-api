@@ -59,8 +59,7 @@ router.get('/inventory', asyncHandler(async(req, res, next) => {
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
   const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
   try {
-    const  inventoryBuffer = await readFile(`${__dirname}/inventory.yaml`);
-    const inventory=inventoryBuffer.toString();
+    const  inventory = await readFile(`${__dirname}/inventory.yaml`,'utf8');
     const wk = await request.get(wk_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
@@ -69,9 +68,7 @@ router.get('/inventory', asyncHandler(async(req, res, next) => {
     };
     const configYaml = Mustache.render( inventory, view );
     res.setHeader('content-type', 'application/yaml');
-    res.status(200).send(configYaml);
-
-    return res.json(configYaml);
+    return res.status(200).send(configYaml);
   } catch (e) {
     req.log.error(e);
     next(e);
