@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    name: razeedash-api-configmap
+    namespace: razee
+data:
+  RAZEEDASH_URL: "{{{RAZEEDASH_URL}}}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    name: razeedash-api-secret
+    namespace: razee
+data:
+  RAZEEDASH_ORG_KEY: "{{{RAZEEDASH_ORG_KEY}}}"
+---
+{{{WATCH_KEEPER}}}
+---
+{{{KAPITAN}}}
