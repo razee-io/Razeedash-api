@@ -18,14 +18,12 @@ const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
 
 const getOrg = async(req, res, next) => {
-  const orgKey = req.get('razee-org-key');
-
+  const orgKey = req.orgKey;
   if (!orgKey) {
     req.log.info( 'Missing razee-org-key' );
     res.status(401).send( 'razee-org-key required' );
     return;
   }
-
   const Orgs = req.db.collection('orgs');
   const org = await Orgs.findOne({ apiKey: orgKey });
   if (!org) {

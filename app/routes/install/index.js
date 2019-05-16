@@ -22,40 +22,13 @@ const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
 const request = require('request-promise-native');
 
-
-const MongoClientClass = require('../../mongo/mongoClient.js');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const mongoConf = require('../../conf.js').conf;
-const MongoClient = new MongoClientClass(mongoConf); //TODO Make more dynamic
 
-router.use(ebl(getBunyanConfig('razeedash-api/install')));
 
-router.use(asyncHandler(async (req, res, next) => {
-  req.db = await MongoClient.getClient();
-  next();
-}));
-
-//Ensure we have a valid api key before doing anything on the install route
-router.use(asyncHandler(async(req,res,next) => {
-  const apiKey = req.query.apiKey;
-  if(!apiKey){
-    return res.status(403).send('Missing api key.');
-  }
-  const Orgs = req.db.collection('orgs');
-  const org = await Orgs.findOne({
-    apiKey: apiKey
-  });
-  if (!org) {
-    return res.status(403).send('Invalid api-key.');
-  }
-  req.org = org;
-  req.apiKey = apiKey;
-  next();
-}));
-
+router.use(ebl(getBunyanConfig('/api/install')));
 
 router.get('/inventory', asyncHandler(async(req, res, next) => {
-  const apiKey = req.apiKey;
+  const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
   const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
   try {
@@ -63,7 +36,7 @@ router.get('/inventory', asyncHandler(async(req, res, next) => {
     const wk = await request.get(wk_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
-      RAZEEDASH_ORG_KEY: Buffer.from(apiKey).toString('base64'),
+      RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
       WATCH_KEEPER: wk
     };
     const configYaml = Mustache.render( inventory, view );

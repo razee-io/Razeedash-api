@@ -21,7 +21,7 @@ const compression = require('compression');
 const body_parser = require('body-parser');
 const ebl = require('express-bunyan-logger');
 
-const router = require('./routes/index.js');
+const {router, initialize} = require('./routes/index.js');
 const log = require('./log').log;
 const getBunyanConfig = require('./utils/bunyan.js').getBunyanConfig;
 
@@ -43,9 +43,19 @@ app.use(function errorHandler(err, req, res, next) {
 });
 
 const server = http.createServer(app);
-server.listen(port);
+server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
+
+initialize().then((db) => {
+  app.set('db', db);
+  server.emit('ready');
+});
+
+
+function onReady() {
+  server.listen(port);
+}
 
 function onListening() {
   const addr = server.address();

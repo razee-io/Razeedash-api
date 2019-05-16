@@ -13,7 +13,7 @@ items:
         version: "{{TRAVIS_COMMIT}}"
         razee.io/git-repo: "{{{GIT_REMOTE}}}"
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
-      name: razeedash-api 
+      name: razeedash-api
       namespace: razee
       labels:
         razee/restart-on-config-change: "true"
@@ -22,14 +22,14 @@ items:
       revisionHistoryLimit: 0
       selector:
         matchLabels:
-          app: razeedash-api 
+          app: razeedash-api
       strategy:
         type: RollingUpdate
       template:
         metadata:
           labels:
-            app: razeedash-api 
-          name: razeedash-api 
+            app: razeedash-api
+          name: razeedash-api
         spec:
           containers:
           - env:
@@ -42,13 +42,13 @@ items:
               value: razeedash
             image: "quay.io/razee/razeedash-api:{{TRAVIS_COMMIT}}"
             imagePullPolicy: Always
-            name: razeedash-api 
+            name: razeedash-api
             ports:
             - containerPort: 3333
               protocol: TCP
             livenessProbe:
               httpGet:
-                path: /kube/liveness
+                path: /api/kube/liveness
                 port: 3333
               initialDelaySeconds: 5
               periodSeconds: 10
@@ -75,7 +75,7 @@ items:
       namespace: razee
     spec:
       selector:
-        app: razeedash-api 
+        app: razeedash-api
       ports:
        - protocol: TCP
          port: 8081
@@ -93,7 +93,7 @@ items:
       scaleTargetRef:
         apiVersion: apps/v1
         kind: Deployment
-        name: razeedash-api 
+        name: razeedash-api
       minReplicas: 5
       maxReplicas: 15
       targetCPUUtilizationPercentage: 70
