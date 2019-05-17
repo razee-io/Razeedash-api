@@ -19,11 +19,14 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
 const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger(getBunyanConfig('/'));
 const ebl = require('express-bunyan-logger');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
 const mongoConf = require('../conf.js').conf;
 const MongoClient = new MongoClientClass(mongoConf);
+MongoClient.log(logger);
 
 const getOrg = require ('../utils/orgs').getOrg;
 
