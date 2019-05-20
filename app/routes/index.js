@@ -26,7 +26,7 @@ const ebl = require('express-bunyan-logger');
 const MongoClientClass = require('../mongo/mongoClient.js');
 const mongoConf = require('../conf.js').conf;
 const MongoClient = new MongoClientClass(mongoConf);
-MongoClient.log(logger);
+MongoClient.log=logger;
 
 const getOrg = require ('../utils/orgs').getOrg;
 
