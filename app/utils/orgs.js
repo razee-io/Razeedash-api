@@ -14,8 +14,6 @@
 * limitations under the License.
 */
 
-const _ = require('lodash');
-const tokenCrypt = require('./crypt.js');
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -26,7 +24,7 @@ const getOrg = async(req, res, next) => {
   }
 
   const Orgs = req.db.collection('orgs');
-  const org = await Orgs.findOne({ apiKey: orgKey });
+  const org = await Orgs.findOne({ orgKeys: orgKey });
   if (!org) {
     res.status(403).send( `orgKey ${orgKey} not found` );
     return;
@@ -35,12 +33,4 @@ const getOrg = async(req, res, next) => {
   next();
 };
 
-
-const encryptOrgData = (org, data)=>{
-  if(!_.isString(data)){
-    data = JSON.stringify(data);
-  }
-  return tokenCrypt.encrypt(data, org.apiKey);
-};
-
-module.exports = { getOrg, encryptOrgData  };
+module.exports = { getOrg };
