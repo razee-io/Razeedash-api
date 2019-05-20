@@ -19,27 +19,17 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 
-const MongoClientClass = require('../../mongo/mongoClient.js');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const mongoConf = require('../../conf.js').conf;
-
-const MongoClient = new MongoClientClass(mongoConf); 
 
 router.use(ebl(getBunyanConfig('razeedash-api/cron/processStats')));
-
-router.use(asyncHandler(async (req, res, next) => {
-  req.db = await MongoClient.getClient();
-  next();
-}));
 
 // /cron/processStats
 router.post('/processStats', asyncHandler( async(req,res,next) => {
   try {
-    req.db = await MongoClient.getClient();
     const Clusters = req.db.collection('clusters');
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
-    
+
     const clusterCounts = await Clusters.aggregate([{ $group: { _id: '$org_id', clusterCount: { $sum: 1} } }]);
     clusterCounts.forEach( async (cluster) => {
       await Stats.updateOne({org_id: cluster._id}, { $set: {clusterCount: cluster.clusterCount} }, { upsert: true });

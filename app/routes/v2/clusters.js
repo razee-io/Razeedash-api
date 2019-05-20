@@ -21,25 +21,17 @@ const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
 
-const MongoClientClass = require('../../mongo/mongoClient.js');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const mongoConf = require('../../conf.js').conf;
-const getOrg = require ('../../utils/orgs').getOrg;
 const getCluster = require ('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require ('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require ('../../utils/cluster.js').buildPushObj;
 
-const MongoClient = new MongoClientClass(mongoConf); 
 
-router.use(ebl(getBunyanConfig('razeedash-api/Clusters')));
+router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
-router.use(asyncHandler(async (req, res, next) => {
-  req.db = await MongoClient.getClient();
-  next();
-}));
 
 // /api/v2/clusters/:cluster_id
-router.post('/:cluster_id', getOrg, asyncHandler( async(req,res,next) => {
+router.post('/:cluster_id', asyncHandler( async(req,res,next) => {
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
@@ -66,18 +58,18 @@ router.post('/:cluster_id', getOrg, asyncHandler( async(req,res,next) => {
 }));
 
 // /api/v2/clusters/:cluster_id/resources
-router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(req, res, next) => {
+router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, next) => {
   try {
     const body = req.body;
     if ( !body ) {
       res.status(400).send( 'Missing resource body' );
     }
-  
+
     let resources = body;
     if ( !Array.isArray(resources) ) {
       resources = [body];
     }
-  
+
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
@@ -88,7 +80,7 @@ router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(re
           const list = resource.object;
           await Resources.updateMany(
             { org_id: req.org._id, cluster_id: req.cluster.cluster_id, selfLink: { $nin: list } },
-            { $set: { deleted: true }, $currentDate: { updated: true } } 
+            { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
         }
@@ -171,13 +163,13 @@ router.post('/:cluster_id/resources', getOrg, getCluster, asyncHandler( async(re
         }
       }
     }
-    res.status(200).send('Thanks'); 
+    res.status(200).send('Thanks');
   } catch (error) {
-    next(error); 
+    next(error);
   }
 }));
 
-router.post('/:cluster_id/messages', getOrg, getCluster, asyncHandler( async(req, res, next) => {
+router.post('/:cluster_id/messages', asyncHandler( async(req, res, next) => {
 
   const body = req.body;
   if ( !body ) {

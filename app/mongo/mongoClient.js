@@ -26,12 +26,6 @@ module.exports = class MongoClient {
     this._collectionIndices = {};
     this._client;
   }
-  get limit(){
-    if(!this._limit){
-      this._limit = pLimit(5);
-    }
-    return this._limit;
-  }
   get dbName() {
     return this._mongo.dbName;
   }
@@ -55,12 +49,12 @@ module.exports = class MongoClient {
 
   async _createCollectionIndexes(collection, collectionName, indices) {
     let indexAdded = false;
+    const limit = pLimit(5);
     await Promise.all(indices.map(async index => {
-      return this.limit(async () => {
+      return limit(async () => {
         let iname = objectPath.get(index.options.name);
         if(!this._collectionIndices[collectionName].some((e)=>e.name === iname)){
           try {
-            collection = collection || await this._getCollection(collectionName);
             await collection.createIndex(index.keys, index.options);
           } catch (e) {
             this.log.error(e,`Failed to create index ${iname} on collection ${collectionName}`);
@@ -74,17 +68,20 @@ module.exports = class MongoClient {
 
   async _createIndexes(collectionIndices){
     const collectionsToIndex = Object.keys(collectionIndices);
+    const limit = pLimit(5);
     await Promise.all(collectionsToIndex.map(async collectionName => {
-      return this.limit(async () => {
+      return limit(async () => {
         let indexAdded = false;
-        let collection;
+        let collection = await this._getCollection(collectionName);
         if(!this._collectionIndices[collectionName]){
-          collection = await this._getCollection(collectionName);
           this._collectionIndices[collectionName] = await collection.indexes();
         }
-        indexAdded = await this._createCollectionIndexes(collection, collectionName, collectionIndices[collectionName]);
+        try {
+          indexAdded = await this._createCollectionIndexes(collection, collectionName, collectionIndices[collectionName]);
+        } catch (e){
+          this.log.error(e);
+        }
         if(indexAdded){
-          collection = collection || await this._getCollection(collectionName);
           this._collectionIndices[collectionName] = await collection.indexes();
           this.log.info(`Created new collection ${collectionName} index ${collectionName}`);
         }
