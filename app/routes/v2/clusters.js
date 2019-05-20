@@ -22,7 +22,6 @@ const objectHash = require('object-hash');
 const _ = require('lodash');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const encryptOrgData = require ('../../utils/orgs').encryptOrgData;
 const getCluster = require ('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require ('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require ('../../utils/cluster.js').buildPushObj;
@@ -89,7 +88,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
         case 'MODIFIED':
         case 'ADDED': {
           const resourceHash = objectHash( resource.object );
-          const encryptedResourceDataStr = encryptOrgData(req.org, resource.object);
+          const dataStr = JSON.stringify(resource.object);
           const selfLink = resource.object.metadata.selfLink;
           const key = {
             org_id: req.org._id,
@@ -115,7 +114,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
               await Resources.updateOne(
                 key,
                 {
-                  $set: { deleted: false, data: encryptedResourceDataStr, searchableData: searchableDataObj, hash: resourceHash, },
+                  $set: { deleted: false, data: dataStr, searchableData: searchableDataObj, hash: resourceHash, },
                   $currentDate: { updated: true },
                   ...pushCmd
                 }
@@ -126,7 +125,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
             await Resources.updateOne(
               key,
               {
-                $set: { deleted: false, hash: resourceHash, data: encryptedResourceDataStr, searchableData: searchableDataObj },
+                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj },
                 $currentDate: { created: true, updated: true },
                 ...pushCmd
               },
@@ -138,7 +137,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
         }
         case 'DELETED': {
           const selfLink = resource.object.metadata.selfLink;
-          const encryptedResourceDataStr = encryptOrgData(req.org, resource.object);
+          const dataStr = JSON.stringify(resource.object);
           const key = {
             org_id: req.org._id,
             cluster_id: req.cluster.cluster_id,
@@ -151,7 +150,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
           if ( currentResource ) {
             await Resources.updateOne(
               key, {
-                $set: { deleted: true, data: encryptedResourceDataStr, searchableData: searchableDataObj },
+                $set: { deleted: true, data: dataStr, searchableData: searchableDataObj },
                 $currentDate: { updated: true },
                 ...pushCmd
               }
