@@ -15,10 +15,6 @@
 */
 
 const _ = require('lodash');
-const uuid = require('uuid');
-const request = require('request-promise-native');
-const Validator = require('jsonschema').Validator;
-const clusterSchema = require('../schemas/clusters.js');
 const objectHash = require('object-hash');
 
 const buildPushObj = (newSearchableDataObj, oldSearchableDataObj=null) => {
@@ -135,88 +131,9 @@ const getCluster = async(req, res, next) => {
   next();
 };
 
-const onBlackList = function (cluster_info) {
-  if (!cluster_info) {
-    return true;
-  }
-  return /fakecruiser/.test(cluster_info.cluster_name);
-};
-
-const checkClusterInfo = function(cluster_info) {
-  if(!cluster_info) {
-    return false;
-  }
-  
-  const validator = new Validator();
-  validator.addSchema(clusterSchema);
-  const results = validator.validate(cluster_info, clusterSchema);
-  return results.errors.length > 0 ? false: true;
-};
-
-const triggerWebhooksForClusterId = async(log, clusterId, deploymentId, inputDeploymentObj, req) => {
-  const Clusters = req.db.collection('clusters');
-  const cluster = await Clusters.findOne({ cluster_id: clusterId });
-  if (!cluster) {
-    return false;
-  }
-  var webhooks = cluster.webhooks || [];
-  var metadata = cluster.metadata || [];
-  var postData = {
-    cluster_id: clusterId,
-    cluster_name: metadata.name,
-    config_version: cluster.config_version,
-    deployment: inputDeploymentObj,
-  };
-  var success = true;
-
-  _.each(webhooks, async (webhook) => {
-    var webhookId = webhook.id;
-    var url = webhook.url;
-    var hasError = false;
-    var resp = '';
-    postData.request_id = uuid();
-    const options = {
-      method: 'POST',
-      uri: url,
-      body: {
-        data: postData
-      },
-      json: true
-    };
-    try {
-      req.log.debug({ webhookId, url, clusterId }, 'POSTing webhook');
-      resp = await request(options);
-    }
-    catch (e) {
-      success = false;
-      hasError = true;
-      resp = e;
-      req.log.error({ err: e.message, url }, 'Error POSTing webhook');
-    }
-    var logObj = {
-      webhook_id: webhookId,
-      cluster_id: clusterId,
-      deployment_id: deploymentId,
-      req: {
-        url: url,
-        payload: JSON.stringify(postData),
-      },
-      res: JSON.stringify(resp),
-      hasError,
-      created: new Date(),
-    };
-    const WebhookLogs = req.db.collection('webhookLogs');
-    WebhookLogs.insert(logObj);
-  });
-  return success;
-};
-
 module.exports = {
   buildPushObj, 
   cleanObjKeysForMongo, 
   buildSearchableDataForResource, 
-  getCluster,
-  onBlackList,
-  checkClusterInfo,
-  triggerWebhooksForClusterId
+  getCluster
 };
