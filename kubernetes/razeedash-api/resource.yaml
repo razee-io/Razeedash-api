@@ -15,8 +15,6 @@ items:
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
       name: razeedash-api
       namespace: razee
-      labels:
-        razee/restart-on-config-change: "true"
     spec:
       replicas: 2
       revisionHistoryLimit: 0
@@ -53,22 +51,10 @@ items:
               initialDelaySeconds: 5
               periodSeconds: 10
               timeoutSeconds: 2
-            # readinessProbe:
-            #   httpGet:
-            #     path: /kube/readiness
-            #     port: 3000
-            #   initialDelaySeconds: 5
-            #   periodSeconds: 10
-            #   timeoutSeconds: 2
-
   - apiVersion: v1
     kind: Service
     metadata:
       annotations:
-        version: "{{TRAVIS_COMMIT}}"
-        prometheus.io/probe: 'true'
-        prometheus.io/probepath: 'metrics'
-        prometheus.io/scrape: 'true'
         razee.io/git-repo: "{{{GIT_REMOTE}}}"
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
       name:  razeedash-api-service
@@ -78,30 +64,16 @@ items:
         app: razeedash-api
       ports:
        - protocol: TCP
-         port: 8081
+         port: 3333
          targetPort: 3333
-  - apiVersion: autoscaling/v1
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name:  razeedash-api-scaler
-      namespace: razee
-      annotations:
-        version: "{{TRAVIS_COMMIT}}"
-        razee.io/git-repo: "{{{GIT_REMOTE}}}"
-        razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
-    spec:
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: razeedash-api
-      minReplicas: 5
-      maxReplicas: 15
-      targetCPUUtilizationPercentage: 70
-
   - apiVersion: batch/v1beta1
     kind: CronJob
     metadata:
-      name: api-stats-cron
+      name: razeedash-api-stats-cron
+      namespace: razee
+      annotations:
+        razee.io/git-repo: "{{{GIT_REMOTE}}}"
+        razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
     spec:
       schedule: "*/5 * * * *"
       concurrencyPolicy: Forbid
