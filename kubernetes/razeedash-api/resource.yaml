@@ -16,7 +16,7 @@ items:
       name: razeedash-api
       namespace: razee
     spec:
-      replicas: 2
+      replicas: 1
       revisionHistoryLimit: 0
       selector:
         matchLabels:
