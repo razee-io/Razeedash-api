@@ -40,7 +40,7 @@ items:
                   key: mongo_url
             - name: MONGO_DB_NAME
               value: razeedash
-            image: "quay.io/razee/razeedash-api:{{TRAVIS_COMMIT}}"
+            image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
             ports:
