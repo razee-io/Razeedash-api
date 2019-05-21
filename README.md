@@ -47,6 +47,14 @@ Not recommended for production use.
 
 <!--Markdownlint-disable MD013-->
 ```bash
+echo -n "mongodb://mongo‑0.mongo:27017" | base64
+```
+
+Note:
+Production MongoDB usually is a minimum of 3 nodes using replica sets.  That
+definition would look something like:
+
+```bash
 echo -n "mongodb://mongo‑0.mongo:27017,mongo‑1.mongo:27017,mongo‑2.mongo/razeedash?replicaSet=rs0" | base64
 ```
 <!--Markdownlint-enable MD013-->
@@ -62,7 +70,7 @@ metadata:
   namespace: razee
 type: Opaque
 data:
-  mongo_url: bW9uZ29kYjovL21vbmdv4oCRMC5tb25nbzoyNzAxNyxtb25nb+KAkTEubW9uZ286MjcwMTcsbW9uZ2/igJEyLm1vbmdvL215cHJvamVjdD9yZXBsaWNhU2V0PXJzMA==
+  mongo_url: bW9uZ29kYjovL21vbmdv4oCRMC5tb25nbzoyNzAxNy9yYXplZWRhc2g=
 ```
 
 If you are using your own managed mongodb system, make sure you
@@ -101,13 +109,13 @@ Requirements:
 
 ### Create Cluster
 
-Cluster must have a minimum of 3 nodes in order to statisfy Mongo.  You can follow
-the guide [Setting up clusters and workers](https://cloud.ibm.com/docs/containers?topic=containers-clusters#clusters)
-to deploy a clusteer or use a utility script ic_create_cluster.sh located in
-[kube-cloud-scripts](https://github.com/razee-io/kube-cloud-scripts).
+You can use a utility script ic_create_cluster.sh located in
+[kube-cloud-scripts](https://github.com/razee-io/kube-cloud-scripts) or
+follow the [(IBM Containers CLI plugin documentation](https://cloud.ibm.com/docs/containers?topic=containers-cli-plugin-cs_cli_reference#cs_cluster_create)
+to create a cluster.
 
 ```bash
-ic_create_cluster.sh --name razeetest --workers 3
+ic_create_cluster.sh --name razeetest
 ```
 
 if you have an existing cluster and need to resize
@@ -138,16 +146,19 @@ Export environment variables to start using Kubernetes.
 export KUBECONFIG=~/.bluemix/plugins/container-service/clusters/razeetest/kube-config-wdc07-razeetest.yml
 ```
 
+Note: Setup 3 node MongoDB
+Cluster must have a minimum of 3 nodes in order to statisfy Mongo.  You can follow
+the guide [Setting up clusters and workers](https://cloud.ibm.com/docs/containers?topic=containers-clusters#clusters)
+to deploy a 3 node MongoDB replica set.
+
 ### Deploy components
 
 Deploy MongoDB and set up replica sets.  This is based on the guide
 [Deploy a MongoDB replica set using IBM Cloud Kubernetes Service](https://developer.ibm.com/tutorials/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/)
 
 ```bash
-# Add razee namespace
-kubectl create -f samples/razee-namespace.json
-# Deploy MongoDB
-kubectl apply -f samples/mongo/mongo-headless-service.yaml
+# Add razee namespace, single mongo, razeedash secret
+kubectl apply -f samples/namespace-mongo-secrets-setup.yaml
 ```
 
 Wait until mongo pods are ready.  You can check the status via:
@@ -159,10 +170,6 @@ kubectl get pods
 Once pods are in a `Running` state continue with the setup process
 
 ```bash
-# Setup MongoDB replicas
-kubectl exec -it mongo-0 -- mongo <samples/mongo/replica.mongo
-# Add razeedash secret for mongo_url
-kubectl apply -f samples/mongo/secret.yaml
 # Get latest release of razeedash-api and deploy
 kubectl apply -f "https://github.com/razee-io/razeedash-api/releases/latest/download/resource.yaml"
 ```
