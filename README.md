@@ -47,7 +47,7 @@ Not recommended for production use.
 
 <!--Markdownlint-disable MD013-->
 ```bash
-echo -n "mongodb://mongo‑0.mongo:27017" | base64
+echo -n "mongodb://mongo:27017" | base64
 ```
 
 Note:
@@ -55,7 +55,7 @@ Production MongoDB usually is a minimum of 3 nodes using replica sets.  That
 definition would look something like:
 
 ```bash
-echo -n "mongodb://mongo‑0.mongo:27017,mongo‑1.mongo:27017,mongo‑2.mongo/razeedash?replicaSet=rs0" | base64
+echo -n "mongodb://mongo‑0:27017,mongo‑1:27017,mongo‑2/razeedash?replicaSet=rs0" | base64
 ```
 <!--Markdownlint-enable MD013-->
 
@@ -155,10 +155,23 @@ to deploy a 3 node MongoDB replica set.
 
 Deploy MongoDB and set up replica sets.  This is based on the guide
 [Deploy a MongoDB replica set using IBM Cloud Kubernetes Service](https://developer.ibm.com/tutorials/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/)
+Individually
 
 ```bash
 # Add razee namespace, single mongo, razeedash secret
-kubectl apply -f samples/namespace-mongo-secrets-setup.yaml
+kubectl apply -f samples/namespace.yaml
+kubectl apply -f samples/pwersistentVolume.yaml
+kubectl apply -f samples/pwersistentVolumeClaim.yaml
+kubectl apply -f samples/mongo.yaml
+kubectl apply -f samples/service.yaml
+kubectl apply -f samples/secret.yaml
+```
+
+or All in one command
+
+```bash
+# Add razee namespace, single mongo, razeedash secret
+kubectl apply -f samples/allinone.yaml
 ```
 
 Wait until mongo pods are ready.  You can check the status via:
