@@ -70,7 +70,7 @@ metadata:
   namespace: razee
 type: Opaque
 data:
-  mongo_url: bW9uZ29kYjovL21vbmdv4oCRMC5tb25nbzoyNzAxNy9yYXplZWRhc2g=
+  mongo_url: bW9uZ29kYjovL21vbmdvOjI3MDE3L3JhemVlZGFzaAo=
 ```
 
 If you are using your own managed mongodb system, make sure you
