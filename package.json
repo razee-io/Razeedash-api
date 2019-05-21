@@ -8,11 +8,11 @@
     "start": "node app/index.js",
     "start:mon": "nodemon app/index.js | bunyan",
     "start:debug": "node --inspect-brk app/index.js",
-    "lint": "node_modules/.bin/npm-run-all eslint yamllint dockerlint markdownlint",
-    "eslint": "node_modules/.bin/eslint app/",
-    "yamllint": "node_modules/.bin/yamllint .travis.yml kubernetes/razeedash-api/deployment.yaml",
-    "dockerlint": "node_modules/.bin/dockerlint Dockerfile",
-    "markdownlint": "node_modules/.bin/markdownlint README.md docs/"
+    "lint": "npx npm-run-all eslint yamllint dockerlint markdownlint",
+    "eslint": "npx eslint app/",
+    "yamllint": "npx yamllint .travis.yml kubernetes/razeedash-api/resource.yaml",
+    "dockerlint": "npx dockerlint Dockerfile",
+    "markdownlint": "npx markdownlint README.md docs/"
   },
   "keywords": [],
   "author": "",
