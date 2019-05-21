@@ -47,7 +47,7 @@ Not recommended for production use.
 
 <!--Markdownlint-disable MD013-->
 ```bash
-echo -n "mongodb://mongo‑0.mongo:27017" | base64
+echo -n "mongodb://mongo:27017" | base64
 ```
 
 Note:
@@ -55,7 +55,7 @@ Production MongoDB usually is a minimum of 3 nodes using replica sets.  That
 definition would look something like:
 
 ```bash
-echo -n "mongodb://mongo‑0.mongo:27017,mongo‑1.mongo:27017,mongo‑2.mongo/razeedash?replicaSet=rs0" | base64
+echo -n "mongodb://mongo‑0:27017,mongo‑1:27017,mongo‑2/razeedash?replicaSet=rs0" | base64
 ```
 <!--Markdownlint-enable MD013-->
 
