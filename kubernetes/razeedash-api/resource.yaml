@@ -51,43 +51,43 @@ items:
               initialDelaySeconds: 5
               periodSeconds: 10
               timeoutSeconds: 2
-  # - apiVersion: v1
-  #   kind: Service
-  #   metadata:
-  #     annotations:
-  #       razee.io/git-repo: "{{{GIT_REMOTE}}}"
-  #       razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
-  #     name:  razeedash-api-service
-  #     namespace: razee
-  #   spec:
-  #     selector:
-  #       app: razeedash-api
-  #     ports:
-  #      - protocol: TCP
-  #        port: 3333
-  #        targetPort: 3333
-  # - apiVersion: batch/v1beta1
-  #   kind: CronJob
-  #   metadata:
-  #     name: razeedash-api-stats-cron
-  #     namespace: razee
-  #     annotations:
-  #       razee.io/git-repo: "{{{GIT_REMOTE}}}"
-  #       razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
-  #   spec:
-  #     schedule: "*/5 * * * *"
-  #     concurrencyPolicy: Forbid
-  #     successfulJobsHistoryLimit: 1
-  #     failedJobsHistoryLimit: 1
-  #     jobTemplate:
-  #       spec:
-  #         template:
-  #           spec:
-  #             containers:
-  #               - name: api-stats-cron
-  #                 image: buildpack-deps:curl
-  #                 args:
-  #                   - /bin/sh
-  #                   - -ec
-  #                   - curl https://razeedash-api-service:3333/api/cron/processStats
-  #             restartPolicy: Never
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        razee.io/git-repo: "{{{GIT_REMOTE}}}"
+        razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
+      name:  razeedash-api-service
+      namespace: razee
+    spec:
+      selector:
+        app: razeedash-api
+      ports:
+       - protocol: TCP
+         port: 3333
+         targetPort: 3333
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: razeedash-api-stats-cron
+      namespace: razee
+      annotations:
+        razee.io/git-repo: "{{{GIT_REMOTE}}}"
+        razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
+    spec:
+      schedule: "*/5 * * * *"
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 1
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: api-stats-cron
+                  image: buildpack-deps:curl
+                  args:
+                    - /bin/sh
+                    - -ec
+                    - curl -X POST http://razeedash-api-service.razee:3333/api/cron/processStats
+              restartPolicy: Never
