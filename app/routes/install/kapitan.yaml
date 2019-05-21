@@ -1,18 +1,17 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  annotations:
-    name: razeedash-api-configmap
-    namespace: razee
+  name: watch-keeper-config
+  namespace: razee
 data:
   RAZEEDASH_URL: "{{{RAZEEDASH_URL}}}"
+  START_DELAY_MAX: "0"
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  annotations:
-    name: razeedash-api-secret
-    namespace: razee
+  name: watch-keeper-secret
+  namespace: razee
 data:
   RAZEEDASH_ORG_KEY: "{{{RAZEEDASH_ORG_KEY}}}"
 ---
