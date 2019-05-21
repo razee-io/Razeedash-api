@@ -69,9 +69,9 @@ async function initialize(){
         options:{
           name: 'org_id.containers.image',
         }}],
-      orgs: [{ keys:{apiKey:1},
+      orgs: [{ keys:{orgKeys:1},
         options:{
-          name: 'apiKey',
+          name: 'orgKeys',
         }}],
       clusters: [{keys:{org_id:1, cluster_id:1},
         options:{name: 'org_id.cluster_id'}}],
