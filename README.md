@@ -1,6 +1,6 @@
 # razeedash-api
 
-[![Build Status](https://travis-ci.com/razee-io/Razeedash-api.svg?branch=master)](https://travis-ci.com/razee-io/Razeedash-api)
+[![Build Status](https://travis-ci.com/razee-io/Razeedash-api.svg?branch=master)](https://travis-ci.com/razee-io/Razeedash-api) [![Greenkeeper badge](https://badges.greenkeeper.io/razee-io/Razeedash-api.svg)](https://greenkeeper.io/)
 
 Razeedash-API is the interface used by
 
