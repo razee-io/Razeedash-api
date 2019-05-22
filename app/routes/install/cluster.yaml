@@ -1,0 +1,30 @@
+{{{KAPITAN}}}
+---
+{{{REMOTE_RESOURCE}}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: watch-keeper-config
+  namespace: razee
+data:
+  RAZEEDASH_URL: "{{{RAZEEDASH_URL}}}"
+  START_DELAY_MAX: "0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: watch-keeper-secret
+  namespace: razee
+data:
+  RAZEEDASH_ORG_KEY: "{{{RAZEEDASH_ORG_KEY}}}"
+---
+apiVersion: "kapitan.razee.io/v1alpha1"
+kind: RemoteResource
+metadata:
+  name: watch-keeper-rr
+  namespace: razee
+spec:
+  requests:
+    - options:
+        url: https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml
