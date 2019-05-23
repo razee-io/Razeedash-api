@@ -1,6 +1,11 @@
-{{{KAPITAN}}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: razee
 ---
 {{{REMOTE_RESOURCE}}}
+---
+{{{KAPITAN}}}
 ---
 apiVersion: v1
 kind: ConfigMap
