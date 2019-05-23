@@ -32,7 +32,6 @@ const getOrg = require ('../utils/orgs').getOrg;
 
 const Kube = require('./kube/kube.js');
 const Install = require('./install');
-const Cron = require('./cron/cron.js');
 const Clusters = require('./v2/clusters.js');
 
 router.use('/api/kube', Kube);
@@ -60,12 +59,15 @@ router.use((req, res, next) => {
 router.use(getOrg);
 router.use('/api/install', Install);
 router.use('/api/v2/clusters', Clusters);
-router.use('/api/cron', Cron);
 
 async function initialize(){
   const options = {
     'collection-indexes': {
-      deployments: [{ keys:{org_id:1, 'containers.image':1},
+      deployments: [{ keys:{org_id:1},
+        options:{
+          name: 'org_id',
+        }},
+      { keys:{org_id:1, 'containers.image':1},
         options:{
           name: 'org_id.containers.image',
         }}],
@@ -73,13 +75,21 @@ async function initialize(){
         options:{
           name: 'orgKeys',
         }}],
-      clusters: [{keys:{org_id:1, cluster_id:1},
+      clusters: [{ keys:{org_id:1},
+        options:{
+          name: 'org_id',
+        }},
+      {keys:{org_id:1, cluster_id:1},
         options:{name: 'org_id.cluster_id'}}],
       resourceStats:[{keys: {org_id:1},
         options:{
           name: 'org_id',
         }}],
-      resources: [{keys: {org_id:1, cluster_id:1, selfLink:1},
+      resources: [{ keys:{org_id:1},
+        options:{
+          name: 'org_id',
+        }},
+      {keys: {org_id:1, cluster_id:1, selfLink:1},
         options:{
           name: 'org_id.cluster_id.selfLink',
         }}],
@@ -91,7 +101,32 @@ async function initialize(){
         options:{
           name: 'org_id.cluster_id.level.message_hash',
         }}]
-    }};
+    },
+    views: [{
+      name: 'clusterStatsView',
+      source: 'clusters',
+      pipeline: [{
+        $group: {
+          _id: '$org_id',
+          clusterCount: {
+            $sum: 1
+          }
+        }
+      }]
+    },
+    {
+      name:'resourceStatsView',
+      source:'resources',
+      pipeline:[{
+        $group: {
+          _id: '$org_id',
+          deploymentCount: {
+            $sum: 1
+          }
+        }
+      }]
+    }]};
+
   let db = await MongoClient.getClient(options);
   return db;
 }
