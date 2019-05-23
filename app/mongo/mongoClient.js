@@ -89,6 +89,21 @@ module.exports = class MongoClient {
     }));
   }
 
+  async _createViews(viewsToCreate){
+    let result=[];
+    if(!Array.isArray(viewsToCreate)) {
+      return(result);
+    }
+    const db = await this._clientConnect();
+    for(let i=0; i<viewsToCreate.length;i++){
+      let view = viewsToCreate[i];
+      let v=await db.createCollection(view.name, {viewOn: view.source, pipeline: view.pipeline, collation: view.options });
+      this.log.info(`Created new View ${view.name}`);
+      result.push(v);
+    }
+    return result;
+  }
+
   async _getCollection(collectionName){
     let collection;
     try {
@@ -119,6 +134,7 @@ module.exports = class MongoClient {
     await this._clientConnect();
     if(options && typeof options['collection-indexes'] === 'object') {
       await this._createIndexes(options['collection-indexes']);
+      await this._createViews(options['views']);
     }
     return this._client;
   }
