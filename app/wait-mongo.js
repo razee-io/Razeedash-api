@@ -14,23 +14,33 @@
  * limitations under the License.
  */
 
-const waitPort = require('wait-port');
-const parseMongoUrl = require('parse-mongo-url');
-const objectPath = require('object-path');
+const delay = require('delay');
 const log = require('./log').log;
 
-const mongoUrl = parseMongoUrl(process.env.MONGO_URL);
 
-const params = {
-  host: objectPath.get(mongoUrl,'servers.0.host'),
-  port: objectPath.get(mongoUrl,'servers.0.port')
-};
+const MongoClientClass = require('./mongo/mongoClient.js');
+const mongoConf = require('./conf.js').conf;
+const MongoClient = new MongoClientClass(mongoConf);
+MongoClient.log=log;
 
-waitPort(params)
-  .then((open) => {
-    if (open) log.info('The mongodb port is now open!');
-    else log.info('The mongodb port did not open before the timeout...');
-  })
-  .catch((err) => {
-    log.error(err, 'An unknown error occured while waiting for the mongodb port.');
-  });
+
+
+async function connect(){
+  let result;
+  let i=1;
+  while(!result){
+    try {
+      log.info(`Attempt ${i} to connect to MongoDB`);
+      result = await MongoClient.getClient();
+    } catch (e) {
+      i++;
+      await delay(60000);
+    }
+  }
+}
+
+connect().then(() => {
+  log.info('Connected. Exiting.');
+  process.exit(0);
+
+});
