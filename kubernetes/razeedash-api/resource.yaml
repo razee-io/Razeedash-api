@@ -37,6 +37,8 @@ items:
                   name: razeedash-secret
                   key: mongo_url
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
+            command: "npm"
+            args: ["run", "wait-mongo"]
             imagePullPolicy: Always
             name: razeedash-api-init
           containers:
