@@ -85,16 +85,12 @@ const cleanObjKeysForMongo = (obj)=>{
 };
 
 const buildSearchableDataForResource = (obj) => {
-  const kind = obj.kind;
   const searchableAttrs = [
     { name: 'kind', attrPath: 'kind', },
     { name: 'name', attrPath: 'metadata.name', },
     { name: 'namespace', attrPath: 'metadata.namespace', },
     { name: 'apiVersion', attrPath: 'apiVersion', },
   ];
-  if(kind == 'ConfigMap'){
-    searchableAttrs.push( { attrPath:'data.random' });
-  }
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
     let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_]/gi, '_');
