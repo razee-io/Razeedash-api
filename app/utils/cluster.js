@@ -92,9 +92,6 @@ const buildSearchableDataForResource = (obj) => {
     { name: 'namespace', attrPath: 'metadata.namespace', },
     { name: 'apiVersion', attrPath: 'apiVersion', },
   ];
-  if(kind == 'ConfigMap'){
-    searchableAttrs.push( { attrPath:'data.random' });
-  }
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
     let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_]/gi, '_');
