@@ -85,7 +85,6 @@ const cleanObjKeysForMongo = (obj)=>{
 };
 
 const buildSearchableDataForResource = (obj) => {
-  const kind = obj.kind;
   const searchableAttrs = [
     { name: 'kind', attrPath: 'kind', },
     { name: 'name', attrPath: 'metadata.name', },
