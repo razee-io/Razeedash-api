@@ -29,9 +29,7 @@ const buildPushObj = require ('../../utils/cluster.js').buildPushObj;
 
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
-
-// /api/v2/clusters/:cluster_id
-router.post('/:cluster_id', asyncHandler( async(req,res,next) => {
+const addUpdateCluster = async(req,res,next) => {
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
@@ -55,7 +53,10 @@ router.post('/:cluster_id', asyncHandler( async(req,res,next) => {
   } catch (error) {
     next(error);
   }
-}));
+};
+
+// /api/v2/clusters/:cluster_id
+router.post('/:cluster_id', asyncHandler( addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
 router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, next) => {
