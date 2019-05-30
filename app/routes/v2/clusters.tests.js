@@ -23,7 +23,7 @@ describe('clusters', () => {
     db.close();
   });
 
-  describe('POST /:cluster_id', () => {
+  describe('addUpdateCluster', () => {
     it('should return 200 if cluster does not exist and inserts into mongodb', async () => {
       // Setup
       let addUpdateCluster = v2.__get__('addUpdateCluster');
@@ -53,10 +53,9 @@ describe('clusters', () => {
 
       var response = httpMocks.createResponse();
       // Test
-      let next = (error) => {
-        assert.equal(error, null);
+      let next = (err) => {
+        assert.equal(err, null);
       };
-
 
       await addUpdateCluster(request, response, next);
 
@@ -64,9 +63,7 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Welcome to Razee');
 
     });
-  });
 
-  describe('POST /:cluster_id', () => {
     it('should return 200 if cluster does not exist and not dirty', async () => {
       // Setup
       let addUpdateCluster = v2.__get__('addUpdateCluster');
@@ -97,10 +94,9 @@ describe('clusters', () => {
 
       var response = httpMocks.createResponse();
       // Test
-      let next = (error) => {
-        assert.equal(error, null);
+      let next = (err) => {
+        assert.equal(err, null);
       };
-
 
       await addUpdateCluster(request, response, next);
 
@@ -108,9 +104,7 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Thanks for the update');
 
     });
-  });
-
-  describe('POST /:cluster_id', () => {
+    
     it('should return 205 if cluster does not exist and is dirty', async () => {
       // Setup
       let addUpdateCluster = v2.__get__('addUpdateCluster');
@@ -141,16 +135,44 @@ describe('clusters', () => {
 
       var response = httpMocks.createResponse();
       // Test
-      let next = (error) => {
-        assert.equal(error, null);
+      let next = (err) => {
+        assert.equal(err, null);
       };
-
 
       await addUpdateCluster(request, response, next);
 
       assert.equal(response.statusCode, 205);
       assert.equal(response._getData(), 'Please resync');
 
+    });
+  });
+
+  describe('updateClusterResources', () => {
+    it('should return 400 if missing resource body', async () => {
+      // Setup
+      let updateClusterResources = v2.__get__('updateClusterResources');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: 'testupdateClusterResources400/resources', params: {
+          cluster_id: 'testupdateClusterResources400'
+        },
+        org: {
+          _id: 1
+        },
+        db: db
+      });
+      request._setBody(undefined);
+
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err, null);
+      };
+
+      await updateClusterResources(request, response, next);
+
+      assert.equal(response.statusCode, 400);
+      assert.equal(response._getData(), 'Missing resource body');
     });
   });
 });
