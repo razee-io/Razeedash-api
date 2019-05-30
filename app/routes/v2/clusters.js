@@ -26,12 +26,7 @@ const getCluster = require ('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require ('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require ('../../utils/cluster.js').buildPushObj;
 
-
-router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
-
-
-// /api/v2/clusters/:cluster_id
-router.post('/:cluster_id', asyncHandler( async(req,res,next) => {
+const addUpdateCluster = async(req,res,next) => {
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
@@ -55,14 +50,14 @@ router.post('/:cluster_id', asyncHandler( async(req,res,next) => {
   } catch (error) {
     next(error);
   }
-}));
+};
 
-// /api/v2/clusters/:cluster_id/resources
-router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, next) => {
+const updateClusterResources = async(req, res, next) => {
   try {
     const body = req.body;
     if ( !body ) {
       res.status(400).send( 'Missing resource body' );
+      return;
     }
 
     let resources = body;
@@ -79,7 +74,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
         case 'SYNC': {
           const list = resource.object;
           await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.cluster.cluster_id, selfLink: { $nin: list } },
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list } },
             { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
@@ -92,7 +87,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
           const selfLink = resource.object.metadata.selfLink;
           const key = {
             org_id: req.org._id,
-            cluster_id: req.cluster.cluster_id,
+            cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
           const currentResource = await Resources.findOne( key );
@@ -140,7 +135,7 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
           const dataStr = JSON.stringify(resource.object);
           const key = {
             org_id: req.org._id,
-            cluster_id: req.cluster.cluster_id,
+            cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
           const searchableDataObj = buildSearchableDataForResource(resource.object);
@@ -164,13 +159,12 @@ router.post('/:cluster_id/resources', getCluster, asyncHandler( async(req, res, 
       }
     }
     res.status(200).send('Thanks');
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
-}));
+};
 
-router.post('/:cluster_id/messages', asyncHandler( async(req, res, next) => {
-
+const addClusterMessages = async(req, res, next) => {
   const body = req.body;
   if ( !body ) {
     res.status(400).send( 'Missing resource body' );
@@ -211,7 +205,19 @@ router.post('/:cluster_id/messages', asyncHandler( async(req, res, next) => {
   } catch (exception) {
     next(exception);
   }
+};
 
-}));
+
+router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
+router.use(getCluster); // adds req.cluster object and validates org_id/cluster_id ownership
+
+// /api/v2/clusters/:cluster_id
+router.post('/:cluster_id', asyncHandler( addUpdateCluster));
+
+// /api/v2/clusters/:cluster_id/resources
+router.post('/:cluster_id/resources', asyncHandler( updateClusterResources));
+
+// /api/v2/clusters/:cluster_id/messages
+router.post('/:cluster_id/messages', asyncHandler( addClusterMessages ));
 
 module.exports = router;
