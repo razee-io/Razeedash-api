@@ -74,7 +74,7 @@ const updateClusterResources = async(req, res, next) => {
         case 'SYNC': {
           const list = resource.object;
           await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.cluster.cluster_id, selfLink: { $nin: list } },
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list } },
             { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
@@ -87,7 +87,7 @@ const updateClusterResources = async(req, res, next) => {
           const selfLink = resource.object.metadata.selfLink;
           const key = {
             org_id: req.org._id,
-            cluster_id: req.cluster.cluster_id,
+            cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
           const currentResource = await Resources.findOne( key );
@@ -135,7 +135,7 @@ const updateClusterResources = async(req, res, next) => {
           const dataStr = JSON.stringify(resource.object);
           const key = {
             org_id: req.org._id,
-            cluster_id: req.cluster.cluster_id,
+            cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
           const searchableDataObj = buildSearchableDataForResource(resource.object);
@@ -209,11 +209,13 @@ const addClusterMessages = async(req, res, next) => {
 
 
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
+router.use(getCluster); // adds req.cluster object and validates org_id/cluster_id ownership
+
 // /api/v2/clusters/:cluster_id
 router.post('/:cluster_id', asyncHandler( addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
-router.post('/:cluster_id/resources', getCluster, asyncHandler( updateClusterResources));
+router.post('/:cluster_id/resources', asyncHandler( updateClusterResources));
 
 // /api/v2/clusters/:cluster_id/messages
 router.post('/:cluster_id/messages', asyncHandler( addClusterMessages ));

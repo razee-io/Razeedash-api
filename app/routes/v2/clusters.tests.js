@@ -174,5 +174,32 @@ describe('clusters', () => {
       assert.equal(response.statusCode, 400);
       assert.equal(response._getData(), 'Missing resource body');
     });
+    
+    it('should return 400 if missing resource body', async () => {
+      // Setup
+      let updateClusterResources = v2.__get__('updateClusterResources');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: 'testupdateClusterResources400/resources', params: {
+          cluster_id: 'testupdateClusterResources400'
+        },
+        org: {
+          _id: 1
+        },
+        db: db
+      });
+      request._setBody(undefined);
+
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err, null);
+      };
+
+      await updateClusterResources(request, response, next);
+
+      assert.equal(response.statusCode, 400);
+      assert.equal(response._getData(), 'Missing resource body');
+    });
   });
 });
