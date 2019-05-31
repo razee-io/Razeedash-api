@@ -47,8 +47,8 @@ const addUpdateCluster = async(req,res,next) => {
         res.status(200).send('Thanks for the update');
       }
     }
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
