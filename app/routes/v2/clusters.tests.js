@@ -148,6 +148,43 @@ describe('clusters', () => {
   });
 
   describe('updateClusterResources', () => {
+
+    it('should return 500 if missing resource malformed', async () => {
+      // Setup
+      const org_id = 1;
+      const cluster_id = 'testupdateClusterResourcesAdd200';
+      // missing selfLink
+      const data = {
+        'kind': 'Deployment', 'apiVersion': 'apps/v1',
+        'spec': { 'replicas': 1, 'selector': { 'matchLabels': { 'app': 'watch-keeper' } }, 'template': { 'metadata': { 'name': 'watch-keeper', 'creationTimestamp': null, 'labels': { 'app': 'watch-keeper' } }, 'spec': { 'containers': [{ 'name': 'watch-keeper', 'image': 'quay.io/razee/watch-keeper:0.0.3', 'env': [{ 'name': 'START_DELAY_MAX', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'START_DELAY_MAX', 'optional': true } } }, { 'name': 'NAMESPACE', 'valueFrom': { 'fieldRef': { 'apiVersion': 'v1', 'fieldPath': 'metadata.namespace' } } }, { 'name': 'RAZEEDASH_URL', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'RAZEEDASH_URL' } } }, { 'name': 'RAZEEDASH_ORG_KEY', 'valueFrom': { 'secretKeyRef': { 'name': 'watch-keeper-secret', 'key': 'RAZEEDASH_ORG_KEY' } } }, { 'name': 'NODE_ENV', 'value': 'REDACTED' }], 'resources': { 'limits': { 'cpu': '400m', 'memory': '500Mi' }, 'requests': { 'cpu': '50m', 'memory': '100Mi' } }, 'livenessProbe': { 'exec': { 'command': ['sh/liveness.sh'] }, 'initialDelaySeconds': 600, 'timeoutSeconds': 30, 'periodSeconds': 300, 'successThreshold': 1, 'failureThreshold': 1 }, 'terminationMessagePath': '/dev/termination-log', 'terminationMessagePolicy': 'File', 'imagePullPolicy': 'Always' }], 'restartPolicy': 'Always', 'terminationGracePeriodSeconds': 30, 'dnsPolicy': 'ClusterFirst', 'serviceAccountName': 'watch-keeper-sa', 'serviceAccount': 'watch-keeper-sa', 'securityContext': {}, 'schedulerName': 'default-scheduler' } }, 'strategy': { 'type': 'RollingUpdate', 'rollingUpdate': { 'maxUnavailable': '25%', 'maxSurge': '25%' } }, 'revisionHistoryLimit': 0, 'progressDeadlineSeconds': 600 }, 'status': { 'observedGeneration': 1, 'replicas': 1, 'updatedReplicas': 1, 'readyReplicas': 1, 'availableReplicas': 1, 'conditions': [{ 'type': 'Available', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:32Z', 'reason': 'MinimumReplicasAvailable', 'message': 'Deployment has minimum availability.' }, { 'type': 'Progressing', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:28Z', 'reason': 'NewReplicaSetAvailable', 'message': 'ReplicaSet watch-keeper-6678dd4f6f has successfully progressed.' }] }
+      };
+      let updateClusterResources = v2.__get__('updateClusterResources');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: `${cluster_id}/resources`, params: {
+          cluster_id: cluster_id
+        },
+        org: {
+          _id: org_id
+        }, db: db
+      });
+      request._setBody({
+        type: 'ADDED',
+        data: JSON.stringify(data),
+        object: data,
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, 'Cannot read property \'selfLink\' of undefined');
+      };
+
+      await updateClusterResources(request, response, next);
+
+      assert.equal(response.statusCode, 500);
+      assert.equal(response._getData(), 'Cannot read property \'selfLink\' of undefined');
+    });
+
     it('should return 400 if missing resource body', async () => {
       // Setup
       let updateClusterResources = v2.__get__('updateClusterResources');
@@ -230,8 +267,8 @@ describe('clusters', () => {
           org_id: org_id,
           cluster_id: cluster_id,
           selfLink: selfLink,
-          deleted: true, 
-          hash: hash, 
+          deleted: true,
+          hash: hash,
           data: JSON.stringify(data),
           $currentData: { created: true, updated: true }
         }
@@ -281,8 +318,8 @@ describe('clusters', () => {
           org_id: org_id,
           cluster_id: cluster_id,
           selfLink: selfLink,
-          deleted: true, 
-          hash: hash, 
+          deleted: true,
+          hash: hash,
           data: JSON.stringify(data),
           $currentData: { created: true, updated: true }
         }

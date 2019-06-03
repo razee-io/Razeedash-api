@@ -159,6 +159,7 @@ const updateClusterResources = async(req, res, next) => {
     }
     res.status(200).send('Thanks');
   } catch (err) {
+    res.status(500).send(err.message);
     next(err);
   }
 };
