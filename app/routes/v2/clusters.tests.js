@@ -16,6 +16,7 @@ describe('clusters', () => {
     const MongoClient = mongodb.MongoClient;
     MongoClient.connect('someconnectstring', {}, function (err, database) {
       database.collection('clusters');
+      database.collection('resources');
       database.collection('resourceStats');
       db = database;
     });
@@ -568,6 +569,63 @@ describe('clusters', () => {
       assert.equal(resource_b.deleted, true);
       assert.equal(response.statusCode, 200);
       assert.equal(response._getData(), 'Thanks');
+    });
+  });
+  describe('addClusterMessages', ()=> {
+    it('should return 400 if missing body', async () => {
+      // Setup
+      let updateClusterResources = v2.__get__('addClusterMessages');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: 'testAddClusterMessages400/messages', params: {
+          cluster_id: 'testAddClusterMessages400'
+        },
+        org: {
+          _id: 1
+        },
+        log: log,
+        db: db
+      });
+      request._setBody(undefined);
+  
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, null);
+      };
+  
+      await updateClusterResources(request, response, next);
+  
+      assert.equal(response.statusCode, 400);
+      assert.equal(response._getData(), 'Missing resource body');
+    });
+  
+    it('should return 500 if malformed body', async () => {
+      // Setup
+      let updateClusterResources = v2.__get__('addClusterMessages');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: 'testAddClusterMessages500/messages', params: {
+          cluster_id: 'testAddClusterMessages500'
+        },
+        org: {
+          _id: 1
+        },
+        log: log,
+        db: db
+      });
+      request._setBody({});
+  
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, 'Object argument required.');
+      };
+  
+      await updateClusterResources(request, response, next);
+  
+      assert.equal(response.statusCode, 500);
+      assert.equal(response._getData(), 'Object argument required.');
     });
   });
 });

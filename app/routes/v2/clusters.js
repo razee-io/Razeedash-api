@@ -169,6 +169,7 @@ const addClusterMessages = async (req, res, next) => {
   const body = req.body;
   if (!body) {
     res.status(400).send('Missing resource body');
+    return;
   }
 
   const clusterId = req.params.cluster_id;
@@ -203,8 +204,10 @@ const addClusterMessages = async (req, res, next) => {
     await Messages.updateOne(key, { $set: data, $setOnInsert: insertData }, { upsert: true });
     req.log.debug({ messagedata: data }, `${messageType} message data posted`);
     res.status(200).send(`${messageType} message received`);
-  } catch (exception) {
-    next(exception);
+  } catch (err) {
+    res.status(500).send(err.message);
+    req.log.error(err.message);
+    next(err);
   }
 };
 
