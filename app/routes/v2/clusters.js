@@ -22,28 +22,28 @@ const objectHash = require('object-hash');
 const _ = require('lodash');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const getCluster = require ('../../utils/cluster.js').getCluster;
-const buildSearchableDataForResource = require ('../../utils/cluster.js').buildSearchableDataForResource;
-const buildPushObj = require ('../../utils/cluster.js').buildPushObj;
+const getCluster = require('../../utils/cluster.js').getCluster;
+const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
+const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 
-const addUpdateCluster = async(req,res,next) => {
+const addUpdateCluster = async (req, res, next) => {
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
-    const cluster = await Clusters.findOne( { org_id: req.org._id, cluster_id: req.params.cluster_id } );
+    const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id });
     const metadata = req.body;
-    if ( !cluster ) {
-      await Clusters.insertOne( { org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() } );
-      Stats.updateOne( { org_id: req.org._id }, { $inc: { clusterCount: 1 }}, { upsert: true });
+    if (!cluster) {
+      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() });
+      Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
       res.status(200).send('Welcome to Razee');
     }
     else {
-      if ( cluster.dirty ) {
-        await Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date(), dirty: false } } );
+      if (cluster.dirty) {
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date(), dirty: false } });
         res.status(205).send('Please resync');
       }
       else {
-        await Clusters.updateOne( { org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } } );
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
     }
@@ -52,16 +52,16 @@ const addUpdateCluster = async(req,res,next) => {
   }
 };
 
-const updateClusterResources = async(req, res, next) => {
+const updateClusterResources = async (req, res, next) => {
   try {
     const body = req.body;
-    if ( !body ) {
-      res.status(400).send( 'Missing resource body' );
+    if (!body) {
+      res.status(400).send('Missing resource body');
       return;
     }
 
     let resources = body;
-    if ( !Array.isArray(resources) ) {
+    if (!Array.isArray(resources)) {
       resources = [body];
     }
 
@@ -82,7 +82,7 @@ const updateClusterResources = async(req, res, next) => {
         case 'POLLED':
         case 'MODIFIED':
         case 'ADDED': {
-          const resourceHash = objectHash( resource.object );
+          const resourceHash = objectHash(resource.object);
           const dataStr = JSON.stringify(resource.object);
           const selfLink = resource.object.metadata.selfLink;
           const key = {
@@ -90,11 +90,11 @@ const updateClusterResources = async(req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          const currentResource = await Resources.findOne( key );
+          const currentResource = await Resources.findOne(key);
           const searchableDataObj = buildSearchableDataForResource(resource.object);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
-          if ( currentResource ) {            
+          if (currentResource) {
             if (resourceHash === currentResource.hash) {
               await Resources.updateOne(
                 key,
@@ -125,7 +125,7 @@ const updateClusterResources = async(req, res, next) => {
               },
               { upsert: true }
             );
-            Stats.updateOne( { org_id: req.org._id }, { $inc: { deploymentCount: 1 }}, { upsert: true });
+            Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
           }
           break;
         }
@@ -138,10 +138,10 @@ const updateClusterResources = async(req, res, next) => {
             selfLink: selfLink
           };
           const searchableDataObj = buildSearchableDataForResource(resource.object);
-          const currentResource = await Resources.findOne( key );
+          const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
-          if ( currentResource ) {
+          if (currentResource) {
             await Resources.updateOne(
               key, {
                 $set: { deleted: true, data: dataStr, searchableData: searchableDataObj },
@@ -153,21 +153,22 @@ const updateClusterResources = async(req, res, next) => {
           break;
         }
         default: {
-          req.log.error( `Unsupported event ${resource.type}` );
+          throw new Error(`Unsupported event ${resource.type}`);
         }
       }
     }
     res.status(200).send('Thanks');
   } catch (err) {
     res.status(500).send(err.message);
+    req.log.error(err.message);
     next(err);
   }
 };
 
-const addClusterMessages = async(req, res, next) => {
+const addClusterMessages = async (req, res, next) => {
   const body = req.body;
-  if ( !body ) {
-    res.status(400).send( 'Missing resource body' );
+  if (!body) {
+    res.status(400).send('Missing resource body');
   }
 
   const clusterId = req.params.cluster_id;
@@ -201,7 +202,7 @@ const addClusterMessages = async(req, res, next) => {
     const Messages = req.db.collection('messages');
     await Messages.updateOne(key, { $set: data, $setOnInsert: insertData }, { upsert: true });
     req.log.debug({ messagedata: data }, `${messageType} message data posted`);
-    res.status(200).send( `${messageType} message received` );
+    res.status(200).send(`${messageType} message received`);
   } catch (exception) {
     next(exception);
   }
@@ -212,12 +213,12 @@ router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 router.use(getCluster); // adds req.cluster object and validates org_id/cluster_id ownership
 
 // /api/v2/clusters/:cluster_id
-router.post('/:cluster_id', asyncHandler( addUpdateCluster));
+router.post('/:cluster_id', asyncHandler(addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
-router.post('/:cluster_id/resources', asyncHandler( updateClusterResources));
+router.post('/:cluster_id/resources', asyncHandler(updateClusterResources));
 
 // /api/v2/clusters/:cluster_id/messages
-router.post('/:cluster_id/messages', asyncHandler( addClusterMessages ));
+router.post('/:cluster_id/messages', asyncHandler(addClusterMessages));
 
 module.exports = router;
