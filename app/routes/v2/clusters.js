@@ -92,10 +92,9 @@ const updateClusterResources = async(req, res, next) => {
           };
           const currentResource = await Resources.findOne( key );
           const searchableDataObj = buildSearchableDataForResource(resource.object);
-
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
-          if ( currentResource ) {
+          if ( currentResource ) {            
             if (resourceHash === currentResource.hash) {
               await Resources.updateOne(
                 key,
