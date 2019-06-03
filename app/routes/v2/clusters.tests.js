@@ -574,7 +574,7 @@ describe('clusters', () => {
   describe('addClusterMessages', ()=> {
     it('should return 400 if missing body', async () => {
       // Setup
-      let updateClusterResources = v2.__get__('addClusterMessages');
+      let addClusterMessages = v2.__get__('addClusterMessages');
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'testAddClusterMessages400/messages', params: {
@@ -594,7 +594,7 @@ describe('clusters', () => {
         assert.equal(err.message, null);
       };
   
-      await updateClusterResources(request, response, next);
+      await addClusterMessages(request, response, next);
   
       assert.equal(response.statusCode, 400);
       assert.equal(response._getData(), 'Missing resource body');
@@ -602,7 +602,7 @@ describe('clusters', () => {
   
     it('should return 500 if malformed body', async () => {
       // Setup
-      let updateClusterResources = v2.__get__('addClusterMessages');
+      let addClusterMessages = v2.__get__('addClusterMessages');
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'testAddClusterMessages500/messages', params: {
@@ -622,10 +622,47 @@ describe('clusters', () => {
         assert.equal(err.message, 'Object argument required.');
       };
   
-      await updateClusterResources(request, response, next);
+      await addClusterMessages(request, response, next);
   
       assert.equal(response.statusCode, 500);
       assert.equal(response._getData(), 'Object argument required.');
+    });
+
+    it('should return 200', async () => {
+      // Setup
+      const org_id = 1;
+      const cluster_id = 'test';
+      const selfLink = '/apis/apps/v1/namespaces/razee/deployments/watch-keeper';
+      const Messages = db.collection('messages');
+
+      let addClusterMessages = v2.__get__('addClusterMessages');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: `${cluster_id}/messages`, params: {
+          cluster_id: cluster_id
+        },
+        org: {
+          _id: org_id
+        }, 
+        log: log,
+        db: db
+      });
+
+      request._setBody({
+        level: 'ERROR',
+        data: {},
+        message: 'Zeke has typhoid',
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, null);
+      };
+
+      await addClusterMessages(request, response, next);
+      assert.equal(response.statusCode, 200);
+      const message = await Messages.findOne({cluster_id: cluster_id, org_id: org_id, level: 'ERROR', message_hash: objectHash('Zeke has typhoid')});
+      assert.equal(message.message, 'Zeke has typhoid');
     });
   });
 });
