@@ -632,7 +632,6 @@ describe('clusters', () => {
       // Setup
       const org_id = 1;
       const cluster_id = 'test';
-      const selfLink = '/apis/apps/v1/namespaces/razee/deployments/watch-keeper';
       const Messages = db.collection('messages');
 
       let addClusterMessages = v2.__get__('addClusterMessages');
