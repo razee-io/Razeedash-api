@@ -48,6 +48,8 @@ const addUpdateCluster = async (req, res, next) => {
       }
     }
   } catch (err) {
+    res.status(500).send(err.message);
+    req.log.error(err.message);
     next(err);
   }
 };

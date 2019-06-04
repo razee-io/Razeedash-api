@@ -27,6 +27,46 @@ describe('clusters', () => {
   });
 
   describe('addUpdateCluster', () => {
+    it('should return 500', async () => {
+      // Setup
+      let addUpdateCluster = v2.__get__('addUpdateCluster');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/testInsertOne200', params: {
+          cluster_id: 'testInsertOne200'
+        },
+        org: {
+          _id: 1
+        },
+        log: log,
+        body: {
+          kube_version: {
+            major: '1',
+            minor: '13',
+            gitVersion: 'v1.13.6+IKS',
+            gitCommit: 'ac5f7341d5d0ce8ea8f206ba5b030dc9e9d4cc97',
+            gitTreeState: 'clean',
+            buildDate: '2019-05-09T13:26:51Z',
+            goVersion: 'go1.11.5',
+            compiler: 'gc',
+            platform: 'linux/amd64'
+          }
+        },
+        db: { collection: (collection)=>{throw new Error('oops');}}
+      });
+
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, 'oops');
+      };
+
+      await addUpdateCluster(request, response, next);
+
+      assert.equal(response.statusCode, 500);
+      assert.equal(response._getData(), 'oops');
+    });
+
     it('should return 200 if cluster does not exist and inserts into mongodb', async () => {
       // Setup
       let addUpdateCluster = v2.__get__('addUpdateCluster');
