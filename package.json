@@ -8,7 +8,7 @@
     "start": "node app/index.js",
     "start:mon": "nodemon app/index.js | bunyan",
     "start:debug": "node --inspect-brk app/index.js",
-    "test": "nyc --all --exclude=**/*.tests.js --reporter=html --reporter=text mocha **/*.tests.js",
+    "test": "nyc --all --exclude=**/*.tests.js --exclude=coverage/* --reporter=html --reporter=text mocha **/*.tests.js",
     "wait-mongo": "node app/wait-mongo.js",
     "lint": "npx npm-run-all eslint yamllint dockerlint markdownlint",
     "eslint": "npx eslint app/",
