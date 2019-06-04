@@ -27,7 +27,7 @@ describe('clusters', () => {
   });
 
   describe('addUpdateCluster', () => {
-    it('should return 500', async () => {
+    it('should throw error', async () => {
       // Setup
       let addUpdateCluster = v2.__get__('addUpdateCluster');
       var request = httpMocks.createRequest({
@@ -57,14 +57,15 @@ describe('clusters', () => {
 
       var response = httpMocks.createResponse();
       // Test
+      let nextCalled = false;
       let next = (err) => {
         assert.equal(err.message, 'oops');
+        nextCalled = true;
       };
 
       await addUpdateCluster(request, response, next);
 
-      assert.equal(response.statusCode, 500);
-      assert.equal(response._getData(), 'oops');
+      assert.equal(nextCalled, true);
     });
 
     it('should return 200 if cluster does not exist and inserts into mongodb', async () => {
@@ -220,18 +221,19 @@ describe('clusters', () => {
         object: data,
       });
       var response = httpMocks.createResponse();
-      // Test
+      // Test 
+      let nextCalled = false;
       let next = (err) => {
         assert.equal(err.message, 'Unsupported event FLIPPYCATS');
+        nextCalled = true;
       };
 
       await updateClusterResources(request, response, next);
 
-      assert.equal(response.statusCode, 500);
-      assert.equal(response._getData(), 'Unsupported event FLIPPYCATS');
+      assert.equal(nextCalled, true);
     });
 
-    it('should return 500 if missing resource malformed', async () => {
+    it('should call next if missing resource malformed', async () => {
       // Setup
       const org_id = 1;
       const cluster_id = 'testupdateClusterResourcesAdd200';
@@ -259,14 +261,15 @@ describe('clusters', () => {
       });
       var response = httpMocks.createResponse();
       // Test
+      let nextCalled = false;
       let next = (err) => {
         assert.equal(err.message, 'Cannot read property \'selfLink\' of undefined');
+        nextCalled = true;
       };
 
       await updateClusterResources(request, response, next);
 
-      assert.equal(response.statusCode, 500);
-      assert.equal(response._getData(), 'Cannot read property \'selfLink\' of undefined');
+      assert.equal(nextCalled, true);
     });
 
     it('should return 400 if missing resource body', async () => {
@@ -640,7 +643,7 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Missing resource body');
     });
 
-    it('should return 500 if malformed body', async () => {
+    it('should call next if malformed body', async () => {
       // Setup
       let addClusterMessages = v2.__get__('addClusterMessages');
       var request = httpMocks.createRequest({
@@ -658,14 +661,15 @@ describe('clusters', () => {
 
       var response = httpMocks.createResponse();
       // Test
+      let nextCalled = false;
       let next = (err) => {
         assert.equal(err.message, 'Object argument required.');
+        nextCalled = true;
       };
 
       await addClusterMessages(request, response, next);
 
-      assert.equal(response.statusCode, 500);
-      assert.equal(response._getData(), 'Object argument required.');
+      assert.equal(nextCalled, true);
     });
 
     it('should return 200', async () => {

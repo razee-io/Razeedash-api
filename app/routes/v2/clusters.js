@@ -48,7 +48,6 @@ const addUpdateCluster = async (req, res, next) => {
       }
     }
   } catch (err) {
-    res.status(500).send(err.message);
     req.log.error(err.message);
     next(err);
   }
@@ -161,7 +160,6 @@ const updateClusterResources = async (req, res, next) => {
     }
     res.status(200).send('Thanks');
   } catch (err) {
-    res.status(500).send(err.message);
     req.log.error(err.message);
     next(err);
   }
@@ -207,7 +205,6 @@ const addClusterMessages = async (req, res, next) => {
     req.log.debug({ messagedata: data }, `${messageType} message data posted`);
     res.status(200).send(`${messageType} message received`);
   } catch (err) {
-    res.status(500).send(err.message);
     req.log.error(err.message);
     next(err);
   }
