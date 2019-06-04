@@ -52,7 +52,7 @@ describe('clusters', () => {
             platform: 'linux/amd64'
           }
         },
-        db: { collection: (collection)=>{throw new Error('oops');}}
+        db: { collection: () => { throw new Error('oops'); } }
       });
 
       var response = httpMocks.createResponse();
@@ -210,7 +210,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -248,7 +248,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -315,7 +315,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -358,7 +358,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -411,7 +411,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -465,7 +465,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -519,7 +519,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -587,7 +587,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -611,7 +611,7 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Thanks');
     });
   });
-  describe('addClusterMessages', ()=> {
+  describe('addClusterMessages', () => {
     it('should return 400 if missing body', async () => {
       // Setup
       let addClusterMessages = v2.__get__('addClusterMessages');
@@ -627,19 +627,19 @@ describe('clusters', () => {
         db: db
       });
       request._setBody(undefined);
-  
+
       var response = httpMocks.createResponse();
       // Test
       let next = (err) => {
         assert.equal(err.message, null);
       };
-  
+
       await addClusterMessages(request, response, next);
-  
+
       assert.equal(response.statusCode, 400);
       assert.equal(response._getData(), 'Missing resource body');
     });
-  
+
     it('should return 500 if malformed body', async () => {
       // Setup
       let addClusterMessages = v2.__get__('addClusterMessages');
@@ -655,15 +655,15 @@ describe('clusters', () => {
         db: db
       });
       request._setBody({});
-  
+
       var response = httpMocks.createResponse();
       // Test
       let next = (err) => {
         assert.equal(err.message, 'Object argument required.');
       };
-  
+
       await addClusterMessages(request, response, next);
-  
+
       assert.equal(response.statusCode, 500);
       assert.equal(response._getData(), 'Object argument required.');
     });
@@ -682,7 +682,7 @@ describe('clusters', () => {
         },
         org: {
           _id: org_id
-        }, 
+        },
         log: log,
         db: db
       });
@@ -700,7 +700,7 @@ describe('clusters', () => {
 
       await addClusterMessages(request, response, next);
       assert.equal(response.statusCode, 200);
-      const message = await Messages.findOne({cluster_id: cluster_id, org_id: org_id, level: 'ERROR', message_hash: objectHash('Zeke has typhoid')});
+      const message = await Messages.findOne({ cluster_id: cluster_id, org_id: org_id, level: 'ERROR', message_hash: objectHash('Zeke has typhoid') });
       assert.equal(message.message, 'Zeke has typhoid');
     });
   });
