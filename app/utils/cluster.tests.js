@@ -5,9 +5,19 @@ var httpMocks = require('node-mocks-http');
 const log = require('../log').log;
 
 let getCluster = require('./cluster').getCluster;
+let cleanObjKeysMongo = require('./cluster').cleanObjKeysForMongo;
+
 let db = {};
 
 describe('utils', () => {
+  describe('cleanObjKeysMongo', () => {
+    it ('Replace invalid characters with underscore for object keys', () => {
+      let data = { '$fudge': { b: 'somegarbage', '*more*trash': 'somevalue' } };
+      let cleanData = cleanObjKeysMongo(data);
+      assert.equal(JSON.stringify(cleanData), JSON.stringify({'_fudge': { b: 'somegarbage', '_more_trash': 'somevalue'}}));
+    });
+  });
+
   describe('getCluster', () => {
 
     before(function () {
@@ -118,7 +128,7 @@ describe('utils', () => {
     it('should call next', async () => {
       // Setup
       const Clusters = db.collection('clusters');
-      await Clusters.insertOne({ cluster_id: 'someclusterid', org_id: 1, somedata: 'xyz' });
+      await Clusters.insertOne({ cluster_id: 'someclusterid', org_id: 2, somedata: 'xyz' });
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'someclusterid/resources',
@@ -126,7 +136,7 @@ describe('utils', () => {
           cluster_id: 'someclusterid'
         },
         org: {
-          _id: 1
+          _id: 2
         },
         log: log,
         db: db
