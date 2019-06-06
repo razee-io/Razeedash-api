@@ -212,15 +212,14 @@ const addClusterMessages = async (req, res, next) => {
 
 
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
-router.use(getCluster); // adds req.cluster object and validates org_id/cluster_id ownership
 
 // /api/v2/clusters/:cluster_id
 router.post('/:cluster_id', asyncHandler(addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
-router.post('/:cluster_id/resources', asyncHandler(updateClusterResources));
+router.post('/:cluster_id/resources', asyncHandler(getCluster), asyncHandler(updateClusterResources));
 
 // /api/v2/clusters/:cluster_id/messages
-router.post('/:cluster_id/messages', asyncHandler(addClusterMessages));
+router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addClusterMessages));
 
 module.exports = router;
