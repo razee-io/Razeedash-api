@@ -12,14 +12,14 @@ describe('utils', () => {
 
   describe('orgs', () => {
 
-    before(function () {
+    before((done) => {
       mongodb.max_delay = 0;
       const MongoClient = mongodb.MongoClient;
-      MongoClient.connect('someconnectstring', {}, function (err, database) {
-        database.collection('clusters');
-        database.collection('resources');
-        database.collection('resourceStats');
-        db = database;
+      MongoClient.connect('someconnectstring', {}, (err, database) => {
+        database.collection('orgs', () => {
+          db = database;
+          done();
+        });
       });
     });
 
@@ -57,13 +57,15 @@ describe('utils', () => {
 
     it('should return 403 if cannot find org', async () => {
       // Setup
+      const Orgs = db.collection('orgs');
+      await Orgs.insertOne({ orgKeys: 'dummy', somedata: 'xyz' });
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'someclusterid/resources',
         params: {
           cluster_id: 'someclusterid'
         },
-        orgKey: 1,
+        orgKey: 10,
         log: log,
         db: db
       });
@@ -87,14 +89,14 @@ describe('utils', () => {
     it('should call next', async () => {
       // Setup
       const Orgs = db.collection('orgs');
-      await Orgs.insertOne({ orgKeys: 2, somedata: 'xyz' });
+      await Orgs.insertOne({ orgKeys: 11, somedata: 'xyz' });
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'someclusterid/resources',
         params: {
           cluster_id: 'someclusterid'
         },
-        orgKey: 2,
+        orgKey: 11,
         log: log,
         db: db
       });

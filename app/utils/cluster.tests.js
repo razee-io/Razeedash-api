@@ -11,23 +11,27 @@ let db = {};
 
 describe('utils', () => {
   describe('cleanObjKeysMongo', () => {
-    it ('Replace invalid characters with underscore for object keys', () => {
+    it('Replace invalid characters with underscore for object keys', () => {
       let data = { '$fudge': { b: 'somegarbage', '*more*trash': 'somevalue' } };
       let cleanData = cleanObjKeysMongo(data);
-      assert.equal(JSON.stringify(cleanData), JSON.stringify({'_fudge': { b: 'somegarbage', '_more_trash': 'somevalue'}}));
+      assert.equal(JSON.stringify(cleanData), JSON.stringify({ '_fudge': { b: 'somegarbage', '_more_trash': 'somevalue' } }));
     });
   });
 
   describe('getCluster', () => {
 
-    before(function () {
+    before(function (done) {
       mongodb.max_delay = 0;
       const MongoClient = mongodb.MongoClient;
-      MongoClient.connect('someconnectstring', {}, function (err, database) {
-        database.collection('clusters');
-        database.collection('resources');
-        database.collection('resourceStats');
-        db = database;
+      MongoClient.connect('someconnectstring', {}, (err, database) => {
+        database.collection('clusters', () => {
+          database.collection('resources', () => {
+            database.collection('resourceStats', () => {
+              db = database;
+              done();
+            });
+          });
+        });
       });
     });
 
@@ -95,7 +99,6 @@ describe('utils', () => {
 
     it('should return 403 if cannot find cluster', async () => {
       // Setup
-      //const Clusters = db.collection('resources');
       var request = httpMocks.createRequest({
         method: 'POST',
         url: 'someclusterid/resources',
