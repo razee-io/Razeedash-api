@@ -97,7 +97,7 @@ const buildSearchableDataForResource = (obj) => {
     if(searchableAttr.name === 'annotations') {
       const annotations = _.get(obj, searchableAttr.attrPath, null);
       for(let key in annotations) {
-        const sanitizedName = 'annotations.' + key.replace(/[^a-z0-9_]/gi, '_');
+        const sanitizedName = 'annotations_' + key.replace(/[^a-z0-9_]/gi, '_');
         out[sanitizedName] = annotations[key];
       }
     } else {
