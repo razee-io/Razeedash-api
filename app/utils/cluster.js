@@ -94,14 +94,21 @@ const buildSearchableDataForResource = (obj) => {
   ];
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
-    let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_]/gi, '_');
-    let valToSave = _.get(obj, searchableAttr.attrPath, null);
-    if(_.isObject(valToSave) || _.isArray(valToSave)){
-      valToSave = cleanObjKeysForMongo(valToSave);
+    if(searchableAttr.name === 'annotations') {
+      const annotations = _.get(obj, searchableAttr.attrPath, null);
+      for(let key in annotations) {
+        const sanitizedName = 'annotations.' + key.replace(/[^a-z0-9_]/gi, '_');
+        out[sanitizedName] = annotations[key];
+      }
+    } else {
+      let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_]/gi, '_');
+      let valToSave = _.get(obj, searchableAttr.attrPath, null);
+      if(_.isObject(valToSave) || _.isArray(valToSave)){
+        valToSave = cleanObjKeysForMongo(valToSave);
+      }
+      _.set(out, saveAsName, valToSave);
     }
-    _.set(out, saveAsName, valToSave);
   });
-
   return out;
 };
 
