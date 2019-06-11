@@ -90,6 +90,7 @@ const buildSearchableDataForResource = (obj) => {
     { name: 'name', attrPath: 'metadata.name', },
     { name: 'namespace', attrPath: 'metadata.namespace', },
     { name: 'apiVersion', attrPath: 'apiVersion', },
+    { name: 'annotations', attrPath: 'metadata.annotations', },
   ];
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
