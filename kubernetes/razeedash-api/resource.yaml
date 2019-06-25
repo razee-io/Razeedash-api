@@ -5,6 +5,7 @@ metadata:
   namespace: razee
   annotations:
     version: "{{TRAVIS_COMMIT}}"
+type: array
 items:
   - apiVersion: apps/v1
     kind: Deployment
