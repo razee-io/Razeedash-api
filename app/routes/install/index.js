@@ -74,7 +74,7 @@ router.get('/kapitan', asyncHandler(async (req, res, next) => {
 
 router.get('/cluster', asyncHandler(async (req, res, next) => {
   const orgKey = req.orgKey;
-  var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
+  var razeeapiUrl = `https://${req.get('host')}/api/v2`;
   const kptn_url = 'https://github.com/razee-io/kapitan-delta/releases/latest/download/resource.yaml';
   const remoteResource_url = 'https://github.com/razee-io/RemoteResource/releases/latest/download/resource.yaml';
   try {
