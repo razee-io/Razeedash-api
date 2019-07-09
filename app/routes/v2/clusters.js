@@ -92,7 +92,7 @@ const updateClusterResources = async (req, res, next) => {
             selfLink: selfLink
           };
           const currentResource = await Resources.findOne(key);
-          const searchableDataObj = buildSearchableDataForResource(resource.object);
+          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
           if (currentResource) {
@@ -138,7 +138,7 @@ const updateClusterResources = async (req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          const searchableDataObj = buildSearchableDataForResource(resource.object);
+          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
