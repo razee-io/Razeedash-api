@@ -84,29 +84,38 @@ const cleanObjKeysForMongo = (obj)=>{
   return obj;
 };
 
-const buildSearchableDataForResource = (obj) => {
-  const searchableAttrs = [
+const buildSearchableDataForResource = (org, obj) => {
+  var kind = obj.kind;
+  let searchableAttrs = [
     { name: 'kind', attrPath: 'kind', },
     { name: 'name', attrPath: 'metadata.name', },
     { name: 'namespace', attrPath: 'metadata.namespace', },
     { name: 'apiVersion', attrPath: 'apiVersion', },
     { name: 'annotations', attrPath: 'metadata.annotations', },
   ];
+
+  // adds this org's custom attrs
+  var customSearchableAttrs = _.get(org, 'customSearchableAttrs', {});
+  var searchableAttrsForKind = _.get(customSearchableAttrs, kind, []);
+  searchableAttrs = _.concat(searchableAttrs, _.map(searchableAttrsForKind, (attrPath)=>{
+    return { attrPath };
+  }));
+
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
     if(searchableAttr.name === 'annotations') {
       const annotations = _.get(obj, searchableAttr.attrPath, null);
       for(let key in annotations) {
-        const sanitizedName = 'annotations_' + key.replace(/[^a-z0-9_]/gi, '_');
+        const sanitizedName = `annotations["${key.replace(/[^a-z0-9_"'[\]]/gi, '_')}"]`;
         out[sanitizedName] = annotations[key];
       }
     } else {
-      let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_]/gi, '_');
+      let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_"'[\]]/gi, '_');
       let valToSave = _.get(obj, searchableAttr.attrPath, null);
       if(_.isObject(valToSave) || _.isArray(valToSave)){
         valToSave = cleanObjKeysForMongo(valToSave);
       }
-      _.set(out, saveAsName, valToSave);
+      out[saveAsName] = valToSave;
     }
   });
   return out;
