@@ -24,8 +24,10 @@ const logger = bunyan.createLogger(getBunyanConfig('/'));
 const ebl = require('express-bunyan-logger');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
-const mongoConf = require('../conf.js').conf;
-const MongoClient = new MongoClientClass(mongoConf);
+const conf = require('../conf.js').conf;
+const S3ClientClass = require('../s3/s3Client');
+
+const MongoClient = new MongoClientClass(conf);
 MongoClient.log=logger;
 
 const getOrg = require ('../utils/orgs').getOrg;
@@ -40,6 +42,16 @@ router.use(ebl(getBunyanConfig('/api/v2/')));
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
   req.db = db;
+  next();
+}));
+
+router.use(asyncHandler(async (req, res, next) => {
+  let s3Client = null;
+  if (conf.s3.endpoint) {
+    s3Client = new S3ClientClass(conf);
+    s3Client.log=logger;
+  }
+  req.s3 = s3Client;
   next();
 }));
 
