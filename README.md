@@ -97,7 +97,7 @@ This will deploy the razeedash-api and mongo on a 3 node cluster using IBM
 Cloud Kubernetes Service.
 
 *Note: In a production scenario it is recommended to used a managed Mongo
-database service.*
+database service, like [IBM Cloud Databases for MongoDB](https://cloud.ibm.com/catalog/services/databases-for-mongodb).*
 
 Requirements:
 
