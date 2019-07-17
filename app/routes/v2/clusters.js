@@ -59,7 +59,7 @@ const pushToS3 = async (req, key, dataStr) => {
   const hash = crypto.createHash('sha256');
   const hashKey = hash.update(JSON.stringify(key)).digest('hex');
   await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
-  dataStr = `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
+  return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
 };
 
 const updateClusterResources = async (req, res, next) => {
