@@ -43,6 +43,30 @@ items:
             name: razeedash-api-init
           containers:
           - env:
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: razeedash-config
+                  key: s3_endpoint
+                  optional: true
+            - name: S3_LOCATION_CONSTRAINT
+              valueFrom:
+                configMapKeyRef:
+                  name: razeedash-config
+                  key: s3_location_constraint
+                  optional: true
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: s3_access_key_id
+                  optional: true
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: s3_secret_access_key
+                  optional: true
             - name: MONGO_URL
               valueFrom:
                 secretKeyRef:
@@ -70,3 +94,4 @@ items:
               limits:
                 cpu: 500m
                 memory: 256Mi
+                apiVersion: v1

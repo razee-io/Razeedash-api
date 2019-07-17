@@ -17,7 +17,7 @@
 const _ = require('lodash');
 const objectHash = require('object-hash');
 
-const buildPushObj = (newSearchableDataObj, oldSearchableDataObj=null) => {
+const buildPushObj = (newSearchableDataObj, oldSearchableDataObj = null) => {
   newSearchableDataObj = cleanObjKeysForMongo(newSearchableDataObj);
   oldSearchableDataObj = cleanObjKeysForMongo(oldSearchableDataObj || {});
   const keys = _.uniq(_.union(_.keys(newSearchableDataObj), _.keys(oldSearchableDataObj)));
@@ -25,14 +25,14 @@ const buildPushObj = (newSearchableDataObj, oldSearchableDataObj=null) => {
   _.each(keys, (key) => {
     const newVal = newSearchableDataObj[key];
     const oldVal = oldSearchableDataObj[key];
-    if(newVal !== oldVal) {
-      if(objectHash(_.isUndefined(newVal) ? null : newVal) === objectHash(_.isUndefined(oldVal) ? null : oldVal)) {
+    if (newVal !== oldVal) {
+      if (objectHash(_.isUndefined(newVal) ? null : newVal) === objectHash(_.isUndefined(oldVal) ? null : oldVal)) {
         return;
       }
       updatedKeys.push(key);
     }
   });
-  if(updatedKeys.length < 1) {
+  if (updatedKeys.length < 1) {
     return {};
   }
   /**
@@ -53,7 +53,7 @@ const buildPushObj = (newSearchableDataObj, oldSearchableDataObj=null) => {
       }),
       (keyName) => {
         return {
-          $each: [ { timestamp: Date.now(), val: newSearchableDataObj[keyName] } ],
+          $each: [{ timestamp: Date.now(), val: newSearchableDataObj[keyName] }],
           $slice: -100,
         };
       }
@@ -62,19 +62,19 @@ const buildPushObj = (newSearchableDataObj, oldSearchableDataObj=null) => {
   return out;
 };
 
-const cleanObjKeysForMongo = (obj)=>{
+const cleanObjKeysForMongo = (obj) => {
   // makes sure an obj we're inserting doesnt have invalid chars in its keys (recursively). or mongo will get mad
   obj = _.clone(obj);
-  _.forEach(obj, (val, key)=>{
-    if(_.isObject(val)){
-      if(_.isArray(val)){
+  _.forEach(obj, (val, key) => {
+    if (_.isObject(val)) {
+      if (_.isArray(val)) {
         val = _.map(val, cleanObjKeysForMongo);
       } else {
         val = cleanObjKeysForMongo(val);
         obj[key] = val;
       }
     }
-    if(_.isNumber(key) || key.match(/^[a-z0-9_]*$/i)){
+    if (_.isNumber(key) || key.match(/^[a-z0-9_]*$/i)) {
       return;
     }
     let newKey = key.replace(/[^a-z0-9_]/ig, '_');
@@ -97,22 +97,22 @@ const buildSearchableDataForResource = (org, obj) => {
   // adds this org's custom attrs
   var customSearchableAttrs = _.get(org, 'customSearchableAttrs', {});
   var searchableAttrsForKind = _.get(customSearchableAttrs, kind, []);
-  searchableAttrs = _.concat(searchableAttrs, _.map(searchableAttrsForKind, (attrPath)=>{
+  searchableAttrs = _.concat(searchableAttrs, _.map(searchableAttrsForKind, (attrPath) => {
     return { attrPath };
   }));
 
   let out = {};
   _.each(searchableAttrs, (searchableAttr) => {
-    if(searchableAttr.name === 'annotations') {
+    if (searchableAttr.name === 'annotations') {
       const annotations = _.get(obj, searchableAttr.attrPath, null);
-      for(let key in annotations) {
+      for (let key in annotations) {
         const sanitizedName = `annotations["${key.replace(/[^a-z0-9_"'[\]]/gi, '_')}"]`;
         out[sanitizedName] = annotations[key];
       }
     } else {
       let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_"'[\]]/gi, '_');
       let valToSave = _.get(obj, searchableAttr.attrPath, null);
-      if(_.isObject(valToSave) || _.isArray(valToSave)){
+      if (_.isObject(valToSave) || _.isArray(valToSave)) {
         valToSave = cleanObjKeysForMongo(valToSave);
       }
       out[saveAsName] = valToSave;
@@ -121,16 +121,16 @@ const buildSearchableDataForResource = (org, obj) => {
   return out;
 };
 
-const getCluster = async(req, res, next) => {
+const getCluster = async (req, res, next) => {
   const cluster_id = req.params.cluster_id;
 
-  if ( !req.org ) {
-    res.status(401).send( 'org required' );
+  if (!req.org) {
+    res.status(401).send('org required');
     return;
   }
 
   if (!cluster_id) {
-    res.status(401).send( 'cluster_id required' );
+    res.status(401).send('cluster_id required');
     return;
   }
 
@@ -140,13 +140,13 @@ const getCluster = async(req, res, next) => {
     res.status(403).send(`Cluster ${cluster_id} not found`);
     return;
   }
-  req.cluster = cluster;
+  req.cluster = cluster; // eslint-disable-line require-atomic-updates
   next();
 };
 
 module.exports = {
-  buildPushObj, 
-  cleanObjKeysForMongo, 
-  buildSearchableDataForResource, 
+  buildPushObj,
+  cleanObjKeysForMongo,
+  buildSearchableDataForResource,
   getCluster
 };

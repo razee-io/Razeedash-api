@@ -29,7 +29,7 @@ const getOrg = async(req, res, next) => {
     res.status(403).send( `orgKey ${orgKey} not found` );
     return;
   }
-  req.org = org;
+  req.org = org; // eslint-disable-line require-atomic-updates
   next();
 };
 
