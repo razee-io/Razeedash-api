@@ -30,8 +30,11 @@ describe('utils', () => {
         assert.equal(responseCodeMapper(400), 'warn');
         assert.equal(responseCodeMapper(404), 'warn');
       });
-      it('info', async () => {
-        assert.equal(responseCodeMapper(200), 'info');
+      it('debug 200', async () => {
+        assert.equal(responseCodeMapper(200), 'debug');
+      });
+      it('debug 201', async () => {
+        assert.equal(responseCodeMapper(201), 'debug');
       });
     });
   });
