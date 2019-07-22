@@ -30,7 +30,7 @@ const getBunyanConfig = (route) => {
   let result = {
     name: route,
     parseUA: false,
-    excludes: ['req-headers', 'res-headers', 'referer', 'url', 'body', 'short-body'],
+    excludes: ['referer', 'url', 'body', 'short-body'],
     levelFn: responseCodeMapper,
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
