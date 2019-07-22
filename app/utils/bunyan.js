@@ -19,6 +19,8 @@ const responseCodeMapper = (status) => {
     return 'error';
   } else if (status === 400 || status === 404) {
     return 'warn';
+  } else if (status === 200 || status === 201) {
+    return 'debug';
   } else {
     return 'info';
   }
