@@ -13,6 +13,20 @@ Razeedash-API is the interface used by
 - Kubernetes Cluster
 - MongoDB
 
+## Environment Variables
+<!--Markdownlint-disable MD013-->
+| Name | Required | Default Value |
+| ---- | -------- | ------------- |
+| MONGO_URL              | yes                    | 'mongodb://localhost:3001/meteor' |
+| MONGO_DB_NAME          | yes                    | 'meteor' |
+| S3_ENDPOINT            | no                     | n/a |
+| S3_ACCESS_KEY_ID       | if S3_ENDPOINT defined | n/a |
+| S3_SECRET_ACCESS_KEY   | if S3_ENDPOINT defined | n/a |
+| S3_LOCATION_CONSTRAINT | no                     | 'us-standard'|
+
+If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
+it will be stored in the mongoDB.
+
 ### OS/X
 
 gettext package is default on most Linux systems.  If you are using OS/X for
