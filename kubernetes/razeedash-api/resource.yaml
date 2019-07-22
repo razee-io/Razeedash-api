@@ -94,4 +94,3 @@ items:
               limits:
                 cpu: 500m
                 memory: 256Mi
-                apiVersion: v1
