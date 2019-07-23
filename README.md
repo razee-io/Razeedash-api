@@ -173,8 +173,8 @@ Individually
 ```bash
 # Add razee namespace, single mongo, razeedash secret
 kubectl apply -f samples/namespace.yaml
-kubectl apply -f samples/pwersistentVolume.yaml
-kubectl apply -f samples/pwersistentVolumeClaim.yaml
+kubectl apply -f samples/persistentVolume.yaml
+kubectl apply -f samples/persistentVolumeClaim.yaml
 kubectl apply -f samples/mongo.yaml
 kubectl apply -f samples/service.yaml
 kubectl apply -f samples/secret.yaml
