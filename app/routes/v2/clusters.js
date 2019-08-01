@@ -84,7 +84,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'SYNC': {
           const list = resource.object;
           await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list } },
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list }, deleted: {$ne: true} },
             { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
