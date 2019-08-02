@@ -23,9 +23,6 @@ const readFile = require('fs-readfile-promise');
 const request = require('request-promise-native');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
-const app = express();
-app.set('trust proxy', true);
-
 router.use(ebl(getBunyanConfig('/api/install')));
 
 router.get('/inventory', asyncHandler(async(req, res, next) => {
