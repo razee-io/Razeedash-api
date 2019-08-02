@@ -30,6 +30,7 @@ const port = 3333;
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
 
+app.set('trust proxy', true);
 app.use(addRequestId);
 app.use(body_parser.json({ limit: '8mb' }));
 app.use(body_parser.urlencoded({ extended: false }));
