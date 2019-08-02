@@ -21,9 +21,10 @@ const ebl = require('express-bunyan-logger');
 const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
 const request = require('request-promise-native');
-
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
+const app = express();
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 router.use(ebl(getBunyanConfig('/api/install')));
 
