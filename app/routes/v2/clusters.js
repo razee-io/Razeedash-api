@@ -75,6 +75,7 @@ const updateClusterResources = async (req, res, next) => {
       resources = [body];
     }
 
+    const Images = req.db.collection('images');
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
@@ -106,6 +107,15 @@ const updateClusterResources = async (req, res, next) => {
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
             dataStr = await pushToS3(req, key, dataStr);
           }
+          if (searchableDataObj.imageID) { // Save off organization's image list
+            const result = await Images.updateOne(
+              { org_id: req.org_id, imageID: searchableDataObj.imageID, image: searchableDataObj.image },
+              { $currentDate: { updated: true } },
+              { upsert: true });
+            if (result.upsertedCount) {  // New image
+              // call image webhooks
+            }
+          }
           if (currentResource) {
             if (resourceHash === currentResource.hash) {
               await Resources.updateOne(
@@ -136,7 +146,7 @@ const updateClusterResources = async (req, res, next) => {
                 ...pushCmd
               },
               { upsert: true }
-            );
+            );     
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
           }
           break;
