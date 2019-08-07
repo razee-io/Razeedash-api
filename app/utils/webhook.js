@@ -8,7 +8,7 @@ const WEBHOOOK_KIND_IMAGE = 'image';
 const fireWebhook = async (webhook, postData, req) => {
   var success = true;
   var webhookId = webhook.id;
-  var url = webhook.url;
+  var url = webhook.service_url;
   var hasError = false;
   var resp = '';
   postData.request_id = uuid();
@@ -18,6 +18,8 @@ const fireWebhook = async (webhook, postData, req) => {
     body: postData,
     json: true
   };
+  req.log.info(options, 'fireWebhook');
+
   try {
     req.log.debug({ org_id: req.org._id, options: options }, 'POSTing webhook');
     resp = await request(options);
@@ -47,13 +49,14 @@ const fireWebhook = async (webhook, postData, req) => {
 
 // processWebhooks - private method for filtering and executing web hooks
 const processWebhooks = async (webhooks, postData, resourceObj, req) => {
+  req.log.info(webhooks, 'postWebHooks');
   var success = true;
-  webhooks.forEach(async (webhook) => {
+  await Promise.all( webhooks.map(async (webhook) => {
     // Test if optional filter
     var match = true;
-    if (webhook.pattern) {
+    if (webhook.filter) {
       var field = objectPath.get(resourceObj, webhook.field);
-      if (!field.match(webhook.pattern)) {
+      if (!field.match(webhook.filter)) {
         match = false;
       }
     }
@@ -62,7 +65,7 @@ const processWebhooks = async (webhooks, postData, resourceObj, req) => {
         success = false;
       }
     }
-  });
+  }));
   return success;
 };
 
@@ -77,7 +80,6 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
       image_name: name,
       image_id: image_id,
     };
-    req.log.info(webhooks, 'GWC');
     return processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
   } catch (err) {
     req.log.error(err);
