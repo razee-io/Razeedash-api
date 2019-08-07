@@ -26,6 +26,7 @@ const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
+const triggerWebhooksForImage = require('../../utils/webhook.js').triggerWebhooksForImage;
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -114,6 +115,7 @@ const updateClusterResources = async (req, res, next) => {
               { upsert: true });
             if (result.upsertedCount) {  // New image
               // call image webhooks
+              triggerWebhooksForImage(searchableDataObj.imageID, searchableDataObj.image, req);
             }
           }
           if (currentResource) {

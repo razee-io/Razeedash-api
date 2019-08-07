@@ -1,10 +1,11 @@
 const uuid = require('uuid');
 const request = require('request-promise-native');
+const objectPath = require('object-path');
 
-export const WEBHOOOK_KIND_IMAGE='image';
-export const WEBHOOOK_KIND_CLUSTER='cluster';
+const WEBHOOOK_KIND_IMAGE = 'image';
 
-const fireWebhook = async(webhook, postData, req) => {
+// fireWebhook - private method for calling a web hook
+const fireWebhook = async (webhook, postData, req) => {
   var success = true;
   var webhookId = webhook.id;
   var url = webhook.url;
@@ -44,26 +45,65 @@ const fireWebhook = async(webhook, postData, req) => {
   return success;
 };
 
-export const triggerWebhooksForImage = async(image_id, name, req) => {
-  req.log.debug({ org_id: req.org._id, image_id: image_id, imageName: name }, 'triggerWebhooksForImageId');
-  var webhooks = req.org.webhooks || [];
-  var postData = {
-    org_id: req.org._id,
-    image_name: name,
-    image_id: image_id,
-  };
+// processWebhooks - private method for filtering and executing web hooks
+const processWebhooks = async (webhooks, postData, resourceObj, req) => {
   var success = true;
-
-  webhooks.forEach( async (webhook) => {
+  webhooks.forEach(async (webhook) => {
+    // Test if optional filter
     var match = true;
-    if ((webhook.pattern) && !name.match(webhook.pattern)) {
-      match = false;
+    if (webhook.pattern) {
+      var field = objectPath.get(resourceObj, webhook.field);
+      if (!field.match(webhook.pattern)) {
+        match = false;
+      }
     }
     if (match) {
-      if (!await fireWebhook(webhook,postData,req)) {
+      if (!await fireWebhook(webhook, postData, req)) {
         success = false;
       }
     }
   });
   return success;
+};
+
+// triggerWebhooksForImage - Calls any web hooks defined for new images
+const triggerWebhooksForImage = async (image_id, name, req) => {
+  req.log.debug({ org_id: req.org._id, image_id: image_id, imageName: name }, 'triggerWebhooksForImageId');
+  const Webhooks = req.db.collection('webhooks');
+  try {
+    const webhooks = await Webhooks.find({ org_id: req.org._id, kind: WEBHOOOK_KIND_IMAGE }).toArray();
+    var postData = {
+      org_id: req.org._id,
+      image_name: name,
+      image_id: image_id,
+    };
+    req.log.info(webhooks, 'GWC');
+    return processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
+  } catch (err) {
+    req.log.error(err);
+    return false;
+  }
+};
+
+// triggerWebhooksForCluster - Calls any web hooks for changed resources on a cluster
+const triggerWebhooksForCluster = async (clusterId, resourceId, resourceObj, req) => {
+  req.log.debug({ org_id: req.org._id, cluster_id: clusterId, resource_id: resourceId }, 'triggerWebhooksForImageId');
+  const Webhooks = req.db.collection('webhooks');
+  const Clusters = req.db.collection('clusters');
+  const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, kind: resourceObj.kind }).toArray();
+  const cluster = await Clusters.findOne({ org_id: req.org_id, cluster_id: clusterId });
+  const metadata = cluster.metadata || [];
+  var postData = {
+    org_id: req.org._id,
+    clsuter_name: metadata.name,
+    cluster_id: clusterId,
+    config_version: cluster.config_version,
+    resource: resourceObj
+  };
+  return processWebhooks(webhooks, postData, resourceObj, req);
+};
+
+module.exports = {
+  triggerWebhooksForCluster,
+  triggerWebhooksForImage
 };
