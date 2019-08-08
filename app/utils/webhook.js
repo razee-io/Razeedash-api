@@ -89,12 +89,12 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
 };
 
 // triggerWebhooksForCluster - Calls any web hooks for changed resources on a cluster
-const triggerWebhooksForCluster = async (clusterId, resourceId, resourceObj, req) => {
-  req.log.debug({ org_id: req.org._id, cluster_id: clusterId, resource_id: resourceId }, 'triggerWebhooksForImageId');
+const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
+  req.log.debug({ org_id: req.org._id, cluster_id: clusterId}, 'triggerWebhooksForImageId');
   try {
     const Webhooks = req.db.collection('webhooks');
     const Clusters = req.db.collection('clusters');
-    const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: 'cluster', kind: resourceObj.kind }).toArray();
+    const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: WEBHOOOK_TRIGGER_CLUSTER, kind: resourceObj.searchableData.kind }).toArray();
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
     const metadata = cluster.metadata || [];
     var postData = {

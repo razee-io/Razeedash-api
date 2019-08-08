@@ -26,9 +26,13 @@ describe('webhook', () => {
     it('filter - success', async () => {
       // Setup
       const fakeServiceURL = 'https://myfakescanner.com';
+      let nockCalled = false;
       nock(fakeServiceURL)
         .post('/check')
-        .reply(201);
+        .reply(201, () => {
+          nockCalled = true;
+          return;
+        });
       const Webhooks = req.db.collection('webhooks');
       await Webhooks.insert({
         _id: 1,
@@ -45,13 +49,18 @@ describe('webhook', () => {
       // Test
       const result = await triggerWebhooksForImage(image_id, image, req);
       chai.assert.isTrue(result);
+      chai.assert.isTrue(nockCalled);
     });
     it('filter - failure', async () => {
       // Setup
       const fakeServiceURL = 'https://myfakescannererr.com';
+      let nockCalled = false;
       nock(fakeServiceURL)
         .post('/check')
-        .reply(500);
+        .reply(500, () => {
+          nockCalled = true;
+          return;
+        });
       const Webhooks = req.db.collection('webhooks');
       await Webhooks.insert({
         _id: 2,
@@ -66,94 +75,60 @@ describe('webhook', () => {
       // Test
       const result = await triggerWebhooksForImage(image_id, image, req);
       chai.assert.isFalse(result);
+      chai.assert.isTrue(nockCalled);
     });
-  });
-});
-
-describe('triggerWebhooksForCluster', () => {
-  it('no filter - success', async () => {
-    // Setup
-    const fakeServiceURL = 'https://myfakeinttest.com';
-    nock(fakeServiceURL)
-      .post('/runtest')
-      .reply(201);
-    const Webhooks = req.db.collection('webhooks');
-    await Webhooks.insert({
-      _id: 3,
-      org_id: req.org._id,
-      trigger: WEBHOOOK_TRIGGER_CLUSTER,
-      kind: 'deployment',
-      service_url: `${fakeServiceURL}/runtest`
+    it('no filter - success', async () => {
+      // Setup
+      const fakeServiceURL = 'https://myfakeinttest.com';
+      let nockCalled = false;
+      nock(fakeServiceURL)
+        .post('/runtest')
+        .reply(201, () => {
+          nockCalled = true;
+          return;
+        });
+ 
+      const clusterId = '9c4315e4-7bf4-11e9-b757-ce243beadde5';
+      const Clusters = req.db.collection('clusters');
+      await Clusters.insert({
+        _id: 1,
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        metadata: {
+          name: 'staging'
+        }
+      });
+      const resourceId = 'testResoureId';
+      const resourceObj = {
+        '_id': resourceId,
+        'cluster_id': clusterId,
+        'org_id': req.org._id,
+        'selfLink': '/apis/apps/v1/namespaces/razee/deployments/watch-keeper',
+        'deleted': false,
+        'hash': 'd0c0e39b2ba2cbbaa5709da33e2a4d84ce5a7ae1',
+        'searchableData': {
+          'kind': 'Deployment',
+          'name': 'watch-keeper',
+          'namespace': 'razee',
+          'apiVersion': 'apps/v1'
+        },
+      };     
+      const Webhooks = req.db.collection('webhooks');
+      await Webhooks.insert({
+        _id: 3,
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        trigger: WEBHOOOK_TRIGGER_CLUSTER,
+        kind: resourceObj.searchableData.kind,
+        service_url: `${fakeServiceURL}/runtest`
+      });
+      // Test
+      const webhooks = await Webhooks.find({ 
+        trigger: WEBHOOOK_TRIGGER_CLUSTER}).toArray();
+      req.log.info(webhooks,'webhooks');
+      const result = await triggerWebhooksForCluster(clusterId, resourceObj, req);
+      chai.assert.isTrue(result);
+      chai.assert.isTrue(nockCalled);
     });
-    const clusterId = '9c4315e4-7bf4-11e9-b757-ce243beadde5';
-    const Clusters = req.db.collection('clusters');
-    await Clusters.insert({
-      _id: 1,
-      org_id: req.org._id,
-      cluster_id: clusterId,
-      metadata: {
-        name: 'staging'
-      }
-    });
-    const resourceId = 'testResoureId';
-    const resourceObj = {
-      '_id': resourceId,
-      'cluster_id': clusterId,
-      'org_id': req.org._id,
-      'selfLink': '/apis/apps/v1/namespaces/razee/deployments/watch-keeper',
-      'deleted': false,
-      'hash': 'd0c0e39b2ba2cbbaa5709da33e2a4d84ce5a7ae1',
-      'searchableData': {
-        'kind': 'Deployment',
-        'name': 'watch-keeper',
-        'namespace': 'razee',
-        'apiVersion': 'apps/v1'
-      },
-    };
-    // Test
-    const result = await triggerWebhooksForCluster(clusterId, resourceId, resourceObj, req);
-    chai.assert.isTrue(result);
-  });it('no filter - failure', async () => {
-    // Setup
-    const fakeServiceURL = 'https://myfakeinttest.com';
-    nock(fakeServiceURL)
-      .post('/runtest')
-      .reply(500);
-    const Webhooks = req.db.collection('webhooks');
-    await Webhooks.insert({
-      _id: 3,
-      org_id: req.org._id,
-      trigger: WEBHOOOK_TRIGGER_CLUSTER,
-      kind: 'deployment',
-      service_url: `${fakeServiceURL}/runtest`
-    });
-    const clusterId = '9c4315e4-7bf4-11e9-b757-ce243beadde5';
-    const Clusters = req.db.collection('clusters');
-    await Clusters.insert({
-      _id: 1,
-      org_id: req.org._id,
-      cluster_id: clusterId,
-      metadata: {
-        name: 'staging'
-      }
-    });
-    const resourceId = 'testResoureId';
-    const resourceObj = {
-      '_id': resourceId,
-      'cluster_id': clusterId,
-      'org_id': req.org._id,
-      'selfLink': '/apis/apps/v1/namespaces/razee/deployments/watch-keeper',
-      'deleted': false,
-      'hash': 'd0c0e39b2ba2cbbaa5709da33e2a4d84ce5a7ae1',
-      'searchableData': {
-        'kind': 'Deployment',
-        'name': 'watch-keeper',
-        'namespace': 'razee',
-        'apiVersion': 'apps/v1'
-      },
-    };
-    // Test
-    const result = await triggerWebhooksForCluster(clusterId, resourceId, resourceObj, req);
-    chai.assert.isFalse(result);
   });
 });
