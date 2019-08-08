@@ -1,6 +1,7 @@
 const uuid = require('uuid');
 const request = require('request-promise-native');
 const objectPath = require('object-path');
+const { URL } = require('url');
 
 const WEBHOOOK_TRIGGER_IMAGE = 'image';
 const WEBHOOOK_TRIGGER_CLUSTER = 'cluster';
@@ -73,14 +74,15 @@ const processWebhooks = async (webhooks, postData, resourceObj, req) => {
 // triggerWebhooksForImage - Calls any web hooks defined for new images
 const triggerWebhooksForImage = async (image_id, name, req) => {
   req.log.debug({ org_id: req.org._id, image_id: image_id, imageName: name }, 'triggerWebhooksForImageId');
-  const Webhooks = req.db.collection('webhooks');
   try {
+    const callbackURL = new URL('v2/webhook/image', process.env.RAZEEDASH_API_URL);
+    const Webhooks = req.db.collection('webhooks');
     const webhooks = await Webhooks.find({ org_id: req.org._id, trigger: WEBHOOOK_TRIGGER_IMAGE }).toArray();
-    var postData = {
+    const postData = {
       org_id: req.org._id,
       image_name: name,
       image_id: image_id,
-      callback_url: `${process.env.RAZEEDASH_API_URL}v2/webhook/image`
+      callback_url: callbackURL
     };
     return processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
   } catch (err) {
@@ -93,18 +95,19 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
 const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
   req.log.debug({ org_id: req.org._id, cluster_id: clusterId}, 'triggerWebhooksForImageId');
   try {
+    const callbackURL = new URL('v2/webhook/cluster', process.env.RAZEEDASH_API_URL);
     const Webhooks = req.db.collection('webhooks');
     const Clusters = req.db.collection('clusters');
     const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: WEBHOOOK_TRIGGER_CLUSTER, kind: resourceObj.searchableData.kind }).toArray();
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
     const metadata = cluster.metadata || [];
-    var postData = {
+    const postData = {
       org_id: req.org._id,
       cluster_name: metadata.name,
       cluster_id: clusterId,
       config_version: cluster.config_version,
       resource: resourceObj,
-      callback_url: `${process.env.RAZEEDASH_API_URL}v2/webhook/cluster`
+      callback_url: callbackURL
     };
     return processWebhooks(webhooks, postData, resourceObj, req);
   } catch (err) {
