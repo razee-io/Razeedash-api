@@ -3,7 +3,7 @@ const request = require('request-promise-native');
 const objectPath = require('object-path');
 
 const WEBHOOOK_TRIGGER_IMAGE = 'image';
-const WEBHOOOK_TRIGGER_CLUSTER= 'cluster';
+const WEBHOOOK_TRIGGER_CLUSTER = 'cluster';
 
 // fireWebhook - private method for calling a web hook
 const fireWebhook = async (webhook, postData, req) => {
@@ -52,7 +52,7 @@ const fireWebhook = async (webhook, postData, req) => {
 const processWebhooks = async (webhooks, postData, resourceObj, req) => {
   req.log.info(webhooks, 'postWebHooks');
   var success = true;
-  await Promise.all( webhooks.map(async (webhook) => {
+  await Promise.all(webhooks.map(async (webhook) => {
     // Test if optional filter
     var match = true;
     if (webhook.filter) {
@@ -91,20 +91,24 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
 // triggerWebhooksForCluster - Calls any web hooks for changed resources on a cluster
 const triggerWebhooksForCluster = async (clusterId, resourceId, resourceObj, req) => {
   req.log.debug({ org_id: req.org._id, cluster_id: clusterId, resource_id: resourceId }, 'triggerWebhooksForImageId');
-  const Webhooks = req.db.collection('webhooks');
-  const Clusters = req.db.collection('clusters');
-  const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: 'cluster', kind: resourceObj.kind }).toArray();
-  const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
-  req.log.info(cluster, 'cluster again');
-  const metadata = cluster.metadata || [];
-  var postData = {
-    org_id: req.org._id,
-    cluster_name: metadata.name,
-    cluster_id: clusterId,
-    config_version: cluster.config_version,
-    resource: resourceObj
-  };
-  return processWebhooks(webhooks, postData, resourceObj, req);
+  try {
+    const Webhooks = req.db.collection('webhooks');
+    const Clusters = req.db.collection('clusters');
+    const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: 'cluster', kind: resourceObj.kind }).toArray();
+    const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
+    const metadata = cluster.metadata || [];
+    var postData = {
+      org_id: req.org._id,
+      cluster_name: metadata.name,
+      cluster_id: clusterId,
+      config_version: cluster.config_version,
+      resource: resourceObj
+    };
+    return processWebhooks(webhooks, postData, resourceObj, req);
+  } catch (err) {
+    req.log.error(err);
+    return false;
+  }
 };
 
 module.exports = {

@@ -96,7 +96,6 @@ describe('triggerWebhooksForCluster', () => {
       }
     });
     let c  = await Clusters.findOne({org_id: req.org._id, cluster_id: clusterId});
-    req.log.info(c,'cluster');
     const resourceId = 'testResoureId';
     const resourceObj = {
       '_id': resourceId,
