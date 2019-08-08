@@ -2,7 +2,8 @@ const uuid = require('uuid');
 const request = require('request-promise-native');
 const objectPath = require('object-path');
 
-const WEBHOOOK_KIND_IMAGE = 'image';
+const WEBHOOOK_TRIGGER_IMAGE = 'image';
+const WEBHOOOK_TRIGGER_CLUSTER= 'cluster';
 
 // fireWebhook - private method for calling a web hook
 const fireWebhook = async (webhook, postData, req) => {
@@ -74,7 +75,7 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
   req.log.debug({ org_id: req.org._id, image_id: image_id, imageName: name }, 'triggerWebhooksForImageId');
   const Webhooks = req.db.collection('webhooks');
   try {
-    const webhooks = await Webhooks.find({ org_id: req.org._id, kind: WEBHOOOK_KIND_IMAGE }).toArray();
+    const webhooks = await Webhooks.find({ org_id: req.org._id, trigger: WEBHOOOK_TRIGGER_IMAGE }).toArray();
     var postData = {
       org_id: req.org._id,
       image_name: name,
@@ -92,12 +93,13 @@ const triggerWebhooksForCluster = async (clusterId, resourceId, resourceObj, req
   req.log.debug({ org_id: req.org._id, cluster_id: clusterId, resource_id: resourceId }, 'triggerWebhooksForImageId');
   const Webhooks = req.db.collection('webhooks');
   const Clusters = req.db.collection('clusters');
-  const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, kind: resourceObj.kind }).toArray();
-  const cluster = await Clusters.findOne({ org_id: req.org_id, cluster_id: clusterId });
+  const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: 'cluster', kind: resourceObj.kind }).toArray();
+  const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
+  req.log.info(cluster, 'cluster again');
   const metadata = cluster.metadata || [];
   var postData = {
     org_id: req.org._id,
-    clsuter_name: metadata.name,
+    cluster_name: metadata.name,
     cluster_id: clusterId,
     config_version: cluster.config_version,
     resource: resourceObj
@@ -107,5 +109,7 @@ const triggerWebhooksForCluster = async (clusterId, resourceId, resourceObj, req
 
 module.exports = {
   triggerWebhooksForCluster,
-  triggerWebhooksForImage
+  triggerWebhooksForImage,
+  WEBHOOOK_TRIGGER_IMAGE,
+  WEBHOOOK_TRIGGER_CLUSTER
 };
