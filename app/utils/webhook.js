@@ -80,6 +80,7 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
       org_id: req.org._id,
       image_name: name,
       image_id: image_id,
+      callback_url: `${process.env.RAZEEDASH_API_URL}v2/webhook/image`
     };
     return processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
   } catch (err) {
@@ -102,7 +103,8 @@ const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
       cluster_name: metadata.name,
       cluster_id: clusterId,
       config_version: cluster.config_version,
-      resource: resourceObj
+      resource: resourceObj,
+      callback_url: `${process.env.RAZEEDASH_API_URL}v2/webhook/cluster`
     };
     return processWebhooks(webhooks, postData, resourceObj, req);
   } catch (err) {
