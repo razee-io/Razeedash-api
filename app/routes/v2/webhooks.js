@@ -24,9 +24,20 @@ const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 
 // Callback from triggered webhook
-// Expect the folling informaiton in req.body:
 const addCallbackResult = async (req, res, next) => {
   try {
+    const Webhooks = req.db.collection('webhooks');
+    const webhook = Webhooks.findOne({webhook_id: req.params.webhook_id});
+    if (webhook) {
+      if (webhook.deleted == true) {
+        res.status(404).send('Web hook has been deleted');
+      }
+    } else {
+      res.status(404).send('Web hook not found');
+    }
+    // determine resource to add badge
+    // if resource not currently used return 404
+    // add/update badge based on webhook_id to the resource
     res.status(201);
   } catch (err) {
     req.log.error(err);
