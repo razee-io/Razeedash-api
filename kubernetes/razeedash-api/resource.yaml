@@ -2,7 +2,6 @@ apiVersion: v1
 kind: List
 metadata:
   name: razeedash-api
-  namespace: razee
   annotations:
     version: "{{TRAVIS_COMMIT}}"
 type: array
@@ -15,7 +14,6 @@ items:
         razee.io/git-repo: "{{{GIT_REMOTE}}}"
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
       name: razeedash-api
-      namespace: razee
     spec:
       replicas: 1
       revisionHistoryLimit: 0
@@ -43,6 +41,30 @@ items:
             name: razeedash-api-init
           containers:
           - env:
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: razeedash-config
+                  key: s3_endpoint
+                  optional: true
+            - name: S3_LOCATION_CONSTRAINT
+              valueFrom:
+                configMapKeyRef:
+                  name: razeedash-config
+                  key: s3_location_constraint
+                  optional: true
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: s3_access_key_id
+                  optional: true
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: s3_secret_access_key
+                  optional: true
             - name: MONGO_URL
               valueFrom:
                 secretKeyRef:
@@ -63,3 +85,10 @@ items:
               initialDelaySeconds: 5
               periodSeconds: 10
               timeoutSeconds: 2
+            resources:
+              requests:
+                cpu: 100m
+                memory: 80Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi

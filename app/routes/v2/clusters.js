@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -53,6 +54,14 @@ const addUpdateCluster = async (req, res, next) => {
     next(err);
   }
 };
+const pushToS3 = async (req, key, dataStr) => {
+  //if its a new or changed resource, write the data out to an S3 object
+  const bucket = `razee_${key.org_id}`;
+  const hash = crypto.createHash('sha256');
+  const hashKey = hash.update(JSON.stringify(key)).digest('hex');
+  await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
+  return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
+};
 
 const updateClusterResources = async (req, res, next) => {
   try {
@@ -76,7 +85,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'SYNC': {
           const list = resource.object;
           await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list } },
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list }, deleted: {$ne: true} },
             { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
@@ -85,7 +94,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'MODIFIED':
         case 'ADDED': {
           const resourceHash = buildHashForResource(resource.object, req.org);
-          const dataStr = JSON.stringify(resource.object);
+          let dataStr = JSON.stringify(resource.object);
           const selfLink = resource.object.metadata.selfLink;
           const key = {
             org_id: req.org._id,
@@ -95,7 +104,9 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-
+          if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
+            dataStr = await pushToS3(req, key, dataStr);
+          }
           if (currentResource) {
             if (resourceHash === currentResource.hash) {
               await Resources.updateOne(
@@ -133,7 +144,7 @@ const updateClusterResources = async (req, res, next) => {
         }
         case 'DELETED': {
           const selfLink = resource.object.metadata.selfLink;
-          const dataStr = JSON.stringify(resource.object);
+          let dataStr = JSON.stringify(resource.object);
           const key = {
             org_id: req.org._id,
             cluster_id: req.params.cluster_id,
@@ -142,7 +153,9 @@ const updateClusterResources = async (req, res, next) => {
           const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-
+          if (req.s3) {
+            dataStr = await pushToS3(req, key, dataStr);
+          }
           if (currentResource) {
             await Resources.updateOne(
               key, {

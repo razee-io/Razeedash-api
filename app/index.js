@@ -20,6 +20,7 @@ const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
 const ebl = require('express-bunyan-logger');
+const addRequestId = require('express-request-id')();
 
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').log;
@@ -29,6 +30,8 @@ const port = 3333;
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
 
+app.set('trust proxy', true);
+app.use(addRequestId);
 app.use(body_parser.json({ limit: '8mb' }));
 app.use(body_parser.urlencoded({ extended: false }));
 app.use(compression());
@@ -38,14 +41,18 @@ app.use(router);
 // eslint-disable-next-line no-unused-vars
 app.use(function errorHandler(err, req, res, next) {
   if (err) {
-    log.error(err);
+    if (req.log && req.log.error)
+      req.log.error(err);
+    else
+      log.error(err);
     if (!res.headersSent) {
       let statusCode = err.statusCode || 500;
-      res.status(statusCode).send();
+      return res.status(statusCode).send();
     } else {
-      next(err);
+      return next(err);
     }
   }
+  next();
 });
 
 const server = http.createServer(app);

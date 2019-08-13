@@ -13,6 +13,20 @@ Razeedash-API is the interface used by
 - Kubernetes Cluster
 - MongoDB
 
+## Environment Variables
+<!--Markdownlint-disable MD013-->
+| Name | Required | Default Value |
+| ---- | -------- | ------------- |
+| MONGO_URL              | yes                    | 'mongodb://localhost:3001/meteor' |
+| MONGO_DB_NAME          | yes                    | 'meteor' |
+| S3_ENDPOINT            | no                     | n/a |
+| S3_ACCESS_KEY_ID       | if S3_ENDPOINT defined | n/a |
+| S3_SECRET_ACCESS_KEY   | if S3_ENDPOINT defined | n/a |
+| S3_LOCATION_CONSTRAINT | no                     | 'us-standard'|
+
+If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
+it will be stored in the mongoDB.
+
 ### OS/X
 
 gettext package is default on most Linux systems.  If you are using OS/X for
@@ -97,7 +111,7 @@ This will deploy the razeedash-api and mongo on a 3 node cluster using IBM
 Cloud Kubernetes Service.
 
 *Note: In a production scenario it is recommended to used a managed Mongo
-database service.*
+database service, like [IBM Cloud Databases for MongoDB](https://cloud.ibm.com/catalog/services/databases-for-mongodb).*
 
 Requirements:
 
@@ -159,8 +173,8 @@ Individually
 ```bash
 # Add razee namespace, single mongo, razeedash secret
 kubectl apply -f samples/namespace.yaml
-kubectl apply -f samples/pwersistentVolume.yaml
-kubectl apply -f samples/pwersistentVolumeClaim.yaml
+kubectl apply -f samples/persistentVolume.yaml
+kubectl apply -f samples/persistentVolumeClaim.yaml
 kubectl apply -f samples/mongo.yaml
 kubectl apply -f samples/service.yaml
 kubectl apply -f samples/secret.yaml
