@@ -144,9 +144,23 @@ const getCluster = async(req, res, next) => {
   next();
 };
 
+var buildHashForResource = (resourceObj, org)=>{
+  // builds the list of things that when changed, will require us to resave the db data for an obj
+  // i.e., if anything in a resource obj changes, then triggers resave
+  // also, if the customSearchableAttrs for the org changes, then triggers resave
+  var dataToHash = {
+    resourceObj,
+    orgData: {
+      customSearchableAttrs: _.get(org, 'customSearchableAttrs', {}),
+    },
+  };
+  return objectHash(dataToHash);
+};
+
 module.exports = {
   buildPushObj, 
   cleanObjKeysForMongo, 
   buildSearchableDataForResource, 
-  getCluster
+  getCluster,
+  buildHashForResource,
 };

@@ -25,6 +25,7 @@ const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
+const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -83,7 +84,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'POLLED':
         case 'MODIFIED':
         case 'ADDED': {
-          const resourceHash = objectHash(resource.object);
+          const resourceHash = buildHashForResource(resource.object, req.org);
           const dataStr = JSON.stringify(resource.object);
           const selfLink = resource.object.metadata.selfLink;
           const key = {
