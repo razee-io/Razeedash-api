@@ -17,7 +17,7 @@ const nock = require('nock');
 const assert = require('assert');
 const mongodb = require('mongo-mock');
 const log = require('../log').log;
-const { WEBHOOOK_TRIGGER_CLUSTER, WEBHOOOK_TRIGGER_IMAGE, triggerWebhooksForCluster, triggerWebhooksForImage } = require('./webhook.js');
+const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, triggerWebhooksForCluster, triggerWebhooksForImage } = require('./webhook.js');
 let req = {};
 
 describe('webhook', () => {
@@ -87,7 +87,7 @@ describe('webhook', () => {
       await Webhooks.insert({
         _id: 2,
         org_id: req.org._id,
-        trigger: WEBHOOOK_TRIGGER_IMAGE,
+        trigger: WEBHOOK_TRIGGER_IMAGE,
         field: 'name',
         filter: '(quay.io\\/othernamespace)',
         service_url: `${fakeServiceURL}/check`
@@ -116,7 +116,7 @@ describe('webhook', () => {
       await Webhooks.insert({
         _id: 3,
         org_id: req.org._id,
-        trigger: WEBHOOOK_TRIGGER_IMAGE,
+        trigger: WEBHOOK_TRIGGER_IMAGE,
         field: 'name',
         filter: '(quay.io\\/othernamespace)',
         service_url: `${fakeServiceURL}/check`
@@ -125,9 +125,10 @@ describe('webhook', () => {
       const image_id = 'sha256:e3d11b0e0d0ec5d7772d45c664f275b9778204b26bd2f5e0bf5543695234379d';
       const goodDB = req.db;
       // eslint-disable-next-line require-atomic-updates
-      req.db = { 
-        collection: () => { throw new Error('oops'); }, 
-        close: () => { goodDB.close(); } };
+      req.db = {
+        collection: () => { throw new Error('oops'); },
+        close: () => { goodDB.close(); }
+      };
 
       // Test
       const result = await triggerWebhooksForImage(image_id, image, req);
@@ -181,13 +182,13 @@ describe('webhook', () => {
         _id: 4,
         org_id: req.org._id,
         cluster_id: clusterId,
-        trigger: WEBHOOOK_TRIGGER_CLUSTER,
+        trigger: WEBHOOK_TRIGGER_CLUSTER,
         kind: resourceObj.searchableData.kind,
         service_url: `${fakeServiceURL}/runtest`
       });
       // Test
       const webhooks = await Webhooks.find({
-        trigger: WEBHOOOK_TRIGGER_CLUSTER
+        trigger: WEBHOOK_TRIGGER_CLUSTER
       }).toArray();
       req.log.info(webhooks, 'webhooks');
       const result = await triggerWebhooksForCluster(clusterId, resourceObj, req);
@@ -237,18 +238,19 @@ describe('webhook', () => {
         _id: 5,
         org_id: req.org._id,
         cluster_id: clusterId,
-        trigger: WEBHOOOK_TRIGGER_CLUSTER,
+        trigger: WEBHOOK_TRIGGER_CLUSTER,
         kind: resourceObj.searchableData.kind,
         service_url: `${fakeServiceURL}/runtest`
-      });      const goodDB = req.db;
+      }); const goodDB = req.db;
       // eslint-disable-next-line require-atomic-updates
-      req.db = { 
-        collection: () => { throw new Error('oops'); }, 
-        close: () => { goodDB.close(); } };
+      req.db = {
+        collection: () => { throw new Error('oops'); },
+        close: () => { goodDB.close(); }
+      };
 
       // Test
       const webhooks = await Webhooks.find({
-        trigger: WEBHOOOK_TRIGGER_CLUSTER
+        trigger: WEBHOOK_TRIGGER_CLUSTER
       }).toArray();
       req.log.info(webhooks, 'webhooks');
       const result = await triggerWebhooksForCluster(clusterId, resourceObj, req);

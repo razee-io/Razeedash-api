@@ -20,6 +20,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
+const { WEBHOOK_TRIGGER_CLUSTER } = require('../../utils/webhook.js');
 
 router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 
@@ -27,7 +28,7 @@ router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 const addCallbackResult = async (req, res, next) => {
   try {
     const Webhooks = req.db.collection('webhooks');
-    const webhook = Webhooks.findOne({webhook_id: req.params.webhook_id});
+    const webhook = Webhooks.findOne({ webhook_id: req.params.webhook_id });
     if (webhook) {
       if (webhook.deleted == true) {
         res.status(404).send('Web hook has been deleted');
@@ -35,8 +36,40 @@ const addCallbackResult = async (req, res, next) => {
     } else {
       res.status(404).send('Web hook not found');
     }
+    const badge = req.body;
+    // Validate badge properties
+    const keys = Object.keys(badge);
+    let properties = ['webhook_id', 'url', 'description', 'link', 'status'];
+    // eslint-disable-next-line no-unused-vars
+    const propertyFilter = (value, _index, _array) => {
+      return (keys.findIndex(value) > -1);
+    };
+    const missingProperties = properties.filter(propertyFilter);
+    if (missingProperties.length > 0) {
+      res.status(400).send(`Missing properties: ${JSON.stringify(missingProperties)}`);
+    }
+
+    if (badge.webhook_id != webhook.webhook_id) {
+      res.status(404).send('Web hook ID mismatch');
+    }
     // determine resource to add badge
     // if resource not currently used return 404
+    if (webhook.trigger == WEBHOOK_TRIGGER_CLUSTER) {
+      const Clusters = req.db.collection('clusters');
+      const cluster = await Clusters.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
+      if (cluster) {
+        const foundIndex = cluster.badges.findIndex(x => x.webhook_id == badge.webhook_id);
+        if (foundIndex == -1) {
+          cluster.badges.push(badge);
+        } else {
+          cluster.badges[foundIndex] = badge;
+        }
+        await Clusters.updateOne({ _id: cluster._id }, { $set: { badges: cluster.badges } });
+        res.status(201);
+      } else {
+        res.status(404);
+      }
+    }
     // add/update badge based on webhook_id to the resource
     res.status(201);
   } catch (err) {
@@ -48,16 +81,20 @@ const addCallbackResult = async (req, res, next) => {
 const addWebhook = async (req, res, next) => {
   try {
     let webhook = req.body;
-    if (webhook.trigger == 'cluster') {
-      const Clusters = req.db.collection('clusters');
-      const result = await Clusters.findOne({cluster_id: webhook.cluster_id, org_id: req.org._id});
-      if ((!result) || (result.deleted == true)) {
-        res.status(400).send(`Cluster ${webhook.cluster_id} not found or has been deleted`);
-      }
-    }
     const Webhooks = req.db.collection('webhooks');
-    await Webhooks.insertOne(webhook);
-    res.status(201);
+    if (webhook.trigger == WEBHOOK_TRIGGER_CLUSTER) {
+      const Clusters = req.db.collection('clusters');
+      const result = await Clusters.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
+      if ((!result) || (result && result.deleted == true)) {
+        res.status(404).send(`Cluster ${webhook.cluster_id} not found or has been deleted`);
+      } else {
+        await Webhooks.insertOne(webhook);
+        res.status(201);
+      }
+    } else {
+      await Webhooks.insertOne(webhook);
+      res.status(201);
+    }
   } catch (err) {
     req.log.error(err);
     next(err);
@@ -69,10 +106,10 @@ const deleteWebhook = async (req, res, next) => {
   try {
     const Webhooks = req.db.collection('webhooks');
     await Webhooks.updateOne(
-      { _id: req.params.webhook_id }, 
-      { 
+      { _id: req.params.webhook_id },
+      {
         $set: { deleted: true },
-        $currentDate: { lastModified: true } 
+        $currentDate: { lastModified: true }
       });
     res.status(204);
   } catch (err) {

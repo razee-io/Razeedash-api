@@ -18,8 +18,8 @@ const request = require('request-promise-native');
 const objectPath = require('object-path');
 const { URL } = require('url');
 
-const WEBHOOOK_TRIGGER_IMAGE = 'image';
-const WEBHOOOK_TRIGGER_CLUSTER = 'cluster';
+const WEBHOOK_TRIGGER_IMAGE = 'image';
+const WEBHOOK_TRIGGER_CLUSTER = 'cluster';
 
 // fireWebhook - private method for calling a web hook
 const fireWebhook = async (webhook, postData, req) => {
@@ -93,7 +93,7 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
   try {
     const callbackURL = new URL('v2/callback', process.env.RAZEEDASH_API_URL);
     const Webhooks = req.db.collection('webhooks');
-    const webhooks = await Webhooks.find({ org_id: req.org._id, trigger: WEBHOOOK_TRIGGER_IMAGE }).toArray();
+    const webhooks = await Webhooks.find({ org_id: req.org._id, trigger: WEBHOOK_TRIGGER_IMAGE }).toArray();
     const postData = {
       org_id: req.org._id,
       image_name: name,
@@ -109,12 +109,12 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
 
 // triggerWebhooksForCluster - Calls any web hooks for changed resources on a cluster
 const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
-  req.log.debug({ org_id: req.org._id, cluster_id: clusterId}, 'triggerWebhooksForImageId');
+  req.log.debug({ org_id: req.org._id, cluster_id: clusterId }, 'triggerWebhooksForImageId');
   try {
     const callbackURL = new URL('v2/callback', process.env.RAZEEDASH_API_URL);
     const Webhooks = req.db.collection('webhooks');
     const Clusters = req.db.collection('clusters');
-    const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: WEBHOOOK_TRIGGER_CLUSTER, kind: resourceObj.searchableData.kind }).toArray();
+    const webhooks = await Webhooks.find({ org_id: req.org._id, cluster_id: clusterId, trigger: WEBHOOK_TRIGGER_CLUSTER, kind: resourceObj.searchableData.kind }).toArray();
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: clusterId });
     const metadata = cluster.metadata || [];
     const postData = {
@@ -136,6 +136,6 @@ const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
 module.exports = {
   triggerWebhooksForCluster,
   triggerWebhooksForImage,
-  WEBHOOOK_TRIGGER_IMAGE,
-  WEBHOOOK_TRIGGER_CLUSTER
+  WEBHOOK_TRIGGER_IMAGE,
+  WEBHOOK_TRIGGER_CLUSTER
 };

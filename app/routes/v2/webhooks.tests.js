@@ -21,39 +21,43 @@ const log = require('../../log').log;
 
 const rewire = require('rewire');
 let v2 = rewire('./webhooks');
+const { WEBHOOK_TRIGGER_CLUSTER } = require('../../utils/webhook');
 let db = {};
+let req = {};
 
 describe('webhooks', () => {
-
-  before(function () {
+  beforeEach((done) => {
     mongodb.max_delay = 0;
     const MongoClient = mongodb.MongoClient;
     MongoClient.connect('someconnectstring', {}, async (err, database) => {
-      const Webhooks = database.collection('webhooks');
-      const Clusters = database.collection('clusters');
-      database.collection('images');
-      db = database;
-      await Clusters.insertOne({
-        _id: 'webhookRoutesClusterId1',
-        org_id: 1,
-        cluster_id: 'myclusterid',
-        metadata: {
-          name: 'staging'
-        }
-      });
-      await Webhooks.insertOne({
-        _id: 'webhookRoutesWebhookId1',
-        org_id: 1,
-        kind: 'image',
-        trigger: 'image',
-        field: 'name',
-        filter: '(quay.io\\/mynamespace)',
-        service_url: 'https://somewhere.else/check'
-      });
+      try {
+        const Clusters = database.collection('clusters');
+        database.collection('webhooks');
+        database.collection('images');
+        db = database;
+        await Clusters.insertOne({
+          org_id: 1,
+          cluster_id: 'myclusterid',
+          metadata: {
+            name: 'staging'
+          }
+        });
+        await Clusters.insertOne({
+          org_id: 1,
+          cluster_id: 'deletedCluster',
+          deleted: true,
+          metadata: {
+            name: 'staging'
+          }
+        });
+        done();
+      } catch (err) {
+        console.log(err);
+      }
     });
   });
 
-  after(function () {
+  afterEach(() => {
     db.close();
   });
 
@@ -73,10 +77,13 @@ describe('webhooks', () => {
           trigger: 'cluster',
           kind: 'Deployment',
           service_url: 'http://myfakeservice'
-        },
-        db: { collection: () => { throw new Error('oops'); } }
+        }
       });
-
+      // eslint-disable-next-line require-atomic-updates
+      request.db = {
+        collection: () => { throw new Error('oops'); },
+        close: () => { return; }
+      };
       var response = httpMocks.createResponse();
       // Test
       let nextCalled = false;
@@ -86,11 +93,10 @@ describe('webhooks', () => {
       };
 
       await addWebhook(request, response, next);
-
       assert.equal(nextCalled, true);
     });
 
-    it('should return 201', async () => {
+    it('success 201', async () => {
       // Setup
       let addWebhook = v2.__get__('addWebhook');
       var request = httpMocks.createRequest({
@@ -102,7 +108,7 @@ describe('webhooks', () => {
         log: log,
         body: {
           cluster_id: 'myclusterid',
-          trigger: 'cluster',
+          trigger: WEBHOOK_TRIGGER_CLUSTER,
           kind: 'Deployment',
           service_url: 'http://myfakeservice'
         },
@@ -119,6 +125,34 @@ describe('webhooks', () => {
 
       assert.equal(response.statusCode, 201);
     });
+    it('should return 404', async () => {
+      // Setup
+      let addWebhook = v2.__get__('addWebhook');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        body: {
+          cluster_id: 'deletedCluster',
+          trigger: WEBHOOK_TRIGGER_CLUSTER,
+          kind: 'Deployment',
+          service_url: 'http://myfakeservice'
+        },
+        db: db
+      });
+
+      var response = httpMocks.createResponse();
+      // Test
+      let next = (err) => {
+        assert.equal(err.message, null);
+      };
+
+      await addWebhook(request, response, next);
+      assert.equal(response.statusCode, 404);
+    });
   });
   describe('deleteWebhook', () => {
     it('should throw error', async () => {
@@ -132,9 +166,12 @@ describe('webhooks', () => {
           _id: 1
         },
         log: log,
-        db: { collection: () => { throw new Error('oops'); } }
       });
-
+      // eslint-disable-next-line require-atomic-updates
+      request.db = {
+        collection: () => { throw new Error('oops'); },
+        close: () => { }
+      };
       var response = httpMocks.createResponse();
       // Test
       let nextCalled = false;
@@ -144,12 +181,22 @@ describe('webhooks', () => {
       };
 
       await deleteWebhook(request, response, next);
-
+      request.db.close();
       assert.equal(nextCalled, true);
     });
 
     it('should return 201', async () => {
       // Setup
+      const Webhooks = db.collection('webhooks');
+      await Webhooks.insertOne({
+        _id: 'webhookRoutesWebhookId1',
+        org_id: 'image1',
+        kind: 'image',
+        trigger: 'image',
+        field: 'name',
+        filter: '(quay.io\\/mynamespace)',
+        service_url: 'https://somewhere.else/check'
+      });
       let deleteWebhook = v2.__get__('deleteWebhook');
       var request = httpMocks.createRequest({
         method: 'DELETE', params: {
@@ -170,7 +217,6 @@ describe('webhooks', () => {
       };
 
       await deleteWebhook(request, response, next);
-
       assert.equal(response.statusCode, 204);
     });
   });
