@@ -18,9 +18,10 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
+const jkValidate = require('json-key-validate');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const { WEBHOOK_TRIGGER_CLUSTER } = require('../../utils/webhook.js');
+const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge } = require('../../utils/webhook.js');
 
 router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 
@@ -30,50 +31,37 @@ const addCallbackResult = async (req, res, next) => {
     const Webhooks = req.db.collection('webhooks');
     const webhook = await Webhooks.findOne({ _id: req.params.webhook_id });
     if (webhook) {
+      // Make sure webhook is still active
       if (webhook.deleted == true) {
         res.status(404).send('Web hook has been deleted');
       } else {
-        const badge = req.body;
         // Validate badge properties
-        const keys = Object.keys(badge);
+        let badge = req.body;
+        badge.webhook_id = req.params.webhook_id;
         let properties = ['webhook_id', 'url', 'description', 'link', 'status'];
-        // eslint-disable-next-line no-unused-vars
-        const propertyFilter = (value, _index, _array) => {
-          return (keys.findIndex(value) > -1);
-        };
-        const missingProperties = properties.filter(propertyFilter);
-        if (missingProperties.length > 0) {
-          res.status(400).send(`Missing properties: ${JSON.stringify(missingProperties)}`);
-        }
-
-        if (badge.webhook_id != webhook.webhook_id) {
-          res.status(404).send('Web hook ID mismatch');
-        }
-        // determine resource to add badge
-        // if resource not currently used return 404
-        if (webhook.trigger == WEBHOOK_TRIGGER_CLUSTER) {
-          const Clusters = req.db.collection('clusters');
-          const cluster = await Clusters.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
-          if (cluster) {
-            const foundIndex = cluster.badges.findIndex(x => x.webhook_id == badge.webhook_id);
-            if (foundIndex == -1) {
-              cluster.badges.push(badge);
+        const isValid = jkValidate(badge, properties);
+        if (!isValid) {
+          res.status(400).send(`Missing properties, make sure the following fields are defined: ${JSON.stringify(properties)}`);
+        } else {
+          // determine resource to add badge
+          // if resource not currently used return 404
+          if (webhook.trigger == WEBHOOK_TRIGGER_CLUSTER) {
+            const cluster = await insertClusterBadge(webhook, badge, req);
+            if (cluster) {
+              res.status(201);
             } else {
-              cluster.badges[foundIndex] = badge;
+              res.status(404);
             }
-            await Clusters.updateOne({ _id: cluster._id }, { $set: { badges: cluster.badges } });
+          } else if (webhook.trigger == WEBHOOK_TRIGGER_IMAGE) {
             res.status(201);
           } else {
-            res.status(404);
+            res.status(400).send('unknown trigger');
           }
         }
-        // add/update badge based on webhook_id to the resource
-        res.status(201);
       }
     } else {
       res.status(404).send('Web hook not found');
     }
-
   } catch (err) {
     req.log.error(err);
     next(err);

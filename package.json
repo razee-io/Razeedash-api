@@ -32,6 +32,7 @@
     "express-query-boolean": "^2.0.0",
     "express-request-id": "^1.4.1",
     "fs-readfile-promise": "^3.0.1",
+    "json-key-validate": "^1.0.2",
     "lodash": "^4.17.14",
     "mongodb": "^3.2.7",
     "mustache": "^3.0.1",

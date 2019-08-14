@@ -133,7 +133,24 @@ const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
   }
 };
 
+const insertClusterBadge = async (webhook, badge, req) => {
+  const Clusters = req.db.collection('clusters');
+  const cluster = await Clusters.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
+  if (cluster) {
+    cluster.badges = cluster.badges || [];
+    const foundIndex = cluster.badges.findIndex(x => x.webhook_id == badge.webhook_id);
+    if (foundIndex == -1) {
+      cluster.badges.push(badge);
+    } else {
+      cluster.badges[foundIndex] = badge;
+    }
+    await Clusters.updateOne({ _id: cluster._id }, { $set: { badges: cluster.badges } });
+  }
+  return cluster;
+};
+
 module.exports = {
+  insertClusterBadge,
   triggerWebhooksForCluster,
   triggerWebhooksForImage,
   WEBHOOK_TRIGGER_IMAGE,

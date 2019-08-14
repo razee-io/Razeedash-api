@@ -25,6 +25,8 @@ const { WEBHOOK_TRIGGER_IMAGE, WEBHOOK_TRIGGER_CLUSTER } = require('../../utils/
 let db = {};
 let webhook1 = {};
 let webhook2 = {};
+let webhook3 = {};
+let image1 = {};
 
 describe('webhooks', () => {
   beforeEach((done) => {
@@ -54,10 +56,25 @@ describe('webhooks', () => {
           service_url: 'https://integrationtest.elsewhere/run',
           deleted: true
         });
-        webhook2 = await Webhooks.findOne({ 'deleted': true });
+        webhook2 = await Webhooks.findOne({ 'deleted': true });    
+        await Webhooks.insertOne({
+          org_id: 1,
+          kind: 'Deployment',
+          trigger: WEBHOOK_TRIGGER_CLUSTER,
+          cluster_id: 'anotherclusterid',
+          service_url: 'https://integrationtest.mars/run',
+        });
+        webhook3 = await Webhooks.findOne({ 'cluster_id': 'anotherclusterid'}); // work around for mongo-mock to get _id
         await Clusters.insertOne({
           org_id: 1,
           cluster_id: 'myclusterid',
+          metadata: {
+            name: 'staging'
+          }
+        });        
+        await Clusters.insertOne({
+          org_id: 1,
+          cluster_id: 'anotherclusterid',
           metadata: {
             name: 'staging'
           }
@@ -150,6 +167,104 @@ describe('webhooks', () => {
 
       await addCallbackResult(request, response, next);
       assert.equal(response.statusCode, 404);
+      assert.equal(nextCalled, false);
+    });
+
+    it('webhook not found, return 404', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: 'somewebhook',
+        },
+        body: {
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 404);
+      assert.equal(nextCalled, false);
+    });
+    
+    it('webhook missing fields, 400', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: webhook1._id,
+        },
+        body: {
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 400);
+      assert.equal(nextCalled, false);
+    });
+
+    it('cluster badge success', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: webhook3._id,
+        },
+        body: {
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 201);
       assert.equal(nextCalled, false);
     });
   });
