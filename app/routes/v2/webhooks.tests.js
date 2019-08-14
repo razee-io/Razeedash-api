@@ -26,7 +26,11 @@ let db = {};
 let webhook1 = {};
 let webhook2 = {};
 let webhook3 = {};
-let image1 = {};
+const image1 = {
+  org_id: 1,
+  image: 'quay.io/othernamespace/razeedash-api:0.0.21',
+  image_id: 'sha256:e3d11b0e0d0ec5d7772d45c664f275b9778204b26bd2f5e0bf5543695234379d'
+};
 
 describe('webhooks', () => {
   beforeEach((done) => {
@@ -39,6 +43,7 @@ describe('webhooks', () => {
         const Clusters = db.collection('clusters');
         const Webhooks = db.collection('webhooks');
         const Images = db.collection('images');
+        await Images.insertOne(image1);
         await Webhooks.insertOne({
           org_id: 1,
           kind: 'image',
@@ -56,7 +61,7 @@ describe('webhooks', () => {
           service_url: 'https://integrationtest.elsewhere/run',
           deleted: true
         });
-        webhook2 = await Webhooks.findOne({ 'deleted': true });    
+        webhook2 = await Webhooks.findOne({ 'deleted': true });
         await Webhooks.insertOne({
           org_id: 1,
           kind: 'Deployment',
@@ -64,14 +69,14 @@ describe('webhooks', () => {
           cluster_id: 'anotherclusterid',
           service_url: 'https://integrationtest.mars/run',
         });
-        webhook3 = await Webhooks.findOne({ 'cluster_id': 'anotherclusterid'}); // work around for mongo-mock to get _id
+        webhook3 = await Webhooks.findOne({ 'cluster_id': 'anotherclusterid' }); // work around for mongo-mock to get _id
         await Clusters.insertOne({
           org_id: 1,
           cluster_id: 'myclusterid',
           metadata: {
             name: 'staging'
           }
-        });        
+        });
         await Clusters.insertOne({
           org_id: 1,
           cluster_id: 'anotherclusterid',
@@ -202,7 +207,7 @@ describe('webhooks', () => {
       assert.equal(response.statusCode, 404);
       assert.equal(nextCalled, false);
     });
-    
+
     it('webhook missing fields, 400', async () => {
       // Setup
       let addCallbackResult = v2.__get__('addCallbackResult');
@@ -252,6 +257,40 @@ describe('webhooks', () => {
           url: 'https://i.imgur.com/jR0LYTx.jpg',
           description: 'test passed',
           link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 201);
+      assert.equal(nextCalled, false);
+    });
+
+    it('image badge success', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: webhook1._id,
+        },
+        body: {
+          image_id: image1.image_id,
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'no issues',
+          link: 'http://myscannerservice',
           status: 'info'
         },
         db: db

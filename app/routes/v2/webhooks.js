@@ -21,7 +21,7 @@ const ebl = require('express-bunyan-logger');
 const jkValidate = require('json-key-validate');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge } = require('../../utils/webhook.js');
+const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge, insertImageBadge } = require('../../utils/webhook.js');
 
 router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 
@@ -49,13 +49,21 @@ const addCallbackResult = async (req, res, next) => {
             const cluster = await insertClusterBadge(webhook, badge, req);
             if (cluster) {
               res.status(201);
-            } else {
-              res.status(404);
+            } else { // should never happen
+              res.log.error({badge: badge, webhook: webhook}, 'cluster missing while processing badge ');
+              res.status(500);
             }
           } else if (webhook.trigger == WEBHOOK_TRIGGER_IMAGE) {
-            res.status(201);
-          } else {
-            res.status(400).send('unknown trigger');
+            const image = await insertImageBadge(webhook, badge, req);
+            if (image) {
+              res.status(201);
+            } else { // should never happen
+              res.log.error({badge: badge, webhook: webhook}, 'image missing while processing badge ');
+              res.status(500);
+            }
+          } else { // should never happen
+            res.log.error({badge: badge, webhook: webhook}, 'Unknown webhook trigger defined in database');
+            res.status(500).send('unknown trigger');
           }
         }
       }

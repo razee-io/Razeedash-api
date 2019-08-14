@@ -149,8 +149,26 @@ const insertClusterBadge = async (webhook, badge, req) => {
   return cluster;
 };
 
+
+const insertImageBadge = async (webhook, badge, req) => {
+  const Images = req.db.collection('images');
+  const image = await Images.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
+  if (image) {
+    image.badges = image.badges || [];
+    const foundIndex = image.badges.findIndex(x => x.webhook_id == badge.webhook_id);
+    if (foundIndex == -1) {
+      image.badges.push(badge);
+    } else {
+      image.badges[foundIndex] = badge;
+    }
+    await Images.updateOne({ image_id: badge.image_id }, { $set: { badges: image.badges } });
+  }
+  return image;
+};
+
 module.exports = {
   insertClusterBadge,
+  insertImageBadge,
   triggerWebhooksForCluster,
   triggerWebhooksForImage,
   WEBHOOK_TRIGGER_IMAGE,
