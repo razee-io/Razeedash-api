@@ -44,16 +44,17 @@ describe('webhooks', () => {
           field: 'name',
           filter: '(quay.io\\/mynamespace)',
           service_url: 'https://somewhere.else/check'
-        });        
-        webhook1 = await Webhooks.findOne({'kind':'image'}); // work around for mongo-mock to get _id
+        });
+        webhook1 = await Webhooks.findOne({ 'kind': 'image' }); // work around for mongo-mock to get _id
         await Webhooks.insertOne({
           org_id: 1,
           kind: 'Deployment',
           trigger: WEBHOOK_TRIGGER_CLUSTER,
           cluster_id: 'myclusterid',
-          service_url: 'https://integrationtest.elsewhere/run'
+          service_url: 'https://integrationtest.elsewhere/run',
+          deleted: true
         });
-        webhook2 = await Webhooks.findOne({'kind':'Deployment'});
+        webhook2 = await Webhooks.findOne({ 'deleted': true });
         await Clusters.insertOne({
           org_id: 1,
           cluster_id: 'myclusterid',
@@ -71,8 +72,7 @@ describe('webhooks', () => {
         });
         done();
       } catch (err) {
-        console.log('pants');
-        console.log(err);
+        log.error(err, 'SOMETHING IS WRONG WITH BeforeEach!');
         done();
       }
     });
@@ -93,8 +93,10 @@ describe('webhooks', () => {
           _id: 1
         },
         log: log,
+        params: {
+          webhook_id: webhook2._id,
+        },
         body: {
-          webhook_id: 'mywebhookid',
           url: 'https://i.imgur.com/jR0LYTx.jpg',
           description: 'test passed',
           link: 'http://myfakeservice',
@@ -116,6 +118,39 @@ describe('webhooks', () => {
 
       await addCallbackResult(request, response, next);
       assert.equal(nextCalled, true);
+    });
+
+    it('webhook deleted, return 404', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: webhook2._id,
+        },
+        body: {
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 404);
+      assert.equal(nextCalled, false);
     });
   });
 
@@ -277,9 +312,9 @@ describe('webhooks', () => {
 
       let deleteWebhook = v2.__get__('deleteWebhook');
       var request = httpMocks.createRequest({
-        method: 'DELETE', 
+        method: 'DELETE',
         params: {
-          webhook_id: webhook2._id
+          webhook_id: webhook1._id
         },
         url: '/',
         org: {
