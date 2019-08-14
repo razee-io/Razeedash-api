@@ -17,7 +17,7 @@ const nock = require('nock');
 const assert = require('assert');
 const mongodb = require('mongo-mock');
 const log = require('../log').log;
-const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, triggerWebhooksForCluster, triggerWebhooksForImage } = require('./webhook.js');
+const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge, insertImageBadge, triggerWebhooksForCluster, triggerWebhooksForImage } = require('./webhook.js');
 let req = {};
 
 describe('webhook', () => {
@@ -25,7 +25,6 @@ describe('webhook', () => {
     mongodb.max_delay = 0;
     var MongoClient = mongodb.MongoClient;
     MongoClient.connect('someconnstring', {}, (err, database) => {
-      log.info(err);
       req.db = database;
       done();
     });
@@ -187,10 +186,6 @@ describe('webhook', () => {
         service_url: `${fakeServiceURL}/runtest`
       });
       // Test
-      const webhooks = await Webhooks.find({
-        trigger: WEBHOOK_TRIGGER_CLUSTER
-      }).toArray();
-      req.log.info(webhooks, 'webhooks');
       const result = await triggerWebhooksForCluster(clusterId, resourceObj, req);
       assert.equal(result, true);
       assert.equal(nockCalled, true);
@@ -249,13 +244,178 @@ describe('webhook', () => {
       };
 
       // Test
-      const webhooks = await Webhooks.find({
-        trigger: WEBHOOK_TRIGGER_CLUSTER
-      }).toArray();
-      req.log.info(webhooks, 'webhooks');
       const result = await triggerWebhooksForCluster(clusterId, resourceObj, req);
       assert.equal(result, false);
       assert.equal(nockCalled, false);
+    });
+  });
+
+  describe('insert badges', () => {
+    it('insertClusterBadge - no existing badges', async () => {
+      // Setup
+      const clusterId = 'addbadge';
+      const Clusters = req.db.collection('clusters');
+      await Clusters.insert({
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        metadata: {
+          name: 'staging'
+        }
+      });
+      const badge = {
+        webhook_id: 5,
+        url: 'https://i.imgur.com/jR0LYTx.jpg',
+        description: 'test passed',
+        link: 'http://myfakeservice',
+        status: 'info'
+      };
+      let webhook = {
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        trigger: WEBHOOK_TRIGGER_CLUSTER,
+        kind: 'Deployment',
+        service_url: 'https://fake.call'
+      };
+      // Test
+      const result = await insertClusterBadge(webhook, badge, req);
+      assert.equal(typeof result.badges, 'object');
+      assert.equal(result.badges.length, 1);
+      assert.equal(result.badges[0].description, 'test passed');
+    });
+
+    it('insertClusterBadge - replace existing badge', async () => {
+      // Setup
+      const clusterId = 'addexistingbadge';
+      const test_webhook_id = 10;
+      const Clusters = req.db.collection('clusters');
+      await Clusters.insert({
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        metadata: {
+          name: 'staging'
+        },
+        badges: [{
+          webhook_id: test_webhook_id,
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        }, {
+          webhook_id: 'anotheridxyc',
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        }]
+      });
+      const badge = {
+        webhook_id: test_webhook_id,
+        url: 'https://i.imgur.com/jR0LYTx.jpg',
+        description: 'test failed',
+        link: 'http://myfakeservice',
+        status: 'error'
+      };
+      let webhook = {
+        org_id: req.org._id,
+        cluster_id: clusterId,
+        trigger: WEBHOOK_TRIGGER_CLUSTER,
+        kind: 'Deployment',
+        service_url: 'https://fake.call'
+      };
+      // Test
+      const result = await insertClusterBadge(webhook, badge, req);
+      req.log.info(result);
+      assert.equal(typeof result.badges, 'object');
+      assert.equal(result.badges.length, 2);
+      const testBadge = (badge) => {
+        if (badge.webhook_id == test_webhook_id) {
+          assert.equal(badge.status, 'error');
+          assert.equal(badge.description, 'test failed');
+        } else {
+          assert.equal(badge.status, 'info');
+          assert.equal(badge.description, 'test passed');
+        }
+      };
+      testBadge(result.badges[0]);
+      testBadge(result.badges[1]);
+    });
+
+
+    it('insertImageBadge - no existing badges', async () => {
+      // Setup
+      const image_id = 'insertbadge';
+      const Images = req.db.collection('images');
+      await Images.insert({
+        org_id: req.org._id,
+        image_id: image_id,
+        metadata: {
+          name: 'staging'
+        }
+      });
+      const badge = {
+        webhook_id: 5,
+        image_id: image_id,
+        url: 'https://i.imgur.com/jR0LYTx.jpg',
+        description: 'test passed',
+        link: 'http://myfakeservice',
+        status: 'info'
+      };
+      // Test
+      const result = await insertImageBadge(badge, req);
+      assert.equal(typeof result.badges, 'object');
+      assert.equal(result.badges.length, 1);
+      assert.equal(result.badges[0].description, 'test passed');
+    });
+
+    it('insertImageBadge - replace existing badge', async () => {
+      // Setup
+      const image_id = 'addexistingimagebadge';
+      const test_webhook_id = 20;
+      const Images = req.db.collection('images');
+      await Images.insert({
+        org_id: req.org._id,
+        image_id: image_id,
+        metadata: {
+          name: 'staging'
+        },
+        badges: [{
+          webhook_id: test_webhook_id,
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        }, {
+          webhook_id: 'someotherid',
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        }]
+      });
+      const badge = {
+        webhook_id: 20,
+        image_id: image_id,
+        url: 'https://i.imgur.com/jR0LYTx.jpg',
+        description: 'test failed',
+        link: 'http://myfakeservice',
+        status: 'error'
+      };
+      // Test
+      const result = await insertImageBadge(badge, req);
+      req.log.info(result);
+      assert.equal(typeof result.badges, 'object');
+      assert.equal(result.badges.length, 2);
+      const testBadge = (badge) => {
+        if (badge.webhook_id == test_webhook_id) {
+          assert.equal(badge.status, 'error');
+          assert.equal(badge.description, 'test failed');
+        } else {
+          assert.equal(badge.status, 'info');
+          assert.equal(badge.description, 'test passed');
+        }
+      };
+      testBadge(result.badges[0]);
+      testBadge(result.badges[1]);
     });
   });
 });

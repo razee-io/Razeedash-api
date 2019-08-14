@@ -54,19 +54,19 @@ const addCallbackResult = async (req, res, next) => {
             if (cluster) {
               res.status(201);
             } else { // should never happen
-              res.log.error({badge: badge, webhook: webhook}, 'cluster missing while processing badge ');
+              res.log.error({ badge: badge, webhook: webhook }, 'cluster missing while processing badge ');
               res.status(500);
             }
           } else if (webhook.trigger == WEBHOOK_TRIGGER_IMAGE) {
-            const image = await insertImageBadge(webhook, badge, req);
+            const image = await insertImageBadge(badge, req);
             if (image) {
               res.status(201);
             } else { // should never happen
-              res.log.error({badge: badge, webhook: webhook}, 'image missing while processing badge ');
+              res.log.error({ badge: badge, webhook: webhook }, 'image missing while processing badge ');
               res.status(500);
             }
           } else { // should never happen
-            res.log.error({badge: badge, webhook: webhook}, 'Unknown webhook trigger defined in database');
+            res.log.error({ badge: badge, webhook: webhook }, 'Unknown webhook trigger defined in database');
             res.status(500).send('unknown trigger');
           }
         }

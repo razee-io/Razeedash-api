@@ -35,7 +35,7 @@ const fireWebhook = async (webhook, postData, req) => {
     body: postData,
     json: true
   };
-  req.log.info(options, 'fireWebhook');
+  req.log.debug(options, 'fireWebhook');
 
   try {
     req.log.debug({ org_id: req.org._id, options: options }, 'POSTing webhook');
@@ -66,7 +66,7 @@ const fireWebhook = async (webhook, postData, req) => {
 
 // processWebhooks - private method for filtering and executing web hooks
 const processWebhooks = async (webhooks, postData, resourceObj, req) => {
-  req.log.info(webhooks, 'postWebHooks');
+  req.log.debug(webhooks, 'processWebhooks');
   var success = true;
   await Promise.all(webhooks.map(async (webhook) => {
     // Test if optional filter
@@ -139,6 +139,7 @@ const insertClusterBadge = async (webhook, badge, req) => {
   if (cluster) {
     cluster.badges = cluster.badges || [];
     const foundIndex = cluster.badges.findIndex(x => x.webhook_id == badge.webhook_id);
+    req.log.info(foundIndex,'foundIndex');
     if (foundIndex == -1) {
       cluster.badges.push(badge);
     } else {
@@ -150,9 +151,9 @@ const insertClusterBadge = async (webhook, badge, req) => {
 };
 
 
-const insertImageBadge = async (webhook, badge, req) => {
+const insertImageBadge = async (badge, req) => {
   const Images = req.db.collection('images');
-  const image = await Images.findOne({ cluster_id: webhook.cluster_id, org_id: req.org._id });
+  const image = await Images.findOne({ image_id: badge.image_id, org_id: req.org._id });
   if (image) {
     image.badges = image.badges || [];
     const foundIndex = image.badges.findIndex(x => x.webhook_id == badge.webhook_id);
