@@ -240,6 +240,38 @@ describe('webhooks', () => {
       assert.equal(nextCalled, false);
     });
 
+    it('webhook missing image_id field, 400', async () => {
+      // Setup
+      let addCallbackResult = v2.__get__('addCallbackResult');
+      var request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
+        org: {
+          _id: 1
+        },
+        log: log,
+        params: {
+          webhook_id: webhook1._id,
+        },
+        body: {
+          url: 'https://i.imgur.com/jR0LYTx.jpg',
+          description: 'test passed',
+          link: 'http://myfakeservice',
+          status: 'info'
+        },
+        db: db
+      });
+      var response = httpMocks.createResponse();
+      // Test
+      let nextCalled = false;
+      let next = () => {
+        nextCalled = true;
+      };
+
+      await addCallbackResult(request, response, next);
+      assert.equal(response.statusCode, 400);
+      assert.equal(nextCalled, false);
+    });
     it('cluster badge success', async () => {
       // Setup
       let addCallbackResult = v2.__get__('addCallbackResult');

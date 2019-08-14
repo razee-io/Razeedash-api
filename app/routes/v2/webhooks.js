@@ -39,7 +39,11 @@ const addCallbackResult = async (req, res, next) => {
         let badge = req.body;
         badge.webhook_id = req.params.webhook_id;
         let properties = ['webhook_id', 'url', 'description', 'link', 'status'];
-        const isValid = jkValidate(badge, properties);
+        let isValid = jkValidate(badge, properties);
+        if ((webhook.trigger == WEBHOOK_TRIGGER_IMAGE) && (!badge.image_id)) {
+          properties.push('image_id');
+          isValid = false;
+        }
         if (!isValid) {
           res.status(400).send(`Missing properties, make sure the following fields are defined: ${JSON.stringify(properties)}`);
         } else {
