@@ -27,6 +27,7 @@ const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const triggerWebhooksForImage = require('../../utils/webhook.js').triggerWebhooksForImage;
+const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -86,7 +87,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'SYNC': {
           const list = resource.object;
           await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list } },
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list }, deleted: {$ne: true} },
             { $set: { deleted: true }, $currentDate: { updated: true } }
           );
           break;
@@ -94,7 +95,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'POLLED':
         case 'MODIFIED':
         case 'ADDED': {
-          const resourceHash = objectHash(resource.object);
+          const resourceHash = buildHashForResource(resource.object, req.org);
           let dataStr = JSON.stringify(resource.object);
           const selfLink = resource.object.metadata.selfLink;
           const key = {

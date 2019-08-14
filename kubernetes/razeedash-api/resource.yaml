@@ -2,7 +2,6 @@ apiVersion: v1
 kind: List
 metadata:
   name: razeedash-api
-  namespace: razee
   annotations:
     version: "{{TRAVIS_COMMIT}}"
 type: array
@@ -15,7 +14,6 @@ items:
         razee.io/git-repo: "{{{GIT_REMOTE}}}"
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
       name: razeedash-api
-      namespace: razee
     spec:
       replicas: 1
       revisionHistoryLimit: 0
