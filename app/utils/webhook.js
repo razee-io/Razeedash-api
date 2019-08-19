@@ -79,9 +79,7 @@ const processWebhooks = async (webhooks, postData, resourceObj, req) => {
     }
     if (match) {
       postData.webhook_id = webhook._id;
-      if (!await fireWebhook(webhook, postData, req)) {
-        success = false;
-      }
+      success = await fireWebhook(webhook, postData, req);
     }
   }));
   return success;
@@ -100,7 +98,7 @@ const triggerWebhooksForImage = async (image_id, name, req) => {
       image_id: image_id,
       callback_url: callbackURL
     };
-    return processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
+    return await processWebhooks(webhooks, postData, { name: name, image_id: image_id }, req);
   } catch (err) {
     req.log.error(err);
     return false;
@@ -126,7 +124,7 @@ const triggerWebhooksForCluster = async (clusterId, resourceObj, req) => {
       resource: resourceObj,
       callback_url: callbackURL
     };
-    return processWebhooks(webhooks, postData, resourceObj, req);
+    return await processWebhooks(webhooks, postData, resourceObj, req);
   } catch (err) {
     req.log.error(err);
     return false;
