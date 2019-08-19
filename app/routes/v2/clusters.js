@@ -149,7 +149,7 @@ const updateClusterResources = async (req, res, next) => {
                 ...pushCmd
               },
               { upsert: true }
-            );     
+            );
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
           }
           break;

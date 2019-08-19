@@ -39,11 +39,10 @@ const addCallbackResult = async (req, res, next) => {
         let badge = req.body;
         badge.webhook_id = req.params.webhook_id;
         let properties = ['webhook_id', 'url', 'description', 'link', 'status'];
-        let isValid = jkValidate(badge, properties);
-        if ((webhook.trigger == WEBHOOK_TRIGGER_IMAGE) && (!badge.image_id)) {
+        if (webhook.trigger == WEBHOOK_TRIGGER_IMAGE) {
           properties.push('image_id');
-          isValid = false;
         }
+        let isValid = jkValidate(badge, properties);
         if (!isValid) {
           res.status(400).send(`Missing properties, make sure the following fields are defined: ${JSON.stringify(properties)}`);
         } else {
@@ -83,6 +82,7 @@ const addCallbackResult = async (req, res, next) => {
 const addWebhook = async (req, res, next) => {
   try {
     let webhook = req.body;
+    webhook.org_id = req.org._id;
     const Webhooks = req.db.collection('webhooks');
     if (webhook.trigger == WEBHOOK_TRIGGER_CLUSTER) {
       const Clusters = req.db.collection('clusters');
