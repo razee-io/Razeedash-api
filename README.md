@@ -222,7 +222,7 @@ Components are:
 
 ### Web hook definition
 
-`POST /v2/webhook/` will create a web hook and the header should contain the `razee-org-key`
+`POST /v2/webhook/` will create a web hook and the header must contain the `razee-org-key`
 
 JSON body for web hook triggered by cluster change:
 
@@ -232,7 +232,7 @@ JSON body for web hook triggered by cluster change:
           "trigger": "cluster",
           "kind": "Deployment",
           "field": "searchableData.name",
-          "filter": "regex string example, `(watch-keeper)`",
+          "filter": "regex string example to match, `(watch-keeper)`",
           "service_url": "URL of service to POST upon triggering"
 }
 ```
@@ -383,7 +383,7 @@ hours.  In the meantime it calls the callback with badge data:
 
 Razeedash API checks to see if the image is still in use and returns a 201
 
-24 hours late a minor vulnerabilities is discovered and the service calls the
+24 hours later a minor vulnerabilities is discovered and the service calls the
 callback again with badge data:
 
 - badge: URL image of yellow circle

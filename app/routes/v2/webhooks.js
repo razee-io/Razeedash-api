@@ -129,5 +129,4 @@ router.post('/', asyncHandler(addWebhook));
 // DELETE /api/v2/webhooks/:id
 router.delete('/:webhook_id', asyncHandler(deleteWebhook));
 
-
 module.exports = router;
