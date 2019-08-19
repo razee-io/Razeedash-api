@@ -259,7 +259,7 @@ any new image is deployed on an organization's clusters
 - trigger: cluster, image
 - id: ID of the resource used in trigger OR
 - field: field dot-notation into JSON to apply a filter
-- filter: regex parameter to filter if the trigger should fire or not if field
+- filter: regex parameter to match if the trigger should fire or not if field
   is defined
 - service URL:  URL to call if the web hook is triggered
 
