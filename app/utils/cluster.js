@@ -92,6 +92,8 @@ const buildSearchableDataForResource = (org, obj) => {
     { name: 'namespace', attrPath: 'metadata.namespace', },
     { name: 'apiVersion', attrPath: 'apiVersion', },
     { name: 'annotations', attrPath: 'metadata.annotations', },
+    { name: 'imageID', attrPath: 'status.containerStatuses[0].imageID', },
+    { name: 'image', attrPath: 'status.containerStatuses[0].image', }
   ];
 
   // adds this org's custom attrs
@@ -115,7 +117,9 @@ const buildSearchableDataForResource = (org, obj) => {
       if (_.isObject(valToSave) || _.isArray(valToSave)) {
         valToSave = cleanObjKeysForMongo(valToSave);
       }
-      out[saveAsName] = valToSave;
+      if (valToSave) {
+        out[saveAsName] = valToSave;
+      }
     }
   });
   return out;

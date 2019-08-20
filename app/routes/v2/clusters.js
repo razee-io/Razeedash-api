@@ -26,6 +26,7 @@ const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
+const triggerWebhooksForImage = require('../../utils/webhook.js').triggerWebhooksForImage;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 
 const addUpdateCluster = async (req, res, next) => {
@@ -76,6 +77,7 @@ const updateClusterResources = async (req, res, next) => {
       resources = [body];
     }
 
+    const Images = req.db.collection('images');
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
@@ -106,6 +108,16 @@ const updateClusterResources = async (req, res, next) => {
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
             dataStr = await pushToS3(req, key, dataStr);
+          }
+          if (searchableDataObj.imageID) { // Save off organization's image list
+            const result = await Images.updateOne(
+              { org_id: req.org_id, imageID: searchableDataObj.imageID, image: searchableDataObj.image },
+              { $currentDate: { updated: true } },
+              { upsert: true });
+            if (result.upsertedCount) {  // New image
+              // call image webhooks
+              triggerWebhooksForImage(searchableDataObj.imageID, searchableDataObj.image, req);
+            }
           }
           if (currentResource) {
             if (resourceHash === currentResource.hash) {
