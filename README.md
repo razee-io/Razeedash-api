@@ -209,7 +209,7 @@ kc_logs.sh razee razeedash-api 1m
 ## Swagger API
 
 Swagger UI is available and if started locally can be accessed via the following
-URL:  http://localhost:3333/api-docs/
+URL:  [http://localhost:3333/api-docs/](http://localhost:3333/api-docs/)
 
 ## Web hooks
 
