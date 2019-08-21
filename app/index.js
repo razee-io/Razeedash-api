@@ -21,12 +21,15 @@ const compression = require('compression');
 const body_parser = require('body-parser');
 const ebl = require('express-bunyan-logger');
 const addRequestId = require('express-request-id')();
-
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').log;
 const getBunyanConfig = require('./utils/bunyan.js').getBunyanConfig;
-
 const port = 3333;
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+ 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
 
