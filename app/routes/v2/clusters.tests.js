@@ -732,7 +732,7 @@ describe('clusters', () => {
       await addClusterMessages(request, response, next);
 
       assert.equal(response.statusCode, 400);
-      assert.equal(response._getData(), 'Missing resource body');
+      assert.equal(response._getData(), 'Missing message body');
     });
 
     it('should call next if malformed body', async () => {
