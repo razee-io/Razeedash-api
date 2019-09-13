@@ -75,44 +75,62 @@ router.use('/api/v2/clusters', Clusters);
 async function initialize(){
   const options = {
     'collection-indexes': {
-      deployments: [{ keys:{org_id:1},
-        options:{
-          name: 'org_id',
-        }},
-      { keys:{org_id:1, 'containers.image':1},
-        options:{
-          name: 'org_id.containers.image',
-        }}],
-      orgs: [{ keys:{orgKeys:1},
-        options:{
-          name: 'orgKeys',
-        }}],
-      clusters: [{ keys:{org_id:1},
-        options:{
-          name: 'org_id',
-        }},
-      {keys:{org_id:1, cluster_id:1},
-        options:{name: 'org_id.cluster_id'}}],
-      resourceStats:[{keys: {org_id:1},
-        options:{
-          name: 'org_id',
-        }}],
-      resources: [{ keys:{org_id:1},
-        options:{
-          name: 'org_id',
-        }},
-      {keys: {org_id:1, cluster_id:1, selfLink:1},
-        options:{
-          name: 'org_id.cluster_id.selfLink',
-        }}],
-      messages:[{keys: {org_id:1, cluster_id:1},
-        options:{
-          name: 'org_id.cluster_id',
-        }},
-      {keys: {org_id:1, cluster_id:1,level:1,message_hash:1},
-        options:{
-          name: 'org_id.cluster_id.level.message_hash',
-        }}]
+      deployments: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+        { 
+          keys: { org_id: 1, 'containers.image': 1 },
+          options: { name: 'org_id.containers.image', }
+        }
+      ],
+      orgs: [
+        { 
+          keys: { orgKeys: 1 },
+          options: { name: 'orgKeys', }
+        }
+      ],
+      clusters: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+        {
+          keys: { org_id: 1, cluster_id: 1 },
+          options: { name: 'org_id.cluster_id'}
+        }
+      ],
+      resourceStats:[
+        {
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        }
+      ],
+      resources: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+        { 
+          keys: { org_id: 1, cluster_id: 1, selfLink: 1 },
+          options: { name: 'org_id.cluster_id.selfLink', }
+        },
+        {
+          keys: { cluster_id: 1, },
+          options: { name: 'cluster_id', }
+        }
+      ],
+      messages:[ 
+        {
+          keys: { org_id: 1, cluster_id: 1 },
+          options: { name: 'org_id.cluster_id', }
+        },
+        {
+          keys: { org_id: 1, cluster_id: 1, level: 1, message_hash: 1 },
+          options: { name: 'org_id.cluster_id.level.message_hash', }
+        }
+      ]
     },
     views: [{
       name: 'clusterStatsView',
