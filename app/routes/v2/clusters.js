@@ -15,6 +15,7 @@
 */
 
 const crypto = require('crypto');
+const uuid = require('uuid');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -65,6 +66,7 @@ const pushToS3 = async (req, key, dataStr) => {
 
 const updateClusterResources = async (req, res, next) => {
   try {
+    var clusterId = req.params.cluster_id;
     const body = req.body;
     if (!body) {
       res.status(400).send('Missing resource body');
@@ -126,6 +128,7 @@ const updateClusterResources = async (req, res, next) => {
                   ...pushCmd
                 }
               );
+              await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
             }
           }
           else {
@@ -138,6 +141,7 @@ const updateClusterResources = async (req, res, next) => {
               },
               { upsert: true }
             );
+            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
           }
           break;
@@ -164,6 +168,7 @@ const updateClusterResources = async (req, res, next) => {
                 ...pushCmd
               }
             );
+            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
           }
           break;
         }
@@ -177,6 +182,21 @@ const updateClusterResources = async (req, res, next) => {
     req.log.error(err.message);
     next(err);
   }
+};
+
+var addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
+  var ResourceYamlHist = req.db.collection('resourceYamlHist');
+  var id = uuid();
+  var obj = {
+    _id: id,
+    org_id: orgId,
+    cluster_id: clusterId,
+    resourceSelfLink,
+    yamlStr,
+    updated: new Date(),
+  };
+  await ResourceYamlHist.insertOne(obj);
+  return id;
 };
 
 const addClusterMessages = async (req, res, next) => {
