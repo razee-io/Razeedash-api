@@ -5,7 +5,7 @@ metadata:
 ---
 {{{REMOTE_RESOURCE}}}
 ---
-{{{KAPITAN}}}
+{{{RAZEEDEPLOY}}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -24,7 +24,7 @@ metadata:
 data:
   RAZEEDASH_ORG_KEY: "{{{RAZEEDASH_ORG_KEY}}}"
 ---
-apiVersion: "kapitan.razee.io/v1alpha1"
+apiVersion: "deploy.razee.io/v1alpha1"
 kind: RemoteResource
 metadata:
   name: watch-keeper-rr
