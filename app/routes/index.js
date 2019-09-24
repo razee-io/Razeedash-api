@@ -75,6 +75,12 @@ router.use('/api/v2/clusters', Clusters);
 async function initialize(){
   const options = {
     'collection-indexes': {
+      externalApplications: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+      ],
       deployments: [
         { 
           keys: { org_id: 1 },
