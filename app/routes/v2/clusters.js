@@ -129,7 +129,7 @@ const updateClusterResources = async (req, res, next) => {
                 $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash, },
                 $currentDate: { updated: true },
                 ...pushCmd
-              }
+              };
             }
           }
           else{
@@ -146,7 +146,6 @@ const updateClusterResources = async (req, res, next) => {
           await Resources.updateOne(key, changes, options);
 
           if(hasSearchableDataChanges){
-            console.log('hasSearchableDataChanges', _.get(currentResource, 'searchableDataHash', 'na'), searchableDataHash)
             // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
             await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
           }
