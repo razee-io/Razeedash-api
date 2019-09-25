@@ -26,6 +26,7 @@ const _ = require('lodash');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
+const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 
@@ -105,44 +106,49 @@ const updateClusterResources = async (req, res, next) => {
           };
           const currentResource = await Resources.findOne(key);
           const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
+          const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
             dataStr = await pushToS3(req, key, dataStr);
           }
-          if (currentResource) {
-            if (resourceHash === currentResource.hash) {
-              await Resources.updateOne(
-                key,
-                {
-                  $set: { deleted: false },
-                  $currentDate: { updated: true }
-                }
-              );
+          var changes = null;
+          var options = {};
+          if(currentResource){
+            // if obj already in db
+            if (resourceHash === currentResource.hash && !hasSearchableDataChanges){
+              // if obj in db and nothing has changed
+              changes = {
+                $set: { deleted: false },
+                $currentDate: { updated: true }
+              };
             }
-            else {
-              await Resources.updateOne(
-                key,
-                {
-                  $set: { deleted: false, data: dataStr, searchableData: searchableDataObj, hash: resourceHash, },
-                  $currentDate: { updated: true },
-                  ...pushCmd
-                }
-              );
-              await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+            else{
+              // if obj in db and theres changes to save
+              changes = {
+                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash, },
+                $currentDate: { updated: true },
+                ...pushCmd
+              }
             }
           }
-          else {
-            await Resources.updateOne(
-              key,
-              {
-                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj },
-                $currentDate: { created: true, updated: true },
-                ...pushCmd
-              },
-              { upsert: true }
-            );
-            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+          else{
+            // if obj not in db, then adds it
+            changes = {
+              $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+              $currentDate: { created: true, updated: true },
+              ...pushCmd
+            };
+            options = { upsert: true };
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
+          }
+
+          await Resources.updateOne(key, changes, options);
+
+          if(hasSearchableDataChanges){
+            console.log('hasSearchableDataChanges', _.get(currentResource, 'searchableDataHash', 'na'), searchableDataHash)
+            // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
+            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
           }
           break;
         }
@@ -155,6 +161,7 @@ const updateClusterResources = async (req, res, next) => {
             selfLink: selfLink
           };
           const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3) {
@@ -163,7 +170,7 @@ const updateClusterResources = async (req, res, next) => {
           if (currentResource) {
             await Resources.updateOne(
               key, {
-                $set: { deleted: true, data: dataStr, searchableData: searchableDataObj },
+                $set: { deleted: true, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
                 $currentDate: { updated: true },
                 ...pushCmd
               }

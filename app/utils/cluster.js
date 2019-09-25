@@ -161,10 +161,15 @@ var buildHashForResource = (resourceObj, org)=>{
   return objectHash(dataToHash);
 };
 
+var buildSearchableDataObjHash = (searchableDataObj)=>{
+  return objectHash(searchableDataObj);
+};
+
 module.exports = {
   buildPushObj,
   cleanObjKeysForMongo,
   buildSearchableDataForResource,
+  buildSearchableDataObjHash,
   getCluster,
   buildHashForResource,
 };
