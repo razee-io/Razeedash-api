@@ -22,6 +22,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
+const moment = require('moment');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
@@ -65,6 +66,24 @@ const pushToS3 = async (req, key, dataStr) => {
   return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
 };
 
+var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
+  const Resources = req.db.collection('resources');
+  if(selfLinks.length < 1){
+    return;
+  }
+  if(!orgId || !clusterId){
+    throw `missing orgId or clusterId: ${JSON.stringify({orgId, clusterId})}`;
+  }
+  var search = {
+    org_id: orgId,
+    cluster_id: clusterId,
+    selfLink: {
+      $in: selfLinks,
+    }
+  };
+  await Resources.deleteMany(search);
+};
+
 const updateClusterResources = async (req, res, next) => {
   try {
     var clusterId = req.params.cluster_id;
@@ -86,11 +105,26 @@ const updateClusterResources = async (req, res, next) => {
       const type = resource['type'] || 'other';
       switch (type.toUpperCase()) {
         case 'SYNC': {
-          const list = resource.object;
-          await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list }, deleted: {$ne: true} },
-            { $set: { deleted: true }, $currentDate: { updated: true } }
+          // marks >1hr old items as deleted:true
+          var result = await Resources.updateMany(
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
+            { $set: { deleted: true }, $currentDate: { updated: true } },
           );
+          req.log.debug({ org_id: req.org._id, cluster_id: req.params.cluster_id }, `${result.modifiedCount} resources marked as deleted:true`);
+
+          // deletes items >1day old
+          var objsToDelete = await Resources.find(
+            { org_id: req.org._id, cluster_id: req.params.cluster_id, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
+            { projection: { _id:1, selfLink: 1, updated: 1, } }
+          ).toArray();
+
+          if(objsToDelete.length > 0){
+            // if we have items that were marked as deleted and havent updated in >=1day, then deletes them
+            var selfLinksToDelete = _.map(objsToDelete, 'selfLink');
+            req.log.info({ org_id: req.org._id, cluster_id: req.params.cluster_id, resourceObjs: objsToDelete }, `deleting ${selfLinksToDelete.length} resource objs`);
+            await deleteOrgClusterResourceSelfLinks(req, req.org._id, req.params.cluster_id, selfLinksToDelete);
+          }
+
           break;
         }
         case 'POLLED':
