@@ -85,22 +85,22 @@ var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=
   await Resources.deleteMany(search);
 };
 
-const syncClusterResources = async(req, res, next)=>{
+const syncClusterResources = async(req, res)=>{
   const orgId = req.org._id;
   const clusterId = req.params.cluster_id;
   const Resources = req.db.collection('resources');
   const Stats = req.db.collection('resourceStats');
 
   var result = await Resources.updateMany(
-      { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
-      { $set: { deleted: true }, $currentDate: { updated: true } },
+    { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
+    { $set: { deleted: true }, $currentDate: { updated: true } },
   );
   req.log.debug({ org_id: orgId, cluster_id: clusterId }, `${result.modifiedCount} resources marked as deleted:true`);
 
   // deletes items >1day old
   var objsToDelete = await Resources.find(
-      { org_id: orgId, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
-      { projection: { _id:1, selfLink: 1, updated: 1, } }
+    { org_id: orgId, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
+    { projection: { _id:1, selfLink: 1, updated: 1, } }
   ).toArray();
 
   if(objsToDelete.length > 0){
