@@ -100,7 +100,7 @@ const syncClusterResources = async(req, res)=>{
   // deletes items >1day old
   var objsToDelete = await Resources.find(
     { org_id: orgId, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
-    { projection: { _id:1, selfLink: 1, updated: 1, } }
+    { projection: { selfLink: 1, updated: 1, } }
   ).toArray();
 
   if(objsToDelete.length > 0){
