@@ -22,6 +22,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
+const moment = require('moment');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
@@ -65,6 +66,55 @@ const pushToS3 = async (req, key, dataStr) => {
   return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
 };
 
+var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
+  const Resources = req.db.collection('resources');
+  selfLinks = _.filter(selfLinks); // in such a case that a null is passed to us. if you do $in:[null], it returns all items missing the attr, which is not what we want
+  if(selfLinks.length < 1){
+    return;
+  }
+  if(!orgId || !clusterId){
+    throw `missing orgId or clusterId: ${JSON.stringify({ orgId, clusterId })}`;
+  }
+  var search = {
+    org_id: orgId,
+    cluster_id: clusterId,
+    selfLink: {
+      $in: selfLinks,
+    }
+  };
+  await Resources.deleteMany(search);
+};
+
+const syncClusterResources = async(req, res)=>{
+  const orgId = req.org._id;
+  const clusterId = req.params.cluster_id;
+  const Resources = req.db.collection('resources');
+  const Stats = req.db.collection('resourceStats');
+
+  var result = await Resources.updateMany(
+    { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
+    { $set: { deleted: true }, $currentDate: { updated: true } },
+  );
+  req.log.debug({ org_id: orgId, cluster_id: clusterId }, `${result.modifiedCount} resources marked as deleted:true`);
+
+  // deletes items >1day old
+  var objsToDelete = await Resources.find(
+    { org_id: orgId, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
+    { projection: { selfLink: 1, updated: 1, } }
+  ).toArray();
+
+  if(objsToDelete.length > 0){
+    // if we have items that were marked as deleted and havent updated in >=1day, then deletes them
+    var selfLinksToDelete = _.map(objsToDelete, 'selfLink');
+    req.log.info({ org_id: orgId, cluster_id: clusterId, resourceObjs: objsToDelete }, `deleting ${selfLinksToDelete.length} resource objs`);
+    await deleteOrgClusterResourceSelfLinks(req, orgId, clusterId, selfLinksToDelete);
+
+    Stats.updateOne({ org_id: orgId }, { $inc: { deploymentCount: -1 * objsToDelete.length } });
+  }
+
+  res.status(200).send('Thanks');
+};
+
 const updateClusterResources = async (req, res, next) => {
   try {
     var clusterId = req.params.cluster_id;
@@ -85,14 +135,6 @@ const updateClusterResources = async (req, res, next) => {
     for (let resource of resources) {
       const type = resource['type'] || 'other';
       switch (type.toUpperCase()) {
-        case 'SYNC': {
-          const list = resource.object;
-          await Resources.updateMany(
-            { org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: { $nin: list }, deleted: {$ne: true} },
-            { $set: { deleted: true }, $currentDate: { updated: true } }
-          );
-          break;
-        }
         case 'POLLED':
         case 'MODIFIED':
         case 'ADDED': {
@@ -258,6 +300,9 @@ router.post('/:cluster_id', asyncHandler(addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
 router.post('/:cluster_id/resources', asyncHandler(getCluster), asyncHandler(updateClusterResources));
+
+// /api/v2/clusters/:cluster_id/resources/sync
+router.post('/:cluster_id/resources/sync', asyncHandler(getCluster), asyncHandler(syncClusterResources));
 
 // /api/v2/clusters/:cluster_id/messages
 router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addClusterMessages));
