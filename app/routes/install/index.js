@@ -46,20 +46,45 @@ router.get('/inventory', asyncHandler(async(req, res, next) => {
   }
 }));
 
+// Delete once we fully sunset the kapitan name
 router.get('/kapitan', asyncHandler(async (req, res, next) => {
   const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
   const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
-  const kptn_url = 'https://github.com/razee-io/kapitan-delta/releases/latest/download/resource.yaml';
+  const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
   try {
-    const inventory = await readFile(`${__dirname}/kapitan.yaml`, 'utf8');
+    const inventory = await readFile(`${__dirname}/razeedeploy.yaml`, 'utf8');
     const wk = await request.get(wk_url);
     const kptn = await request.get(kptn_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
       RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
       WATCH_KEEPER: wk,
-      KAPITAN: kptn
+      RAZEEDEPLOY: kptn
+    };
+    const configYaml = Mustache.render(inventory, view);
+    res.setHeader('content-type', 'application/yaml');
+    return res.status(200).send(configYaml);
+  } catch (e) {
+    req.log.error(e);
+    next(e);
+  }
+}));
+
+router.get('/razeedeploy', asyncHandler(async (req, res, next) => {
+  const orgKey = req.orgKey;
+  var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
+  const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
+  const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
+  try {
+    const inventory = await readFile(`${__dirname}/razeedeploy.yaml`, 'utf8');
+    const wk = await request.get(wk_url);
+    const kptn = await request.get(kptn_url);
+    const view = {
+      RAZEEDASH_URL: razeeapiUrl,
+      RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
+      WATCH_KEEPER: wk,
+      RAZEEDEPLOY: kptn
     };
     const configYaml = Mustache.render(inventory, view);
     res.setHeader('content-type', 'application/yaml');
@@ -73,7 +98,7 @@ router.get('/kapitan', asyncHandler(async (req, res, next) => {
 router.get('/cluster', asyncHandler(async (req, res, next) => {
   const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
-  const kptn_url = 'https://github.com/razee-io/kapitan-delta/releases/latest/download/resource.yaml';
+  const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
   const remoteResource_url = 'https://github.com/razee-io/RemoteResource/releases/latest/download/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/cluster.yaml`, 'utf8');
@@ -83,7 +108,7 @@ router.get('/cluster', asyncHandler(async (req, res, next) => {
       RAZEEDASH_URL: razeeapiUrl,
       RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
       REMOTE_RESOURCE: rr,
-      KAPITAN: kptn
+      RAZEEDEPLOY: kptn
     };
     const configYaml = Mustache.render(inventory, view);
     res.setHeader('content-type', 'application/yaml');
@@ -94,7 +119,20 @@ router.get('/cluster', asyncHandler(async (req, res, next) => {
   }
 }));
 
+//Remove once we fully sunset the kapitan name
 router.get('/kapitan/:component', asyncHandler(async (req, res, next) => {
+  const kptn_url = `https://github.com/razee-io/${req.params.component}/releases/latest/download/resource.yaml`;
+  try {
+    const kptn = await request.get(kptn_url);
+    res.setHeader('content-type', 'application/yaml');
+    return res.status(200).send(kptn);
+  } catch (e) {
+    req.log.error(e);
+    next(e);
+  }
+}));
+
+router.get('/razeedeploy/:component', asyncHandler(async (req, res, next) => {
   const kptn_url = `https://github.com/razee-io/${req.params.component}/releases/latest/download/resource.yaml`;
   try {
     const kptn = await request.get(kptn_url);
