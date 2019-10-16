@@ -24,5 +24,7 @@ ENV PATH="$PATH:/usr/src/"
 WORKDIR /usr/src/
 COPY --from=buildImg /usr/src /usr/src
 
+USER node
+
 EXPOSE 3333
 CMD ["npm", "start"]
