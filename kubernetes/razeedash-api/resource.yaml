@@ -13,6 +13,8 @@ items:
         version: "{{TRAVIS_COMMIT}}"
         razee.io/git-repo: "{{{GIT_REMOTE}}}"
         razee.io/commit-sha: "{{TRAVIS_COMMIT}}"
+      labels:
+        razee/watch-resource: "lite"
       name: razeedash-api
     spec:
       replicas: 1
@@ -26,6 +28,7 @@ items:
         metadata:
           labels:
             app: razeedash-api
+            razee/watch-resource: "lite"
           name: razeedash-api
         spec:
           securityContext:
