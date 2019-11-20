@@ -7,9 +7,13 @@ RUN apk add --upgrade --no-cache libssl1.1
 
 RUN mkdir -p /usr/src/
 ENV PATH="$PATH:/usr/src/"
+
 WORKDIR /usr/src/
-COPY . /usr/src/
+COPY package.json /usr/src/
+COPY package-lock.json /usr/src/
+
 RUN npm install --production --loglevel=warn
+COPY . /usr/src/
 
 # Build the production image
 FROM node:alpine

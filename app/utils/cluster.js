@@ -93,7 +93,8 @@ const buildSearchableDataForResource = (org, obj) => {
     { name: 'apiVersion', attrPath: 'apiVersion', },
     { name: 'annotations', attrPath: 'metadata.annotations', },
     { name: 'imageID', attrPath: 'status.containerStatuses[0].imageID', },
-    { name: 'image', attrPath: 'status.containerStatuses[0].image', }
+    { name: 'image', attrPath: 'status.containerStatuses[0].image', },
+    { name: 'razeeCommitSha', attrPath: 'metadata.annotations["razee.io/commit-sha"]', },
   ];
 
   // adds this org's custom attrs
@@ -161,10 +162,15 @@ var buildHashForResource = (resourceObj, org)=>{
   return objectHash(dataToHash);
 };
 
+var buildSearchableDataObjHash = (searchableDataObj)=>{
+  return objectHash(searchableDataObj);
+};
+
 module.exports = {
   buildPushObj,
   cleanObjKeysForMongo,
   buildSearchableDataForResource,
+  buildSearchableDataObjHash,
   getCluster,
   buildHashForResource,
 };
