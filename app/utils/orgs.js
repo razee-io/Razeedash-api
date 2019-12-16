@@ -33,4 +33,28 @@ const getOrg = async(req, res, next) => {
   next();
 };
 
-module.exports = { getOrg };
+
+const verifyOrgKey = async(req, res, next) => {
+  const receivedAdminKey = (req.body && req.body.orgAdminKey) ? req.body.orgAdminKey.trim() : null;
+  const storedAdminKey = process.env.ORG_ADMIN_KEY;
+
+  if(!receivedAdminKey) {
+    req.log.warn(`orgAdminKey not specified on route ${req.url}`);
+    return res.status(400).send( 'orgAdminKey required' );
+  }
+
+  if(!storedAdminKey) {
+    req.log.warn('ORG_ADMIN_KEY env variable was not found');
+    return res.status(400).send( 'missing ORG_ADMIN_KEY environment variable' );
+  }
+
+  if(receivedAdminKey !== storedAdminKey) {
+    req.log.warn(`invalid orgAdminKey supplied on route ${req.url}`);
+    return res.status(401).send( 'invalid orgAdminKey' );
+  }
+
+  req.orgAdminKey = storedAdminKey;
+  next();
+};
+
+module.exports = { getOrg, verifyOrgKey };

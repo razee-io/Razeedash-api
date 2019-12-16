@@ -78,6 +78,12 @@ items:
                   key: mongo_url
             - name: MONGO_DB_NAME
               value: razeedash
+            - name: ORG_ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: org_admin_key
+                  optional: true
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api

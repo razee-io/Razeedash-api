@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "This is the Razee.io API server.  You can find out more about     Razee at [http://razee.io](http://razee.io) or on [slack, #razee](https://ibm-container-service.slack.com/messages/CJQG07QTX).      For this sample, you can use the api key `special-key` to test the authorization     filters.",
+    "description": "This is the Razee.io API server.  You can find out more about Razee at [http://razee.io](http://razee.io) or on [slack, #razee](https://ibm-container-service.slack.com/messages/CJQG07QTX).      For this sample, you can use the api key `special-key` to test the authorization     filters.",
     "version": "2.0.0",
     "title": "Razeedash API",
     "license": {
@@ -27,6 +27,10 @@
         "description": "Find out more about webhooks",
         "url": "http://github.com/razee-io/razeedash-api"
       }
+    },
+    {
+      "name": "orgs",
+      "description": "Organizations API for managing orgs"
     }
   ],
   "schemes": [
@@ -34,6 +38,46 @@
     "http"
   ],
   "paths": {
+    "/orgs/": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Add an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "New organization definition",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OrgNew"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Org"
+            }
+          },
+          "400": {
+            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          }
+        }
+      }
+    },
     "/clusters/{cluster_id}": {
       "post": {
         "tags": [
@@ -279,6 +323,44 @@
     }
   },
   "definitions": {
+    "Org": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "orgKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orgAdminKey": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        }
+      }
+    },
+    "OrgNew": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "orgAdminKey": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "orgAdminKey"]
+    },
     "Cluster": {
       "type": "object",
       "properties": {

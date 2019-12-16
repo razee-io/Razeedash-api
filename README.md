@@ -23,9 +23,12 @@ Razeedash-API is the interface used by
 | S3_ACCESS_KEY_ID       | if S3_ENDPOINT defined | n/a |
 | S3_SECRET_ACCESS_KEY   | if S3_ENDPOINT defined | n/a |
 | S3_LOCATION_CONSTRAINT | no                     | 'us-standard'|
+| ORG_ADMIN_KEY          | no                     | n/a |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.
+
+ORG_ADMIN_KEY is required if you plan on adding organizations using the api/v2/orgs endpoint
 
 ### OS/X
 
@@ -84,6 +87,27 @@ metadata:
 type: Opaque
 data:
   mongo_url: bW9uZ29kYjovL21vbmdvOjI3MDE3L3JhemVlZGFzaAo=
+```
+
+Add org_admin_key to the data section of `razeedash-secret` in order to control
+organizations using the `api/v2/orgs` endpoint
+
+<!--Markdownlint-disable MD013-->
+```bash
+echo -n abcdefghijklmnop012345678 | base64
+# outputs YWJjZGVmZ2hpamtsbW5vcDAxMjM0NTY3OA==
+```
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: razeedash-secret
+  namespace: razee
+type: Opaque
+data:
+  mongo_url: bW9uZ29kYjovL21vbmdvOjI3MDE3L3JhemVlZGFzaAo=
+  org_admin_key: YWJjZGVmZ2hpamtsbW5vcDAxMjM0NTY3OA==
 ```
 
 If you are using your own managed mongodb system, make sure you
