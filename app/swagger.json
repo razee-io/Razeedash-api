@@ -54,12 +54,15 @@
         "parameters": [
           {
             "in": "body",
-            "name": "body",
-            "description": "New organization definition",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/OrgNew"
-            }
+            "name": "orgAdminKey",
+            "description": "The org admin api key",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "name",
+            "description": "The org name to be created",
+            "required": true
           }
         ],
         "responses": {
@@ -74,6 +77,52 @@
           },
           "401": {
             "description": "invalid orgAdminKey"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Get details of an organization or all organizations",
+        "description": "To retrive all orgs use: /orgs \n To retrieve a specific org use: /orgs?name=myOrg \n To retrieve a multiple orgs use: /orgs?name=myOrg1&name=myOrg2",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "New organization definition",
+            "required": true,
+            "example": { "orgAdminKey": "abc123" }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "type": "string",
+            "description": "The org name(s) to search. ex: /orgs?name=myOrg1",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/OrgArray" 
+            }
+          },
+          "400": {
+            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error searching for orgs"
           }
         }
       }
@@ -360,6 +409,13 @@
         }
       },
       "required": ["name", "orgAdminKey"]
+    },
+    "OrgArray": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "#/definitions/Org"
+      }
     },
     "Cluster": {
       "type": "object",

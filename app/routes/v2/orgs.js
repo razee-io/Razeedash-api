@@ -18,6 +18,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
+const _ = require('lodash');
 const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
 const uuid = require('uuid');
 
@@ -63,7 +64,32 @@ const createOrg = async(req, res) => {
   }
 };
 
+const getOrgs = async(req, res) => {
+  try {
+    const Orgs = req.db.collection('orgs'); 
+  
+    let orgsQuery = { orgAdminKey: req.orgAdminKey };
+    if(req.query && req.query.name) { 
+      let orgsToSearch = [];
+      if(_.isArray(req.query.name)) {
+        orgsToSearch = req.query.name;     // GET api/v2/orgs?name=org1&name=org2
+      } else {
+        orgsToSearch.push(req.query.name); // GET api/v2/orgs?name=org1
+      }
+      orgsQuery.name = { $in: orgsToSearch };
+    } 
+
+    const foundOrgs = await Orgs.find(orgsQuery).toArray();
+    return res.status(200).send( foundOrgs );
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).send( 'Error searching for orgs' );
+  }
+};
 // /api/v2/orgs
 router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
+
+// /api/v2/orgs?name=firstOrg&name=AnotherOrg
+router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
 
 module.exports = router;
