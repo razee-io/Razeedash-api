@@ -86,10 +86,44 @@ const getOrgs = async(req, res) => {
     return res.status(500).send( 'Error searching for orgs' );
   }
 };
+
+const updateOrg = async(req, res) => {
+  const existingOrgName = req.params.name;
+  const newOrgName = (req.body && req.body.name) ? req.body.name.trim() : null;
+  
+  if(!newOrgName) {
+    req.log.warn(`An org name was not specified on route ${req.url}`);
+    return res.status(400).send( 'An org name is required' );
+  }
+  
+  try {
+    const Orgs = req.db.collection('orgs');
+    const foundOrg = await Orgs.findOne({'name': existingOrgName, 'orgAdminKey': req.orgAdminKey});
+    if(!foundOrg){
+      req.log.warn( `The org ${existingOrgName} was not found` );
+      return res.status(400).send( 'This org name was not found' );
+    }
+
+    const updatedOrg = await Orgs.updateOne({ _id: foundOrg._id }, { $set: { 'name': newOrgName, updated: new Date() } });
+    if(updatedOrg.result.ok) {
+      return res.status(200).send( 'success' );
+    } else {
+      req.log.error(updatedOrg);
+      return res.status(500).send( 'Could not update the org' );
+    }
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).send( 'Error updating the org' );
+  }
+};
+
 // /api/v2/orgs
 router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
 
 // /api/v2/orgs?name=firstOrg&name=AnotherOrg
 router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
+
+// /api/v2/:name
+router.put('/:name', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
 
 module.exports = router;
