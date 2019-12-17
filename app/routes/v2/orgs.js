@@ -39,7 +39,7 @@ const createOrg = async(req, res) => {
   const Orgs = req.db.collection('orgs');
   const foundOrg = await Orgs.findOne({'name': orgName});
   if(foundOrg){
-    req.log.warn( 'The org ${orgName} org already exists' );
+    req.log.warn( 'The org name already exists' );
     return res.status(400).send( 'This org already exists' );
   }
 
@@ -58,11 +58,11 @@ const createOrg = async(req, res) => {
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
       req.log.error(insertedOrg);
-      return res.status(500).send( `Could not create the ${orgName} org` );
+      return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
     req.log.error(error);
-    return res.status(500).send( `Error creating the ${orgName} org` );
+    return res.status(500).send( 'Error creating the org' );
   }
 };
 
@@ -102,7 +102,7 @@ const updateOrg = async(req, res) => {
     const Orgs = req.db.collection('orgs');
     const foundOrg = await Orgs.findOne({'_id': ObjectID(existingOrgId)});
     if(!foundOrg){
-      req.log.warn( `The org ${existingOrgId} was not found` );
+      req.log.warn( 'The org was not found' );
       return res.status(400).send( 'This org was not found' );
     }
 
