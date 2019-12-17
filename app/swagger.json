@@ -127,6 +127,46 @@
         }
       }
     },
+    "/orgs/{org_id}": {
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Update an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "The field(s) of the org object to be updated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OrgUpdate" 
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Missing resource body or org not found"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error updating the org"
+          }
+        }
+      }
+    },
     "/clusters/{cluster_id}": {
       "post": {
         "tags": [
@@ -394,6 +434,23 @@
           "type": "string"
         },
         "updated": {
+          "type": "string"
+        }
+      }
+    },
+    "OrgUpdate": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "orgKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orgAdminKey": {
           "type": "string"
         }
       }

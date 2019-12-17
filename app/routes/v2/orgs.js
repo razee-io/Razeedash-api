@@ -21,6 +21,8 @@ const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
 const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
 const uuid = require('uuid');
+const ObjectID = require('mongodb').ObjectID;
+
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
@@ -88,23 +90,24 @@ const getOrgs = async(req, res) => {
 };
 
 const updateOrg = async(req, res) => {
-  const existingOrgName = req.params.name;
-  const newOrgName = (req.body && req.body.name) ? req.body.name.trim() : null;
+  const existingOrgId = req.params.id;
+  const updates = req.body;
   
-  if(!newOrgName) {
-    req.log.warn(`An org name was not specified on route ${req.url}`);
-    return res.status(400).send( 'An org name is required' );
+  if (!updates) {
+    req.log.error('no message body was provided');
+    return res.status(400).send('Missing message body');
   }
   
   try {
     const Orgs = req.db.collection('orgs');
-    const foundOrg = await Orgs.findOne({'name': existingOrgName, 'orgAdminKey': req.orgAdminKey});
+    const foundOrg = await Orgs.findOne({'_id': ObjectID(existingOrgId)});
     if(!foundOrg){
-      req.log.warn( `The org ${existingOrgName} was not found` );
-      return res.status(400).send( 'This org name was not found' );
+      req.log.warn( `The org ${existingOrgId} was not found` );
+      return res.status(400).send( 'This org was not found' );
     }
 
-    const updatedOrg = await Orgs.updateOne({ _id: foundOrg._id }, { $set: { 'name': newOrgName, updated: new Date() } });
+    updates.updated = new Date();
+    const updatedOrg = await Orgs.updateOne({ _id: foundOrg._id }, { $set: updates } );
     if(updatedOrg.result.ok) {
       return res.status(200).send( 'success' );
     } else {
@@ -123,7 +126,7 @@ router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
 // /api/v2/orgs?name=firstOrg&name=AnotherOrg
 router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
 
-// /api/v2/:name
-router.put('/:name', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
+// /api/v2/:id
+router.put('/:id', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
 
 module.exports = router;
