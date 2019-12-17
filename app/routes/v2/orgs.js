@@ -120,6 +120,24 @@ const updateOrg = async(req, res) => {
   }
 };
 
+
+const deleteOrg = async(req, res) => {
+  const existingOrgId = req.params.id;
+  try {
+    const Orgs = req.db.collection('orgs');
+    const removedOrg = await Orgs.deleteOne({ '_id': ObjectID(existingOrgId) } );
+    if(removedOrg.deletedCount) {
+      return res.status(200).send( 'success' );
+    } else {
+      req.log.error(removedOrg);
+      return res.status(500).send( 'The org could not be deleted' );
+    }
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).send( 'Error deleting the org' );
+  }
+};
+
 // /api/v2/orgs
 router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
 
@@ -128,5 +146,8 @@ router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
 
 // /api/v2/:id
 router.put('/:id', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
+
+// /api/v2/:id
+router.delete('/:id', asyncHandler(verifyOrgKey), asyncHandler(deleteOrg));
 
 module.exports = router;

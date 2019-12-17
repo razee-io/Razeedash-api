@@ -96,7 +96,7 @@
           {
             "in": "body",
             "name": "orgAdminKey",
-            "description": "New organization definition",
+            "description": "organization admin key",
             "required": true,
             "example": { "orgAdminKey": "abc123" }
           },
@@ -127,7 +127,7 @@
         }
       }
     },
-    "/orgs/{org_id}": {
+    "/orgs/{id}": {
       "put": {
         "tags": [
           "orgs"
@@ -141,6 +141,13 @@
           "application/json"
         ],
         "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the org",
+            "required": true,
+            "type": "string"
+          },
           {
             "in": "body",
             "name": "body",
@@ -163,6 +170,46 @@
           },
           "500": {
             "description": "Error updating the org"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Delete an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the org",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "Organization admin key",
+            "required": true,
+            "example": { "orgAdminKey": "abc123" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error deleting the org"
           }
         }
       }
