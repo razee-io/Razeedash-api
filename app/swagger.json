@@ -214,6 +214,50 @@
         }
       }
     },
+    "/clusters/": {
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "summary": "Get clusters",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "razee-org-key",
+            "description": "organization api key",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "organization admin key",
+            "required": true,
+            "example": { "orgAdminKey": "abc123" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Cluster" 
+            }
+          },
+          "400": {
+            "description": "Missing orgAdminKey in the resource body"
+          },
+          "401": {
+            "description": "Invalid orgAdminKey"
+          }
+        }
+      }
+    },
     "/clusters/{cluster_id}": {
       "post": {
         "tags": [
