@@ -19,7 +19,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
-const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
+const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const uuid = require('uuid');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -41,7 +41,7 @@ const createOrg = async(req, res) => {
     return res.status(400).send( 'This org already exists' );
   }
 
-  const orgAdminKey = req.orgAdminKey; // this was set in verifyOrgKey()
+  const orgAdminKey = req.orgAdminKey; // this was set in verifyAdminOrgKey()
   const orgApiKey = `orgApiKey-${uuid()}`;
   try {
     const insertedOrg = await Orgs.insertOne({
@@ -138,15 +138,15 @@ const deleteOrg = async(req, res) => {
 };
 
 // /api/v2/orgs
-router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
+router.post('/', asyncHandler(verifyAdminOrgKey), asyncHandler(createOrg));
 
 // /api/v2/orgs?name=firstOrg&name=AnotherOrg
-router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
+router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getOrgs));
 
 // /api/v2/:id
-router.put('/:id', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
+router.put('/:id', asyncHandler(verifyAdminOrgKey), asyncHandler(updateOrg));
 
 // /api/v2/:id
-router.delete('/:id', asyncHandler(verifyOrgKey), asyncHandler(deleteOrg));
+router.delete('/:id', asyncHandler(verifyAdminOrgKey), asyncHandler(deleteOrg));
 
 module.exports = router;
