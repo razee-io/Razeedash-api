@@ -331,9 +331,7 @@ router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addC
 // /api/v2/clusters
 router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
 
+// /api/v2/clusters/:cluster_id
 router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
-
-// get resources:  (pass in 'Kind', 'Name'(as regex) as query parameter.(optinoal) .  add pagination(25 by default)  )
-
 
 module.exports = router;
