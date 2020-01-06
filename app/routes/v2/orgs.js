@@ -21,8 +21,6 @@ const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
 const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
 const uuid = require('uuid');
-const ObjectID = require('mongodb').ObjectID;
-
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
@@ -47,6 +45,7 @@ const createOrg = async(req, res) => {
   const orgApiKey = `orgApiKey-${uuid()}`;
   try {
     const insertedOrg = await Orgs.insertOne({
+      '_id': uuid(),
       'name': orgName,
       'orgKeys' : [ orgApiKey ],
       'orgAdminKey': orgAdminKey,
@@ -100,7 +99,7 @@ const updateOrg = async(req, res) => {
   
   try {
     const Orgs = req.db.collection('orgs');
-    const foundOrg = await Orgs.findOne({'_id': ObjectID(existingOrgId)});
+    const foundOrg = await Orgs.findOne({'_id': existingOrgId});
     if(!foundOrg){
       req.log.warn( 'The org was not found' );
       return res.status(400).send( 'This org was not found' );
@@ -125,7 +124,7 @@ const deleteOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   try {
     const Orgs = req.db.collection('orgs');
-    const removedOrg = await Orgs.deleteOne({ '_id': ObjectID(existingOrgId) } );
+    const removedOrg = await Orgs.deleteOne({ '_id': existingOrgId } );
     if(removedOrg.deletedCount) {
       return res.status(200).send( 'success' );
     } else {
