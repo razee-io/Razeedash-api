@@ -333,7 +333,6 @@ router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
 
 router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
 
-
 // get resources:  (pass in 'Kind', 'Name'(as regex) as query parameter.(optinoal) .  add pagination(25 by default)  )
 
 
