@@ -304,6 +304,16 @@ const getClusters = async (req, res, next) => {
   }
 };
 
+const clusterDetails = async (req, res, next) => {
+  try {
+    const cluster = req.cluster; // req.cluster was set in `getCluster`
+    return res.status(200).send({cluster});
+  } catch (err) {
+    req.log.error(err.message);
+    next(err);
+  }
+};
+
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
 // /api/v2/clusters/:cluster_id
@@ -320,6 +330,11 @@ router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addC
 
 // /api/v2/clusters
 router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
+
+router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
+
+
+// get resources:  (pass in 'Kind', 'Name'(as regex) as query parameter.(optinoal) .  add pagination(25 by default)  )
 
 
 module.exports = router;
