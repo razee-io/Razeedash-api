@@ -34,7 +34,7 @@ const getOrg = async(req, res, next) => {
 };
 
 
-const verifyOrgKey = async(req, res, next) => {
+const verifyAdminOrgKey = async(req, res, next) => {
   const receivedAdminKey = (req.body && req.body.orgAdminKey) ? req.body.orgAdminKey.trim() : null;
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
 
@@ -57,4 +57,4 @@ const verifyOrgKey = async(req, res, next) => {
   next();
 };
 
-module.exports = { getOrg, verifyOrgKey };
+module.exports = { getOrg, verifyAdminOrgKey };

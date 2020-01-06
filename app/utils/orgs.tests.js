@@ -20,7 +20,7 @@ var httpMocks = require('node-mocks-http');
 const log = require('../log').log;
 
 let getOrg = require('./orgs').getOrg;
-let verifyOrgKey = require('./orgs').verifyOrgKey;
+let verifyAdminOrgKey = require('./orgs').verifyAdminOrgKey;
 
 let db = {};
 
@@ -53,7 +53,7 @@ describe('utils', () => {
         nextCalled = true;
       };
 
-      await verifyOrgKey(request, response, next);
+      await verifyAdminOrgKey(request, response, next);
       assert.equal(nextCalled, false);
       assert.equal(response.statusCode, 400);
     });
@@ -69,7 +69,7 @@ describe('utils', () => {
         nextCalled = true;
       };
 
-      await verifyOrgKey(request, response, next);
+      await verifyAdminOrgKey(request, response, next);
       assert.equal(nextCalled, false);
       assert.equal(response.statusCode, 400);
     });
@@ -85,7 +85,7 @@ describe('utils', () => {
         nextCalled = true;
       };
 
-      await verifyOrgKey(request, response, next);
+      await verifyAdminOrgKey(request, response, next);
       assert.equal(nextCalled, false);
       assert.equal(response.statusCode, 401);
     });
@@ -101,7 +101,7 @@ describe('utils', () => {
         nextCalled = true;
       };
 
-      await verifyOrgKey(request, response, next);
+      await verifyAdminOrgKey(request, response, next);
       assert.equal(request.orgAdminKey, goodKey);
       assert.equal(nextCalled, true);
     });

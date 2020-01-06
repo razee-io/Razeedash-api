@@ -19,10 +19,8 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
-const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
+const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const uuid = require('uuid');
-const ObjectID = require('mongodb').ObjectID;
-
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
@@ -39,14 +37,15 @@ const createOrg = async(req, res) => {
   const Orgs = req.db.collection('orgs');
   const foundOrg = await Orgs.findOne({'name': orgName});
   if(foundOrg){
-    req.log.warn( 'The org ${orgName} org already exists' );
+    req.log.warn( 'The org name already exists' );
     return res.status(400).send( 'This org already exists' );
   }
 
-  const orgAdminKey = req.orgAdminKey; // this was set in verifyOrgKey()
+  const orgAdminKey = req.orgAdminKey; // this was set in verifyAdminOrgKey()
   const orgApiKey = `orgApiKey-${uuid()}`;
   try {
     const insertedOrg = await Orgs.insertOne({
+      '_id': uuid(),
       'name': orgName,
       'orgKeys' : [ orgApiKey ],
       'orgAdminKey': orgAdminKey,
@@ -58,11 +57,11 @@ const createOrg = async(req, res) => {
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
       req.log.error(insertedOrg);
-      return res.status(500).send( `Could not create the ${orgName} org` );
+      return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
     req.log.error(error);
-    return res.status(500).send( `Error creating the ${orgName} org` );
+    return res.status(500).send( 'Error creating the org' );
   }
 };
 
@@ -100,9 +99,9 @@ const updateOrg = async(req, res) => {
   
   try {
     const Orgs = req.db.collection('orgs');
-    const foundOrg = await Orgs.findOne({'_id': ObjectID(existingOrgId)});
+    const foundOrg = await Orgs.findOne({'_id': existingOrgId});
     if(!foundOrg){
-      req.log.warn( `The org ${existingOrgId} was not found` );
+      req.log.warn( 'The org was not found' );
       return res.status(400).send( 'This org was not found' );
     }
 
@@ -125,7 +124,7 @@ const deleteOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   try {
     const Orgs = req.db.collection('orgs');
-    const removedOrg = await Orgs.deleteOne({ '_id': ObjectID(existingOrgId) } );
+    const removedOrg = await Orgs.deleteOne({ '_id': existingOrgId } );
     if(removedOrg.deletedCount) {
       return res.status(200).send( 'success' );
     } else {
@@ -139,15 +138,15 @@ const deleteOrg = async(req, res) => {
 };
 
 // /api/v2/orgs
-router.post('/', asyncHandler(verifyOrgKey), asyncHandler(createOrg));
+router.post('/', asyncHandler(verifyAdminOrgKey), asyncHandler(createOrg));
 
 // /api/v2/orgs?name=firstOrg&name=AnotherOrg
-router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getOrgs));
+router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getOrgs));
 
 // /api/v2/:id
-router.put('/:id', asyncHandler(verifyOrgKey), asyncHandler(updateOrg));
+router.put('/:id', asyncHandler(verifyAdminOrgKey), asyncHandler(updateOrg));
 
 // /api/v2/:id
-router.delete('/:id', asyncHandler(verifyOrgKey), asyncHandler(deleteOrg));
+router.delete('/:id', asyncHandler(verifyAdminOrgKey), asyncHandler(deleteOrg));
 
 module.exports = router;
