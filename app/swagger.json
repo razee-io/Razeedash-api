@@ -31,6 +31,10 @@
     {
       "name": "orgs",
       "description": "Organizations API for managing orgs"
+    },
+    {
+      "name": "resources",
+      "description": "Cluster resources"
     }
   ],
   "schemes": [
@@ -490,6 +494,57 @@
         "responses": {
           "201": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/resources/": {
+      "get": {
+        "tags": [
+          "resources"
+        ],
+        "summary": "Get a resource definition",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "The org admin api key",
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "type": "string",
+            "description": "The resource type to search. ex: /resources?kind=Deployment",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "type": "string",
+            "description": "The resource name to search. ex: /resources?name=myResource",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Resource"
+            }
+          },
+          "400": {
+            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
           }
         }
       }
