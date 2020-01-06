@@ -23,7 +23,7 @@ const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
-const verifyOrgKey = require('../../utils/orgs.js').verifyOrgKey;
+const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
@@ -319,7 +319,7 @@ router.post('/:cluster_id/resources/sync', asyncHandler(getCluster), asyncHandle
 router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addClusterMessages));
 
 // /api/v2/clusters
-router.get('/', asyncHandler(verifyOrgKey), asyncHandler(getClusters));
+router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
 
 
 module.exports = router;
