@@ -6,9 +6,10 @@
   "main": "app/index.js",
   "scripts": {
     "start": "node app/index.js",
+    "dev": "nodemon -r dotenv/config app/index.js | bunyan",
     "start:mon": "nodemon app/index.js | bunyan",
     "start:debug": "node --inspect-brk app/index.js",
-    "test": "nyc --all --exclude=**/*.tests.js --exclude=coverage/* --reporter=html --reporter=text mocha **/*.tests.js",
+    "test": "nyc --all --exclude=**/*.tests.js --exclude=coverage/* --reporter=html --reporter=text mocha -r dotenv/config **/*.tests.js",
     "wait-mongo": "node app/wait-mongo.js",
     "lint": "npx npm-run-all eslint yamllint dockerlint markdownlint",
     "eslint": "npx eslint app/",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "dockerlint": "^0.3.9",
+    "dotenv": "^8.2.0",
     "eslint": "^6.0.1",
     "markdownlint-cli": "^0.19.0",
     "mocha": "^6.1.4",

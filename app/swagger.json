@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "This is the Razee.io API server.  You can find out more about     Razee at [http://razee.io](http://razee.io) or on [slack, #razee](https://ibm-container-service.slack.com/messages/CJQG07QTX).      For this sample, you can use the api key `special-key` to test the authorization     filters.",
+    "description": "This is the Razee.io API server.  You can find out more about Razee at [http://razee.io](http://razee.io) or on [slack, #razee](https://ibm-container-service.slack.com/messages/CJQG07QTX).      For this sample, you can use the api key `special-key` to test the authorization     filters.",
     "version": "2.0.0",
     "title": "Razeedash API",
     "license": {
@@ -27,6 +27,10 @@
         "description": "Find out more about webhooks",
         "url": "http://github.com/razee-io/razeedash-api"
       }
+    },
+    {
+      "name": "orgs",
+      "description": "Organizations API for managing orgs"
     }
   ],
   "schemes": [
@@ -34,6 +38,182 @@
     "http"
   ],
   "paths": {
+    "/orgs/": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Add an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "The org admin api key",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "name",
+            "description": "The org name to be created",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Org"
+            }
+          },
+          "400": {
+            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Get details of an organization or all organizations",
+        "description": "To retrive all orgs use: /orgs \n To retrieve a specific org use: /orgs?name=myOrg \n To retrieve a multiple orgs use: /orgs?name=myOrg1&name=myOrg2",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "organization admin key",
+            "required": true,
+            "example": { "orgAdminKey": "abc123" }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "type": "string",
+            "description": "The org name(s) to search. ex: /orgs?name=myOrg1",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/OrgArray" 
+            }
+          },
+          "400": {
+            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error searching for orgs"
+          }
+        }
+      }
+    },
+    "/orgs/{id}": {
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Update an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the org",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "The field(s) of the org object to be updated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OrgUpdate" 
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Missing resource body or org not found"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error updating the org"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Delete an organization",
+        "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the org",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "orgAdminKey",
+            "description": "Organization admin key",
+            "required": true,
+            "example": { "orgAdminKey": "abc123" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "invalid orgAdminKey"
+          },
+          "500": {
+            "description": "Error deleting the org"
+          }
+        }
+      }
+    },
     "/clusters/{cluster_id}": {
       "post": {
         "tags": [
@@ -279,6 +459,68 @@
     }
   },
   "definitions": {
+    "Org": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "orgKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orgAdminKey": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        }
+      }
+    },
+    "OrgUpdate": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "orgKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orgAdminKey": {
+          "type": "string"
+        }
+      }
+    },
+    "OrgNew": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "orgAdminKey": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "orgAdminKey"]
+    },
+    "OrgArray": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "#/definitions/Org"
+      }
+    },
     "Cluster": {
       "type": "object",
       "properties": {

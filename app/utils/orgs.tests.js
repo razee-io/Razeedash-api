@@ -20,6 +20,7 @@ var httpMocks = require('node-mocks-http');
 const log = require('../log').log;
 
 let getOrg = require('./orgs').getOrg;
+let verifyAdminOrgKey = require('./orgs').verifyAdminOrgKey;
 
 let db = {};
 
@@ -40,6 +41,69 @@ describe('utils', () => {
 
     after(function () {
       db.close();
+    });
+
+    it('should return 400 if an org admin key was not provided', async () => {
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', }, log: log, db: db });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = (err) => {
+        assert.equal(err.message, null);
+        nextCalled = true;
+      };
+
+      await verifyAdminOrgKey(request, response, next);
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 400);
+    });
+
+    it('should return 400 if the ORG_ADMIN_KEY env variable was not found', async () => {
+      delete process.env.ORG_ADMIN_KEY;
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: 'goodKey123' }, log: log, db: db });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = (err) => {
+        assert.equal(err.message, null);
+        nextCalled = true;
+      };
+
+      await verifyAdminOrgKey(request, response, next);
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 400);
+    });
+
+    it('should return 401 if an invalid org admin key was provided', async () => {
+      process.env.ORG_ADMIN_KEY='goodKey123';
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: 'badKey123' }, log: log, db: db });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = (err) => {
+        assert.equal(err.message, null);
+        nextCalled = true;
+      };
+
+      await verifyAdminOrgKey(request, response, next);
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 401);
+    });
+
+    it('should set req.orgAdminKey if an valid org admin key was provided', async () => {
+      const goodKey = 'abc123';
+      process.env.ORG_ADMIN_KEY = goodKey;
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: goodKey }, log: log, db: db });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => {
+        nextCalled = true;
+      };
+
+      await verifyAdminOrgKey(request, response, next);
+      assert.equal(request.orgAdminKey, goodKey);
+      assert.equal(nextCalled, true);
     });
 
     it('should return 401 if missing orgKey', async () => {

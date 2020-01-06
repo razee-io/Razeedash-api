@@ -35,6 +35,7 @@ const getOrg = require ('../utils/orgs').getOrg;
 const Kube = require('./kube/kube.js');
 const Install = require('./install');
 const Clusters = require('./v2/clusters.js');
+const Orgs = require('./v2/orgs.js');
 
 router.use('/api/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));
@@ -54,6 +55,10 @@ router.use(asyncHandler(async (req, res, next) => {
   req.s3 = s3Client;
   next();
 }));
+
+// the orgs routes should be above the razee-org-key checks since the user
+// won't have a razee-org-key when creating an org for the first time. 
+router.use('/api/v2/orgs', Orgs);
 
 router.use((req, res, next) => {
   let orgKey = req.get('razee-org-key');
