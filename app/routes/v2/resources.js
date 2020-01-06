@@ -33,9 +33,8 @@ const getResources = async (req, res, next) => {
       query['searchableData.kind'] = req.query.kind;
     } 
     if(req.query && req.query.name) { 
-      query['searchableData.name'] = req.query.name;
+      query['searchableData.name'] = {$regex: req.query.name, $options: 'i',}; 
     } 
-    // todo add regex for name search
 
     const options = { 
       limit: 25,
@@ -43,8 +42,6 @@ const getResources = async (req, res, next) => {
     if(req.query && req.query.skip) { 
       options['skip'] = parseInt(req.query.skip);
     } 
-    console.log(query);
-    console.log(options);
 
     const resources = await Resources.find(query, options).toArray();
     return res.status(200).send({resources});
@@ -54,7 +51,6 @@ const getResources = async (req, res, next) => {
   }
 };
 
-// get resources:  (pass in 'Kind', 'Name'(as regex) as query parameter.(optinoal) .  add pagination(25 by default)  )
 // /api/v2/resources?kind=Deployment&name=myResource?skip=25
 router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getResources));
 
