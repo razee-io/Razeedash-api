@@ -25,6 +25,7 @@ const _ = require('lodash');
 const moment = require('moment');
 const request = require('request-promise-native');
 
+const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
@@ -317,6 +318,27 @@ const addClusterMessages = async (req, res, next) => {
   }
 };
 
+const getClusters = async (req, res, next) => {
+  try {
+    const Clusters = req.db.collection('clusters');
+    const orgId = req.org._id + '';
+    const clusters = await Clusters.find({ 'org_id': orgId }).toArray();
+    return res.status(200).send({clusters});
+  } catch (err) {
+    req.log.error(err.message);
+    next(err);
+  }
+};
+
+const clusterDetails = async (req, res, next) => {
+  try {
+    const cluster = req.cluster; // req.cluster was set in `getCluster`
+    return res.status(200).send({cluster});
+  } catch (err) {
+    req.log.error(err.message);
+    next(err);
+  }
+};
 
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
@@ -331,5 +353,11 @@ router.post('/:cluster_id/resources/sync', asyncHandler(getCluster), asyncHandle
 
 // /api/v2/clusters/:cluster_id/messages
 router.post('/:cluster_id/messages', asyncHandler(getCluster), asyncHandler(addClusterMessages));
+
+// /api/v2/clusters
+router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
+
+// /api/v2/clusters/:cluster_id
+router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
 
 module.exports = router;
