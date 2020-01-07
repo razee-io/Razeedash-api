@@ -23,6 +23,7 @@ const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
+const request = require('request-promise-native');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
@@ -35,10 +36,11 @@ const addUpdateCluster = async (req, res, next) => {
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
-    const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id });
+    const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
     if (!cluster) {
       await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() });
+      runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
       res.status(200).send('Welcome to Razee');
     }
@@ -57,6 +59,29 @@ const addUpdateCluster = async (req, res, next) => {
     next(err);
   }
 };
+
+var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
+  var postData = {
+    org_id: orgId,
+    cluster_id: clusterId,
+    cluster_name: clusterName,
+  };
+  var url = process.env.ADD_CLUSTER_WEBHOOK_URL;
+  if(!url){
+    return;
+  }
+  req.log.debug({ url, postData }, 'posted add cluster webhook');
+  try{
+    await request.post({
+      url,
+      body: postData,
+      json: true,
+    });
+  }catch(err){
+    req.log.error({ url, postData, err }, 'add cluster webhook failed');
+  }
+};
+
 const pushToS3 = async (req, key, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
   const bucket = `razee_${key.org_id}`;

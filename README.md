@@ -17,18 +17,22 @@ Razeedash-API is the interface used by
 <!--Markdownlint-disable MD013-->
 | Name | Required | Default Value |
 | ---- | -------- | ------------- |
-| MONGO_URL              | yes                    | 'mongodb://localhost:3001/meteor' |
-| MONGO_DB_NAME          | yes                    | 'meteor' |
-| S3_ENDPOINT            | no                     | n/a |
-| S3_ACCESS_KEY_ID       | if S3_ENDPOINT defined | n/a |
-| S3_SECRET_ACCESS_KEY   | if S3_ENDPOINT defined | n/a |
-| S3_LOCATION_CONSTRAINT | no                     | 'us-standard'|
-| ORG_ADMIN_KEY          | no                     | n/a |
+| MONGO_URL               | yes                    | 'mongodb://localhost:3001/meteor' |
+| MONGO_DB_NAME           | yes                    | 'meteor' |
+| S3_ENDPOINT             | no                     | n/a |
+| S3_ACCESS_KEY_ID        | if S3_ENDPOINT defined | n/a |
+| S3_SECRET_ACCESS_KEY    | if S3_ENDPOINT defined | n/a |
+| S3_LOCATION_CONSTRAINT  | no                     | 'us-standard'|
+| ORG_ADMIN_KEY           | no                     | n/a |
+| ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.
 
 ORG_ADMIN_KEY is required if you plan on adding organizations using the api/v2/orgs endpoint
+
+ADD_CLUSTER_WEBHOOK_URL signifies the webhook endpoint to hit when a cluster is added.
+Razee will do a POST request to this url with json data `{ org_id, cluster_id, cluster_name }`
 
 ### OS/X
 
