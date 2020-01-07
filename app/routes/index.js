@@ -35,6 +35,7 @@ const getOrg = require ('../utils/orgs').getOrg;
 const Kube = require('./kube/kube.js');
 const Install = require('./install');
 const Clusters = require('./v2/clusters.js');
+const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 
 router.use('/api/kube', Kube);
@@ -76,6 +77,7 @@ router.use((req, res, next) => {
 router.use(getOrg);
 router.use('/api/install', Install);
 router.use('/api/v2/clusters', Clusters);
+router.use('/api/v2/resources', Resources);
 
 async function initialize(){
   const options = {
