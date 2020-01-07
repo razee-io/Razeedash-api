@@ -59,6 +59,7 @@ const addUpdateCluster = async (req, res, next) => {
     req.log.error(err.message);
     next(err);
   }
+
 };
 
 var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
@@ -71,13 +72,15 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   if(!url){
     return;
   }
-  req.log.debug({ url, postData }, 'posted add cluster webhook');
+  req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
-    await request.post({
+    var result = await request.post({
       url,
       body: postData,
       json: true,
+      resolveWithFullResponse: true,
     });
+    req.log.info({ url, postData, statusCode: result.statusCode }, 'posted add cluster webhook');
   }catch(err){
     req.log.error({ url, postData, err }, 'add cluster webhook failed');
   }
