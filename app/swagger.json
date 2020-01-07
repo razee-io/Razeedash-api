@@ -677,6 +677,68 @@
               "type": "object"
             }
           }
+        },
+        "cluster_id": { "type": "string" },
+        "org_id": { "type": "string" },
+        "selfLink": { "type": "string" },
+        "created": { "type": "date" },
+        "updated": { "type": "date" },
+        "deleted": { "type": "boolean" },
+        "hash": { "type": "string" },
+        "searchableData": { 
+          "type": "object",
+          "properties": {
+            "kind": { "type": "string" },
+            "name": { "type": "string" },
+            "namespace": { "type": "string" },
+            "apiVersion": { "type": "string" }
+          }
+        },
+        "searchableDataHash": { "type": "string" },
+        "searchableDataHist": { 
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "timestamp": { "type": "integer"},
+                  "val": { "type": "string"}
+                }
+              }
+            },
+            "name": { 
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "timestamp": { "type": "integer"},
+                  "val": { "type": "string"}
+                }
+              }
+            },
+            "namespace": { 
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "timestamp": { "type": "integer"},
+                  "val": { "type": "string"}
+                }
+              } 
+            },
+            "apiVersion": { 
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "timestamp": { "type": "integer"},
+                  "val": { "type": "string"}
+                }
+              }
+            }
+          }
         }
       }
     },
