@@ -531,6 +531,13 @@
             "type": "string",
             "description": "The resource name to search. ex: /resources?name=myResource",
             "required": false
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "type": "string",
+            "description": "Skip the first 25 results. ex: /resources?skip=25",
+            "required": false
           }
         ],
         "responses": {
