@@ -84,6 +84,12 @@ items:
                   name: razeedash-secret
                   key: org_admin_key
                   optional: true
+            - name: ADD_CLUSTER_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: add_cluster_webhook_url
+                  optional: true
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
