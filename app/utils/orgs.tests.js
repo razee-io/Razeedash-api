@@ -60,7 +60,7 @@ describe('utils', () => {
 
     it('should return 400 if the ORG_ADMIN_KEY env variable was not found', async () => {
       delete process.env.ORG_ADMIN_KEY;
-      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: 'goodKey123' }, log: log, db: db });
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1' }, headers: {'org-admin-key': 'goodKey123'}, log: log, db: db });
       const response = httpMocks.createResponse();
 
       let nextCalled = false;
@@ -76,7 +76,7 @@ describe('utils', () => {
 
     it('should return 401 if an invalid org admin key was provided', async () => {
       process.env.ORG_ADMIN_KEY='goodKey123';
-      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: 'badKey123' }, log: log, db: db });
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1' }, headers: { 'org-admin-key': 'badKey123' }, log: log, db: db });
       const response = httpMocks.createResponse();
 
       let nextCalled = false;
@@ -93,7 +93,7 @@ describe('utils', () => {
     it('should set req.orgAdminKey if an valid org admin key was provided', async () => {
       const goodKey = 'abc123';
       process.env.ORG_ADMIN_KEY = goodKey;
-      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1', orgAdminKey: goodKey }, log: log, db: db });
+      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1' }, headers: { 'org-admin-key': goodKey}, log: log, db: db });
       const response = httpMocks.createResponse();
 
       let nextCalled = false;
