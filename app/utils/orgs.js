@@ -35,10 +35,10 @@ const getOrg = async(req, res, next) => {
 
 
 const verifyAdminOrgKey = async(req, res, next) => {
-  const receivedAdminKey = req.get('orgAdminKey');
+  const receivedAdminKey = req.get('org-admin-key');
   if(!receivedAdminKey) {
-    req.log.warn(`orgAdminKey not specified on route ${req.url}`);
-    return res.status(400).send( 'orgAdminKey required' );
+    req.log.warn(`org-admin-key not specified on route ${req.url}`);
+    return res.status(400).send( 'org-admin-key required' );
   }
 
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
@@ -48,8 +48,8 @@ const verifyAdminOrgKey = async(req, res, next) => {
   }
 
   if(receivedAdminKey !== storedAdminKey) {
-    req.log.warn(`invalid orgAdminKey supplied on route ${req.url}`);
-    return res.status(401).send( 'invalid orgAdminKey' );
+    req.log.warn(`invalid org-admin-key supplied on route ${req.url}`);
+    return res.status(401).send( 'invalid org-admin-key' );
   }
 
   req.orgAdminKey = storedAdminKey;
