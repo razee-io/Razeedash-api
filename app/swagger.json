@@ -57,8 +57,8 @@
         ],
         "parameters": [
           {
-            "in": "body",
-            "name": "orgAdminKey",
+            "in": "header",
+            "name": "org-admin-key",
             "description": "The org admin api key",
             "required": true
           },
@@ -77,10 +77,10 @@
             }
           },
           "400": {
-            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+            "description": "Missing name or org-admin-key header or the org name already exists"
           },
           "401": {
-            "description": "invalid orgAdminKey"
+            "description": "invalid org-admin-key"
           }
         }
       },
@@ -98,11 +98,10 @@
         ],
         "parameters": [
           {
-            "in": "body",
-            "name": "orgAdminKey",
+            "in": "header",
+            "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true,
-            "example": { "orgAdminKey": "abc123" }
+            "required": true
           },
           {
             "in": "query",
@@ -120,10 +119,10 @@
             }
           },
           "400": {
-            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+            "description": "Missing name or org-admin-key header or the org name already exists"
           },
           "401": {
-            "description": "invalid orgAdminKey"
+            "description": "invalid org-admin-key"
           },
           "500": {
             "description": "Error searching for orgs"
@@ -153,6 +152,12 @@
             "type": "string"
           },
           {
+            "in": "header",
+            "name": "org-admin-key",
+            "description": "organization admin key",
+            "required": true
+          },
+          {
             "in": "body",
             "name": "body",
             "description": "The field(s) of the org object to be updated",
@@ -170,7 +175,7 @@
             "description": "Missing resource body or org not found"
           },
           "401": {
-            "description": "invalid orgAdminKey"
+            "description": "invalid org-admin-key"
           },
           "500": {
             "description": "Error updating the org"
@@ -198,11 +203,10 @@
             "type": "string"
           },
           {
-            "in": "body",
-            "name": "orgAdminKey",
+            "in": "header",
+            "name": "org-admin-key",
             "description": "Organization admin key",
-            "required": true,
-            "example": { "orgAdminKey": "abc123" }
+            "required": true
           }
         ],
         "responses": {
@@ -210,7 +214,7 @@
             "description": "Success"
           },
           "401": {
-            "description": "invalid orgAdminKey"
+            "description": "invalid org-admin-key"
           },
           "500": {
             "description": "Error deleting the org"
@@ -239,11 +243,10 @@
             "required": true
           },
           {
-            "in": "body",
-            "name": "orgAdminKey",
+            "in": "header",
+            "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true,
-            "example": { "orgAdminKey": "abc123" }
+            "required": true
           }
         ],
         "responses": {
@@ -254,10 +257,10 @@
             }
           },
           "400": {
-            "description": "Missing orgAdminKey in the resource body"
+            "description": "Missing org-admin-key header"
           },
           "401": {
-            "description": "Invalid orgAdminKey"
+            "description": "Invalid org-admin-key"
           }
         }
       }
@@ -513,8 +516,8 @@
         ],
         "parameters": [
           {
-            "in": "body",
-            "name": "orgAdminKey",
+            "in": "header",
+            "name": "org-admin-key",
             "description": "The org admin api key",
             "required": true
           },
@@ -548,10 +551,10 @@
             }
           },
           "400": {
-            "description": "Missing name or orgAdminKey in the resource body or the org name already exists"
+            "description": "Missing name or org-admin-key header or the org name already exists"
           },
           "401": {
-            "description": "invalid orgAdminKey"
+            "description": "invalid org-admin-key"
           }
         }
       }
@@ -561,6 +564,11 @@
     "razee-org-key": {
       "type": "apiKey",
       "name": "razee-org-key",
+      "in": "header"
+    },
+    "org-admin-key": {
+      "type": "apiKey",
+      "name": "org-admin-key",
       "in": "header"
     }
   },
@@ -602,9 +610,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "orgAdminKey": {
-          "type": "string"
         }
       }
     },
