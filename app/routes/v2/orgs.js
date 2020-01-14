@@ -54,9 +54,10 @@ const createOrg = async(req, res) => {
     });
 
     if(insertedOrg.result.ok) {
+      delete insertedOrg.ops[0].orgAdminKey;
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
-      req.log.error(insertedOrg);
+      req.log.error(orgName);
       return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
@@ -80,7 +81,7 @@ const getOrgs = async(req, res) => {
       orgsQuery.name = { $in: orgsToSearch };
     } 
 
-    const foundOrgs = await Orgs.find(orgsQuery).toArray();
+    const foundOrgs = await Orgs.find(orgsQuery, { projection: { orgAdminKey: 0 } }).toArray();
     return res.status(200).send( foundOrgs );
   } catch (error) {
     req.log.error(error);
