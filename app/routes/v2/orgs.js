@@ -41,23 +41,20 @@ const createOrg = async(req, res) => {
     return res.status(400).send( 'This org already exists' );
   }
 
-  const orgAdminKey = req.orgAdminKey; // this was set in verifyAdminOrgKey()
   const orgApiKey = `orgApiKey-${uuid()}`;
   try {
     const insertedOrg = await Orgs.insertOne({
       '_id': uuid(),
       'name': orgName,
       'orgKeys' : [ orgApiKey ],
-      'orgAdminKey': orgAdminKey,
       'created': new Date(),
       'updated': new Date()
     });
-
+   
     if(insertedOrg.result.ok) {
-      delete insertedOrg.ops[0].orgAdminKey;
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
-      req.log.error(orgName);
+      req.log.error(`500. Could not create ${orgName}`);
       return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
@@ -70,7 +67,7 @@ const getOrgs = async(req, res) => {
   try {
     const Orgs = req.db.collection('orgs'); 
   
-    let orgsQuery = { orgAdminKey: req.orgAdminKey };
+    let orgsQuery = {};
     if(req.query && req.query.name) { 
       let orgsToSearch = [];
       if(_.isArray(req.query.name)) {
@@ -81,7 +78,7 @@ const getOrgs = async(req, res) => {
       orgsQuery.name = { $in: orgsToSearch };
     } 
 
-    const foundOrgs = await Orgs.find(orgsQuery, { projection: { orgAdminKey: 0 } }).toArray();
+    const foundOrgs = await Orgs.find(orgsQuery).toArray();
     return res.status(200).send( foundOrgs );
   } catch (error) {
     req.log.error(error);
@@ -119,7 +116,6 @@ const updateOrg = async(req, res) => {
     return res.status(500).send( 'Error updating the org' );
   }
 };
-
 
 const deleteOrg = async(req, res) => {
   const existingOrgId = req.params.id;
