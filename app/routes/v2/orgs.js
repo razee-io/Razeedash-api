@@ -50,11 +50,11 @@ const createOrg = async(req, res) => {
       'created': new Date(),
       'updated': new Date()
     });
-   
+
     if(insertedOrg.result.ok) {
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
-      req.log.error(`${res.statusCode}  Could not create ${orgName}`);
+      req.log.error(insertedOrg.result, `Could not create ${orgName} into the Orgs collection`);
       return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
