@@ -54,7 +54,7 @@ const createOrg = async(req, res) => {
     if(insertedOrg.result.ok) {
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
-      req.log.error(`500. Could not create ${orgName}`);
+      req.log.error(`${res.statusCode}  Could not create ${orgName}`);
       return res.status(500).send( 'Could not create the org' );
     }
   } catch (error) {
