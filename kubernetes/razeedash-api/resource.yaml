@@ -71,6 +71,12 @@ items:
                   name: razeedash-secret
                   key: s3_secret_access_key
                   optional: true
+            - name: S3_BUCKET_PREFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: razeedash-config
+                  key: s3_bucket_prefix
+                  optional: true
             - name: MONGO_URL
               valueFrom:
                 secretKeyRef:

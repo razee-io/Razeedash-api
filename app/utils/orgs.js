@@ -56,4 +56,12 @@ const verifyAdminOrgKey = async(req, res, next) => {
   next();
 };
 
-module.exports = { getOrg, verifyAdminOrgKey };
+
+const encryptOrgData = (org, data) => {
+  if (!_.isString(data)) {
+    data = JSON.stringify(data);
+  }
+  return tokenCrypt.encrypt(data, org.apiKey);
+};
+
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData };
