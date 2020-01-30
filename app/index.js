@@ -65,6 +65,8 @@ server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
 
+require('./subs/index')(server);
+
 initialize().then((db) => {
   app.set('db', db);
   server.emit('ready');
