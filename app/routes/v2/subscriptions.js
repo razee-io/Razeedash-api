@@ -59,7 +59,7 @@ router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
     const subscriptionExists = await Subscriptions.find({ org_id: orgId, uuid: subscriptionId }).count();
     
     if(subscriptionExists && deployable) {
-      const updatedSubscription = await Subscriptions.updateOne(
+      await Subscriptions.updateOne(
         { org_id: orgId, uuid: subscriptionId },
         { $set: { 
           version_uuid: versionId, 
@@ -68,7 +68,7 @@ router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
           channel: deployable.channel_name
         }} 
       );
-      res.status(200).json({ status: 'success', updated: updatedSubscription}); 
+      res.status(200).json({ status: 'success' }); 
     } else {
       req.log.error('error updating the subscription', deployable, subscriptionExists);
       res.status(403).send({status: 'error updating the subscription'});
