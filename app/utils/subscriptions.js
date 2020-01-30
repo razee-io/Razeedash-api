@@ -5,7 +5,7 @@ const MongoClient = new MongoClientClass(mongoConf);
 
 const _ = require('lodash');
 
-export const tagsStrToArr = (str)=>{
+const tagsStrToArr = (str)=>{
   let tags = [];
   if(_.isString(str)){
     tags = str.split(/,/);
@@ -21,7 +21,7 @@ export const tagsStrToArr = (str)=>{
   return tags;
 };
 
-export const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
+const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
   // get tags.  query subscriptions that match all tags
   const matchingSubscriptions = _.filter(subsForOrg, (subscription)=>{
     var groupTags = tagsStrToArr(subscription.tags);
@@ -53,4 +53,9 @@ export const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
   });
   urls = urls.filter(Boolean);
   return urls;
+};
+
+module.exports = {
+  tagsStrToArr,
+  getSubscriptionUrls,
 };
