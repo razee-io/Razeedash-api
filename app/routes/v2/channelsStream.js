@@ -147,4 +147,4 @@ router.post('/:channelName/version', getOrg, requireAuth, asyncHandler(async(req
   }
 }));
 
-export { router as ChannelsStream };
+module.exports = router;

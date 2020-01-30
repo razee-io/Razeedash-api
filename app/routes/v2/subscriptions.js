@@ -80,4 +80,4 @@ router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
   }
 }));
 
-export { router as Subscriptions };
+module.exports = router;

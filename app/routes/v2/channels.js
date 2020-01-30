@@ -162,4 +162,4 @@ router.get('/:channelName', getOrg, requireAuth, asyncHandler(async(req, res)=>{
   }
 }));
 
-export { router as Channels };
+module.exports = router;

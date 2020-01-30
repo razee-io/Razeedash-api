@@ -1,6 +1,6 @@
 const encryptOrgData = require('./orgs.js').encryptOrgData;
 
-export const requireAuth = async(req, res, next) => {
+const requireAuth = async(req, res, next) => {
   const userId = req.get('x-user-id');
   const apiKey = req.get('x-api-key');
 
@@ -19,7 +19,7 @@ export const requireAuth = async(req, res, next) => {
   next();
 };
 
-export const encryptResource = async(req) => {
+const encryptResource = async(req) => {
   return new Promise((resolve, reject) => {
     let content = '';
     req.on('data', (data) => {
@@ -34,4 +34,9 @@ export const encryptResource = async(req) => {
       }
     });
   });
+};
+
+module.exports = {
+  encryptResource,
+  requireAuth
 };

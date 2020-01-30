@@ -185,4 +185,4 @@ async function initialize(){
   return db;
 }
 
-module.exports = {router, initialize};
+module.exports = {router, initialize, streamedRoutes};
