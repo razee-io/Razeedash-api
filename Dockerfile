@@ -4,6 +4,7 @@ FROM node:12.14.1-alpine3.11 as buildImg
 RUN apk update
 RUN apk --no-cache add gnupg python make
 RUN apk add --upgrade --no-cache libssl1.1
+RUN apk add --no-cache g++
 
 RUN mkdir -p /usr/src/
 ENV PATH="$PATH:/usr/src/"
