@@ -106,7 +106,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
         const paths = link.path.split('/');
         const bucket = paths[1];
         const resourceName = decodeURI(paths[2]);
-        const key = Buffer.concat([Buffer.from(req.org.apiKey)], 32);
+        const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
         const decipher = crypto.createDecipheriv(algorithm, key, iv);
         const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
         s3stream.on('error', function(error) {
@@ -131,7 +131,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
   } else {
     // in this case the resource was stored directly in mongo rather than in COS
     try {
-      const data = tokenCrypt.decrypt(deployableVersion.content, req.org.apiKey);
+      const data = tokenCrypt.decrypt(deployableVersion.content, req.orgKey);
       res.set('Content-Type', deployableVersion.type);
       res.status(200).send(data);
     } catch (error) {

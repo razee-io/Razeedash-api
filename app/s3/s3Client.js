@@ -51,6 +51,14 @@ module.exports = class S3Client {
     }).promise();
   }
 
+  getObject(bucketName, key) {
+    this.log.debug({ bucket: bucketName, key: key }, 'Getting object');
+    return this._aws.getObject({
+      Bucket: bucketName,
+      Key: key
+    });
+  }
+
   async deleteBucket(bucketName) {
     this.log.debug(`Deleting bucket ${bucketName}`);
     return this._aws.deleteBucket({

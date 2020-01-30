@@ -27,7 +27,7 @@ const encryptResource = async(req) => {
     });
     req.on('end', () => {
       try {
-        const encrypted = encryptOrgData(req.org, content);
+        const encrypted = encryptOrgData(req.orgKey, content);
         resolve(encrypted);
       } catch (error) {
         reject(error);

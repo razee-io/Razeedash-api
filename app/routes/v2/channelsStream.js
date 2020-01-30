@@ -94,7 +94,7 @@ router.post('/:channelName/version', getOrg, requireAuth, asyncHandler(async(req
             return res.status(500).json({ status: 'error', message: error.message}); 
           }
           const s3 = new AWS.S3(conf.s3);
-          const key = Buffer.concat([Buffer.from(req.org.apiKey)], 32);
+          const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
           const encrypt = crypto.createCipheriv(algorithm, key, iv);
           const pipe = req.pipe(encrypt);
           const params = {Bucket: bucket, Key: resourceName, Body: pipe};

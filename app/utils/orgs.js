@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 
+const _ = require('lodash');
+const tokenCrypt = require('./crypt.js');
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -57,11 +59,11 @@ const verifyAdminOrgKey = async(req, res, next) => {
 };
 
 
-const encryptOrgData = (org, data) => {
+const encryptOrgData = (orgKey, data) => {
   if (!_.isString(data)) {
     data = JSON.stringify(data);
   }
-  return tokenCrypt.encrypt(data, org.apiKey);
+  return tokenCrypt.encrypt(data, orgKey);
 };
 
 module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData };
