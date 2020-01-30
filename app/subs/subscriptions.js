@@ -28,7 +28,7 @@ module.exports = async(orgKey, socket)=>{
 
   const db = await MongoClient.getClient();
   const Orgs = db.collection('orgs');
-  const org = await Orgs.findOne({ orgKeys: orgKey }) ;
+  const org = await Orgs.findOne({ orgKeys: orgKey });
 
   if (!org) {
     log.error(`bad org key.  ${socket.id} disconnected`);
@@ -95,4 +95,3 @@ module.exports = async(orgKey, socket)=>{
     orgId,
   });
 };
-
