@@ -98,6 +98,21 @@ async function initialize(){
           options: { name: 'org_id.containers.image', }
         }
       ],
+      // users is required for stand-alone api
+      users: [
+        {
+          keys: { 'services.bitbucket.id': 1},
+          options: {sparse: true, unique: true}
+        },
+        {
+          keys: { 'services.github.id': 1},
+          options: {sparse: true, unique: true}
+        },
+        {
+          keys: { 'services.ghe.id': 1},
+          options: {sparse: true, unique: true}
+        },
+      ],
       orgs: [
         { 
           keys: { orgKeys: 1 },

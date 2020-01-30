@@ -1,0 +1,10 @@
+version: '3.6'
+## run docker-compose -f <this-file> up -d
+services:
+  redis:
+    image: redis:latest
+    ports:
+    - "6379:6379"
+    restart: always
+    volumes:
+    - /tmp/redisdata:/data
