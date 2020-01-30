@@ -6,6 +6,9 @@ metadata:
     version: "{{TRAVIS_COMMIT}}"
 type: array
 items:
+
+  # api
+
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -96,6 +99,8 @@ items:
                   name: razeedash-secret
                   key: add_cluster_webhook_url
                   optional: true
+            - name: REDIS_CONN_JSON
+              value: '{"host":"redis-service", "port": 6379}'
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
@@ -116,3 +121,62 @@ items:
               limits:
                 cpu: 500m
                 memory: 256Mi
+
+
+  # redis
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: redis
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: redis
+      template:
+        metadata:
+          labels:
+            app: redis
+          name: redis
+        spec:
+          containers:
+            - name: redis
+              image: redis:latest
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 6379
+                  protocol: TCP
+              livenessProbe:
+                exec:
+                  command:
+                    - redis-cli
+                    - ping
+                initialDelaySeconds: 30
+                timeoutSeconds: 5
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+                requests:
+                  cpu: 1m
+                  memory: 64Mi
+
+
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        prometheus.io/probe: 'true'
+        prometheus.io/probepath: 'metrics'
+        prometheus.io/scrape: 'true'
+      name: redis-service
+    spec:
+      selector:
+        app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+          targetPort: 6379
+
