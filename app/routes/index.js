@@ -38,9 +38,9 @@ const Install = require('./install');
 const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
-const Channels = require('./v2/channels.js');
-const ChannelsStream = require('./v2/channelsStream.js');
-const Subscriptions = require('./v2/subscriptions.js');
+const Channels = require('./v1/channels.js');
+const ChannelsStream = require('./v1/channelsStream.js');
+const Subscriptions = require('./v1/subscriptions.js');
 
 router.use('/api/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));

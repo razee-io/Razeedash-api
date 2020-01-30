@@ -17,7 +17,7 @@ const getOrg = require('../../utils/orgs.js').getOrg;
 const requireAuth = require('../../utils/api_utils.js').requireAuth;
 const encryptResource = require('../../utils/api_utils.js').encryptResource;
 
-router.use(ebl(getBunyanConfig('razee-api/v1Channels')));
+router.use(ebl(getBunyanConfig('razee-api/v1ChannelsStream')));
 
 router.use(asyncHandler(async (req, res, next) => {
   req.db = await MongoClient.getClient();
