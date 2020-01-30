@@ -129,7 +129,7 @@ describe('user graphql', () => {
         const result1 = await api.me(token);
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.me.id).to.be.a('string');
-        expect(result1.data.data.me.email).to.equal('user01@us.ibm.com');
+        expect(result1.data.data.me.email).to.be.a('string');
       } catch (error) {
         // console.error('error response is ', error.response);
         console.error('error response is ', JSON.stringify(error.stack));
