@@ -216,7 +216,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        console.log(e.stack);
+        // console.log(e.stack);
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
