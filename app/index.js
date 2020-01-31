@@ -79,7 +79,7 @@ function onListening() {
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
   log.info(`razeedash-api listening on ${bind}`);
 
-  // if AUTH_MODEL is not defined, turn off query API.
+  // Only if AUTH_MODEL is defined, then enable graphql query API.
   if (process.env.AUTH_MODEL) {
     apollo({});
   }

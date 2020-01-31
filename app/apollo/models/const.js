@@ -36,3 +36,4 @@ const AUTH_MODEL = process.env.AUTH_MODEL || AUTH_MODELS.LOCAL;
 const SECRET = process.env.SECRET || 'veryverysecret';
 
 module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET };
+
