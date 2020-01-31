@@ -75,7 +75,6 @@ const setOrgKey = (req, res, next) => {
   if(!orgKey){
     orgKey = req.query.orgKey;
     if(!orgKey){
-      req.log.warn(`razee-org-key not specified on route ${req.url}`);
       return res.status(401).send( 'razee-org-key required' );
     }
   }
