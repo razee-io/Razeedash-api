@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-const lodash = require('lodash');
 const Moment = require('moment');
 const { AuthenticationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
 
 const buildSearchForClusterName = (ordId, searchStr) => {
+  let ands = [];
   const tokens = searchStr.split(/\s+/);
-  const ands = lodash.map(tokens, token => {
-    const searchRegex = { $regex: token, $options: 'i' };
-    const ors = [{ cluster_id: searchRegex }];
-    const out = {
-      $or: ors,
-    };
-    return out;
-  });
+  if (tokens.length > 0) {
+    ands = tokens.map(token => {
+      const searchRegex = { $regex: token, $options: 'i' };
+      const ors = [{ cluster_id: searchRegex }];
+      const out = {
+        $or: ors,
+      };
+      return out;
+    });
+  }
 
   ands.push({
     org_id: ordId,

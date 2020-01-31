@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-const _ = require('lodash');
-
 const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime) => {
   let ands = [];
-  const tokens = _.filter(searchStr.split(/\s+/));
+  const tokens = searchStr.split(/\s+/);
   if (tokens.length > 0) {
-    ands = _.map(tokens, token => {
+    ands = tokens.map(token => {
       let searchRegex = {$regex: token, $options: 'i',};
       let ors = [
         {cluster_id: searchRegex,},
