@@ -24,6 +24,18 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
+const checkOrg = (req, res, next) => {
+  let orgKey = req.get('razee-org-key');
+  if(!orgKey){
+    orgKey = req.query.orgKey;
+    if(!orgKey){
+      return res.status(401).send( 'razee-org-key required for this route' );
+    }
+  }
+  req.orgKey=orgKey;
+  next();
+};
+
 // Create a new resource version for a channel. This route was created separate from 
 // channels.js so we can have a route in src/server.js where body-parser isn't applied
 // curl --request POST \
@@ -35,7 +47,7 @@ router.use(asyncHandler(async (req, res, next) => {
 //   --header 'x-api-key: razee-user-api-key' \
 //   --header 'x-user-id: razee-user-id' \
 //   --data @filename.goes.here.yaml
-router.post('/:channelName/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
+router.post('/:channelName/version', checkOrg, getOrg, requireAuth, asyncHandler(async(req, res)=>{
   try {
     if (!req.get('resource-name')) {
       return res.status(400).send('A resource-name name was not included in the header');

@@ -45,16 +45,13 @@ const Subscriptions = require('./v1/subscriptions.js');
 router.use('/api/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));
 
-const setDb = async (req, res, next) => {
+router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
   req.db = db;
   next();
-};
+}));
 
-router.use(asyncHandler(setDb));
-streamedRoutes.use(asyncHandler(setDb));
-
-const setS3 = async (req, res, next) => {
+router.use(asyncHandler(async (req, res, next) => {
   let s3Client = null;
   if (conf.s3.endpoint) {
     s3Client = new S3ClientClass(conf);
@@ -62,15 +59,13 @@ const setS3 = async (req, res, next) => {
   }
   req.s3 = s3Client;
   next();
-};
-router.use(asyncHandler(setS3));
-streamedRoutes.use(asyncHandler(setS3));
+}));
 
 // the orgs routes should be above the razee-org-key checks since the user
 // won't have a razee-org-key when creating an org for the first time. 
 router.use('/api/v2/orgs', Orgs);
 
-const setOrgKey = (req, res, next) => {
+router.use((req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
     orgKey = req.query.orgKey;
@@ -80,10 +75,7 @@ const setOrgKey = (req, res, next) => {
   }
   req.orgKey=orgKey;
   next();
-};
-router.use(setOrgKey);
-streamedRoutes.use(setOrgKey);
-streamedRoutes.use(getOrg);
+});
 router.use(getOrg);
 router.use('/api/install', Install);
 router.use('/api/v2/clusters', Clusters);
