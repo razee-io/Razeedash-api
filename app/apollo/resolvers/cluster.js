@@ -55,16 +55,23 @@ const validAuth = async (me, orgId, action, models, queryName, logger) => {
   }
 };
 
-const commonClusterSearch = async (models, searchFilter, limit) => {
+const commonClusterSearch = async (
+  models,
+  searchFilter,
+  limit,
+  startingAfter,
+) => {
   let results = [];
 
-  results = await models.Cluster.find(searchFilter)
-    .sort({ created: -1 })
-    .limit(limit);
+  // If startingAfter specified, we are doing pagination so add another filter
+  if (startingAfter) {
+    Object.assign(searchFilter, { _id: { $lt: startingAfter } });
+  }
 
-  results = results.map(result => {
-    return result.toJSON();
-  });
+  results = await models.Cluster.find(searchFilter)
+    .sort({ _id: -1 })
+    .limit(limit)
+    .lean();
   return results;
 };
 
@@ -82,31 +89,34 @@ const clusterResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
 
-      let result = await models.Cluster.findOne({
+      const result = await models.Cluster.findOne({
         org_id: orgId,
         cluster_id: clusterId,
-      });
+      }).lean();
 
-      if (result != null) {
-        result = result.toJSON();
-      }
       return result;
     }, // end cluster by _id
 
+    // Return a list of clusters based on org_id.
+    // sorted with newest document first
+    // optional args:
+    // - limit: number of docs to return. default 50, 0 means return all
+    // - startingAfter: for pagination. Specify the _id of the document you want results
+    //   older than.
     clustersByOrgID: async (
       parent,
-      { org_id: orgId, limit },
+      { org_id: orgId, limit, startingAfter },
       { models, me, logger },
     ) => {
       const queryName = 'clustersByOrgID';
-      logger.debug(
+      logger.info(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
       );
 
       await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
 
       const searchFilter = { org_id: orgId };
-      return commonClusterSearch(models, searchFilter, limit);
+      return commonClusterSearch(models, searchFilter, limit, startingAfter);
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day

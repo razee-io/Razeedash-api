@@ -284,6 +284,59 @@ describe('cluster graphql test suite', () => {
     }
   });
 
+  it('get clusters by Org ID with pagination', async () => {
+    let next;
+
+    try {
+      const {
+        data: {
+          data: { clustersByOrgID },
+        },
+      } = await clusterApi.byOrgID(token, {
+        org_id: org01._id,
+        limit: 2,
+      });
+
+      expect(clustersByOrgID).to.be.an('array');
+      expect(clustersByOrgID).to.have.length(2);
+      expect(clustersByOrgID[0].cluster_id).to.equal('cluster_04');
+      expect(clustersByOrgID[1].cluster_id).to.equal('cluster_03');
+
+      next = clustersByOrgID[1]._id;
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+
+    try {
+      const {
+        data: {
+          data: { clustersByOrgID },
+        },
+      } = await clusterApi.byOrgID(token, {
+        org_id: org01._id,
+        limit: 2,
+        startingAfter: next,
+      });
+
+      expect(clustersByOrgID).to.be.an('array');
+      expect(clustersByOrgID).to.have.length(2);
+      expect(clustersByOrgID[0].cluster_id).to.equal('cluster_02');
+      expect(clustersByOrgID[1].cluster_id).to.equal('cluster_01');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('search cluster with filter (cluster) on cluster ID', async () => {
     try {
       const {
@@ -322,7 +375,7 @@ describe('cluster graphql test suite', () => {
 
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(1);
-      expect(clusterSearch[0].cluster_id).to.equal('cluster_03');
+      expect(clusterSearch[0].cluster_id).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -368,7 +421,7 @@ describe('cluster graphql test suite', () => {
 
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(1);
-      expect(clusterSearch[0].cluster_id).to.equal('cluster_03');
+      expect(clusterSearch[0].cluster_id).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

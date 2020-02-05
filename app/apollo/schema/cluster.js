@@ -66,28 +66,39 @@ const clusterSchema = gql`
     clusterByClusterID(org_id: String!, cluster_id: String!): Cluster!
 
     """
-    Return all clusters based on **org_id**.
+    Return clusters based on **org_id**, sorted with newest document first.
     """
-    clustersByOrgID(org_id: String, limit: Int = 50): [Cluster]!
+    clustersByOrgID(
+      org_id: String!
+      "**limit**: Number of docs to return. default 50, 0 means return all"
+      limit: Int = 50
+      "**startingAfter**: For pagination. Specify the **_id** of the document you want results older than."
+      startingAfter: String
+    ): [Cluster]!
 
     """
-    Return clusters based on **org_id** and filter on **cluster_id**.
+    Return clusters based on **org_id** and **filter** on **cluster_id**. Sorted with newest document first.
     """
     clusterSearch(
       org_id: String!
       """
-      **filter** applies to **cluster_id** field.
+      **filter**: applies to **cluster_id** field.
       If no **filter** is provided, this returns clusters based on just **orig_id**.
       """
       filter: String
-      "If no **limit** is provided, a max of 50 clusters will be returned."
+      "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
     ): [Cluster]!
 
     """
-    Return clusters whose *updated* field has not been updated in the past day.
+    Return clusters based on **org_id** whose *updated* field has not been updated in the past day.
+    Sorted with newest document first.
     """
-    clusterZombies(org_id: String!, limit: Int = 50): [Cluster]
+    clusterZombies(
+      org_id: String!
+      "**limit**: Number of docs to return. default 50, 0 means return all"
+      limit: Int = 50
+    ): [Cluster]
 
     """
     Return counts of different kubernetes versions deployed in **org_id**. Only active
