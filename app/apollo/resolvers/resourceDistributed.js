@@ -33,12 +33,13 @@ const commonResourcesDistributedSearch = async (
         return rd
           .find(searchFilter)
           .sort({ created: -1 })
-          .limit(limit);
+          .limit(limit)
+          .lean();
       }),
     );
     resultsArray.map(rs => {
       return rs.map(r => {
-        return results.push(r.toJSON());
+        return results.push(r);
       });
     });
   } catch (error) {
@@ -176,11 +177,10 @@ const resourceDistributedResolvers = {
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
         // eslint-disable-next-line no-await-in-loop
-        let result = await rd.findById(_id);
+        let result = await rd.findById(_id).lean();
         if (result !== null) {
           // eslint-disable-next-line no-await-in-loop
           await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
-          result = result.toJSON();
           return result;
         }
       }
@@ -200,9 +200,8 @@ const resourceDistributedResolvers = {
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
         // eslint-disable-next-line no-await-in-loop
-        let result = await rd.findOne({ org_id, cluster_id, selfLink });
+        let result = await rd.findOne({ org_id, cluster_id, selfLink }).lean();
         if (result !== null) {
-          result = result.toJSON();
           return result;
         }
       }

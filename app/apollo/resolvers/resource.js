@@ -25,10 +25,8 @@ const commonResourcesSearch = async (models, searchFilter, limit) => {
   let results = [];
   results = await models.Resource.find(searchFilter)
     .sort({ created: -1 })
-    .limit(limit);
-  results = results.map(result => {
-    return result.toJSON();
-  });
+    .limit(limit)
+    .lean();
   return results;
 };
 
@@ -122,10 +120,9 @@ const resourceResolvers = {
       logger.debug(
         `${queryName}: user: ${whoIs(me)}, resource _id: ${_id}`,
       );
-      let result = await models.Resource.findById(_id);
+      let result = await models.Resource.findById(_id).lean();
       if (result != null) {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
-        result = result.toJSON();
       }
       return result;
     },
@@ -144,10 +141,7 @@ const resourceResolvers = {
         org_id,
         cluster_id,
         selfLink,
-      });
-      if (result != null) {
-        result = result.toJSON();
-      }
+      }).lean();
       return result;
     },
   },
