@@ -24,6 +24,7 @@ const conf = {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     locationConstraint: process.env.S3_LOCATION_CONSTRAINT || 'us-standard',
+    bucketPrefix: process.env.S3_BUCKET_PREFIX || 'razee'
   }
 };
 

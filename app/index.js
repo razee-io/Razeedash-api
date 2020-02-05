@@ -21,7 +21,7 @@ const compression = require('compression');
 const body_parser = require('body-parser');
 const ebl = require('express-bunyan-logger');
 const addRequestId = require('express-request-id')();
-const {router, initialize} = require('./routes/index.js');
+const {router, initialize, streamedRoutes} = require('./routes/index.js');
 const log = require('./log').log;
 const getBunyanConfig = require('./utils/bunyan.js').getBunyanConfig;
 const port = 3333;
@@ -36,9 +36,11 @@ router.use(ebl(getBunyanConfig('razeedash-api')));
 
 app.set('trust proxy', true);
 app.use(addRequestId);
+app.use(compression());
+
+app.use(streamedRoutes); // routes where we don't wan't body-parser applied
 app.use(body_parser.json({ limit: '8mb' }));
 app.use(body_parser.urlencoded({ extended: false }));
-app.use(compression());
 app.set('port', port);
 app.use(router);
 
@@ -63,6 +65,8 @@ const server = http.createServer(app);
 server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
+
+require('./subs/index')(server);
 
 initialize().then((db) => {
   app.set('db', db);
