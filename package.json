@@ -21,7 +21,7 @@
   "author": "",
   "contributors": [],
   "dependencies": {
-    "aws-sdk": "^2.610.0",
+    "aws-sdk": "^2.614.0",
     "bunyan": "^1.8.12",
     "clone": "^2.1.2",
     "compression": "^1.7.4",
