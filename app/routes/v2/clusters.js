@@ -88,7 +88,8 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
 
 const pushToS3 = async (req, key, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
-  const bucket = `razee-${key.org_id}`;
+  const orgId = key.org_id.toLowerCase(); 
+  const bucket = `razee-${orgId}`;
   const hash = crypto.createHash('sha256');
   const hashKey = hash.update(JSON.stringify(key)).digest('hex');
   await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
