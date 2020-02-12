@@ -57,7 +57,7 @@
     "mongodb": "^3.5.2",
     "mongoose": "^5.7.11",
     "mustache": "^4.0.0",
-    "object-hash": "^2.0.1",
+    "object-hash": "^2.0.2",
     "object-path": "^0.11.4",
     "p-limit": "^2.2.2",
     "passport": "^0.4.1",
