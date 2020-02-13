@@ -28,7 +28,8 @@ const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
- 
+
+const apollo = require('./apollo');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
@@ -81,6 +82,11 @@ function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
   log.info(`razeedash-api listening on ${bind}`);
+
+  // Only if AUTH_MODEL is defined, then enable graphql query API.
+  if (process.env.AUTH_MODEL) {
+    apollo({});
+  }
 }
 
 function onError(error) {

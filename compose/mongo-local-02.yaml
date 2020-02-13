@@ -1,0 +1,20 @@
+version: '3.6'
+## mkdir -p /tmp/mongo-02/db
+## docker-compose -f mongo-local-02.yaml up -d
+## docker-compose -f mongo-local-02.yaml down
+services:
+  mongo-02:
+    image: mongo:latest
+    container_name: "mongodb-02"
+    ports:
+    - "27217:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-rootsecret}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-meteor}
+      MONGO_NON_ROOT_USERNAME: ${MONGO_NON_ROOT_USERNAME:-meteor}
+      MONGO_NON_ROOT_PASSWORD: ${MONGO_NON_ROOT_PASSWORD:-secret}
+    restart: always
+    volumes:
+    - /tmp/mongo-02/db:/data/db
+    - ./mongo-user.sh:/docker-entrypoint-initdb.d/mongo-user.sh:ro
