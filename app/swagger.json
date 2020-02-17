@@ -305,6 +305,52 @@
             "description": "Please resync"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "clusters"
+        ],
+        "summary": "Delete a cluster",
+        "description": "Delete a cluster and its resources",
+        "operationId": "deleteCluster",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "path",
+            "description": "ID of cluster",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "header",
+            "name": "razee-org-key",
+            "description": "organization api key",
+            "required": true
+          },
+          {
+            "in": "header",
+            "name": "org-admin-key",
+            "description": "organization admin key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster resources removed"
+          },
+          "403": {
+            "description": "Cluster not found"
+          },
+          "500": {
+            "description": "Error removing cluster"
+          }
+        }
       }
     },
     "/clusters/{cluster_id}/resources": {
