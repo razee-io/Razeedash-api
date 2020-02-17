@@ -28,6 +28,7 @@ const request = require('request-promise-native');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
+const deleteResource = require('../../utils/resources.js').deleteResource;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
@@ -344,6 +345,19 @@ const clusterDetails = async (req, res, next) => {
   }
 };
 
+const deleteCluster = async (req, res, next) => {
+  try {
+    const Clusters = req.db.collection('clusters');
+    const cluster_id = req.cluster.cluster_id;
+    await Clusters.deleteOne({ org_id: req.org._id, cluster_id: cluster_id });
+    req.log.info(`cluster ${cluster_id} deleted`);
+    next();
+  } catch (error) {
+    req.log.error(error.message);
+    return res.status(500).json({ status: 'error', message: error.message }); 
+  }
+};
+
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
 // /api/v2/clusters/:cluster_id
@@ -363,5 +377,8 @@ router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
 
 // /api/v2/clusters/:cluster_id
 router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
+
+// /api/v2/clusters/:cluster_id
+router.delete('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(deleteCluster), asyncHandler(deleteResource));
 
 module.exports = router;
