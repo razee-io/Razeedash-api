@@ -59,6 +59,10 @@ router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
     const subscriptionExists = await Subscriptions.find({ org_id: orgId, uuid: subscriptionId }).count();
     
     if(subscriptionExists && deployable) {
+      const UserLog = req.db.collection('user_log');
+      const userId = req.get('x-user-id');
+      UserLog.insert({ userid: userId, action: 'setSubscriptionVersion', message: `API: Set a version for a subscription ${orgId}:${subscriptionId}:${deployable.name}:${deployable.channel_name}`, created: new Date() });
+
       await Subscriptions.updateOne(
         { org_id: orgId, uuid: subscriptionId },
         { $set: { 
