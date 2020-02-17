@@ -16,7 +16,10 @@
 
 const deleteResource = async (req, res) => {
   try {
-    const cluster_id = req.cluster.cluster_id;
+    if(!req.org._id || !req.params.cluster_id){
+      throw 'missing orgId or clusterId';
+    }
+    const cluster_id = req.params.cluster_id;
     const Resources = req.db.collection('resources');
     await Resources.deleteMany({ org_id: req.org._id, cluster_id: cluster_id});
     req.log.info(`cluster ${cluster_id} resources deleted`);

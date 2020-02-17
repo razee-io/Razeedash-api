@@ -347,8 +347,11 @@ const clusterDetails = async (req, res, next) => {
 
 const deleteCluster = async (req, res, next) => {
   try {
+    if(!req.org._id || !req.params.cluster_id){
+      throw 'missing orgId or clusterId';
+    }
     const Clusters = req.db.collection('clusters');
-    const cluster_id = req.cluster.cluster_id;
+    const cluster_id = req.params.cluster_id;
     await Clusters.deleteOne({ org_id: req.org._id, cluster_id: cluster_id });
     req.log.info(`cluster ${cluster_id} deleted`);
     next();
