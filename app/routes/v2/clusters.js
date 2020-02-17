@@ -75,11 +75,16 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
   req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
+    var headers = {};
+    if(process.env.ADD_CLUSTER_CALLBACK_APIKEY){
+      headers.Authorization = process.env.ADD_CLUSTER_CALLBACK_APIKEY;
+    }
     var result = await request.post({
       url,
       body: postData,
       json: true,
       resolveWithFullResponse: true,
+      headers,
     });
     req.log.info({ url, postData, statusCode: result.statusCode }, 'posted add cluster webhook');
   }catch(err){
