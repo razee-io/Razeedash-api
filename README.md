@@ -54,7 +54,7 @@ stringData:
 
 For local development, put the headers as files in the
 `/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers` directory.  
-For instance:   
+For instance:  
 `echo "SOME_APIKEY" > /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers/Authorization`  
 (you may need sudo to perform this operation).
 
