@@ -53,8 +53,6 @@ const verifyAdminOrgKey = async(req, res, next) => {
     req.log.warn(`invalid org-admin-key supplied on route ${req.url}`);
     return res.status(401).send( 'invalid org-admin-key' );
   }
-
-  req.orgAdminKey = storedAdminKey;
   next();
 };
 
