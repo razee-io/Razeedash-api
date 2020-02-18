@@ -27,7 +27,6 @@ Razeedash-API is the interface used by
 | S3_BUCKET_PREFIX        | no                     | 'razee'|
 | ORG_ADMIN_KEY           | no                     | n/a |
 | ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
-| ADD_CLUSTER_WEBHOOK_HEADERS | no                 | n/a |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.
@@ -38,12 +37,26 @@ ORG_ADMIN_KEY is required if you plan on adding organizations using the api/v2/o
 
 ADD_CLUSTER_WEBHOOK_URL signifies the webhook endpoint to hit when a cluster is added.
 Razee will do a POST request to this url with json data `{ org_id, cluster_id, cluster_name }`.
-If ADD_CLUSTER_WEBHOOK_HEADERS is also specified, it will be parsed as JSON and sent as headers
-in the request.  
-Example usage is:  
-`export ADD_CLUSTER_WEBHOOK_HEADERS="{\"Authorization\":\"AN_API_TOKEN\"}"`.  
-If invalid JSON is passed, the service will log an error and send the request without the
-headers added.
+If a `razeedash-add-cluster-webhook-headers-secret` exists in the namespace, its key-value
+pairs will be used as headers in the request.
+For instance, if you would like to send an Authorization header in the request to verify that
+razee is sending the webhook, you can create a secret like so:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: razee
+  name: razeedash-add-cluster-webhook-headers-secret
+stringData:
+  Authorization: SOME_APIKEY
+```
+
+For local development, put the headers as files in the
+`/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers` directory.  
+For instance:   
+`echo "SOME_APIKEY" > /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers/Authorization`  
+(you may need sudo to perform this operation).
 
 ### OS/X
 
