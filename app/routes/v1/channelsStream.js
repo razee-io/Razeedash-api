@@ -124,6 +124,10 @@ router.post('/:channelName/version', checkOrg, getOrg, requireAuth, asyncHandler
         location = 'mongo';
       }
 
+      const UserLog = req.db.collection('user_log');
+      const userId = req.get('x-user-id');
+      UserLog.insertOne({ userid: userId, action: 'addVersion', message: `API: Add resource version${orgId}:${channelName}:${version.name}:${location}`, created: new Date() });
+
       await DeployableVersions.insertOne({
         'org_id': orgId,
         'channel_id': existingChannel.uuid,
