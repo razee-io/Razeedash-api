@@ -65,7 +65,7 @@ router.post('/', getOrg, requireAuth, asyncHandler(async(req, res, next)=>{
       if(resp.insertedCount == 1) {
         const UserLog = req.db.collection('user_log');
         const userId = req.get('x-user-id');
-        UserLog.insert({ userid: userId, action: 'addChannel', message: `API: Add channel ${orgId}:${newDeployable}`, created: new Date() });
+        UserLog.insertOne({ userid: userId, action: 'addChannel', message: `API: Add channel ${orgId}:${newDeployable}`, created: new Date() });
         res.status(200).json({ status: 'success', id: deployableId, 'name': newDeployable }); 
       } else {
         res.status(403).json({ status: 'error', message: 'Error inserting a new deployable'}); 
