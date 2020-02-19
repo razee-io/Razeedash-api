@@ -99,11 +99,11 @@ items:
                   name: razeedash-secret
                   key: add_cluster_webhook_url
                   optional: true
-            - name: ADD_CLUSTER_CALLBACK_APIKEY
+            - name: ADD_CLUSTER_WEBHOOK_HEADERS
               valueFrom:
                 secretKeyRef:
                   name: razeedash-secret
-                  key: add_cluster_callback_apikey
+                  key: add_cluster_webhook_headers
                   optional: true
             - name: REDIS_CONN_JSON
               value: '{"host":"redis-service", "port": 6379}'

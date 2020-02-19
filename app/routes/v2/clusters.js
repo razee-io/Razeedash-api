@@ -76,8 +76,12 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
     var headers = {};
-    if(process.env.ADD_CLUSTER_CALLBACK_APIKEY){
-      headers.Authorization = process.env.ADD_CLUSTER_CALLBACK_APIKEY;
+    if(process.env.ADD_CLUSTER_WEBHOOK_HEADERS){
+      try{
+        headers = JSON.parse(process.env.ADD_CLUSTER_WEBHOOK_HEADERS);
+      }catch(err){
+        req.log.error({ err }, 'process.env.ADD_CLUSTER_WEBHOOK_HEADERS is set but is not valid json');
+      }
     }
     var result = await request.post({
       url,
