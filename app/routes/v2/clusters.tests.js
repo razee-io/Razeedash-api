@@ -876,4 +876,81 @@ describe('clusters', () => {
     });
 
   });
+  describe('getClusters', () => {
+    it('should call next() on a thrown error', async () => {
+
+      const request = httpMocks.createRequest({ method: 'GET', url: '/', log: log });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const getClusters = v2.__get__('getClusters');
+      await getClusters(request, response, next);
+
+      assert.equal(nextCalled, true);
+    });
+
+    it('should return status 200', async () => {
+
+      const cluster_id = 'testCluster';
+      const org_id = '1';
+
+      const Clusters = db.collection('clusters');
+      await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        org: { _id: org_id }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const getClusters = v2.__get__('getClusters');
+      await getClusters(request, response, next);
+
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 200);
+
+    });
+
+  });
+  describe('clusterDetails', () => {
+
+    it('should return status 200', async () => {
+
+      const cluster_id = 'testCluster';
+      const org_id = '1';
+
+      const Clusters = db.collection('clusters');
+      await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        org: { _id: org_id }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const clusterDetails = v2.__get__('clusterDetails');
+      await clusterDetails(request, response, next);
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(nextCalled, false);
+
+    });
+
+  });
 });
