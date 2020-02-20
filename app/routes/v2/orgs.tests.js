@@ -18,6 +18,7 @@ const assert = require('assert');
 const mongodb = require('mongo-mock');
 var httpMocks = require('node-mocks-http');
 const log = require('../../log').log;
+const uuid = require('uuid');
 
 const rewire = require('rewire');
 let v2 = rewire('./orgs');
@@ -110,4 +111,49 @@ describe('orgs', () => {
 
   });
 
+  describe('getOrgs', () => {
+
+    it('should retun 200 if there were no errors ', async () => {
+      await db.collection('orgs').insertOne({ 
+        '_id': uuid(),
+        'name': 'existingOrg',
+        'orgKeys' : [ 'test123'],
+        'created': new Date(),
+        'updated': new Date()
+      });
+      const getOrgs = v2.__get__('getOrgs');
+      const request = httpMocks.createRequest({ 
+        method: 'POST', 
+        url: '/', 
+        params: { name: 'existingOrg'},
+        log: log, 
+        db: db 
+      });
+
+      const response = httpMocks.createResponse();
+      await getOrgs(request, response);
+
+      assert.equal(response.statusCode, 200);
+    });
+
+    it('should retun 500 if an error was thrown', async () => {
+      const getOrgs = v2.__get__('getOrgs');
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        body: { name: 'testorg2' },
+        log: log
+      });
+      request.db = {
+        collection: () => { throw new Error('oops'); }, 
+        close: () => { }
+      };
+
+      const response = httpMocks.createResponse();
+      await getOrgs(request, response);
+
+      assert.equal(response.statusCode, 500);
+    });
+
+  });
 });
