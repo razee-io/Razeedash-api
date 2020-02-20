@@ -24,6 +24,8 @@ const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
 const request = require('request-promise-native');
+var glob = require('glob-promise');
+var fs = require('fs');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -63,6 +65,22 @@ const addUpdateCluster = async (req, res, next) => {
 
 };
 
+var getAddClusterWebhookHeaders = async()=>{
+  // loads the headers specified in the 'razeedash-add-cluster-webhook-headers-secret' secret
+  // returns the key-value pairs of the secret as a js obj
+  var filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
+  var fileNames = await glob('**', {
+    cwd: filesDir,
+    nodir: true,
+  });
+  var headers = {};
+  _.each(fileNames, (name)=>{
+    var val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
+    headers[encodeURIComponent(name)] = val;
+  });
+  return headers;
+};
+
 var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   var postData = {
     org_id: orgId,
@@ -75,14 +93,7 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
   req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
-    var headers = {};
-    if(process.env.ADD_CLUSTER_WEBHOOK_HEADERS){
-      try{
-        headers = JSON.parse(process.env.ADD_CLUSTER_WEBHOOK_HEADERS);
-      }catch(err){
-        req.log.error({ err }, 'process.env.ADD_CLUSTER_WEBHOOK_HEADERS is set but is not valid json');
-      }
-    }
+    var headers = await getAddClusterWebhookHeaders();
     var result = await request.post({
       url,
       body: postData,
