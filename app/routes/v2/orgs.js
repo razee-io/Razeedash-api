@@ -90,7 +90,7 @@ const updateOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   const updates = req.body;
   
-  if (!updates) {
+  if (!updates || _.isEmpty(updates)) {
     req.log.error('no message body was provided');
     return res.status(400).send('Missing message body');
   }

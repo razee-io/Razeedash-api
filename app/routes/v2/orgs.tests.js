@@ -197,4 +197,84 @@ describe('orgs', () => {
     });
 
   });
+
+  describe('updateOrg', () => {
+
+    it('should retun 200 if the org was updated', async () => {
+      await db.collection('orgs').insertOne({ 
+        '_id': '00001',
+        'name': 'orgToUpdate',
+        'orgKeys' : [ 'test123'],
+        'created': new Date(),
+        'updated': new Date()
+      });
+      const updateOrg= v2.__get__('updateOrg');
+      const request = httpMocks.createRequest({ 
+        method: 'PUT', 
+        url: '/', 
+        params: { id: '00001'},
+        body: { 'name': 'newOrgName' },
+        log: log, 
+        db: db 
+      });
+
+      const response = httpMocks.createResponse();
+      await updateOrg(request, response);
+
+      assert.equal(response.statusCode, 200);
+    });
+
+    it('should retun 500 if an error was thrown', async () => {
+      const updateOrg = v2.__get__('updateOrg');
+      const request = httpMocks.createRequest({ 
+        method: 'PUT', 
+        url: '/', 
+        body: { name: 'blahblah' },
+        log: log 
+      });
+      request.db = {
+        collection: () => { throw new Error('oops'); }, 
+        close: () => { }
+      };
+
+      const response = httpMocks.createResponse();
+      await updateOrg(request, response);
+
+      assert.equal(response.statusCode, 500);
+    });
+
+    it('should retun 400 the existing org was not found', async () => {
+      const updateOrg = v2.__get__('updateOrg');
+      const request = httpMocks.createRequest({ 
+        method: 'PUT', 
+        url: '/', 
+        db: db,
+        body: { name: 'blahblah' },
+        params: { id: 'badId001'},
+        log: log 
+      });
+
+      const response = httpMocks.createResponse();
+      await updateOrg(request, response);
+
+      assert.equal(response.statusCode, 400);
+    });
+
+    it('should retun 400 if no message body was provided', async () => {
+      const updateOrg = v2.__get__('updateOrg');
+      const request = httpMocks.createRequest({ 
+        method: 'PUT', 
+        url: '/', 
+        db: db,
+        params: { id: 'badId001'},
+        log: log 
+      });
+
+      const response = httpMocks.createResponse();
+      await updateOrg(request, response);
+
+      assert.equal(response.statusCode, 400);
+    });
+
+  });
 });
