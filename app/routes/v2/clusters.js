@@ -355,7 +355,7 @@ const getClusters = async (req, res, next) => {
   }
 };
 
-const clusterDetails = async (req, res, next) => {
+const clusterDetails = async (req, res) => {
   const cluster = req.cluster; // req.cluster was set in `getCluster`
   if(cluster) {
     return res.status(200).send({cluster});
