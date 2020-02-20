@@ -156,4 +156,45 @@ describe('orgs', () => {
     });
 
   });
+
+  describe('deleteOrg', () => {
+
+    it('should retun 200 if the org was deleted', async () => {
+      await db.collection('orgs').insertOne({ 
+        '_id': '00001',
+        'name': 'orgToDelete',
+        'orgKeys' : [ 'test123'],
+        'created': new Date(),
+        'updated': new Date()
+      });
+      const deleteOrg = v2.__get__('deleteOrg');
+      const request = httpMocks.createRequest({ 
+        method: 'DELETE', 
+        url: '/', 
+        params: { id: '00001'},
+        log: log, 
+        db: db 
+      });
+
+      const response = httpMocks.createResponse();
+      await deleteOrg(request, response);
+
+      assert.equal(response.statusCode, 200);
+    });
+
+    it('should retun 500 if an error was thrown', async () => {
+      const deleteOrg = v2.__get__('deleteOrg');
+      const request = httpMocks.createRequest({ method: 'DELETE', url: '/', log: log });
+      request.db = {
+        collection: () => { throw new Error('oops'); }, 
+        close: () => { }
+      };
+
+      const response = httpMocks.createResponse();
+      await deleteOrg(request, response);
+
+      assert.equal(response.statusCode, 500);
+    });
+
+  });
 });
