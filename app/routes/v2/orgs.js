@@ -34,15 +34,15 @@ const createOrg = async(req, res) => {
     return res.status(400).send( 'An org name is required' );
   }
   
-  const Orgs = req.db.collection('orgs');
-  const foundOrg = await Orgs.findOne({'name': orgName});
-  if(foundOrg){
-    req.log.warn( 'The org name already exists' );
-    return res.status(400).send( 'This org already exists' );
-  }
-
-  const orgApiKey = `orgApiKey-${uuid()}`;
   try {
+    const Orgs = req.db.collection('orgs');
+    const foundOrg = await Orgs.findOne({'name': orgName});
+    if(foundOrg){
+      req.log.warn( 'The org name already exists' );
+      return res.status(400).send( 'This org already exists' );
+    }
+
+    const orgApiKey = `orgApiKey-${uuid()}`;
     const insertedOrg = await Orgs.insertOne({
       '_id': uuid(),
       'name': orgName,
