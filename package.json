@@ -35,7 +35,7 @@
     "fs-readfile-promise": "^3.0.1",
     "glob": "^7.1.6",
     "glob-promise": "^3.4.0",
-    "ioredis": "^4.14.1",
+    "ioredis": "^4.16.0",
     "json-key-validate": "^1.0.2",
     "lodash": "^4.17.14",
     "mongodb": "^3.3.4",
