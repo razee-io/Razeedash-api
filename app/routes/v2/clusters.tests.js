@@ -928,14 +928,12 @@ describe('clusters', () => {
       const cluster_id = 'testCluster';
       const org_id = '1';
 
-      const Clusters = db.collection('clusters');
-      await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
-
       const request = httpMocks.createRequest({ 
         method: 'GET', 
         url: '/', 
         org: { _id: org_id }, 
         headers: { 'org-admin-key': 'goodKey123' }, 
+        cluster: cluster_id,
         log: log, 
         db: db 
       });
@@ -948,6 +946,26 @@ describe('clusters', () => {
       await clusterDetails(request, response, next);
 
       assert.equal(response.statusCode, 200);
+      assert.equal(nextCalled, false);
+
+    });
+    it('should return status 404 for a missing cluster', async () => {
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const clusterDetails = v2.__get__('clusterDetails');
+      await clusterDetails(request, response, next);
+
+      assert.equal(response.statusCode, 404);
       assert.equal(nextCalled, false);
 
     });
