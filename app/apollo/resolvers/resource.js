@@ -51,11 +51,9 @@ const validAuth = async (me, org_id, action, type, models, queryName, logger) =>
 
 const resourceResolvers = {
   Query: {
-    resourcesCount: async (parent, { org_id }, { models, me, logger }) => {
+    resourcesCount: async (parent, { org_id }, { models, me, logger, req_id }) => {
       const queryName = 'resourcesCount';
-      logger.debug(
-        `${queryName}: user: ${whoIs(me)}, org_id: ${org_id}`,
-      );      
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
 
       let count = 0;
@@ -74,12 +72,10 @@ const resourceResolvers = {
     resources: async (
       parent,
       { org_id, filter, fromDate, toDate, limit },
-      { models, me, logger},
+      { models, me, logger, req_id},
     ) => {
       const queryName = 'resources';
-      logger.debug(
-        `${queryName}: user: ${whoIs(me)}, org_id: ${org_id}, filter: ${filter}, fromDate: ${fromDate}, toDate: ${fromDate}, limit: ${limit}`,
-      );
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
       if ( limit < 0 ) limit = 20;
       if ( limit > 50 ) limit = 50;
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
@@ -94,12 +90,11 @@ const resourceResolvers = {
     resourcesByCluster: async (
       parent,
       { org_id, cluster_id, filter, limit },
-      { models, me, logger },
+      { models, me, logger, req_id},
     ) => {
       const queryName = 'resourcesByCluster';
-      logger.debug(
-        `${queryName}: user: ${whoIs(me)}, org_id: ${org_id}, filter: ${filter}, limit: ${limit}`,
-      );
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
+
       if ( limit < 0 ) limit = 20;
       if ( limit > 50 ) limit = 50;
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
@@ -111,15 +106,14 @@ const resourceResolvers = {
       if (filter && filter !== '') {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      logger.debug(`searchFilter=${JSON.stringify(searchFilter)}`);
+      logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
       return commonResourcesSearch(models, searchFilter, 50);
     },
 
-    resource: async (parent, { _id }, { models, me, logger }) => {
+    resource: async (parent, { _id }, { models, me, logger, req_id }) => {
       const queryName = 'resource';
-      logger.debug(
-        `${queryName}: user: ${whoIs(me)}, resource _id: ${_id}`,
-      );
+      logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
+
       let result = await models.Resource.findById(_id).lean();
       if (result != null) {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
@@ -130,12 +124,11 @@ const resourceResolvers = {
     resourceByKeys: async (
       parent,
       { org_id, cluster_id, selfLink },
-      { models, me, logger },
+      { models, me, logger, req_id },
     ) => {
       const queryName = 'resourceByKeys';
-      logger.debug(
-        `${queryName}: user: ${whoIs(me)}, org_id: ${org_id}, cluster_id: ${cluster_id}, selfLink: ${selfLink}`,
-      );
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
       let result = await models.Resource.findOne({
         org_id,
@@ -220,9 +213,9 @@ const resourceResolvers = {
 
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { org_id, filter }, { models, me, logger }) => {
+      resolve: (parent, { org_id, filter }, { models, me, logger, req_id }) => {
         logger.debug(
-          { models, org_id, filter, me },
+          { models, org_id, filter, me, req_id },
           'Subscription.resourceUpdated.resolve',
         );
         const { resourceUpdated } = parent;
@@ -236,8 +229,9 @@ const resourceResolvers = {
         },
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
-          context.logger.debug(
-            `${queryName}: context.keys: [${Object.keys(context)}], user: ${whoIs(context.me)}] args: ${JSON.stringify(args)}`,
+          const req_id = context.req_id;
+          context.logger.debug( {req_id, user: whoIs(context.me), args }, 
+            `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
           await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, context.logger);  
           let found = true;
@@ -266,7 +260,7 @@ const resourceResolvers = {
               break;
             }
           }
-          context.logger.debug({ args, found }, 'subscribe: withFilter result');
+          context.logger.debug({ req_id, args, found }, 'subscribe: withFilter result');
           return Boolean(found);
         },
       ),
