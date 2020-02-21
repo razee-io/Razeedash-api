@@ -16,8 +16,11 @@
 
 const http = require('http');
 const express = require('express');
+const router = express.Router();
+const ebl = require('express-bunyan-logger');
 const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
+const addRequestId = require('express-request-id')();
 
 const { getBunyanConfig } = require('../utils/bunyan');
 const { AUTH_MODEL } = require('./models/const');
@@ -25,16 +28,37 @@ const { AUTH_MODEL } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const { models, connectDb, setupDistributedCollections } = require('./models');
-
-const logger = bunyan.createLogger(getBunyanConfig('apollo'));
+const bunyanConfig = getBunyanConfig('apollo');
+const logger = bunyan.createLogger(bunyanConfig);
 
 const initModule = require(`./init.${AUTH_MODEL}`);
 
 const app = express();
+app.set('trust proxy', true);
+app.use(addRequestId);
+router.use(ebl(getBunyanConfig('apollo')));
+app.use(router);
 
 if (process.env.AUTH_MODEL) {
   initModule.initApp(app, models, logger);
 }
+
+const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
+  const context = await initModule.buildApolloContext({
+    models,
+    req,
+    res,
+    connection,
+    logger,
+  });
+  // populate req_id to apollo context
+  if (connection) {
+    context.req_id = connection.context.upgradeReq ? connection.context.upgradeReq.id : undefined;
+  } else if (req) {
+    context.req_id = req.id;
+  } 
+  return context;
+};
 
 const createApolloServer = () => {
   const server = new ApolloServer({
@@ -54,7 +78,7 @@ const createApolloServer = () => {
       };
     },
     context: async ({ req, res, connection }) => {
-      return initModule.buildApolloContext({
+      return buildCommonApolloContext({
         models,
         req,
         res,
@@ -65,7 +89,7 @@ const createApolloServer = () => {
     subscriptions: {
       path: '/graphql',
       onConnect: async (connectionParams, webSocket, context) => {
-        logger.debug({ connectionParams, webSocket, context }, 'subscriptions:onConnect');
+        logger.trace({ req_id: webSocket.upgradeReq.id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
         );
@@ -75,11 +99,12 @@ const createApolloServer = () => {
             'Can not find the session for this subscription request.',
           );
         }
-        return { me, logger };
+        // add original upgrade request to the context 
+        return { me, upgradeReq: webSocket.upgradeReq, logger, };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
-          { headers: context.request.headers, webSocket },
+          { req_id: webSocket.upgradeReq.id, headers: context.request.headers, webSocket },
           'subscriptions:onDisconnect upgradeReq getMe',
         );
       },
@@ -90,6 +115,12 @@ const createApolloServer = () => {
 };
 
 const apollo = async (options = {}) => {
+
+  if (!process.env.AUTH_MODEL) {
+    logger.error('apollo server is enabled, however AUTH_MODEL is not defined.');
+    process.exit(1);
+  }
+
   let port = process.env.GRAPHQL_PORT || 8000;
   if (options.graphql_port !== undefined) {
     port = options.graphql_port;
@@ -108,13 +139,15 @@ const apollo = async (options = {}) => {
     const httpServer = http.createServer(app);
     server.installSubscriptionHandlers(httpServer);
     httpServer.listen({ port }, () => {
+      const addrHost = httpServer.address().address;
+      const addrPort = httpServer.address().port;
       logger.info(
-        `🏄  Apollo api is listening on http://localhost:${port}/graphql`,
+        `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}/graphql`,
       );
     });
     return { db, server, httpServer };
   } catch (err) {
-    logger.error(`Apollo api error: ${err.stack}`);
+    logger.error(err, 'Apollo api error');
     process.exit(1);
   }
 };

@@ -81,12 +81,12 @@ function onReady() {
 function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
-  log.info(`razeedash-api listening on ${bind}`);
+  log.info(`🏄 razeedash-api listening on ${bind}`);
 
-  // Only if AUTH_MODEL is defined, then enable graphql query API.
-  if (process.env.AUTH_MODEL) {
+  // Only if ENABLE_GRAPHQL is defined, the apollo graphql query API will be started.
+  if (process.env.ENABLE_GRAPHQL === 'true') {
     apollo({});
-  }
+  } 
 }
 
 function onError(error) {

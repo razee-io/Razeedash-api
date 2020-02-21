@@ -10,7 +10,7 @@ script:
   - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low; else npx audit-ci --low || true; fi
   - npm run lint
   - npm test
-  - npm run test:apollo
+  - npm run test:apollo:local
   - docker build --rm -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" .
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images

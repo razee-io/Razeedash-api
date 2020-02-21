@@ -4,3 +4,4 @@ build-tools/
 .nyc_output/
 coverage/
 test/
+compose/

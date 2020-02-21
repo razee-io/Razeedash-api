@@ -24,7 +24,6 @@ const { AuthenticationError, UserInputError } = require('apollo-server');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
 const { getBunyanConfig } = require('../../utils/bunyan');
-// import { requiredSubselectionMessage } from 'graphql/validation/rules/ScalarLeafs';
 
 const SECRET = require('./const').SECRET;
 

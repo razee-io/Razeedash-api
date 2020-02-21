@@ -36,7 +36,7 @@ const initApp = (app, models, logger) => {
 
 const buildApolloContext = async ({ models, req, res, connection, logger }) => {
   if (connection) {
-    logger.debug({ connection, req, res }, 'context websocket connection is');
+    logger.trace({ connection, req, res }, 'context websocket connection is');
     return {
       models,
       me: connection.context.me,
