@@ -73,6 +73,7 @@ const setSubscriptionVersion = async (req, res) => {
     return;
   }
 };
+
 // get all subscriptions for an org
 // curl --request GET \
 //     --url http://localhost:3333/api/v1/subscriptions \
