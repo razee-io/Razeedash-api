@@ -22,7 +22,7 @@ const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 
-const { getBunyanConfig } = require('../utils/bunyan');
+const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL } = require('./models/const');
 
 const typeDefs = require('./schema');
