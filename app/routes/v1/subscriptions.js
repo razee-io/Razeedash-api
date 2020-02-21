@@ -17,11 +17,7 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
-// get all subscriptions for an org
-// curl --request GET \
-//     --url http://localhost:3333/api/v1/subscriptions \
-//     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/', getOrg, requireAuth, asyncHandler(async(req, res )=>{
+const getSubscriptions = async (req, res) => {
   try {
     const orgId = req.org._id;
     const Subscriptions = req.db.collection('subscriptions');
@@ -31,15 +27,9 @@ router.get('/', getOrg, requireAuth, asyncHandler(async(req, res )=>{
     req.log.error(error);
     return res.status(500).json({ status: 'error', message: error}); 
   }
-}));
-  
-// Set a channel version for a subscription 
-//   curl --request POST \
-//     --url http://localhost:3333/api/v1/subscriptions/:subscriptionId/version \
-//     --header 'content-type: application/json' \
-//     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-//     --data '{"version": "version-uuid-here"}'
-router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
+};
+
+const setSubscriptionVersion = async (req, res) => {
   try {
     const orgId = req.org._id;
     const subscriptionId = req.params.id + '';
@@ -82,6 +72,20 @@ router.post('/:id/version', getOrg, requireAuth, asyncHandler(async(req, res)=>{
     res.status(500).send('Error setting a channel version');
     return;
   }
-}));
+};
+
+// get all subscriptions for an org
+// curl --request GET \
+//     --url http://localhost:3333/api/v1/subscriptions \
+//     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
+router.get('/', getOrg, requireAuth, asyncHandler(getSubscriptions));
+  
+// Set a channel version for a subscription 
+//   curl --request POST \
+//     --url http://localhost:3333/api/v1/subscriptions/:subscriptionId/version \
+//     --header 'content-type: application/json' \
+//     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
+//     --data '{"version": "version-uuid-here"}'
+router.post('/:id/version', getOrg, requireAuth, asyncHandler(setSubscriptionVersion));
 
 module.exports = router;
