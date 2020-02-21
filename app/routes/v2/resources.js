@@ -34,14 +34,17 @@ const getResources = async (req, res, next) => {
     } 
     if(req.query && req.query.name) { 
       query['searchableData.name'] = {$regex: req.query.name, $options: 'i',}; 
-    } 
+    }
+    if(req.query && req.query.cluster_id){
+      query['cluster_id'] = req.query.cluster_id;
+    }
 
     const options = { 
       limit: 25,
     };
     if(req.query && req.query.skip) { 
       options['skip'] = parseInt(req.query.skip);
-    } 
+    }
 
     const resources = await Resources.find(query, options).toArray();
     return res.status(200).send({resources});

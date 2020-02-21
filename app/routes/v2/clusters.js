@@ -24,10 +24,13 @@ const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
 const request = require('request-promise-native');
+var glob = require('glob-promise');
+var fs = require('fs');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
+const deleteResource = require('../../utils/resources.js').deleteResource;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
 const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
@@ -62,6 +65,22 @@ const addUpdateCluster = async (req, res, next) => {
 
 };
 
+var getAddClusterWebhookHeaders = async()=>{
+  // loads the headers specified in the 'razeedash-add-cluster-webhook-headers-secret' secret
+  // returns the key-value pairs of the secret as a js obj
+  var filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
+  var fileNames = await glob('**', {
+    cwd: filesDir,
+    nodir: true,
+  });
+  var headers = {};
+  _.each(fileNames, (name)=>{
+    var val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
+    headers[encodeURIComponent(name)] = val;
+  });
+  return headers;
+};
+
 var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   var postData = {
     org_id: orgId,
@@ -74,11 +93,13 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
   req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
+    var headers = await getAddClusterWebhookHeaders();
     var result = await request.post({
       url,
       body: postData,
       json: true,
       resolveWithFullResponse: true,
+      headers,
     });
     req.log.info({ url, postData, statusCode: result.statusCode }, 'posted add cluster webhook');
   }catch(err){
@@ -88,7 +109,8 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
 
 const pushToS3 = async (req, key, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
-  const bucket = `razee-${key.org_id}`;
+  const orgId = key.org_id.toLowerCase(); 
+  const bucket = `razee-${orgId}`;
   const hash = crypto.createHash('sha256');
   const hashKey = hash.update(JSON.stringify(key)).digest('hex');
   await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
@@ -343,6 +365,22 @@ const clusterDetails = async (req, res, next) => {
   }
 };
 
+const deleteCluster = async (req, res, next) => {
+  try {
+    if(!req.org._id || !req.params.cluster_id){
+      throw 'missing orgId or clusterId';
+    }
+    const Clusters = req.db.collection('clusters');
+    const cluster_id = req.params.cluster_id;
+    await Clusters.deleteOne({ org_id: req.org._id, cluster_id: cluster_id });
+    req.log.info(`cluster ${cluster_id} deleted`);
+    next();
+  } catch (error) {
+    req.log.error(error.message);
+    return res.status(500).json({ status: 'error', message: error.message }); 
+  }
+};
+
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
 // /api/v2/clusters/:cluster_id
@@ -362,5 +400,8 @@ router.get('/', asyncHandler(verifyAdminOrgKey), asyncHandler(getClusters));
 
 // /api/v2/clusters/:cluster_id
 router.get('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(clusterDetails));
+
+// /api/v2/clusters/:cluster_id
+router.delete('/:cluster_id', asyncHandler(verifyAdminOrgKey), asyncHandler(getCluster), asyncHandler(deleteCluster), asyncHandler(deleteResource));
 
 module.exports = router;

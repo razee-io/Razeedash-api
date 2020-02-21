@@ -90,22 +90,6 @@ describe('utils', () => {
       assert.equal(response.statusCode, 401);
     });
 
-    it('should set req.orgAdminKey if an valid org admin key was provided', async () => {
-      const goodKey = 'abc123';
-      process.env.ORG_ADMIN_KEY = goodKey;
-      const request = httpMocks.createRequest({ method: 'POST', url: '/', body: { name: 'org1' }, headers: { 'org-admin-key': goodKey}, log: log, db: db });
-      const response = httpMocks.createResponse();
-
-      let nextCalled = false;
-      const next = () => {
-        nextCalled = true;
-      };
-
-      await verifyAdminOrgKey(request, response, next);
-      assert.equal(request.orgAdminKey, goodKey);
-      assert.equal(nextCalled, true);
-    });
-
     it('should return 401 if missing orgKey', async () => {
       // Setup
       var request = httpMocks.createRequest({

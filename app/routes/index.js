@@ -152,6 +152,16 @@ async function initialize(){
           keys: { org_id: 1, cluster_id: 1, level: 1, message_hash: 1 },
           options: { name: 'org_id.cluster_id.level.message_hash', }
         }
+      ],
+      user_log: [
+        { 
+          keys: { userid: 1 },
+          options: { name: 'userid', }
+        },
+        { 
+          keys: { action: 1 },
+          options: { name: 'action', }
+        },
       ]
     },
     views: [{
