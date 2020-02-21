@@ -36,7 +36,27 @@ If S3_BUCKET_PREFIX is not defined then the s3 bucket will be named `razee-<your
 ORG_ADMIN_KEY is required if you plan on adding organizations using the api/v2/orgs endpoint
 
 ADD_CLUSTER_WEBHOOK_URL signifies the webhook endpoint to hit when a cluster is added.
-Razee will do a POST request to this url with json data `{ org_id, cluster_id, cluster_name }`
+Razee will do a POST request to this url with json data `{ org_id, cluster_id, cluster_name }`.
+If a `razeedash-add-cluster-webhook-headers-secret` exists in the namespace, its key-value
+pairs will be used as headers in the request.
+For instance, if you would like to send an Authorization header in the request to verify that
+razee is sending the webhook, you can create a secret like so:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: razee
+  name: razeedash-add-cluster-webhook-headers-secret
+stringData:
+  Authorization: SOME_APIKEY
+```
+
+For local development, put the headers as files in the
+`/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers` directory.  
+For instance:  
+`echo "SOME_APIKEY" > /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers/Authorization`  
+(you may need sudo to perform this operation).
 
 ### OS/X
 

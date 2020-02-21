@@ -121,7 +121,13 @@ items:
               limits:
                 cpu: 500m
                 memory: 256Mi
-
+            volumeMounts:
+              - name: add-cluster-webhook-headers-vol
+                mountPath: /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers
+          volumes:
+            - name: add-cluster-webhook-headers-vol
+              secret:
+                secretName: razeedash-add-cluster-webhook-headers-secret
 
   # redis
 
