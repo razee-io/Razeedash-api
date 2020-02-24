@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES } = require('../models/const');
-const { validAuth } = require ('./common');
+const { whoIs, validAuth } = require ('./common');
 
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
@@ -70,9 +70,7 @@ const clusterResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterByClusterID';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, clusterId: ${clusterId}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -96,9 +94,7 @@ const clusterResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clustersByOrgID';
-      logger.info(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -113,9 +109,7 @@ const clusterResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterZombies';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -134,9 +128,7 @@ const clusterResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterSearch';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, filter: ${filter}, limit: ${limit}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -160,7 +152,7 @@ const clusterResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterCountByKubeVersion';
-      logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
+      logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 

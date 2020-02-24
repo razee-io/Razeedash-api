@@ -15,9 +15,8 @@
  */
 
 const Moment = require('moment');
-const { AuthenticationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { validAuth } = require ('./common');
+const { whoIs, validAuth } = require ('./common');
 
 const buildSearchForClusterName = (ordId, searchStr) => {
   let ands = [];
@@ -69,8 +68,8 @@ const commonClusterDistributedSearch = async (
       });
     });
   } catch (error) {
-    logger.error(
-      `${queryName} commonClusterDistributedSearch encountered an error ${error.stack}`,
+    logger.error(error, 
+      `${queryName} commonClusterDistributedSearch encountered an error`,
     );
     throw error;
   }
@@ -86,9 +85,7 @@ const clusterDistributedResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedByClusterID';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, clusterId: ${clusterId}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -115,9 +112,8 @@ const clusterDistributedResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clustersDistributedByOrgID';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
+
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -137,9 +133,7 @@ const clusterDistributedResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedZombies';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
@@ -165,9 +159,8 @@ const clusterDistributedResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedSearch';
-      logger.debug(
-        `${queryName}: username: ${me.username}, orgID: ${orgId}, filter: ${filter}`,
-      );
+      logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
+
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
@@ -201,8 +194,7 @@ const clusterDistributedResolvers = {
       { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedCountByKubeVersion';
-      // logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
-      logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
+      logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
@@ -235,8 +227,8 @@ const clusterDistributedResolvers = {
           }),
         );
       } catch (error) {
-        logger.error(
-          `${queryName} clusterDistributedCountByKubeVersion encountered an error ${error.stack}`,
+        logger.error(error, 
+          `${queryName} encountered an error when process for req_id ${req_id}`,
         );
         throw error;
       }
@@ -261,7 +253,7 @@ const clusterDistributedResolvers = {
           totalResults.push(newItem);
         }
       }
-      logger.debug(`totalResults: ${JSON.stringify(totalResults, null, 4)}`);
+      logger.debug(`${queryName} totalResults: ${JSON.stringify(totalResults, null, 4)} for req_id ${req_id}`);
       return totalResults;
     }, // end clusterDistributedCountByKubeVersion
   }, // end query

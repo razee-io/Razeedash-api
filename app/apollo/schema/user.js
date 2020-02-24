@@ -52,8 +52,9 @@ const userSchema = gql`
   type User {
     id: ID!
     type: String!
-    email: String!
     org_id: String!
+    identifier: String
+    email: String
     role: String
     meta: JSON
   }
