@@ -146,9 +146,11 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
     _id: user._id,
     type: user.type,
     email: user.services.local.email,
+    identifier: user.services.local.email,
     username: user.services.local.username,
     role: user.meta.orgs[0].role,
     org_id: user.meta.orgs[0]._id,
+    meta: user.meta,
   };
   return jwt.sign(claim, secret, {
     expiresIn,

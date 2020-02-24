@@ -29,6 +29,7 @@ const userResolvers = {
           type: result.type,
           id: result.getId(),
           email: result.getEmail(),
+          identifier: typeof result.getIdentifier === 'function' ? result.getIdentifier() : null, 
           org_id: result.getCurrentOrgId(),
           role: result.getCurrentRole(),
           meta: result.getMeta(),

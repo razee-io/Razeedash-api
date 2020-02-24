@@ -151,9 +151,11 @@ UserPassportLocalSchema.statics.createToken = async (
     _id: user._id,
     type: user.type,
     email: user.services.passportlocal.email,
+    identifier: user.services.passportlocal.email,
     username: user.services.passportlocal.username,
     role: user.meta.orgs[0].role,
     org_id: user.meta.orgs[0]._id,
+    meta: user.meta
   };
   return jwt.sign(claim, secret, {
     expiresIn,
