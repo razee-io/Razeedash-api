@@ -275,6 +275,10 @@ UserLocalSchema.methods.getEmail = async function() {
   return this.services.local.email;
 };
 
+UserLocalSchema.methods.getIdentifier = async function() {
+  return this.services.local.email;
+};
+
 UserLocalSchema.methods.getMeta = async function() {
   return this.meta;
 };

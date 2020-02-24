@@ -289,6 +289,10 @@ UserPassportLocalSchema.methods.getEmail = async function() {
   return this.services.passportlocal.email;
 };
 
+UserPassportLocalSchema.methods.getIdentifier = async function() {
+  return this.services.local.email;
+};
+
 UserPassportLocalSchema.methods.getMeta = async function() {
   return this.meta;
 };
