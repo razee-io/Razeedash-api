@@ -14,33 +14,29 @@
  * limitations under the License.
  */
 
-const { AuthenticationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
+const { validAuth } = require ('./common');
 
 const organizationResolvers = {
   Query: {
-    registrationUrl: async (parent, { org_id }, { models, me }) => {
-      const isPermitted = await models.User.isAuthorized(
-        me,
-        org_id,
-        ACTIONS.MANAGE,
-        TYPES.RESOURCE,
-      );
-      if (isPermitted) {
-        const org = await models.Organization.findById(org_id);
-        if (process.env.EXTERNAL_URL) {
-          return {
-            url: `${process.env.EXTERNAL_URL}/api/install/cluster?orgKey=${org.orgKeys[0]}`,
-          };
-        }
+
+    registrationUrl: async (parent, { org_id }, { models, me, req_id, logger}) => {
+      const queryName = 'registrationUrl';
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.RESOURCE, models, queryName, req_id, logger);
+
+      const org = await models.Organization.findById(org_id);
+      if (process.env.EXTERNAL_URL) {
         return {
-          url: `http://localhost:3333/api/install/cluster?orgKey=${org.orgKeys[0]}`,
+          url: `${process.env.EXTERNAL_URL}/api/install/cluster?orgKey=${org.orgKeys[0]}`,
         };
       }
-      throw new AuthenticationError('You are not permitted to visit this api.');
+      return {
+        url: `http://localhost:3333/api/install/cluster?orgKey=${org.orgKeys[0]}`,
+      };
     },
-    organizations: async (parent, args, { models, me }) => {
-      return models.User.getOrgs(models, me);
+
+    organizations: async (parent, args, { models, me, req_id, logger }) => {
+      return models.User.getOrgs(models, me, req_id, logger);
     },
   },
 };

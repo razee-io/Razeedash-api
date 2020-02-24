@@ -15,46 +15,33 @@
  */
 
 const _ = require('lodash');
-const { AuthenticationError, withFilter } = require('apollo-server');
+const { withFilter } = require('apollo-server');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, pubSubPlaceHolder } = require('../subscription');
+const { whoIs, validAuth } = require ('./common');
 
-const commonResourcesSearch = async (models, searchFilter, limit) => {
+const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
   let results = [];
-  results = await models.Resource.find(searchFilter)
-    .sort({ created: -1 })
-    .limit(limit)
-    .lean();
-  return results;
-};
-
-const whoIs = me => { 
-  if (me === null || me === undefined) return 'null';
-  if (me.email) return me.email;
-  return me._id;
-};
-
-// Validate is user is authorized for the requested action.
-// Throw exception if not.
-const validAuth = async (me, org_id, action, type, models, queryName, logger) => {
-  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type))) {
-    logger.error(
-      `AuthenticationError - ${queryName}, user: ${whoIs(me)}, org_id: ${org_id}, action: ${action}, Type: ${type}`,
-    );
-    throw new AuthenticationError(
-      `You are not allowed to access resources under this organization for the query ${queryName}.`,
-    );
-  }
+  try {
+    results = await models.Resource.find(searchFilter)
+      .sort({ created: -1 })
+      .limit(limit)
+      .lean();
+    return results;
+  } catch (error) {
+    logger.error(error, `commonResourcesDistributedSearch encountered an error for the request ${req_id}`);
+    throw error;
+  }  
 };
 
 const resourceResolvers = {
   Query: {
-    resourcesCount: async (parent, { org_id }, { models, me, logger, req_id }) => {
+    resourcesCount: async (parent, { org_id }, { models, me, req_id, logger }) => {
       const queryName = 'resourcesCount';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
 
       let count = 0;
       try {
@@ -72,32 +59,32 @@ const resourceResolvers = {
     resources: async (
       parent,
       { org_id, filter, fromDate, toDate, limit },
-      { models, me, logger, req_id},
+      { models, me, req_id, logger},
     ) => {
       const queryName = 'resources';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
       if ( limit < 0 ) limit = 20;
       if ( limit > 50 ) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
 
       let searchFilter = { org_id: org_id, deleted: false };
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesSearch(models, searchFilter, limit);
+      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
     },
 
     resourcesByCluster: async (
       parent,
       { org_id, cluster_id, filter, limit },
-      { models, me, logger, req_id},
+      { models, me, req_id, logger},
     ) => {
       const queryName = 'resourcesByCluster';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
       if ( limit < 0 ) limit = 20;
       if ( limit > 50 ) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
       let searchFilter = {
         org_id: org_id,
         cluster_id: cluster_id,
@@ -107,16 +94,16 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch(models, searchFilter, 50);
+      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
     },
 
-    resource: async (parent, { _id }, { models, me, logger, req_id }) => {
+    resource: async (parent, { _id }, { models, me, req_id, logger }) => {
       const queryName = 'resource';
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
 
       let result = await models.Resource.findById(_id).lean();
       if (result != null) {
-        await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
+        await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
       }
       return result;
     },
@@ -124,12 +111,12 @@ const resourceResolvers = {
     resourceByKeys: async (
       parent,
       { org_id, cluster_id, selfLink },
-      { models, me, logger, req_id },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'resourceByKeys';
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
       let result = await models.Resource.findOne({
         org_id,
         cluster_id,
@@ -139,81 +126,9 @@ const resourceResolvers = {
     },
   },
 
-  /*
-  Mutation: {
-    upsertResource: async (parent, { resource }, { models, logger }) => {
-      if (AUTH_MODEL !== AUTH_MODELS.LOCAL) {
-        throw new AuthenticationError(
-          `Current authorization model ${AUTH_MODEL} does not support this operation.`,
-        );
-      }
-      const { org_id, cluster_id, selfLink, data } = resource;
-      let hash = '';
-      if (resource.hash !== undefined && typeof resource.hash === 'string') {
-        hash = resource.hash;
-      }
-      let deleted = false;
-      if (
-        resource.deleted !== undefined &&
-        typeof resource.deleted === 'boolean'
-      ) {
-        deleted = resource.deleted;
-      }
-      let searchableData = {};
-      if (
-        resource.searchableData !== undefined &&
-        typeof resource.searchableData === 'object'
-      ) {
-        searchableData = resource.searchableData;
-      }
-      let searchableDataHash = '';
-      if (
-        resource.searchableDataHash !== undefined &&
-        typeof resource.searchableDataHash === 'string'
-      ) {
-        searchableDataHash = resource.searchableDataHash;
-      }
-
-      if (
-        typeof org_id !== 'string' ||
-        typeof cluster_id !== 'string' ||
-        typeof selfLink !== 'string'
-      ) {
-        throw new TypeError(
-          'org_id, cluster_id, and selfLink must be string type.',
-        );
-      }
-
-      const resourceReturned = await models.Resource.findOneAndUpdate(
-        { org_id, cluster_id, selfLink },
-        {
-          org_id,
-          cluster_id,
-          selfLink,
-          hash,
-          data,
-          deleted,
-          searchableData,
-          searchableDataHash,
-        },
-        { new: true, upsert: true },
-      );
-
-      const resourcePublished = resourceReturned.toObject({
-        flattenMaps: true,
-      }); // for mongo only
-      logger.debug(
-        { resourcePublished },
-        'upsertResource=>UPDATED resourcePublished=',
-      );
-      return resourceChangedFunc(resourcePublished);
-    },
-  },
-  */
-
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { org_id, filter }, { models, me, logger, req_id }) => {
+      resolve: (parent, { org_id, filter }, { models, me, req_id, logger }) => {
         logger.debug(
           { models, org_id, filter, me, req_id },
           'Subscription.resourceUpdated.resolve',
@@ -233,7 +148,7 @@ const resourceResolvers = {
           context.logger.debug( {req_id, user: whoIs(context.me), args }, 
             `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
-          await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, context.logger);  
+          await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, req_id, context.logger);  
           let found = true;
           const { resource } = parent.resourceUpdated;
           if (args.org_id !== resource.org_id) {

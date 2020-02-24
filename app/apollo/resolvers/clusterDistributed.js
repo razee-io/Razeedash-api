@@ -17,6 +17,7 @@
 const Moment = require('moment');
 const { AuthenticationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
+const { validAuth } = require ('./common');
 
 const buildSearchForClusterName = (ordId, searchStr) => {
   let ands = [];
@@ -40,19 +41,6 @@ const buildSearchForClusterName = (ordId, searchStr) => {
     $and: ands,
   };
   return search;
-};
-
-// Validate is user is authorized for the requested action.
-// Throw excpetion if not.
-const validAuth = async (me, orgId, action, models, queryName, logger) => {
-  if (!(await models.User.isAuthorized(me, orgId, action, TYPES.CLUSTER))) {
-    logger.error(
-      `Authentication error - ${queryName}, username: ${me.username}, org_id: ${orgId}, action: Read, Type: Cluster`,
-    );
-    throw new AuthenticationError(
-      'You are not allowed to access resources for this organization.',
-    );
-  }
 };
 
 // Common search function that handles multiple DBs
@@ -95,14 +83,14 @@ const clusterDistributedResolvers = {
     clusterDistributedByClusterID: async (
       parent,
       { org_id: orgId, cluster_id: clusterId },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedByClusterID';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, clusterId: ${clusterId}`,
       );
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       // We do not need a Promise.all here becuase the record can live in only one DB.
       // If we find it in the first DB, return the results, otherwise query the 2nd DB.
@@ -124,14 +112,14 @@ const clusterDistributedResolvers = {
     clustersDistributedByOrgID: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clustersDistributedByOrgID';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
       );
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       return commonClusterDistributedSearch(
         models,
@@ -146,7 +134,7 @@ const clusterDistributedResolvers = {
     clusterDistributedZombies: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedZombies';
       logger.debug(
@@ -154,7 +142,7 @@ const clusterDistributedResolvers = {
       );
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const searchFilter = {
         org_id: orgId,
@@ -174,14 +162,14 @@ const clusterDistributedResolvers = {
     clusterDistributedSearch: async (
       parent,
       { org_id: orgId, filter, limit = 50 },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedSearch';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, filter: ${filter}`,
       );
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       // If no filter provide, just query based on orig id
       if (!filter) {
@@ -210,14 +198,14 @@ const clusterDistributedResolvers = {
     clusterDistributedCountByKubeVersion: async (
       parent,
       { org_id: orgId },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterDistributedCountByKubeVersion';
       // logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
       logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       let resultsArray = [];
 

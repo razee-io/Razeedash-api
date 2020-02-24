@@ -15,8 +15,8 @@
  */
 
 const Moment = require('moment');
-const { AuthenticationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
+const { validAuth } = require ('./common');
 
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
@@ -40,19 +40,6 @@ const buildSearchFilter = (ordId, searchStr) => {
     $and: ands,
   };
   return search;
-};
-
-// Validate is user is authorized for the requested action.
-// Throw excpetion if not.
-const validAuth = async (me, orgId, action, models, queryName, logger) => {
-  if (!(await models.User.isAuthorized(me, orgId, action, TYPES.CLUSTER))) {
-    logger.error(
-      `Authentication error - ${queryName}, username: ${me.username}, org_id: ${orgId}, action: Read, Type: Cluster`,
-    );
-    throw new AuthenticationError(
-      'You are not allowed to access resources for this organization.',
-    );
-  }
 };
 
 const commonClusterSearch = async (
@@ -80,14 +67,14 @@ const clusterResolvers = {
     clusterByClusterID: async (
       parent,
       { org_id: orgId, cluster_id: clusterId },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterByClusterID';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, clusterId: ${clusterId}`,
       );
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const result = await models.Cluster.findOne({
         org_id: orgId,
@@ -106,14 +93,14 @@ const clusterResolvers = {
     clustersByOrgID: async (
       parent,
       { org_id: orgId, limit, startingAfter },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clustersByOrgID';
       logger.info(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
       );
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const searchFilter = { org_id: orgId };
       return commonClusterSearch(models, searchFilter, limit, startingAfter);
@@ -123,14 +110,14 @@ const clusterResolvers = {
     clusterZombies: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterZombies';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, limit: ${limit}`,
       );
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const searchFilter = {
         org_id: orgId,
@@ -144,14 +131,14 @@ const clusterResolvers = {
     clusterSearch: async (
       parent,
       { org_id: orgId, filter, limit },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterSearch';
       logger.debug(
         `${queryName}: username: ${me.username}, orgID: ${orgId}, filter: ${filter}, limit: ${limit}`,
       );
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       let searchFilter;
       if (!filter) {
@@ -170,12 +157,12 @@ const clusterResolvers = {
     clusterCountByKubeVersion: async (
       parent,
       { org_id: orgId },
-      { models, me, logger },
+      { models, me, req_id, logger },
     ) => {
       const queryName = 'clusterCountByKubeVersion';
       logger.debug(`${queryName}: username: ${me.username}, orgID: ${orgId}`);
 
-      await validAuth(me, orgId, ACTIONS.READ, models, queryName, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const results = await models.Cluster.aggregate([
         {

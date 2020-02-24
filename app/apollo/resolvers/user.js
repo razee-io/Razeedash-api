@@ -16,9 +16,9 @@
 
 const userResolvers = {
   Query: {
-    me: async (parent, args, { models, me , logger}) => {
+    me: async (parent, args, { models, me , req_id, logger }) => {
       if (!me) {
-        logger.debug('There is no user information on this context.');
+        logger.debug(`There is no user information on this context for the request ${req_id}`);
         return null;
       }
       // TODO: we probably skip database query and directly return user info from
@@ -34,7 +34,7 @@ const userResolvers = {
           meta: result.getMeta(),
         };
       } else {
-        logger.debug(`Can not locate the user for the user _id: ${me._id}`);
+        logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
       }
       return result;
     },
