@@ -377,13 +377,12 @@ const getClusters = async (req, res, next) => {
   }
 };
 
-const clusterDetails = async (req, res, next) => {
-  try {
-    const cluster = req.cluster; // req.cluster was set in `getCluster`
+const clusterDetails = async (req, res) => {
+  const cluster = req.cluster; // req.cluster was set in `getCluster`
+  if(cluster) {
     return res.status(200).send({cluster});
-  } catch (err) {
-    req.log.error(err.message);
-    next(err);
+  } else {
+    return res.status(404).send('cluster was not found');
   }
 };
 

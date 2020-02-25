@@ -803,4 +803,172 @@ describe('clusters', () => {
       assert.equal(message.message, 'Zeke has typhoid');
     });
   });
+  describe('deleteCluster', () => {
+    it('should call next() if the cluster was deleted', async () => {
+      const cluster_id = 'testDeleteCluster';
+      const org_id = '1';
+
+      const Clusters = db.collection('clusters');
+      await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
+
+      const request = httpMocks.createRequest({ 
+        method: 'DELETE', 
+        url: '/', 
+        params: { cluster_id: cluster_id }, 
+        org: { _id: org_id }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const deleteCluster = v2.__get__('deleteCluster');
+      await deleteCluster(request, response, next);
+      assert.equal(nextCalled, true);
+    });
+    it('should return 500 if req.org._id is missing', async () => {
+      const cluster_id = 'testDeleteCluster';
+
+      const request = httpMocks.createRequest({ 
+        method: 'DELETE', 
+        url: '/', 
+        params: { cluster_id: cluster_id }, 
+        org: { }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const deleteCluster = v2.__get__('deleteCluster');
+      await deleteCluster(request, response, next);
+
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 500);
+    });
+    it('should return 500 if cluster id is not passed as a parameter', async () => {
+
+      const request = httpMocks.createRequest({ 
+        method: 'DELETE', 
+        url: '/', 
+        org: { _id: '1' }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const deleteCluster = v2.__get__('deleteCluster');
+      await deleteCluster(request, response, next);
+
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 500);
+    });
+
+  });
+  describe('getClusters', () => {
+    it('should call next() on a thrown error', async () => {
+
+      const request = httpMocks.createRequest({ method: 'GET', url: '/', log: log });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const getClusters = v2.__get__('getClusters');
+      await getClusters(request, response, next);
+
+      assert.equal(nextCalled, true);
+    });
+
+    it('should return status 200', async () => {
+
+      const cluster_id = 'testCluster';
+      const org_id = '1';
+
+      const Clusters = db.collection('clusters');
+      await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        org: { _id: org_id }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const getClusters = v2.__get__('getClusters');
+      await getClusters(request, response, next);
+
+      assert.equal(nextCalled, false);
+      assert.equal(response.statusCode, 200);
+
+    });
+
+  });
+  describe('clusterDetails', () => {
+
+    it('should return status 200', async () => {
+
+      const cluster_id = 'testCluster';
+      const org_id = '1';
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        org: { _id: org_id }, 
+        headers: { 'org-admin-key': 'goodKey123' }, 
+        cluster: cluster_id,
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const clusterDetails = v2.__get__('clusterDetails');
+      await clusterDetails(request, response, next);
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(nextCalled, false);
+
+    });
+    it('should return status 404 for a missing cluster', async () => {
+
+      const request = httpMocks.createRequest({ 
+        method: 'GET', 
+        url: '/', 
+        log: log, 
+        db: db 
+      });
+      const response = httpMocks.createResponse();
+
+      let nextCalled = false;
+      const next = () => { nextCalled = true; };
+
+      const clusterDetails = v2.__get__('clusterDetails');
+      await clusterDetails(request, response, next);
+
+      assert.equal(response.statusCode, 404);
+      assert.equal(nextCalled, false);
+
+    });
+
+  });
 });
