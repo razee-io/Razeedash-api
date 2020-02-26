@@ -24,7 +24,6 @@ const addRequestId = require('express-request-id')();
 
 const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
-const { pubSubPlaceHolder } = require('./subscription');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
@@ -50,7 +49,7 @@ const createDefaultApp = () => {
     return next();
   });
   return app;
-}
+};
 
 const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
   const context = await initModule.buildApolloContext({

@@ -400,6 +400,8 @@ describe('resource graphql test suite', () => {
         resourceChangedFunc(anotherResource);
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
+        await unsub.unsubscribe();
+        
         await sleep(100);
 
         await subClient.close();
