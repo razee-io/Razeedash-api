@@ -161,7 +161,9 @@ describe('resource graphql test suite', () => {
 
   after(async () => {
     await myApollo.stop(myApollo);
-    await pubSubPlaceHolder.pubSub.close();
+    if (pubSubPlaceHolder.enabled) {
+      await pubSubPlaceHolder.pubSub.close();
+    }
     await mongoServer.stop();
   });
 
@@ -336,7 +338,7 @@ describe('resource graphql test suite', () => {
       searchableData: { ttt: 'tt tt t1' },
     };
 
-    it('a user subscribe an org and filter should be able to get notification is a new/updated resource matches', async () => {
+    it.only('a user subscribe an org and filter should be able to get notification is a new/updated resource matches', async () => {
       try {
         if (pubSubPlaceHolder.enabled === false) {
           return this.skip();
@@ -401,7 +403,7 @@ describe('resource graphql test suite', () => {
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();
-        
+
         await sleep(100);
 
         await subClient.close();
