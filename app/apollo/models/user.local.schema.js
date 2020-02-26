@@ -169,7 +169,7 @@ UserLocalSchema.statics.signUp = async (models, args, secret) => {
 };
 
 UserLocalSchema.statics.signIn = async (models, login, password, secret, context) => {
-  logger.debug(`local signIn ${login} ${context}`);
+  logger.debug({login, req_id: context.req_id}, 'local signIn enter');
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.findByLogin(login);
     if (!user) {

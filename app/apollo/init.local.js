@@ -20,18 +20,6 @@ const { SECRET } = require('./models/const');
 const initApp = (app, models, logger) => {
   logger.info('Initialize apollo application for local auth');
   app.use(cors());
-  app.use(function errorHandler(err, req, res, next) {
-    if (err) {
-      if (req.log && req.log.error) req.log.error(err);
-      else logger.error(err);
-      if (!res.headersSent) {
-        const statusCode = err.statusCode || 500;
-        return res.status(statusCode).send();
-      }
-      return next(err);
-    }
-    return next();
-  });
 };
 
 const buildApolloContext = async ({ models, req, res, connection, logger }) => {

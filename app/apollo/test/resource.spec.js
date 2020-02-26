@@ -35,7 +35,7 @@ const { resourceChangedFunc, pubSubPlaceHolder } = require('../subscription');
 
 let mongoServer;
 let myApollo;
-const graphqlPort = 18001;
+const graphqlPort = 18004;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const subscriptionUrl = `ws://localhost:${graphqlPort}/graphql`;
 const api = apiFunc(graphqlUrl);
@@ -154,18 +154,15 @@ describe('resource graphql test suite', () => {
     await getPresetOrgs();
     await getPresetUsers();
     await getPresetResources();
-    setTimeout(function() {
-      // why(); // logs out active handles that are keeping node running
-    }, 5000);
+    //setTimeout(function() {
+    //  why(); // logs out active handles that are keeping node running
+    //}, 5000);
   });
 
   after(async () => {
-    await myApollo.db.connection.close();
+    await myApollo.stop(myApollo);
+    await pubSubPlaceHolder.pubSub.close();
     await mongoServer.stop();
-    await myApollo.server.stop();
-    await myApollo.httpServer.close(() => {
-      console.log('🏄  Fancy razee-api Apollo Server closed.');
-    });
   });
 
   describe('resource(_id: ID!): Resource', () => {
@@ -387,24 +384,26 @@ describe('resource graphql test suite', () => {
           });
 
         // sleep 0.1 second and send a resourceChanged event
-        await sleep(100);
+        await sleep(200);
         aResource.org_id = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         resourceChangedFunc(aResource);
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
-        await sleep(20);
+        await sleep(100);
         expect(dataReceivedFromSub._id).to.equal('some_fake_id');
 
         // sleep 0.1 second and send a resourceChanged event
-        await sleep(20);
+        await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
         resourceChangedFunc(anotherResource);
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
-        // unsubscribe
-        unsub.unsubscribe();
+        await sleep(100);
+
+        await subClient.close();
+
       } catch (error) {
         console.error('error response is ', error.response);
         throw error;

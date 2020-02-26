@@ -17,7 +17,6 @@
 const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-// const why = require('why-is-node-running');
 
 const apiFunc = require('./api');
 const { models } = require('../models');
@@ -28,7 +27,7 @@ const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.$
 
 let mongoServer;
 let myApollo;
-let graphql_port = 18002;
+let graphql_port = 18006;
 let api = apiFunc(`http://localhost:${graphql_port}/graphql`);
 
 let org01Data;
@@ -104,18 +103,11 @@ describe('user graphql', () => {
     await getPresetOrgs();
     await getPresetUsers();
 
-    setTimeout(function() {
-      // why(); // logs out active handles that are keeping node running
-    }, 5000);
   });
 
   after(async () => {
-    await myApollo.db.connection.close();
+    await myApollo.stop(myApollo);
     await mongoServer.stop();
-    await myApollo.server.stop();
-    await myApollo.httpServer.close(() => {
-      console.log('🏄  Fancy razee-api Apollo Server closed.');
-    });
   });
 
   describe('me: User', () => {

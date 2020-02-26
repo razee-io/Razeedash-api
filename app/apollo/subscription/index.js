@@ -62,7 +62,7 @@ async function isRedisReachable(redisUrl) {
 }
 
 const redisUrl = process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
-if (process.env.AUTH_MODEL) {
+if (process.env.ENABLE_GRAPHQL) {
   logger.info(
     `Apollo streaming service is configured on redisUrl: ${obscureUrl(
       redisUrl,

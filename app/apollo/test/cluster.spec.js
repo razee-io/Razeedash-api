@@ -231,12 +231,8 @@ describe('cluster graphql test suite', () => {
   }); // before
 
   after(async () => {
-    await myApollo.db.connection.close();
+    await myApollo.stop(myApollo);
     await mongoServer.stop();
-    await myApollo.server.stop();
-    await myApollo.httpServer.close(() => {
-      console.log('🏄  razee-api Apollo Server closed.');
-    });
   }); // after
 
   it('get cluster by clusterID', async () => {

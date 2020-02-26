@@ -31,7 +31,7 @@ let mongoServer;
 let mongoServerEUDE;
 let myApollo;
 
-const graphqlPort = 18001;
+const graphqlPort = 18002;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const clusterApi = clusterFunc(graphqlUrl);
@@ -237,13 +237,10 @@ describe('clusterDistrubuted  graphql test suite', () => {
   }); // before
 
   after(async () => {
-    await myApollo.db.connection.close();
+    await myApollo.stop(myApollo);
     await mongoServer.stop();
     await mongoServerEUDE.stop();
-    await myApollo.server.stop();
-    await myApollo.httpServer.close(() => {
-      console.log('🏄  razee-api Apollo Server closed.');
-    });
+
   }); // after
 
   it('get cluster by clusterID from distributed DBs', async () => {

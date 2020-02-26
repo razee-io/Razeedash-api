@@ -69,6 +69,7 @@ const models = {
   User,
   Resource,
   Cluster,
+  dbConnections: [],
   ClusterDistributed: [],
   ResourceDistributed: [],
   OrganizationDistributed: [],
@@ -76,6 +77,15 @@ const models = {
 
 function obscureUrl(url) {
   return url.replace(/:\/\/.*@/gi, '://xxxxxxx'.concat(':yyyyyyyy', '@'));
+}
+
+async function closeDistributedConnections() {
+  if ( models.dbConnections && models.dbConnections.length > 0) {
+    models.dbConnections.map(conn => {
+      conn.conn.close();
+    });
+  }
+  models.dbConnections = [];
 }
 
 async function setupDistributedCollections(mongoUrlsString) {
@@ -96,6 +106,10 @@ async function setupDistributedCollections(mongoUrlsString) {
     }),
   );
 
+  await closeDistributedConnections();
+
+  models.dbConnections = dbConnections;
+  
   models.ResourceDistributed = dbConnections.map(conn => {
     const mod = conn.conn.model('resources', ResourceSchema);
     logger.info(
@@ -126,4 +140,4 @@ async function setupDistributedCollections(mongoUrlsString) {
   });
 }
 
-module.exports = { models, connectDb, setupDistributedCollections };
+module.exports = { models, connectDb, setupDistributedCollections, closeDistributedConnections };

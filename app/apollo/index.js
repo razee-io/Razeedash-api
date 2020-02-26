@@ -23,24 +23,33 @@ const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 
 const { getBunyanConfig } = require('./utils/bunyan');
-const { AUTH_MODEL } = require('./models/const');
-
+const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
+const { pubSubPlaceHolder } = require('./subscription');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
-const { models, connectDb, setupDistributedCollections } = require('./models');
+const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
 
 const initModule = require(`./init.${AUTH_MODEL}`);
 
-const app = express();
-app.set('trust proxy', true);
-app.use(addRequestId);
-router.use(ebl(getBunyanConfig('apollo')));
-app.use(router);
-
-if (process.env.AUTH_MODEL) {
-  initModule.initApp(app, models, logger);
+const createDefaultApp = () => {
+  const app = express();
+  app.set('trust proxy', true);
+  app.use(addRequestId);
+  app.use(function errorHandler(err, req, res, next) {
+    if (err) {
+      if (req.log && req.log.error) req.log.error(err);
+      else logger.error(err);
+      if (!res.headersSent) {
+        const statusCode = err.statusCode || 500;
+        return res.status(statusCode).send();
+      }
+      return next(err);
+    }
+    return next();
+  });
+  return app;
 }
 
 const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
@@ -87,7 +96,7 @@ const createApolloServer = () => {
       });
     },
     subscriptions: {
-      path: '/graphql',
+      path: GRAPHQL_PATH,
       onConnect: async (connectionParams, webSocket, context) => {
         logger.trace({ req_id: webSocket.upgradeReq.id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams(
@@ -104,14 +113,22 @@ const createApolloServer = () => {
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
-          { req_id: webSocket.upgradeReq.id, headers: context.request.headers, webSocket },
+          { req_id: webSocket.upgradeReq.id, headers: context.request.headers },
           'subscriptions:onDisconnect upgradeReq getMe',
         );
       },
     },
   });
-  server.applyMiddleware({ app, path: '/graphql' });
   return server;
+};
+
+const stop = async (apollo) => {
+  await apollo.db.connection.close();
+  await closeDistributedConnections();
+  await apollo.server.stop();
+  await apollo.httpServer.close(() => {
+    console.log('🏄 Apollo Server closed.');
+  });
 };
 
 const apollo = async (options = {}) => {
@@ -121,10 +138,6 @@ const apollo = async (options = {}) => {
     process.exit(1);
   }
 
-  let port = process.env.GRAPHQL_PORT || 8000;
-  if (options.graphql_port !== undefined) {
-    port = options.graphql_port;
-  }
   try {
     const db = await connectDb(options.mongo_url);
     const mongoUrls =
@@ -135,17 +148,32 @@ const apollo = async (options = {}) => {
       'mongodb://localhost:3001/meteor';
     await setupDistributedCollections(mongoUrls);
 
+    const app = options.app ? options.app : createDefaultApp();
+    router.use(ebl(getBunyanConfig('apollo')));
+    app.use(GRAPHQL_PATH, router);
+    initModule.initApp(app, models, logger);
+
     const server = createApolloServer();
-    const httpServer = http.createServer(app);
+    server.applyMiddleware({ app, path: GRAPHQL_PATH });
+
+    const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
     server.installSubscriptionHandlers(httpServer);
-    httpServer.listen({ port }, () => {
+    httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;
       logger.info(
-        `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}/graphql`,
+        `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}${GRAPHQL_PATH}`,
       );
     });
-    return { db, server, httpServer };
+
+    if (!options.httpServer) {
+      let port = process.env.GRAPHQL_PORT || 8000;
+      if (options.graphql_port !== undefined) {
+        port = options.graphql_port;
+      }
+      httpServer.listen({ port });
+    } 
+    return { db, server, httpServer, stop};
   } catch (err) {
     logger.error(err, 'Apollo api error');
     process.exit(1);

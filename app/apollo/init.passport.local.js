@@ -18,7 +18,8 @@ const bcrypt=require('bcrypt');
 const passport=require('passport');
 const GraphQLLocalStrategy=require('graphql-passport').GraphQLLocalStrategy;
 const buildContext=require('graphql-passport').buildContext;
-const SECRET = require('./models/const').SECRET;
+const { SECRET,  GRAPHQL_PATH} = require('./models/const');
+
 
 const initApp = (app, models, logger) => {
   logger.info('initialize apollo application for passport local auth');
@@ -39,7 +40,7 @@ const initApp = (app, models, logger) => {
       done(error);
     }),
   );
-  app.use(passport.initialize());
+  app.use(GRAPHQL_PATH, passport.initialize());
 };
 
 const buildApolloContext = async ({models, req, res, connection, logger}) => {

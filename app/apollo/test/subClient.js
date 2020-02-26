@@ -40,5 +40,9 @@ module.exports = class SubClient {
     };
     return this._wsClient.request(operation);
   }
+
+  close() {
+    this._wsClient.close();
+  }
 };
 

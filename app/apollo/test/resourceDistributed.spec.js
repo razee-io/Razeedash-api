@@ -28,7 +28,7 @@ const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.$
 let mongoServer;
 let mongoServerEUDE;
 let myApollo;
-const graphqlPort = 18003;
+const graphqlPort = 18005;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const api = apiFunc(graphqlUrl);
 
@@ -151,19 +151,15 @@ describe('resourceDistributed graphql test suite', () => {
     await getPresetOrgs();
     await getPresetUsers();
     await getPresetResources();
-    setTimeout(function() {
-      // why(); // logs out active handles that are keeping node running
-    }, 5000);
+    //setTimeout(function() {
+    // why(); // logs out active handles that are keeping node running
+    //}, 5000);
   });
 
   after(async () => {
-    await myApollo.db.connection.close();
+    await myApollo.stop(myApollo);
     await mongoServer.stop();
     await mongoServerEUDE.stop();
-    await myApollo.server.stop();
-    await myApollo.httpServer.close(() => {
-      console.log('🏄  Fancy razee-api Apollo Server closed.');
-    });
   });
 
   describe('resourceDistributed(_id: ID!): Resource', () => {

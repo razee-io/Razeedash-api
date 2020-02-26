@@ -42,8 +42,9 @@ const userResolvers = {
   },
 
   Mutation: {
-    signUp: async (parent, args, { models, secret }) => {
-      return models.User.signUp(models, args, secret);
+    signUp: async (parent, args, context) => {
+      const { models, secret } = context;
+      return models.User.signUp(models, args, secret, context);
     },
 
     signIn: async (parent, { login, password }, context) => {
