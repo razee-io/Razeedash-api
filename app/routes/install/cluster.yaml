@@ -32,4 +32,4 @@ metadata:
 spec:
   requests:
     - options:
-        url: https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml
+        url: https://github.com/razee-io/Watch-keeper/releases/download/0.2.0/resource.yaml
