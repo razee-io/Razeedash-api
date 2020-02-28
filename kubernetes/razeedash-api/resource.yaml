@@ -130,13 +130,13 @@ items:
             volumeMounts:
               - name: add-cluster-webhook-headers-vol
                 mountPath: /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers
-              - name: mongo-cert-vol
+              - name: razeedash-secret-vol
                 mountPath: /var/run/secrets/razeeio/razeedash-secret
           volumes:
             - name: add-cluster-webhook-headers-vol
               secret:
                 secretName: razeedash-add-cluster-webhook-headers-secret
-            - name: mongo-cert-vol
+            - name: razeedash-secret-vol
               secret:
                 secretName: razeedash-secret
 
