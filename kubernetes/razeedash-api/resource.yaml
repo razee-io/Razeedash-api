@@ -136,6 +136,7 @@ items:
             - name: add-cluster-webhook-headers-vol
               secret:
                 secretName: razeedash-add-cluster-webhook-headers-secret
+                optional: true
             - name: razeedash-secret-vol
               secret:
                 secretName: razeedash-secret
