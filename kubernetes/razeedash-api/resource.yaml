@@ -128,6 +128,7 @@ items:
             - name: add-cluster-webhook-headers-vol
               secret:
                 secretName: razeedash-add-cluster-webhook-headers-secret
+                optional: true
 
   # redis
 
