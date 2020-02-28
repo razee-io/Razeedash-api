@@ -41,7 +41,7 @@ function obscureUrl(url) {
 
 async function isRedisReachable(redisUrl) {
   const url = new URL(redisUrl);
-  if (await isPortReachable(url.port, { host: url.hostname })) {
+  if (await isPortReachable(url.port, { host: url.hostname, timeout: 5000 })) {
     const options = process.env.REDIS_CERTIFICATE_PATH
       ? { tls: { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } }
       : {};
