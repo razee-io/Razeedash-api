@@ -28,7 +28,7 @@ router.use(ebl(getBunyanConfig('/api/install')));
 router.get('/inventory', asyncHandler(async(req, res, next) => {
   const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
-  const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
+  const wk_url = 'https://github.com/razee-io/Watch-keeper/releases/download/0.2.0/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/inventory.yaml`, 'utf8');
     const wk = await request.get(wk_url);
@@ -50,7 +50,7 @@ router.get('/inventory', asyncHandler(async(req, res, next) => {
 router.get('/kapitan', asyncHandler(async (req, res, next) => {
   const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
-  const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
+  const wk_url = 'https://github.com/razee-io/Watch-keeper/releases/download/0.2.0/resource.yaml';
   const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/razeedeploy.yaml`, 'utf8');
@@ -74,7 +74,7 @@ router.get('/kapitan', asyncHandler(async (req, res, next) => {
 router.get('/razeedeploy', asyncHandler(async (req, res, next) => {
   const orgKey = req.orgKey;
   var razeeapiUrl = `${req.protocol}://${req.get('host')}/api/v2`;
-  const wk_url = 'https://github.com/razee-io/watch-keeper/releases/latest/download/resource.yaml';
+  const wk_url = 'https://github.com/razee-io/Watch-keeper/releases/download/0.2.0/resource.yaml';
   const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/razeedeploy.yaml`, 'utf8');
