@@ -44,6 +44,11 @@ items:
                 secretKeyRef:
                   name: razeedash-secret
                   key: mongo_url
+            - name: MONGO_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: mongo_cert
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             command: ["npm", "run", "wait-mongo"]
             imagePullPolicy: Always
@@ -85,6 +90,11 @@ items:
                 secretKeyRef:
                   name: razeedash-secret
                   key: mongo_url
+            - name: MONGO_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: razeedash-secret
+                  key: mongo_cert
             - name: MONGO_DB_NAME
               value: razeedash
             - name: ORG_ADMIN_KEY
@@ -185,4 +195,3 @@ items:
         - protocol: TCP
           port: 6379
           targetPort: 6379
-
