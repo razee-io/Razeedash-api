@@ -23,6 +23,7 @@ const ACTIONS = {
 const TYPES = {
   RESOURCE: 'resource',
   CLUSTER: 'cluster',
+  MESSAGE: 'message',
 };
 
 const AUTH_MODELS = {
