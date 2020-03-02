@@ -338,7 +338,7 @@ describe('resource graphql test suite', () => {
       searchableData: { ttt: 'tt tt t1' },
     };
 
-    it.only('a user subscribe an org and filter should be able to get notification is a new/updated resource matches', async () => {
+    it('a user subscribe an org and filter should be able to get notification is a new/updated resource matches', async () => {
       try {
         if (pubSubPlaceHolder.enabled === false) {
           return this.skip();
