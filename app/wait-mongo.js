@@ -33,6 +33,7 @@ async function connect(){
       log.info(`Attempt ${i} to connect to MongoDB`);
       result = await MongoClient.getClient();
     } catch (e) {
+      log.error('Error loading MongoClient', e);
       i++;
       await delay(60000);
     }
