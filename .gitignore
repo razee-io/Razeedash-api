@@ -65,6 +65,7 @@ typings/
 
 ### Local ignores
 dev-envvars.sh
+dev/
 
 # vscode settings
 .vscode
