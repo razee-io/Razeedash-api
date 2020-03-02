@@ -393,7 +393,7 @@ describe('resource graphql test suite', () => {
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
-        await sleep(100);
+        await sleep(800);
         expect(dataReceivedFromSub._id).to.equal('some_fake_id');
 
         // sleep 0.1 second and send a resourceChanged event
