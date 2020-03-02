@@ -124,6 +124,9 @@ module.exports = class MongoClient {
   async _clientConnect(){
     if (!this._client) {
       const options = {useNewUrlParser: true};
+      if(this._mongo.cert) {
+        options['tlsCAFile'] = this._mongo.cert;
+      }
       let client = await MongoDBClient.connect(this.url, options);
       this._client = client.db(this.dbName);
     }

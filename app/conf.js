@@ -17,7 +17,8 @@
 const conf = {
   mongo: {
     url: process.env.MONGO_URL || 'mongodb://localhost:3001/meteor',
-    dbName: process.env.MONGO_DB_NAME || 'meteor'
+    dbName: process.env.MONGO_DB_NAME || 'meteor',
+    cert: process.env.MONGO_CERT
   },
   s3: {
     endpoint: process.env.S3_ENDPOINT,
