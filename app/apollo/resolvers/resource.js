@@ -130,7 +130,7 @@ const resourceResolvers = {
     resourceUpdated: {
       resolve: (parent, { org_id, filter }, { models, me, req_id, logger }) => {
         logger.debug(
-          { models, org_id, filter, me, req_id },
+          { modelKeys: Object.keys(models), org_id, filter, me, req_id },
           'Subscription.resourceUpdated.resolve',
         );
         const { resourceUpdated } = parent;
