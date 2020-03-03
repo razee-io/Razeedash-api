@@ -51,6 +51,9 @@ items:
             command: ["npm", "run", "wait-mongo"]
             imagePullPolicy: Always
             name: razeedash-api-init
+            volumeMounts:
+              - name: razeedash-secret-vol
+                mountPath: /var/run/secrets/razeeio/razeedash-secret
           containers:
           - env:
             - name: S3_ENDPOINT
