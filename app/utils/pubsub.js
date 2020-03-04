@@ -1,44 +1,66 @@
+/* eslint-env node, mocha */
+/**
+ * Copyright 2019 IBM Corp. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 var _ = require('lodash');
 var Redis = require('ioredis');
+
+var inited = false;
+
+var redisClient;
+var subClient;
+var chanNamesToSubs = {};
+
+var init = ()=>{
+  if(inited){
+    return;
+  }
+  inited = true;
+  redisClient = getNewClient();
+  subClient = getNewClient();
+
+  subClient.on('message', async(chanName, pubMsg)=>{
+    var msg = pubMsg;
+    msg = JSON.parse(msg);
+    var listeners = chanNamesToSubs[chanName];
+    if(!listeners){
+      return;
+    }
+    listeners.forEach((obj)=>{
+      if(!_.every(obj.filters, msg)){
+        return;
+      }
+      obj.onMsg(msg);
+    });
+  });
+};
 
 var getNewClient = ()=>{
   var conf = JSON.parse(process.env.REDIS_CONN_JSON || '{}');
   return new Redis(conf);
 };
-var redisClient = getNewClient();
-var subClient = getNewClient();
 
-var getQueueName = (chanName)=>{
-  return `pubsub_queue_${chanName}`;
-};
-
-var pub = async(chanName, msg, options={})=>{
-  var { type='fanout', maxQueueSize=100 } = options;
+var pub = async(chanName, msg)=>{
+  if(!inited){
+    init();
+  }
 
   msg = JSON.stringify(msg);
 
-  if(type == 'fanout'){
-    return await pubFanout(chanName, msg);
-  }
-  else if(type == 'roundRobin'){
-    return await pubRoundRobin(chanName, msg, maxQueueSize);
-  }
-  else{
-    throw `unknown type "${type}"`;
-  }
-};
-
-var pubFanout = async(chanName, msg)=>{
   return await redisClient.publish(chanName, msg);
-};
-
-var pubRoundRobin = async(chanName, msg, maxQueueSize)=>{
-  // todo: make the sub() part of this function
-  await (redisClient.pipeline()
-    .lpush(getQueueName(chanName), msg)
-    .ltrim(getQueueName(chanName), 0, maxQueueSize)
-    .publish(chanName, '1')
-  ).exec();
 };
 
 var unsub = (obj)=>{
@@ -49,6 +71,9 @@ var unsub = (obj)=>{
 };
 
 var sub = (chanName, filters=[], onMsg=null)=>{
+  if(!inited){
+    init();
+  }
   if(!onMsg){
     if(filters.length < 1){
       throw 'please supply (chanName, onMsg) or (chanName, filters, onMsg)';
@@ -70,23 +95,8 @@ var sub = (chanName, filters=[], onMsg=null)=>{
   return obj;
 };
 
-var chanNamesToSubs = {};
 
-subClient.on('message', async(chanName, pubMsg)=>{
-  var msg = pubMsg;
-  msg = JSON.parse(msg);
-  var listeners = chanNamesToSubs[chanName];
-  if(!listeners){
-    return;
-  }
-  listeners.forEach((obj)=>{
-    if(!_.every(obj.filters, msg)){
-      return;
-    }
-    obj.onMsg(msg);
-  });
-});
 
 module.exports = {
-  pub, sub,
+  init, pub, sub,
 };

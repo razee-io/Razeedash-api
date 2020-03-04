@@ -26,13 +26,11 @@ let db = {};
 
 describe('orgs', () => {
 
-  before(function () {
+  before(async function () {
     mongodb.max_delay = 0;
     const MongoClient = mongodb.MongoClient;
-    MongoClient.connect('someconnectstring', {}, function (err, database) {
-      database.collection('orgs');
-      db = database;
-    });
+    db = await MongoClient.connect('someconnectstring', {});
+    db.collection('orgs');
   });
 
   after(function () {
