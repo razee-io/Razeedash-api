@@ -18,6 +18,7 @@ const clone = require('clone');
 const MongoDBClient = require('mongodb').MongoClient;
 const pLimit = require('p-limit');
 const objectPath = require('object-path');
+const fs = require('fs');
 
 module.exports = class MongoClient {
   constructor(options) {
@@ -124,7 +125,7 @@ module.exports = class MongoClient {
   async _clientConnect(){
     if (!this._client) {
       const options = {useNewUrlParser: true};
-      if(this._mongo.cert) {
+      if(fs.existsSync(this._mongo.cert)) {
         options['tlsCAFile'] = this._mongo.cert;
         this.log.info(`Using tlsCAFile: ${this._mongo.cert}`);
       }
