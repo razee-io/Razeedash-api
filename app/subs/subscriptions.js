@@ -53,7 +53,7 @@ module.exports = async(orgKey, socket)=>{
     // otherwise maybe we need to update
     var curSubs = await Subscriptions.aggregate([
       { $match: { 'org_id': orgId } },
-      { $project: { tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', tags ] } } },
+      { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', tags ] } } },
       { $match: { 'isSubSet': true } }
     ]).toArray();
     curSubs = _.sortBy(curSubs, '_id');
@@ -76,7 +76,15 @@ module.exports = async(orgKey, socket)=>{
 
     log.info(`sending urls to ${socket.id}`, { urls });
 
-    socket.emit('subscriptions', urls);
+    // exposes the name and uuid fields to the user
+    var publicSubs = _.map(curSubs, (sub)=>{
+      return _.pick(sub, ['name', 'uuid']);
+    });
+
+    socket.emit('subscriptions', {
+      subscriptions: publicSubs,
+      urls,
+    });
 
     prevSubs = curSubs;
 
