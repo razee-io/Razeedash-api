@@ -15,8 +15,8 @@ module.exports = (server)=>{
     if (!orgKey) {
       log.error(`no org key.  ${socket.id} disconnected`);
       socket.disconnect(true);
+      return false;
     }
-
     if(action == 'subscriptions'){
       await Subscriptions(orgKey, socket);
     }

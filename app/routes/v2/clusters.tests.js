@@ -28,15 +28,13 @@ const buildHashForResource = require('../../utils/cluster.js').buildHashForResou
 
 describe('clusters', () => {
 
-  before(function () {
+  before(async function () {
     mongodb.max_delay = 0;
     const MongoClient = mongodb.MongoClient;
-    MongoClient.connect('someconnectstring', {}, function (err, database) {
-      database.collection('clusters');
-      database.collection('resources');
-      database.collection('resourceStats');
-      db = database;
-    });
+    db = await MongoClient.connect('someconnectstring', {});
+    db.collection('clusters');
+    db.collection('resources');
+    db.collection('resourceStats');
   });
 
   after(function () {
