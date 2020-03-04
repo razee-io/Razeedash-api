@@ -19,6 +19,7 @@ const Redis = require('ioredis');
 const { RedisPubSub } = require('graphql-redis-subscriptions');
 const isPortReachable = require('is-port-reachable');
 const { PubSub } = require('apollo-server');
+const { APOLLO_STREAM_SHARDING } = require('../models/const');
 
 const { getBunyanConfig } = require('../../utils/bunyan');
 
@@ -26,7 +27,7 @@ const logger = bunyan.createLogger(getBunyanConfig('apollo/subscription'));
 
 const EVENTS = {
   RESOURCE: {
-    UPDATED: 'RESOURCE.UPDATED',
+    UPDATED: 'APOLLO.RESOURCE.UPDATED',
   },
 };
 
@@ -71,6 +72,17 @@ if (process.env.ENABLE_GRAPHQL) {
   isRedisReachable(redisUrl);
 }
 
+function getStreamingTopic(prefix, org_id) {
+  if (APOLLO_STREAM_SHARDING) {
+    if (org_id) {
+      const last2 = org_id.slice(-2);
+      return `${prefix}_${last2}`;
+    } 
+    return `${prefix}_00`;
+  }
+  return prefix;
+}
+
 async function resourceChangedFunc(resource) {
   if (pubSubPlaceHolder.enabled) {
     let op = 'upsert';
@@ -78,15 +90,16 @@ async function resourceChangedFunc(resource) {
       op = 'delete';
     }
     try {
-      logger.debug({ op, resource }, 'Publishing resource updates');
-      await pubSubPlaceHolder.pubSub.publish(EVENTS.RESOURCE.UPDATED, {
+      const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.org_id);
+      logger.debug({ op, resource, topic }, 'Publishing resource updates');
+      await pubSubPlaceHolder.pubSub.publish(topic, {
         resourceUpdated: { resource, op },
       });
     } catch (error) {
-      logger.error('Resource publish error:', error.stack);
+      logger.error(error, 'Resource publish error');
     }
   }
   return resource;
 }
 
-module.exports = { EVENTS, pubSubPlaceHolder, resourceChangedFunc };
+module.exports = { EVENTS, pubSubPlaceHolder, resourceChangedFunc, getStreamingTopic };

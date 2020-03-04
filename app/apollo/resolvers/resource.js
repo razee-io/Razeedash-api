@@ -19,7 +19,7 @@ const { withFilter } = require('apollo-server');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
-const { EVENTS, pubSubPlaceHolder } = require('../subscription');
+const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
 
 const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
@@ -140,7 +140,10 @@ const resourceResolvers = {
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
-          return pubSubPlaceHolder.pubSub.asyncIterator(EVENTS.RESOURCE.UPDATED);
+          const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.org_id);
+          context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
+          // TODO: in future probably we should valid authorization here
+          return pubSubPlaceHolder.pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
