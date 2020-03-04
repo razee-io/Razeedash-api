@@ -27,12 +27,11 @@ router.use(ebl(getBunyanConfig('/api/install')));
 
 
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
-  let args_array = Array.isArray(req.query.args) ? req.query.args : [req.query.args];
-  if (args_array.includes('--wk') || args_array.includes('--watch-keeper')) {
-    args_array.push(`--razeedash-url='${req.protocol}://${req.get('host')}/api/v2'`);
-    args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
-  }
-  args_array = (args_array.length > 0 && args_array[0] != null) ? JSON.stringify(args_array) : '[]';
+  let args = req.query.args ? req.query.args : [];
+  let args_array = Array.isArray(args) ? args : [args];
+  args_array.push(`--razeedash-url='${req.protocol}://${req.get('host')}/api/v2'`);
+  args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
+  args_array = JSON.stringify(args_array);
 
   try {
     const rdd_job = await request.get('https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml');
