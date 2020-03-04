@@ -44,8 +44,6 @@ items:
                 secretKeyRef:
                   name: razeedash-secret
                   key: mongo_url
-            - name: MONGO_CERT
-              value: /var/run/secrets/razeeio/razeedash-secret/mongo_cert
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             command: ["npm", "run", "wait-mongo"]
             imagePullPolicy: Always
@@ -90,8 +88,6 @@ items:
                 secretKeyRef:
                   name: razeedash-secret
                   key: mongo_url
-            - name: MONGO_CERT
-              value: /var/run/secrets/razeeio/razeedash-secret/mongo_cert
             - name: MONGO_DB_NAME
               value: razeedash
             - name: ORG_ADMIN_KEY
