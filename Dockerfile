@@ -26,5 +26,4 @@ WORKDIR /usr/src/
 COPY --from=buildImg /usr/src /usr/src
 
 EXPOSE 3333
-EXPOSE 8000
 CMD ["npm", "start"]
