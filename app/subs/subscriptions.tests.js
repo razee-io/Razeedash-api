@@ -129,15 +129,15 @@ describe('subs', () => {
       _.set(socket, 'handshake.query.tags', 'aaaa,bbbb');
 
       var result = await (new Promise(async(resolve)=>{
-        sinon.replace(socket, 'emit', (type, urls)=>{
-          resolve([ type, urls ]);
+        sinon.replace(socket, 'emit', (type, data)=>{
+          resolve([ type, data ]);
         });
         var result = await subscriptions(orgKey, socket);
         assert(result, true);
       }));
 
       assert(result[0] == 'subscriptions');
-      assert.deepEqual(result[1], fakeUrls);
+      assert.deepEqual(result[1].urls, fakeUrls);
 
       result = await lastOnMsg({ orgId });
       assert(result == false);
