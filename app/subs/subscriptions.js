@@ -10,7 +10,8 @@ const MongoClient = new MongoClientClass(mongoConf);
 const tagsStrToArr = require('../utils/subscriptions.js').tagsStrToArr;
 const getSubscriptionUrls = require('../utils/subscriptions.js').getSubscriptionUrls;
 
-var { sub } = require('../utils/pubsub');
+var { sub } = require('../utils/pubsub.js');
+
 /*
 * Waits for socketio connections
 * On connect (with valid auth), sends an event containing the Subscription urls which match the `tags` specified on connect
@@ -23,16 +24,16 @@ module.exports = async(orgKey, socket)=>{
   if (!tagsString) {
     log.error(`no tags were supplied.  ${socket.id} disconnected`);
     socket.disconnect(true);
+    return false;
   }
   const tags = tagsStrToArr(tagsString);
-
   const db = await MongoClient.getClient();
   const Orgs = db.collection('orgs');
   const org = await Orgs.findOne({ orgKeys: orgKey });
-
   if (!org) {
     log.error(`bad org key.  ${socket.id} disconnected`);
     socket.disconnect(true);
+    return false;
   }
 
   // get tags.  query subscriptions that match all tags
@@ -46,7 +47,7 @@ module.exports = async(orgKey, socket)=>{
   var onMsg = async(data)=>{
     // filter
     if(data.orgId != orgId){
-      return;
+      return false;
     }
 
     // otherwise maybe we need to update
@@ -68,21 +69,25 @@ module.exports = async(orgKey, socket)=>{
 
     if(!objsHaveUpdates && addedSubIds.length < 1 && removedSubIds.length < 1){
       // no changes, so doesnt do anything
-      return;
+      return false;
     }
 
     var urls = await getSubscriptionUrls(orgId, tags, curSubs);
 
     log.info(`sending urls to ${socket.id}`, { urls });
+
     socket.emit('subscriptions', urls);
 
     prevSubs = curSubs;
+
+    return true;
   };
   var handles = [
     sub('updateSubscription', onMsg),
     sub('addSubscription', onMsg),
     sub('removeSubscription', onMsg),
   ];
+
   socket.on('disconnect', ()=>{
     log.info(`disconnecting subscription ${socket.id}`);
     _.each(handles, (handle)=>{
@@ -94,4 +99,6 @@ module.exports = async(orgKey, socket)=>{
   onMsg({
     orgId,
   });
+
+  return true;
 };
