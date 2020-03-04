@@ -77,7 +77,6 @@
   "devDependencies": {
     "axios": "^0.19.2",
     "chai": "^4.2.0",
-    "chai": "^4.2.0",
     "chai-spies": "^1.0.0",
     "dockerlint": "^0.3.9",
     "dotenv": "^8.2.0",
