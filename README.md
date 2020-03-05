@@ -99,8 +99,11 @@ Production MongoDB usually is a minimum of 3 nodes using replica sets.  That
 definition would look something like:
 
 ```bash
-echo -n "mongodb://mongo‑0:27017,mongo‑1:27017,mongo‑2/razeedash?replicaSet=rs0" | base64
+echo -n "mongodb://mongo‑0:27017,mongo‑1:27017,mongo‑2/razeedash?replicaSet=rs0&tls=true" | base64
 ```
+
+`tls=true` should be at the end of your connection string when connecting to a hosted mongo.
+
 <!--Markdownlint-enable MD013-->
 
 Create file razeedash-secret.yaml using the generated string provided from the
@@ -139,7 +142,31 @@ data:
 ```
 
 If you are using your own managed mongodb system, make sure you
-setup the `mongo_url` secret properly.
+setup the `mongo_url` secret properly.  For example, your mongo_url
+connection string might look something like this:
+
+```bash
+echo -n "mongodb://mongo‑0:27017,mongo‑1:27017,mongo‑2/razeedash?replicaSet=rs0&tls=true" | base64
+# bW9uZ29kYjovL21vbmdv4oCRMDoyNzAxNyxtb25nb+KAkTE6MjcwMTcsbW9uZ2/igJEyL3JhemVlZGFzaD9yZXBsaWNhU2V0PXJzMCZ0bHM9dHJ1ZQ==
+```
+
+Note that `tls=true` should be at the end of your connection string.
+
+You will also need to add `mongo_cert`
+to `razeedash-secret`.  This will contain a base64 encoded copy of the tls
+certificate used to access your managed mongodb.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: razeedash-secret
+  namespace: razee
+type: Opaque
+data:
+  mongo_url: bW9uZ29kYjovL21vbmdv4oCRMDoyNzAxNyxtb25nb+KAkTE6MjcwMTcsbW9uZ2/igJEyL3JhemVlZGFzaD9yZXBsaWNhU2V0PXJzMCZ0bHM9dHJ1ZQ==
+  mongo_cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCnlvdXIgbW9uZ28gY2VydCBnb2VzIGhlcmUKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+```
 
 Apply the secret to kubernetes, build the resource.yml and apply to cluster:
 
