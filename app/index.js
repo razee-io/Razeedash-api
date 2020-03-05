@@ -28,7 +28,8 @@ const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
- 
+
+const apollo = require('./apollo');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
@@ -37,11 +38,11 @@ app.set('trust proxy', true);
 app.use(addRequestId);
 app.use(compression());
 
-app.use(streamedRoutes); // routes where we don't wan't body-parser applied
+app.use('/api', streamedRoutes); // routes where we don't wan't body-parser applied
 app.use(body_parser.json({ limit: '8mb' }));
 app.use(body_parser.urlencoded({ extended: false }));
 app.set('port', port);
-app.use(router);
+app.use('/api', router); // only for everything under /api
 
 // eslint-disable-next-line no-unused-vars
 app.use(function errorHandler(err, req, res, next) {
@@ -61,6 +62,7 @@ app.use(function errorHandler(err, req, res, next) {
 });
 
 const server = http.createServer(app);
+
 server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
@@ -73,14 +75,18 @@ initialize().then((db) => {
 });
 
 
-function onReady() {
+async function onReady() {
+  if (process.env.ENABLE_GRAPHQL === 'true') {
+    // before listening on the port, apply apollo server if enabled
+    await apollo({app, httpServer: server});
+  } 
   server.listen(port);
 }
 
 function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
-  log.info(`razeedash-api listening on ${bind}`);
+  log.info(`🏄 razeedash-api listening on ${bind}/api`);
 }
 
 function onError(error) {

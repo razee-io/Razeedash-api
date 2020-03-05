@@ -1,0 +1,1 @@
+This folder contains several docker compose files for development.

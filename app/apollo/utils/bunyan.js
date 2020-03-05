@@ -14,8 +14,14 @@
 * limitations under the License.
 */
 
-const responseCodeMapper = (status) => {
-  if (status === 500) {
+const responseCodeMapper = (status, err, meta) => {
+  if (meta.method === 'OPTIONS' && status === 204) {
+    // skip OPTION request 204 response
+    return 'trace';
+  } else if (meta.body && meta.body.operationName === 'IntrospectionQuery') {
+    // skip playground introspection query
+    return 'trace';
+  } else if (status === 500) {
     return 'error';
   } else if (status === 400 || status === 404) {
     return 'warn';
@@ -27,29 +33,16 @@ const responseCodeMapper = (status) => {
 };
 
 const getBunyanConfig = (route) => {
-  if (route === 'apollo') {
-    return {
-      name: route,
-      parseUA: false,
-      excludes: ['referer', 'url', 'short-body', 'user-agent', 'req', 'res'],
-      levelFn: responseCodeMapper,
-      streams: [{
-        level: process.env.LOG_LEVEL || 'info',
-        stream: process.stdout
-      }]      
-    };
-  }
-  let result = {
+  return {
     name: route,
     parseUA: false,
-    excludes: ['referer', 'url', 'body', 'short-body'],
+    excludes: ['referer', 'url', 'short-body', 'user-agent', 'req', 'res'],
     levelFn: responseCodeMapper,
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
       stream: process.stdout
-    }]
+    }]      
   };
-  return result;
 };
 
 module.exports = { getBunyanConfig };

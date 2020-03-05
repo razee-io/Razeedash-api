@@ -1,0 +1,36 @@
+/**
+ * Copyright 2020 IBM Corp. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const { AuthenticationError } = require('apollo-server');
+
+const whoIs = me => { 
+  if (me === null || me === undefined) return 'null';
+  if (me.email) return me.email;
+  if (me.identifier) return me.identifier;
+  return me._id;
+};
+
+// Validate is user is authorized for the requested action.
+// Throw exception if not.
+const validAuth = async (me, org_id, action, type, models, queryName, req_id, logger) => {
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type))) {
+    logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
+    throw new AuthenticationError(
+      `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
+    );
+  }
+}; 
+
+module.exports =  { whoIs, validAuth };

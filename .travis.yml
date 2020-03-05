@@ -1,15 +1,20 @@
 language: node_js
 node_js:
-  - "11"
+  - "lts/*"
 
 services:
   - docker
 
 script:
  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low; else npx audit-ci --low || true; fi
+ # since mongodb-memory-server is only used for api test under dev and not included prod, temporarily mark it
+ # off until https://github.com/kevva/decompress/issues/71 and https://github.com/kevva/decompress/pull/73 
+ # fixed/merged.
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a 1217 -w mongodb-memory-server; else npx audit-ci --low || true; fi
   - npm run lint
   - npm test
+  - npm run test:apollo:local
+  - npm run test:apollo:passport.local
   - docker build --rm -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" .
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images
