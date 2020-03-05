@@ -29,7 +29,7 @@ router.use(ebl(getBunyanConfig('/api/install')));
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args = req.query.args ? req.query.args : [];
   let args_array = Array.isArray(args) ? args : [args];
-  args_array.push(`--razeedash-url='${req.protocol}://${req.get('host')}/api/v2'`);
+  args_array.push(`--razeedash-url=${req.protocol}://${req.get('host')}/api/v2`);
   args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
   args_array = JSON.stringify(args_array);
 
