@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+const fs = require('fs');
 var _ = require('lodash');
 var Redis = require('ioredis');
 
@@ -49,8 +50,16 @@ var init = ()=>{
 };
 
 var getNewClient = ()=>{
-  var conf = JSON.parse(process.env.REDIS_CONN_JSON || '{}');
-  return new Redis(conf);
+  var options = JSON.parse(process.env.REDIS_CONN_JSON || '{}');
+  if (process.env.REDIS_CERTIFICATE_PATH) {
+    // for self signed cert of redis server
+    options.tls = { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } ;
+  }
+  if (process.env.REDIS_PUBSUB_URL) {
+    // process redis url if the env variable is defined
+    return new Redis(process.env.REDIS_PUBSUB_URL, options);
+  }
+  return new Redis(options);
 };
 
 var pub = async(chanName, msg)=>{
@@ -94,8 +103,6 @@ var sub = (chanName, filters=[], onMsg=null)=>{
   subClient.subscribe(chanName);
   return obj;
 };
-
-
 
 module.exports = {
   init, pub, sub,
