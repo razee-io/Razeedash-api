@@ -27,6 +27,18 @@ const responseCodeMapper = (status) => {
 };
 
 const getBunyanConfig = (route) => {
+  if (route === 'apollo') {
+    return {
+      name: route,
+      parseUA: false,
+      excludes: ['referer', 'url', 'short-body', 'user-agent', 'req', 'res'],
+      levelFn: responseCodeMapper,
+      streams: [{
+        level: process.env.LOG_LEVEL || 'info',
+        stream: process.stdout
+      }]      
+    };
+  }
   let result = {
     name: route,
     parseUA: false,

@@ -42,7 +42,7 @@ const Channels = require('./v1/channels.js');
 const ChannelsStream = require('./v1/channelsStream.js');
 const Subscriptions = require('./v1/subscriptions.js');
 
-router.use('/api/kube', Kube);
+router.use('/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));
 
 router.use(asyncHandler(async (req, res, next) => {
@@ -63,7 +63,7 @@ router.use(asyncHandler(async (req, res, next) => {
 
 // the orgs routes should be above the razee-org-key checks since the user
 // won't have a razee-org-key when creating an org for the first time. 
-router.use('/api/v2/orgs', Orgs);
+router.use('/v2/orgs', Orgs);
 
 router.use((req, res, next) => {
   let orgKey = req.get('razee-org-key');
@@ -77,16 +77,16 @@ router.use((req, res, next) => {
   next();
 });
 router.use(getOrg);
-router.use('/api/install', Install);
-router.use('/api/v2/clusters', Clusters);
-router.use('/api/v2/resources', Resources);
+router.use('/install', Install);
+router.use('/v2/clusters', Clusters);
+router.use('/v2/resources', Resources);
 
-router.use('/api/v1/channels', Channels);
+router.use('/v1/channels', Channels);
 // streamedRoutes is defined so we can have a path that isn't affected by body-parser.  
 // The POST route in ChannelsStream uses streams to upload to s3 and this would break
 // if we applied the body-parser middelware on this route. 
-streamedRoutes.use('/api/v1/channels', ChannelsStream); 
-router.use('/api/v1/subscriptions', Subscriptions);
+streamedRoutes.use('/v1/channels', ChannelsStream); 
+router.use('/v1/subscriptions', Subscriptions);
 
 async function initialize(){
   const options = {
@@ -106,6 +106,21 @@ async function initialize(){
           keys: { org_id: 1, 'containers.image': 1 },
           options: { name: 'org_id.containers.image', }
         }
+      ],
+      // users is required for stand-alone api
+      users: [
+        {
+          keys: { 'services.bitbucket.id': 1},
+          options: {sparse: true, unique: true}
+        },
+        {
+          keys: { 'services.github.id': 1},
+          options: {sparse: true, unique: true}
+        },
+        {
+          keys: { 'services.ghe.id': 1},
+          options: {sparse: true, unique: true}
+        },
       ],
       orgs: [
         { 
