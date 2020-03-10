@@ -76,7 +76,7 @@ var getNewClient = ()=>{
       logger.debug(`Skip loading self-signed redis cert from: ${redisCertPath}`);
     }
   } catch (err) {
-    logger.warn(err, `Ignore the redis server cert error.`);
+    logger.warn(err, 'Ignore the redis server cert error.');
   }
 
   // process redis url if the env variable is defined
