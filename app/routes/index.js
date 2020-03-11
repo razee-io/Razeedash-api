@@ -121,6 +121,10 @@ async function initialize(){
           keys: { 'services.ghe.id': 1},
           options: {sparse: true, unique: true}
         },
+        {
+          keys: { 'services.iam.id': 1},
+          options: {sparse: true, unique: true}
+        },
       ],
       orgs: [
         { 
