@@ -15,9 +15,14 @@
  * limitations under the License.
  */
 
+const fs = require('fs');
+const bunyan = require('bunyan');
 var _ = require('lodash');
 var Redis = require('ioredis');
-
+const { getBunyanConfig } = require('./bunyan');
+const logger = bunyan.createLogger(
+  getBunyanConfig('utils/pubsub'),
+);
 var inited = false;
 
 var redisClient;
@@ -49,8 +54,36 @@ var init = ()=>{
 };
 
 var getNewClient = ()=>{
-  var conf = JSON.parse(process.env.REDIS_CONN_JSON || '{}');
-  return new Redis(conf);
+  var options = {};
+  // try to parse REDIS_CONN_JSON setting from the env variable
+  try {
+    options = JSON.parse(process.env.REDIS_CONN_JSON || '{}');
+  } catch (err) {
+    logger.warn(err, `Ignore the invalid REDIS_CONN_JSON setting: ${process.env.REDIS_CONN_JSON}.`);
+  }
+
+  // try to see if redis server self signed cert file exist 
+  try {
+    const redisCertPath = '/var/run/secrets/razeeio/razeedash-secret/redis_cert';
+    if (fs.existsSync(redisCertPath)) {
+      const cert = fs.readFileSync(redisCertPath);
+      if ( !options.tls ) {
+        options.tls = {};
+      }
+      options.tls.ca = [cert];
+      logger.debug(`Redis server cert is successfully loaded from ${redisCertPath}`);
+    } else {
+      logger.debug(`Skip loading self-signed redis cert from: ${redisCertPath}`);
+    }
+  } catch (err) {
+    logger.warn(err, 'Ignore the redis server cert error.');
+  }
+
+  // process redis url if the env variable is defined
+  if (process.env.REDIS_PUBSUB_URL) {
+    return new Redis(process.env.REDIS_PUBSUB_URL, options);
+  }
+  return new Redis(options);
 };
 
 var pub = async(chanName, msg)=>{
@@ -94,8 +127,6 @@ var sub = (chanName, filters=[], onMsg=null)=>{
   subClient.subscribe(chanName);
   return obj;
 };
-
-
 
 module.exports = {
   init, pub, sub,
