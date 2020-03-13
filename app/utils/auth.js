@@ -1,4 +1,4 @@
- /**
+/**
  * Copyright 2020 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@
 // of object passed into this middleware and validate users api key.
 // Auth provider should replace this middleware with their own impl.
 
-rbacAuth = (action, type) => async(req, res, next) => {
+const rbacAuth = (action, type) => async(req, res, next) => {
   const userId = req.get('x-user-id');
   const apiKey = req.get('x-api-key');
   

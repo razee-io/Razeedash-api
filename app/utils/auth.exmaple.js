@@ -1,4 +1,4 @@
- /**
+/**
  * Copyright 2020 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ const whoIs = me => {
   return me._id;
 };
 
-rbacAuth = (action, type) => async(req, res, next) => {
+const rbacAuth = (action, type) => async(req, res, next) => {
   
   req.log.info({action, type, req_id: req.id}, 'rbacAuth enter...');
 
@@ -39,7 +39,7 @@ rbacAuth = (action, type) => async(req, res, next) => {
   // TODO: we may need to pass additional parameters into isAuthorized to 
   // support fine granular permission control
   if (!(await models.User.isAuthorized(me, org_id, action, type))) {
-    logger.error({req_id, me: whoIs(me), org_id, action, type}, `rbacAuth exits 401`);
+    req.log.error({req_id: req.id, me: whoIs(me), org_id, action, type}, 'rbacAuth exits 401');
     res.status(401).send('Permission denied.');
   }
 
