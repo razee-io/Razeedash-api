@@ -17,21 +17,6 @@
 const { gql } = require('apollo-server-express');
 
 const clusterSchema = gql`
-  type KubeVersion {
-    major: String!
-    minor: String!
-    gitVersion: String
-    gitCommit: String
-    gitTreeState: String
-    buildDate: String
-    compiler: String
-    platform: String
-  }
-
-  type Metadata {
-    kube_version: KubeVersion
-  }
-
   type Comment {
     user_id: String
     content: String
@@ -42,7 +27,7 @@ const clusterSchema = gql`
     _id: ID!
     org_id: String!
     cluster_id: String!
-    metadata: Metadata!
+    metadata: JSON
     comments: [Comment]
     created: Date
     updated: Date
