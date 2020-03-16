@@ -225,13 +225,14 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type) {
-  logger.debug(`local isAuthorized ${me} ${action} ${type}`);
-  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
-    if (action === ACTIONS.READ) {
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes) {
+  logger.debug(`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+  // For local auth we ignore type and attributes
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL && me) {
+    if (action === ACTIONS.READ || action === ACTIONS.GET) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.SUBSCRIBE) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }

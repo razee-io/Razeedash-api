@@ -25,8 +25,8 @@ const whoIs = me => {
 };
 
 const rbacAuth = (action, type) => async(req, res, next) => {
-  
-  req.log.info({action, type, req_id: req.id}, 'rbacAuth enter...');
+  const req_id = req.id;
+  req.log.debug({action, type, req_id}, 'rbacAuth enter...');
 
   const me = await models.User.getMeFromRequest(req);
 
@@ -36,14 +36,21 @@ const rbacAuth = (action, type) => async(req, res, next) => {
   }
 
   const org_id = req.org._id;
-  // TODO: we may need to pass additional parameters into isAuthorized to 
-  // support fine granular permission control
-  if (!(await models.User.isAuthorized(me, org_id, action, type))) {
-    req.log.error({req_id: req.id, me: whoIs(me), org_id, action, type}, 'rbacAuth exits 401');
+  const attributes = {};
+
+  if (type === 'CHANNEL' && req.params.channelName) {
+    attributes.channelName = req.params.channelName;
+  } 
+  if (type === 'SUBSCRIPTION' && req.params.id) {
+    attributes.subscriptionId = req.params.id;
+  } 
+
+  if (!(await models.User.isAuthorized(me, org_id, action, type, attributes))) {
+    req.log.debug({req_id, me: whoIs(me), org_id, action, type, attributes}, 'rbacAuth permission denied - 401');
     res.status(401).send('Permission denied.');
   }
 
-  req.log.info({action, type, req_id: req.id}, 'rbacAuth exits 200');
+  req.log.debug({action, type, req_id, attributes}, 'rbacAuth permission granted - 200');
 
   next();
 };
