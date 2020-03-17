@@ -32,11 +32,9 @@
 // to define their own RBAC policies and logic.
 
 const ACTIONS = {
-  GET: 'get', 
   READ: 'read',
   WRITE: 'write',
   MANAGE: 'manage',
-  SUBSCRIBE: 'subscribe',
 };
     
 const TYPES = {

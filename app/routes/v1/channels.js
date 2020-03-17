@@ -29,7 +29,7 @@ router.use(asyncHandler(async (req, res, next) => {
 //   curl --request GET \
 //     --url http://localhost:3333/api/v1/channels \
 //     --header 'razee-org-key: orgApiKey-api-key-goes-here'
-router.get('/', getOrg, rbacAuth(ACTIONS.GET, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
+router.get('/', getOrg, rbacAuth(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   try {
     const orgId = req.org._id;
     const Channels = req.db.collection('channels');
@@ -148,7 +148,7 @@ router.get('/:channelName/:versionId', getOrg, rbacAuth(ACTIONS.READ, TYPES.CHAN
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName', getOrg, rbacAuth(ACTIONS.GET, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
+router.get('/:channelName', getOrg, rbacAuth(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   const orgId = req.org._id;
   const channelName = req.params.channelName + '';
 

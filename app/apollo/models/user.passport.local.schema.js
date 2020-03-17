@@ -244,10 +244,10 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   logger.debug(`passport.ocal isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL && me) {
   // For passport.local auth we ignore type and attributes
-    if (action === ACTIONS.READ || action === ACTIONS.GET) {
+    if (action === ACTIONS.READ) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.SUBSCRIBE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
