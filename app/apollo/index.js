@@ -26,7 +26,12 @@ const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
-const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
+const {
+  models,
+  connectDb,
+  setupDistributedCollections,
+  closeDistributedConnections
+} = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
 
@@ -51,20 +56,28 @@ const createDefaultApp = () => {
   return app;
 };
 
-const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
+const buildCommonApolloContext = async ({
+  models,
+  req,
+  res,
+  connection,
+  logger
+}) => {
   const context = await initModule.buildApolloContext({
     models,
     req,
     res,
     connection,
-    logger,
+    logger
   });
   // populate req_id to apollo context
   if (connection) {
-    context.req_id = connection.context.upgradeReq ? connection.context.upgradeReq.id : undefined;
+    context.req_id = connection.context.upgradeReq
+      ? connection.context.upgradeReq.id
+      : undefined;
   } else if (req) {
     context.req_id = req.id;
-  } 
+  }
   return context;
 };
 
@@ -82,7 +95,7 @@ const createApolloServer = () => {
         .replace('Validation error: ', '');
       return {
         ...error,
-        message,
+        message
       };
     },
     context: async ({ req, res, connection }) => {
@@ -91,37 +104,41 @@ const createApolloServer = () => {
         req,
         res,
         connection,
-        logger,
+        logger
       });
     },
     subscriptions: {
       path: GRAPHQL_PATH,
       onConnect: async (connectionParams, webSocket, context) => {
-        logger.trace({ req_id: webSocket.upgradeReq.id, connectionParams, context }, 'subscriptions:onConnect');
+        logger.trace(
+          { req_id: webSocket.upgradeReq.id, connectionParams, context },
+          'subscriptions:onConnect'
+        );
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
+          context
         );
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
           throw Error(
-            'Can not find the session for this subscription request.',
+            'Can not find the session for this subscription request.'
           );
         }
-        // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger, };
+        // add original upgrade request to the context
+        return { me, upgradeReq: webSocket.upgradeReq, logger };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
           { req_id: webSocket.upgradeReq.id, headers: context.request.headers },
-          'subscriptions:onDisconnect upgradeReq getMe',
+          'subscriptions:onDisconnect upgradeReq getMe'
         );
-      },
-    },
+      }
+    }
   });
   return server;
 };
 
-const stop = async (apollo) => {
+const stop = async apollo => {
   await apollo.db.connection.close();
   await closeDistributedConnections();
   await apollo.server.stop();
@@ -131,9 +148,10 @@ const stop = async (apollo) => {
 };
 
 const apollo = async (options = {}) => {
-
   if (!process.env.AUTH_MODEL) {
-    logger.error('apollo server is enabled, however AUTH_MODEL is not defined.');
+    logger.error(
+      'apollo server is enabled, however AUTH_MODEL is not defined.'
+    );
     process.exit(1);
   }
 
@@ -155,13 +173,15 @@ const apollo = async (options = {}) => {
     const server = createApolloServer();
     server.applyMiddleware({ app, path: GRAPHQL_PATH });
 
-    const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
+    const httpServer = options.httpServer
+      ? options.httpServer
+      : http.createServer(app);
     server.installSubscriptionHandlers(httpServer);
     httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;
       logger.info(
-        `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}${GRAPHQL_PATH}`,
+        `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}${GRAPHQL_PATH}`
       );
     });
 
@@ -171,8 +191,8 @@ const apollo = async (options = {}) => {
         port = options.graphql_port;
       }
       httpServer.listen({ port });
-    } 
-    return { db, server, httpServer, stop};
+    }
+    return { db, server, httpServer, stop };
   } catch (err) {
     logger.error(err, 'Apollo api error');
     process.exit(1);

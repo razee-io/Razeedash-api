@@ -28,24 +28,24 @@ const { getBunyanConfig } = require('../../utils/bunyan');
 const SECRET = require('./const').SECRET;
 
 const logger = bunyan.createLogger(
-  getBunyanConfig('apollo/models/user.local.schema'),
+  getBunyanConfig('apollo/models/user.local.schema')
 );
 
 const UserLocalSchema = new mongoose.Schema({
   _id: {
-    type: String,
+    type: String
   },
   type: {
-    type: String,
+    type: String
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   profile: {
     currentOrgName: {
-      type: String,
-    },
+      type: String
+    }
   },
 
   services: {
@@ -53,33 +53,33 @@ const UserLocalSchema = new mongoose.Schema({
       username: {
         type: String,
         unique: true,
-        required: true,
+        required: true
       },
       email: {
         type: String,
         unique: true,
-        validate: [isEmail, 'No valid email address provided.'],
+        validate: [isEmail, 'No valid email address provided.']
       },
       password: {
         type: String,
         required: true,
         minlength: 7,
-        maxlength: 42,
-      },
-    },
+        maxlength: 42
+      }
+    }
   },
   meta: {
     orgs: [
       {
         _id: {
-          type: String,
+          type: String
         },
         role: {
-          type: String,
-        },
-      },
-    ],
-  },
+          type: String
+        }
+      }
+    ]
+  }
 });
 
 async function getOrCreateOrganization(models, args) {
@@ -92,16 +92,16 @@ async function getOrCreateOrganization(models, args) {
         return od.createLocalOrg({
           _id: `${uuid()}`,
           type: 'local',
-          name: orgName,
+          name: orgName
         });
-      }),
+      })
     );
     return orgArray[0];
   }
   return models.Organization.createLocalOrg({
     _id: `${uuid()}`,
     type: 'local',
-    name: orgName,
+    name: orgName
   });
 }
 
@@ -115,25 +115,25 @@ UserLocalSchema.statics.createUser = async function(models, args) {
       local: {
         username: args.username,
         email: args.email,
-        password: args.password,
-      },
+        password: args.password
+      }
     },
     meta: {
       orgs: [
         {
           _id: org._id,
           name: org.name,
-          role: args.role === 'ADMIN' ? 'ADMIN' : 'READER',
-        },
-      ],
-    },
+          role: args.role === 'ADMIN' ? 'ADMIN' : 'READER'
+        }
+      ]
+    }
   });
   return user;
 };
 
 UserLocalSchema.statics.findByLogin = async function(login) {
   let user = await this.findOne({
-    'services.local.username': login,
+    'services.local.username': login
   });
   if (!user) {
     user = await this.findOne({ 'services.local.email': login });
@@ -150,39 +150,58 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
     username: user.services.local.username,
     role: user.meta.orgs[0].role,
     org_id: user.meta.orgs[0]._id,
-    meta: user.meta,
+    meta: user.meta
   };
   return jwt.sign(claim, secret, {
-    expiresIn,
+    expiresIn
   });
 };
 
-UserLocalSchema.statics.signUp = async (models, args, secret) => {
-  logger.debug(`local signUp ${args}`);
+UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
 };
 
-UserLocalSchema.statics.signIn = async (models, login, password, secret, context) => {
-  logger.debug({login, req_id: context.req_id}, 'local signIn enter');
+UserLocalSchema.statics.signIn = async (
+  models,
+  login,
+  password,
+  secret,
+  context
+) => {
+  logger.debug({ login, req_id: context.req_id }, 'local signIn enter');
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.findByLogin(login);
     if (!user) {
+      logger.warn(
+        { req_id: context.req_id },
+        'No user found with this login credentials.'
+      );
       throw new UserInputError('No user found with this login credentials.');
     }
     const isValid = await user.validatePassword(password);
     if (!isValid) {
+      logger.warn({ req_id: context.req_id }, 'Invalid password.');
       throw new AuthenticationError('Invalid password.');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
 };
 
@@ -197,6 +216,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: req.id }, 'Session expired');
         throw new AuthenticationError('Your session expired. Sign in again.');
       }
     }
@@ -206,6 +226,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     let token = connectionParams['authorization'];
@@ -217,7 +238,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        // console.log(e.stack);
+        logger.warn({ req_id: context.req_id }, 'Session expired');
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
@@ -225,8 +246,17 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type) {
-  logger.debug(`local isAuthorized ${me} ${action} ${type}`);
+UserLocalSchema.statics.isAuthorized = async function(
+  me,
+  orgId,
+  action,
+  type,
+  req_id
+) {
+  logger.debug(
+    { req_id: req_id },
+    `local isAuthorized ${me} ${action} ${type}`
+  );
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;

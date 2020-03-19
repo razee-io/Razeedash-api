@@ -28,24 +28,24 @@ const { getBunyanConfig } = require('../../utils/bunyan');
 const SECRET = require('./const').SECRET;
 
 const logger = bunyan.createLogger(
-  getBunyanConfig('apollo/models/user.passport.local.schema'),
+  getBunyanConfig('apollo/models/user.passport.local.schema')
 );
 
 const UserPassportLocalSchema = new mongoose.Schema({
   _id: {
-    type: String,
+    type: String
   },
   type: {
-    type: String,
+    type: String
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   profile: {
     currentOrgName: {
-      type: String,
-    },
+      type: String
+    }
   },
 
   services: {
@@ -53,34 +53,34 @@ const UserPassportLocalSchema = new mongoose.Schema({
       username: {
         type: String,
         unique: true,
-        required: true,
+        required: true
       },
       email: {
         type: String,
         unique: true,
-        validate: [isEmail, 'No valid email address provided.'],
+        validate: [isEmail, 'No valid email address provided.']
       },
       password: {
         type: String,
         required: true,
         minlength: 7,
-        maxlength: 42,
-      },
-    },
+        maxlength: 42
+      }
+    }
   },
 
   meta: {
     orgs: [
       {
         _id: {
-          type: String,
+          type: String
         },
         role: {
-          type: String,
-        },
-      },
-    ],
-  },
+          type: String
+        }
+      }
+    ]
+  }
 });
 
 async function getOrCreateOrganization(models, args) {
@@ -93,22 +93,22 @@ async function getOrCreateOrganization(models, args) {
         return od.createLocalOrg({
           _id: `${uuid()}`,
           type: 'passpportlocal',
-          name: orgName,
+          name: orgName
         });
-      }),
+      })
     );
     return orgArray[0];
   }
   return models.Organization.createLocalOrg({
     _id: `${uuid()}`,
     type: 'passpportlocal',
-    name: orgName,
+    name: orgName
   });
 }
 
 UserPassportLocalSchema.statics.createUser = async function(models, args) {
   const org = await getOrCreateOrganization(models, args);
-  
+
   const user = await this.create({
     _id: `${uuid()}`,
     type: 'passportlocal',
@@ -116,25 +116,25 @@ UserPassportLocalSchema.statics.createUser = async function(models, args) {
       passportlocal: {
         username: args.username,
         email: args.email,
-        password: args.password,
-      },
+        password: args.password
+      }
     },
     meta: {
       orgs: [
         {
           _id: org._id,
           name: org.name,
-          role: args.role === 'ADMIN' ? 'ADMIN' : 'READER',
-        },
-      ],
-    },
+          role: args.role === 'ADMIN' ? 'ADMIN' : 'READER'
+        }
+      ]
+    }
   });
   return user;
 };
 
 UserPassportLocalSchema.statics.findByLogin = async function(login) {
   let user = await this.findOne({
-    'services.passportlocal.username': login,
+    'services.passportlocal.username': login
   });
   if (!user) {
     user = await this.findOne({ 'services.passportlocal.email': login });
@@ -145,7 +145,7 @@ UserPassportLocalSchema.statics.findByLogin = async function(login) {
 UserPassportLocalSchema.statics.createToken = async (
   user,
   secret,
-  expiresIn,
+  expiresIn
 ) => {
   const claim = {
     _id: user._id,
@@ -158,18 +158,27 @@ UserPassportLocalSchema.statics.createToken = async (
     meta: user.meta
   };
   return jwt.sign(claim, secret, {
-    expiresIn,
+    expiresIn
   });
 };
 
-UserPassportLocalSchema.statics.signUp = async (models, args, secret) => {
+UserPassportLocalSchema.statics.signUp = async (
+  models,
+  args,
+  secret,
+  context
+) => {
   logger.debug(`passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
 };
 
@@ -178,21 +187,26 @@ UserPassportLocalSchema.statics.signIn = async (
   login,
   password,
   secret,
-  context,
+  context
 ) => {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const email = login;
-    const { user, /* info */ } = await context.authenticate('graphql-local', {
+    const { user /* info */ } = await context.authenticate('graphql-local', {
       email,
-      password,
+      password
     });
     if (!user) {
+      logger.warn({ req_id: context.req_id }, 'Authentication has failed');
       throw new AuthenticationError('Authentication has failed');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
 };
 
@@ -207,6 +221,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: req.id }, 'Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -216,6 +231,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     let token = connectionParams['authorization'];
@@ -227,6 +243,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: context.req_id }, 'Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -239,8 +256,12 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   orgId,
   action,
   type,
+  req_id
 ) {
-  logger.debug(`passport.ocal isAuthorized ${me} ${action} ${type}`);
+  logger.debug(
+    { req_id: req_id },
+    `passport.ocal isAuthorized ${me} ${action} ${type}`
+  );
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -308,4 +329,3 @@ UserPassportLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserPassportLocalSchema;
-
