@@ -36,13 +36,13 @@ const rbacAuth = (action, type) => async(req, res, next) => {
   }
 
   const org_id = req.org._id;
-  const attributes = {};
+  var attributes = null;
 
   if (type === 'CHANNEL' && req.params.channelName) {
-    attributes.channelName = req.params.channelName;
+    attributes = {channelName: req.params.channelName};
   } 
   if (type === 'SUBSCRIPTION' && req.params.id) {
-    attributes.subscriptionId = req.params.id;
+    attributes = {subscriptionId: req.params.id};
   } 
 
   if (!(await models.User.isAuthorized(me, org_id, action, type, attributes))) {
