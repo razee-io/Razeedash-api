@@ -321,7 +321,6 @@ const updateClusterResources = async (req, res, next) => {
     }
     end({ StatusCode: '200' });   //stop the response time timer, and report the metric
     promClient.queUpdateClusterResources.dec();
-    return result;
     res.status(200).send('Thanks');
   } catch (err) {
     req.log.error(err.message);
