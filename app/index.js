@@ -28,8 +28,12 @@ const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
-
 const apollo = require('./apollo');
+
+const prom_client = require('prom-client');
+const collectDefaultMetrics = prom_client.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });    //Collect all default metrics
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
@@ -75,11 +79,24 @@ initialize().then((db) => {
 });
 
 
+//Prometheus server configuration
+var metrics_server = http.createServer(function (request, response) {
+  response.writeHead(200, {'Content-Type': prom_client.register.contentType});
+  response.end(prom_client.register.metrics());
+});
+
+metrics_server.listen(9095, () => {
+  log.info(
+    `🏄  prometheus is listening on http://localhost:${9095}`,
+  );
+});
+
+
 async function onReady() {
   if (process.env.ENABLE_GRAPHQL === 'true') {
     // before listening on the port, apply apollo server if enabled
     await apollo({app, httpServer: server});
-  } 
+  }
   server.listen(port);
 }
 
