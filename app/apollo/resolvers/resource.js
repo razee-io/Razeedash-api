@@ -21,6 +21,7 @@ const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
+const promClient = require('../../prom-client');
 
 const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
   let results = [];
@@ -33,14 +34,18 @@ const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger
   } catch (error) {
     logger.error(error, `commonResourcesDistributedSearch encountered an error for the request ${req_id}`);
     throw error;
-  }  
+  }
 };
 
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { org_id }, { models, me, req_id, logger }) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourcesCount.inc();
+      const end = promClient.respResourcesCount.startTimer();
+
       const queryName = 'resourcesCount';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
 
       let count = 0;
@@ -53,6 +58,9 @@ const resourceResolvers = {
         logger.error(`resourcesCount encountered an error ${error.stack}`);
         throw error;
       }
+
+      if(count){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourcesCount.dec();
       return count;
     },
 
@@ -61,6 +69,10 @@ const resourceResolvers = {
       { org_id, filter, fromDate, toDate, limit },
       { models, me, req_id, logger},
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResources.inc();
+      const end = promClient.respResources.startTimer();
+
       const queryName = 'resources';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
       if ( limit < 0 ) limit = 20;
@@ -71,7 +83,11 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResources.dec();
+      return result;
     },
 
     resourcesByCluster: async (
@@ -79,6 +95,10 @@ const resourceResolvers = {
       { org_id, cluster_id, filter, limit },
       { models, me, req_id, logger},
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourcesByCluster.inc();
+      const end = promClient.respResourcesByCluster.startTimer();
+
       const queryName = 'resourcesByCluster';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
@@ -94,10 +114,18 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourcesByCluster.dec();
+      return result;
     },
 
     resource: async (parent, { _id }, { models, me, req_id, logger }) => {
+      //Get api requests latency & queue metrics
+      promClient.queResource.inc();
+      const end = promClient.respResource.startTimer();
+
       const queryName = 'resource';
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
 
@@ -105,6 +133,9 @@ const resourceResolvers = {
       if (result != null) {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
       }
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResource.dec();
       return result;
     },
 
@@ -113,6 +144,10 @@ const resourceResolvers = {
       { org_id, cluster_id, selfLink },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourceByKeys.inc();
+      const end = promClient.respResourceByKeys.startTimer();
+
       const queryName = 'resourceByKeys';
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
 
@@ -122,6 +157,9 @@ const resourceResolvers = {
         cluster_id,
         selfLink,
       }).lean();
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourceByKeys.dec();
       return result;
     },
   },
@@ -129,11 +167,18 @@ const resourceResolvers = {
   Subscription: {
     resourceUpdated: {
       resolve: (parent, { org_id, filter }, { models, me, req_id, logger }) => {
+        //Get api requests latency & queue metrics
+        promClient.queResourceUpdated.inc();
+        const end = promClient.respResourceUpdated.startTimer();
+
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, me, req_id },
           'Subscription.resourceUpdated.resolve',
         );
         const { resourceUpdated } = parent;
+
+        if(resourceUpdated){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+        promClient.queResourceUpdated.dec();
         return resourceUpdated;
       },
 
@@ -148,10 +193,10 @@ const resourceResolvers = {
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
           const req_id = context.req_id;
-          context.logger.debug( {req_id, user: whoIs(context.me), args }, 
+          context.logger.debug( {req_id, user: whoIs(context.me), args },
             `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
-          await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, req_id, context.logger);  
+          await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, req_id, context.logger);
           let found = true;
           const { resource } = parent.resourceUpdated;
           if (args.org_id !== resource.org_id) {

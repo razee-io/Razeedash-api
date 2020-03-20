@@ -17,6 +17,7 @@
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
+const promClient = require('../../prom-client');
 
 const commonResourcesDistributedSearch = async (
   models,
@@ -56,6 +57,10 @@ const resourceDistributedResolvers = {
       { org_id },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourcesDistributedCount.inc();
+      const end = promClient.respResourcesDistributedCount.startTimer();
+
       const queryName = 'resourcesDistributedCount';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
@@ -73,11 +78,14 @@ const resourceDistributedResolvers = {
           return result;
         });
       } catch (error) {
-        logger.error( {error, req_id }, 
+        logger.error( {error, req_id },
           'resourcesDistributedCount encountered an error',
         );
         throw error;
       }
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourcesDistributedCount.dec();
       return result;
     },
 
@@ -86,6 +94,10 @@ const resourceDistributedResolvers = {
       { org_id, filter, fromDate, toDate, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourcesDistributed.inc();
+      const end = promClient.respResourcesDistributed.startTimer();
+
       const queryName = 'resourcesDistributed';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
 
@@ -102,13 +114,17 @@ const resourceDistributedResolvers = {
           toDate,
         );
       }
-      return commonResourcesDistributedSearch(
+      result = await commonResourcesDistributedSearch(
         models,
         searchFilter,
         limit,
         req_id,
         logger,
       );
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourcesDistributed.dec();
+      return result;
     },
 
     resourcesDistributedByCluster: async (
@@ -116,6 +132,10 @@ const resourceDistributedResolvers = {
       { org_id, cluster_id, filter, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourcesDistributedByCluster.inc();
+      const end = promClient.respResourcesDistributedByCluster.startTimer();
+
       const queryName = 'resourcesDistributedByCluster';
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
@@ -131,16 +151,24 @@ const resourceDistributedResolvers = {
       if (filter && filter !== '') {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesDistributedSearch(
+      result = await commonResourcesDistributedSearch(
         models,
         searchFilter,
         limit,
         req_id,
         logger,
       );
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queResourcesDistributedByCluster.dec();
+      return result;
     },
 
     resourceDistributed: async (parent, { _id }, { models, me, req_id, logger }) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourceDistributed.inc();
+      const end = promClient.respResourceDistributed.startTimer();
+
       const queryName = 'resourceDistributed';
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
       // eslint-disable-next-line no-restricted-syntax
@@ -150,9 +178,13 @@ const resourceDistributedResolvers = {
         if (result !== null) {
           // eslint-disable-next-line no-await-in-loop
           await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+
+          end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+          promClient.queResourcesDistributedByCluster.dec();
           return result;
         }
       }
+      promClient.queResourceDistributed.dec();
       return null;
     },
 
@@ -161,6 +193,10 @@ const resourceDistributedResolvers = {
       { org_id, cluster_id, selfLink },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queResourceDistributedByKeys.inc();
+      const end = promClient.respResourceDistributedByKeys.startTimer();
+
       const queryName = 'resourceDistributedByKeys';
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
@@ -169,9 +205,12 @@ const resourceDistributedResolvers = {
         // eslint-disable-next-line no-await-in-loop
         let result = await rd.findOne({ org_id, cluster_id, selfLink }).lean();
         if (result !== null) {
+          end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+          promClient.queResourceDistributedByKeys.dec();
           return result;
         }
       }
+      promClient.queResourceDistributedByKeys.dec();
       return null;
     },
   },

@@ -20,33 +20,41 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
+const promClient = require('../../prom-client');
 
 router.use(ebl(getBunyanConfig('razeedash-api/resources')));
 
 const getResources = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queGetResources.inc();
+    const end = promClient.respGetResources.startTimer();
+
     const Resources = req.db.collection('resources');
     const orgId = req.org._id + '';
 
     const query = { 'org_id': orgId };
-    if(req.query && req.query.kind) { 
+    if(req.query && req.query.kind) {
       query['searchableData.kind'] = req.query.kind;
-    } 
-    if(req.query && req.query.name) { 
-      query['searchableData.name'] = {$regex: req.query.name, $options: 'i',}; 
+    }
+    if(req.query && req.query.name) {
+      query['searchableData.name'] = {$regex: req.query.name, $options: 'i',};
     }
     if(req.query && req.query.cluster_id){
       query['cluster_id'] = req.query.cluster_id;
     }
 
-    const options = { 
+    const options = {
       limit: 25,
     };
-    if(req.query && req.query.skip) { 
+    if(req.query && req.query.skip) {
       options['skip'] = parseInt(req.query.skip);
     }
 
     const resources = await Resources.find(query, options).toArray();
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queGetResources.dec();
     return res.status(200).send({resources});
   } catch (err) {
     req.log.error(err.message);

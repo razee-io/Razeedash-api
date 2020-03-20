@@ -32,6 +32,10 @@ const logger = bunyan.createLogger(bunyanConfig);
 
 const initModule = require(`./init.${AUTH_MODEL}`);
 
+const prom_client = require('prom-client');
+const collectDefaultMetrics = prom_client.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });    //Collect all default metrics
+
 const createDefaultApp = () => {
   const app = express();
   app.set('trust proxy', true);
@@ -64,7 +68,7 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
     context.req_id = connection.context.upgradeReq ? connection.context.upgradeReq.id : undefined;
   } else if (req) {
     context.req_id = req.id;
-  } 
+  }
   return context;
 };
 
@@ -107,7 +111,7 @@ const createApolloServer = () => {
             'Can not find the session for this subscription request.',
           );
         }
-        // add original upgrade request to the context 
+        // add original upgrade request to the context
         return { me, upgradeReq: webSocket.upgradeReq, logger, };
       },
       onDisconnect: (webSocket, context) => {
@@ -171,7 +175,20 @@ const apollo = async (options = {}) => {
         port = options.graphql_port;
       }
       httpServer.listen({ port });
-    } 
+    }
+
+    //Prometheus server configuration
+    var metrics_server = http.createServer(function (request, response) {
+        response.writeHead(200, {"Content-Type": prom_client.register.contentType});
+        response.end(prom_client.register.metrics());
+    });
+
+    metrics_server.listen(9095, () => {
+      logger.info(
+        `🏄  prometheus is listening on http://localhost:${9095}`,
+      );
+    });
+
     return { db, server, httpServer, stop};
   } catch (err) {
     logger.error(err, 'Apollo api error');

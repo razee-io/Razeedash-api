@@ -19,6 +19,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const jkValidate = require('json-key-validate');
+const promClient = require('../../prom-client');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge, insertImageBadge } = require('../../utils/webhook.js');
@@ -28,6 +29,10 @@ router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 // Callback from triggered webhook
 const addCallbackResult = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queAddCallbackResult.inc();
+    const end = promClient.respAddCallbackResult.startTimer();
+
     const Webhooks = req.db.collection('webhooks');
     const webhook = await Webhooks.findOne({ _id: req.params.webhook_id });
     if (webhook) {
@@ -59,6 +64,9 @@ const addCallbackResult = async (req, res, next) => {
           } else if (webhook.trigger == WEBHOOK_TRIGGER_IMAGE) {
             const image = await insertImageBadge(badge, req);
             if (image) {
+              end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+              promClient.queAddCallbackResult.dec();
+
               res.status(201);
             } else { // should never happen
               res.log.error({ badge: badge, webhook: webhook }, 'image missing while processing badge ');
@@ -81,6 +89,10 @@ const addCallbackResult = async (req, res, next) => {
 
 const addWebhook = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queAddWebhook.inc();
+    const end = promClient.respAddWebhook.startTimer();
+
     let webhook = req.body;
     webhook.org_id = req.org._id;
     const Webhooks = req.db.collection('webhooks');
@@ -91,10 +103,16 @@ const addWebhook = async (req, res, next) => {
         res.status(404).send(`Cluster ${webhook.cluster_id} not found or has been deleted`);
       } else {
         await Webhooks.insertOne(webhook);
+
+        end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+        promClient.queAddWebhook.dec();
         res.status(201);
       }
     } else {
       await Webhooks.insertOne(webhook);
+
+      end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+      promClient.queAddWebhook.dec();
       res.status(201);
     }
   } catch (err) {
@@ -106,6 +124,10 @@ const addWebhook = async (req, res, next) => {
 // deleteWebhook - logical delete of webhook
 const deleteWebhook = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queDeleteWebhook.inc();
+    const end = promClient.respDeleteWebhook.startTimer();
+
     const Webhooks = req.db.collection('webhooks');
     await Webhooks.updateOne(
       { _id: req.params.webhook_id },
@@ -113,6 +135,9 @@ const deleteWebhook = async (req, res, next) => {
         $set: { deleted: true },
         $currentDate: { lastModified: true }
       });
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queDeleteWebhook.dec();
     res.status(204);
   } catch (err) {
     req.log.error(err.message);

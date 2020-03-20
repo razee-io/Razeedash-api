@@ -21,6 +21,7 @@ const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const uuid = require('uuid');
+const promClient = require('../../prom-client');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
@@ -28,13 +29,17 @@ router.use(ebl(getBunyanConfig('razeedash-api/orgs')));
 
 const createOrg = async(req, res) => {
   const orgName = (req.body && req.body.name) ? req.body.name.trim() : null;
-  
+
   if(!orgName) {
     req.log.warn(`An org name was not specified on route ${req.url}`);
     return res.status(400).send( 'An org name is required' );
   }
-  
+
   try {
+    //Get api requests latency & queue metrics
+    promClient.queCreateOrg.inc();
+    const end = promClient.respCreateOrg.startTimer();
+
     const Orgs = req.db.collection('orgs');
     const foundOrg = await Orgs.findOne({'name': orgName});
     if(foundOrg){
@@ -52,6 +57,9 @@ const createOrg = async(req, res) => {
     });
 
     if(insertedOrg.result.ok) {
+      end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+      promClient.queCreateOrg.dec();
+
       return res.status(200).send( insertedOrg.ops[0] );
     } else {
       req.log.error(insertedOrg.result, `Could not create ${orgName} into the Orgs collection`);
@@ -65,10 +73,13 @@ const createOrg = async(req, res) => {
 
 const getOrgs = async(req, res) => {
   try {
-    const Orgs = req.db.collection('orgs'); 
-  
+    //Get api requests latency & queue metrics
+    promClient.queGetOrgs.inc();
+    const end = promClient.respGetOrgs.startTimer();
+    const Orgs = req.db.collection('orgs');
+
     let orgsQuery = {};
-    if(req.query && req.query.name) { 
+    if(req.query && req.query.name) {
       let orgsToSearch = [];
       if(_.isArray(req.query.name)) {
         orgsToSearch = req.query.name;     // GET api/v2/orgs?name=org1&name=org2
@@ -76,9 +87,12 @@ const getOrgs = async(req, res) => {
         orgsToSearch.push(req.query.name); // GET api/v2/orgs?name=org1
       }
       orgsQuery.name = { $in: orgsToSearch };
-    } 
+    }
 
     const foundOrgs = await Orgs.find(orgsQuery).toArray();
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queGetOrgs.dec();
     return res.status(200).send( foundOrgs );
   } catch (error) {
     req.log.error(error);
@@ -89,13 +103,17 @@ const getOrgs = async(req, res) => {
 const updateOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   const updates = req.body;
-  
+
   if (!updates || _.isEmpty(updates)) {
     req.log.error('no message body was provided');
     return res.status(400).send('Missing message body');
   }
-  
+
   try {
+    //Get api requests latency & queue metrics
+    promClient.queUpdateOrg.inc();
+    const end = promClient.respUpdateOrg.startTimer();
+
     const Orgs = req.db.collection('orgs');
     const foundOrg = await Orgs.findOne({'_id': existingOrgId});
     if(!foundOrg){
@@ -106,6 +124,9 @@ const updateOrg = async(req, res) => {
     updates.updated = new Date();
     const updatedOrg = await Orgs.updateOne({ _id: foundOrg._id }, { $set: updates } );
     if(updatedOrg.result.ok) {
+      end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+      promClient.queUpdateOrg.dec();
+
       return res.status(200).send( 'success' );
     } else {
       req.log.error(updatedOrg);
@@ -120,9 +141,16 @@ const updateOrg = async(req, res) => {
 const deleteOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   try {
+    //Get api requests latency & queue metrics
+    promClient.queDeleteOrg.inc();
+    const end = promClient.respDeleteOrg.startTimer();
+
     const Orgs = req.db.collection('orgs');
     const removedOrg = await Orgs.deleteOne({ '_id': existingOrgId } );
     if(removedOrg.deletedCount) {
+      end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+      promClient.queDeleteOrg.dec();
+
       return res.status(200).send( 'success' );
     } else {
       req.log.error(removedOrg);

@@ -17,6 +17,7 @@
 const Moment = require('moment');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
+const promClient = require('../../prom-client');
 
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
@@ -69,6 +70,10 @@ const clusterResolvers = {
       { org_id: orgId, cluster_id: clusterId },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterByClusterID.inc();
+      const end = promClient.respClusterByClusterID.startTimer();
+
       const queryName = 'clusterByClusterID';
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
@@ -79,6 +84,8 @@ const clusterResolvers = {
         cluster_id: clusterId,
       }).lean();
 
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterByClusterID.dec();
       return result;
     }, // end cluster by _id
 
@@ -93,13 +100,22 @@ const clusterResolvers = {
       { org_id: orgId, limit, startingAfter },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClustersByOrgID.inc();
+      const end = promClient.respClustersByOrgID.startTimer();
+
       const queryName = 'clustersByOrgID';
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const searchFilter = { org_id: orgId };
-      return commonClusterSearch(models, searchFilter, limit, startingAfter);
+      result = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClustersByOrgID.dec();
+
+      return result;
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
@@ -108,6 +124,10 @@ const clusterResolvers = {
       { org_id: orgId, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterZombies.inc();
+      const end = promClient.respClusterZombies.startTimer();
+
       const queryName = 'clusterZombies';
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
@@ -119,7 +139,11 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterSearch(models, searchFilter, limit);
+      result = await commonClusterSearch(models, searchFilter, limit);
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterZombies.dec();
+      return result;
     }, // end clusterZombies
 
     clusterSearch: async (
@@ -127,6 +151,10 @@ const clusterResolvers = {
       { org_id: orgId, filter, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterSearch.inc();
+      const end = promClient.respClusterSearch.startTimer();
+
       const queryName = 'clusterSearch';
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
@@ -141,7 +169,11 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, filter);
       }
 
-      return commonClusterSearch(models, searchFilter, limit);
+      result = await commonClusterSearch(models, searchFilter, limit);
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterSearch.dec();
+      return result;
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.
@@ -151,6 +183,10 @@ const clusterResolvers = {
       { org_id: orgId },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterCountByKubeVersion.inc();
+      const end = promClient.respClusterCountByKubeVersion.startTimer();
+
       const queryName = 'clusterCountByKubeVersion';
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
@@ -175,6 +211,8 @@ const clusterResolvers = {
         { $sort: { _id: 1 } },
       ]);
 
+      if(results){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterCountByKubeVersion.dec();
       return results;
     }, // end clusterCountByKubeVersion
   }, // end query

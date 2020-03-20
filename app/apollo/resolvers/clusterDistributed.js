@@ -17,6 +17,7 @@
 const Moment = require('moment');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
+const promClient = require('../../prom-client');
 
 const buildSearchForClusterName = (ordId, searchStr) => {
   let ands = [];
@@ -68,7 +69,7 @@ const commonClusterDistributedSearch = async (
       });
     });
   } catch (error) {
-    logger.error(error, 
+    logger.error(error,
       `${queryName} commonClusterDistributedSearch encountered an error`,
     );
     throw error;
@@ -84,6 +85,10 @@ const clusterDistributedResolvers = {
       { org_id: orgId, cluster_id: clusterId },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterDistributedByClusterID.inc();
+      const end = promClient.respClusterDistributedByClusterID.startTimer();
+
       const queryName = 'clusterDistributedByClusterID';
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
@@ -100,9 +105,13 @@ const clusterDistributedResolvers = {
         });
 
         if (result != null) {
+          end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+          promClient.queClusterDistributedByClusterID.dec();
           return result.toJSON();
         }
       }
+
+      promClient.queClusterDistributedByClusterID.dec();
       return null;
     }, // end clusterDistributedByClusterID
 
@@ -111,19 +120,27 @@ const clusterDistributedResolvers = {
       { org_id: orgId, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClustersDistributedByOrgID.inc();
+      const end = promClient.respClustersDistributedByOrgID.startTimer();
+
       const queryName = 'clustersDistributedByOrgID';
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
-      return commonClusterDistributedSearch(
+      result = await commonClusterDistributedSearch(
         models,
         { org_id: orgId },
         limit,
         logger,
         queryName,
       );
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClustersDistributedByOrgID.dec();
+      return result;
     }, // end clustersDistributedByOrgID
 
     // Find all the clusters that have not been updated in the last day
@@ -132,6 +149,10 @@ const clusterDistributedResolvers = {
       { org_id: orgId, limit },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterDistributedZombies.inc();
+      const end = promClient.respClusterDistributedZombies.startTimer();
+
       const queryName = 'clusterDistributedZombies';
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
@@ -144,13 +165,17 @@ const clusterDistributedResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterDistributedSearch(
+      result = await commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterDistributedZombies.dec();
+      return result;
     }, // end clusterDistributedZombiess
 
     clusterDistributedSearch: async (
@@ -158,6 +183,10 @@ const clusterDistributedResolvers = {
       { org_id: orgId, filter, limit = 50 },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterDistributedSearch.inc();
+      const end = promClient.respClusterDistributedSearch.startTimer();
+
       const queryName = 'clusterDistributedSearch';
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
@@ -166,24 +195,32 @@ const clusterDistributedResolvers = {
 
       // If no filter provide, just query based on orig id
       if (!filter) {
-        return commonClusterDistributedSearch(
+        result = await commonClusterDistributedSearch(
           models,
           { org_id: orgId },
           limit,
           logger,
           queryName,
         );
+
+        if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+        promClient.queClusterDistributedSearch.dec();
+        return result;
       }
 
       // Filter provided, build the search filter and query
       const searchFilter = buildSearchForClusterName(orgId, filter);
-      return commonClusterDistributedSearch(
+      result = await commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
+
+      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterDistributedSearch.dec();
+      return result;
     }, // end clusterDistributedSearch
 
     // Summarize the number clusters by version for active clusters.
@@ -193,6 +230,10 @@ const clusterDistributedResolvers = {
       { org_id: orgId },
       { models, me, req_id, logger },
     ) => {
+      //Get api requests latency & queue metrics
+      promClient.queClusterDistributedCountByKubeVersion.inc();
+      const end = promClient.respClusterDistributedCountByKubeVersion.startTimer();
+
       const queryName = 'clusterDistributedCountByKubeVersion';
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
@@ -227,7 +268,7 @@ const clusterDistributedResolvers = {
           }),
         );
       } catch (error) {
-        logger.error(error, 
+        logger.error(error,
           `${queryName} encountered an error when process for req_id ${req_id}`,
         );
         throw error;
@@ -254,6 +295,9 @@ const clusterDistributedResolvers = {
         }
       }
       logger.debug(`${queryName} totalResults: ${JSON.stringify(totalResults, null, 4)} for req_id ${req_id}`);
+
+      if(totalResults){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queClusterDistributedCountByKubeVersion.dec();
       return totalResults;
     }, // end clusterDistributedCountByKubeVersion
   }, // end query

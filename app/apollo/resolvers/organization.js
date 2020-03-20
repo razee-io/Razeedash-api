@@ -16,15 +16,23 @@
 
 const { ACTIONS, TYPES } = require('../models/const');
 const { validAuth } = require ('./common');
+const promClient = require('../../prom-client');
+
 
 const organizationResolvers = {
   Query: {
 
     registrationUrl: async (parent, { org_id }, { models, me, req_id, logger}) => {
+      //Get api requests latency & queue metrics
+      promClient.queRegUrl.inc();
+      const end = promClient.respRegUrl.startTimer();
       const queryName = 'registrationUrl';
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.RESOURCE, models, queryName, req_id, logger);
 
       const org = await models.Organization.findById(org_id);
+
+      if(org){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queRegUrl.dec();
       if (process.env.EXTERNAL_URL) {
         return {
           url: `${process.env.EXTERNAL_URL}/api/install/cluster?orgKey=${org.orgKeys[0]}`,
@@ -36,7 +44,16 @@ const organizationResolvers = {
     },
 
     organizations: async (parent, args, { models, me, req_id, logger }) => {
-      return models.User.getOrgs(models, me, req_id, logger);
+      //Get api requests latency & queue metrics
+      promClient.queOrgs.inc();
+      const end = promClient.respOrgs.startTimer();
+      const response = await models.User.getOrgs(models, me, req_id, logger);
+
+      if(response){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      promClient.queOrgs.dec();
+
+      return response;
+
     },
   },
 };

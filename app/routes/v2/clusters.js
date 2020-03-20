@@ -26,6 +26,7 @@ const moment = require('moment');
 const request = require('request-promise-native');
 var glob = require('glob-promise');
 var fs = require('fs');
+const promClient = require('../../prom-client');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -40,6 +41,10 @@ const resourceChangedFunc = require('../../apollo/subscription/index.js').resour
 
 const addUpdateCluster = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queAddUpdateCluster.inc();
+    const end = promClient.respAddUpdateCluster.startTimer();
+
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
@@ -48,6 +53,9 @@ const addUpdateCluster = async (req, res, next) => {
       await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
+
+      end({ StatusCode: '200' });    //stop the response time timer, and report the metric
+      promClient.queAddUpdateCluster.dec();
       res.status(200).send('Welcome to Razee');
     }
     else {
@@ -57,6 +65,9 @@ const addUpdateCluster = async (req, res, next) => {
       }
       else {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } });
+
+        end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+        promClient.queAddUpdateCluster.dec();
         res.status(200).send('Thanks for the update');
       }
     }
@@ -111,7 +122,7 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
 
 const pushToS3 = async (req, key, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
-  const orgId = key.org_id.toLowerCase(); 
+  const orgId = key.org_id.toLowerCase();
   const bucket = `razee-${orgId}`;
   const hash = crypto.createHash('sha256');
   const hashKey = hash.update(JSON.stringify(key)).digest('hex');
@@ -144,6 +155,10 @@ const syncClusterResources = async(req, res)=>{
   const Resources = req.db.collection('resources');
   const Stats = req.db.collection('resourceStats');
 
+  //Get api requests latency & queue metrics
+  promClient.queSyncClusterResources.inc();
+  const end = promClient.respSyncClusterResources.startTimer();
+
   var result = await Resources.updateMany(
     { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
     { $set: { deleted: true }, $currentDate: { updated: true } },
@@ -165,11 +180,17 @@ const syncClusterResources = async(req, res)=>{
     Stats.updateOne({ org_id: orgId }, { $inc: { deploymentCount: -1 * objsToDelete.length } });
   }
 
+  end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+  promClient.queSyncClusterResources.dec();
   res.status(200).send('Thanks');
 };
 
 const updateClusterResources = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queUpdateClusterResources.inc();
+    const end = promClient.respUpdateClusterResources.startTimer();
+
     var clusterId = req.params.cluster_id;
     const body = req.body;
     if (!body) {
@@ -242,7 +263,7 @@ const updateClusterResources = async (req, res, next) => {
           // publish notification to graphql
           if (process.env.ENABLE_GRAPHQL === 'true' && result) {
             let resourceId = null;
-            let resourceCreated = Date.now; 
+            let resourceCreated = Date.now;
             if (result.upsertedId) {
               resourceId = result.upsertedId._id;
             } else if (currentResource) {
@@ -252,7 +273,7 @@ const updateClusterResources = async (req, res, next) => {
             if (resourceId) {
               resourceChangedFunc(
                 {_id: resourceId, data: dataStr, created: resourceCreated,
-                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, 
+                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
           }
@@ -298,6 +319,9 @@ const updateClusterResources = async (req, res, next) => {
         }
       }
     }
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queUpdateClusterResources.dec();
+    return result;
     res.status(200).send('Thanks');
   } catch (err) {
     req.log.error(err.message);
@@ -326,6 +350,9 @@ const addClusterMessages = async (req, res, next) => {
     res.status(400).send('Missing message body');
     return;
   }
+  //Get api requests latency & queue metrics
+  promClient.queAddClusterMessages.inc();
+  const end = promClient.respAddClusterMessages.startTimer();
 
   const clusterId = req.params.cluster_id;
   const errorData = JSON.stringify(body.data) || undefined;
@@ -358,6 +385,9 @@ const addClusterMessages = async (req, res, next) => {
     const Messages = req.db.collection('messages');
     await Messages.updateOne(key, { $set: data, $setOnInsert: insertData }, { upsert: true });
     req.log.debug({ messagedata: data }, `${messageType} message data posted`);
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queAddClusterMessages.dec();
     res.status(200).send(`${messageType} message received`);
   } catch (err) {
     req.log.error(err.message);
@@ -367,9 +397,17 @@ const addClusterMessages = async (req, res, next) => {
 
 const getClusters = async (req, res, next) => {
   try {
+    //Get api requests latency & queue metrics
+    promClient.queGetClusters.inc();
+    const end = promClient.respGetClusters.startTimer();
+
     const Clusters = req.db.collection('clusters');
     const orgId = req.org._id + '';
     const clusters = await Clusters.find({ 'org_id': orgId }).toArray();
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queGetClusters.dec();
+
     return res.status(200).send({clusters});
   } catch (err) {
     req.log.error(err.message);
@@ -378,8 +416,15 @@ const getClusters = async (req, res, next) => {
 };
 
 const clusterDetails = async (req, res) => {
+  //Get api requests latency & queue metrics
+  promClient.queClusterDetails.inc();
+  const end = promClient.respClusterDetails.startTimer();
+
   const cluster = req.cluster; // req.cluster was set in `getCluster`
   if(cluster) {
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queClusterDetails.dec();
+
     return res.status(200).send({cluster});
   } else {
     return res.status(404).send('cluster was not found');
@@ -391,14 +436,22 @@ const deleteCluster = async (req, res, next) => {
     if(!req.org._id || !req.params.cluster_id){
       throw 'missing orgId or clusterId';
     }
+    //Get api requests latency & queue metrics
+    promClient.queDeleteCluster.inc();
+    const end = promClient.respDeleteCluster.startTimer();
+
     const Clusters = req.db.collection('clusters');
     const cluster_id = req.params.cluster_id;
     await Clusters.deleteOne({ org_id: req.org._id, cluster_id: cluster_id });
     req.log.info(`cluster ${cluster_id} deleted`);
+
+    end({ StatusCode: '200' });   //stop the response time timer, and report the metric
+    promClient.queDeleteCluster.dec();
+
     next();
   } catch (error) {
     req.log.error(error.message);
-    return res.status(500).json({ status: 'error', message: error.message }); 
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
