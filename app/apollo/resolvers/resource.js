@@ -59,7 +59,7 @@ const resourceResolvers = {
         throw error;
       }
 
-      if(count){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(count){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourcesCount.dec();
       return count;
     },
@@ -83,9 +83,9 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      const result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResources.dec();
       return result;
     },
@@ -114,9 +114,9 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      const result = await commonResourcesSearch(models, searchFilter, limit, req_id, logger);
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourcesByCluster.dec();
       return result;
     },
@@ -134,7 +134,7 @@ const resourceResolvers = {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
       }
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResource.dec();
       return result;
     },
@@ -158,7 +158,7 @@ const resourceResolvers = {
         selfLink,
       }).lean();
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourceByKeys.dec();
       return result;
     },
@@ -177,7 +177,7 @@ const resourceResolvers = {
         );
         const { resourceUpdated } = parent;
 
-        if(resourceUpdated){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+        if(resourceUpdated){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
         promClient.queResourceUpdated.dec();
         return resourceUpdated;
       },

@@ -84,7 +84,7 @@ const resourceDistributedResolvers = {
         throw error;
       }
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourcesDistributedCount.dec();
       return result;
     },
@@ -114,7 +114,7 @@ const resourceDistributedResolvers = {
           toDate,
         );
       }
-      result = await commonResourcesDistributedSearch(
+      const result = await commonResourcesDistributedSearch(
         models,
         searchFilter,
         limit,
@@ -122,7 +122,7 @@ const resourceDistributedResolvers = {
         logger,
       );
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourcesDistributed.dec();
       return result;
     },
@@ -151,7 +151,7 @@ const resourceDistributedResolvers = {
       if (filter && filter !== '') {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      result = await commonResourcesDistributedSearch(
+      const result = await commonResourcesDistributedSearch(
         models,
         searchFilter,
         limit,
@@ -159,7 +159,7 @@ const resourceDistributedResolvers = {
         logger,
       );
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queResourcesDistributedByCluster.dec();
       return result;
     },

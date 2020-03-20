@@ -139,6 +139,6 @@ var client = {
   queResourceUpdated: new prom_client.Gauge({ name: 'razee_resourceUpdated_requests_queue_count', help: 'resourceUpdated http requests in queue' }),
   respResourceUpdated: new prom_client.Histogram({ name: 'razee_resourceUpdated_responsetime', help: 'response time of resourceUpdated api', labelNames: ['StatusCode'], buckets: [ 0.01, 0.05, 0.1, 0.25, 0.5, 1] }),  //histogram
 
-}
+};
 
 module.exports = client;

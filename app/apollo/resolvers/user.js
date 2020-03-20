@@ -41,7 +41,7 @@ const userResolvers = {
           meta: result.getMeta(),
         };
 
-      end({ StatusCode: '200' }); //stop the response time timer, and report the metric
+        end({ StatusCode: '200' }); //stop the response time timer, and report the metric
       } else {
         logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
       }
@@ -65,7 +65,7 @@ const userResolvers = {
       const { models, secret } = context;
       const response = await models.User.signIn(models, login, password, secret, context);
 
-      if(response){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(response){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queSignIn.dec();
 
       return response;

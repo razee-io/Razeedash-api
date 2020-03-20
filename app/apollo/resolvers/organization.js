@@ -31,7 +31,7 @@ const organizationResolvers = {
 
       const org = await models.Organization.findById(org_id);
 
-      if(org){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(org){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queRegUrl.dec();
       if (process.env.EXTERNAL_URL) {
         return {
@@ -49,7 +49,7 @@ const organizationResolvers = {
       const end = promClient.respOrgs.startTimer();
       const response = await models.User.getOrgs(models, me, req_id, logger);
 
-      if(response){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(response){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queOrgs.dec();
 
       return response;

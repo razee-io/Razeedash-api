@@ -179,8 +179,8 @@ const apollo = async (options = {}) => {
 
     //Prometheus server configuration
     var metrics_server = http.createServer(function (request, response) {
-        response.writeHead(200, {"Content-Type": prom_client.register.contentType});
-        response.end(prom_client.register.metrics());
+      response.writeHead(200, {'Content-Type': prom_client.register.contentType});
+      response.end(prom_client.register.metrics());
     });
 
     metrics_server.listen(9095, () => {

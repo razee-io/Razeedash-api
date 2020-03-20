@@ -84,7 +84,7 @@ const clusterResolvers = {
         cluster_id: clusterId,
       }).lean();
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queClusterByClusterID.dec();
       return result;
     }, // end cluster by _id
@@ -110,9 +110,9 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
 
       const searchFilter = { org_id: orgId };
-      result = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const result = await commonClusterSearch(models, searchFilter, limit, startingAfter);
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queClustersByOrgID.dec();
 
       return result;
@@ -139,9 +139,9 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      result = await commonClusterSearch(models, searchFilter, limit);
+      const result = await commonClusterSearch(models, searchFilter, limit);
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queClusterZombies.dec();
       return result;
     }, // end clusterZombies
@@ -169,9 +169,9 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, filter);
       }
 
-      result = await commonClusterSearch(models, searchFilter, limit);
+      const result = await commonClusterSearch(models, searchFilter, limit);
 
-      if(result){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(result){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queClusterSearch.dec();
       return result;
     }, // end clusterSearch
@@ -211,7 +211,7 @@ const clusterResolvers = {
         { $sort: { _id: 1 } },
       ]);
 
-      if(results){ end({ StatusCode: '200' }) };   //stop the response time timer, and report the metric
+      if(results){ end({ StatusCode: '200' }); }   //stop the response time timer, and report the metric
       promClient.queClusterCountByKubeVersion.dec();
       return results;
     }, // end clusterCountByKubeVersion
