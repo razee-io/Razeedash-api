@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-// This is an example how to reuse models.Users to implement RBAC.
+// This is an example how to reuse models.Users to implement local RBAC
+// which is also shared by graphql APIs.
+
 const { models } = require('../apollo/models');
 
 const whoIs = me => { 
