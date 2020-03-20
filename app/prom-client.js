@@ -109,8 +109,8 @@ var client = {
   queClusterDetails: new prom_client.Gauge({ name: 'razee_clusterDetails_api_requests_queue_count', help: 'clusterDetails http requests in queue' }),
   respClusterDetails: new prom_client.Histogram({ name: 'razee_clusterDetails_api_responsetime', help: 'response time of clusterDetails api', labelNames: ['StatusCode'], buckets: [ 0.01, 0.05, 0.1, 0.25, 0.5, 1] }),  //histogram
 
-  queDeleteResource: new prom_client.Gauge({ name: 'razee_deleteResource_api_requests_queue_count', help: 'deleteResource http requests in queue' }),
-  respDeleteResource: new prom_client.Histogram({ name: 'razee_deleteResource_api_responsetime', help: 'response time of deleteResource api', labelNames: ['StatusCode'], buckets: [ 0.01, 0.05, 0.1, 0.25, 0.5, 1] }),  //histogram
+  queDeleteCluster: new prom_client.Gauge({ name: 'razee_deleteCluster_api_requests_queue_count', help: 'deleteCluster http requests in queue' }),
+  respDeleteCluster: new prom_client.Histogram({ name: 'razee_deleteCluster_api_responsetime', help: 'response time of deleteCluster api', labelNames: ['StatusCode'], buckets: [ 0.01, 0.05, 0.1, 0.25, 0.5, 1] }),  //histogram
 
   queCreateOrg: new prom_client.Gauge({ name: 'razee_createOrg_api_requests_queue_count', help: 'createOrg http requests in queue' }),
   respCreateOrg: new prom_client.Histogram({ name: 'razee_createOrg_api_responsetime', help: 'response time of createOrg api', labelNames: ['StatusCode'], buckets: [ 0.01, 0.05, 0.1, 0.25, 0.5, 1] }),  //histogram
