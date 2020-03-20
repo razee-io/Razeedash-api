@@ -28,7 +28,7 @@ if (process.env.AUTH_MODEL) {
   rbacAuth = rbacImpl;
   logger.info(`Successfully load <${process.env.AUTH_MODEL}> rbac auth for REST APIs.`);
 } else {
-  // If not, the default is to validate user-id and api key without
+  // If not defined, the default impl is to validate user-id and api key without
   // any back-end rbac validation.
   rbacAuth = (action, type) => async(req, res, next) => {
     const userId = req.get('x-user-id');

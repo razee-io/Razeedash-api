@@ -40,6 +40,7 @@ const ACTIONS = {
 const TYPES = {
   RESOURCE: 'resource',
   CLUSTER: 'cluster',
+  ORGANIZATION: 'organization',
   MESSAGE: 'message',
   CHANNEL: 'channel',
   SUBSCRIPTION: 'subscription',
