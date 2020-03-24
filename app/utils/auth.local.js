@@ -18,6 +18,7 @@
 // which is also shared by graphql APIs.
 
 const { models } = require('../apollo/models');
+const { TYPES } = require('./auth.consts');
 
 const whoIs = me => { 
   if (me === null || me === undefined) return 'null';
@@ -40,10 +41,10 @@ const rbacAuth = (action, type) => async(req, res, next) => {
   const org_id = req.org._id;
   var attributes = null;
 
-  if (type === 'CHANNEL' && req.params.channelName) {
+  if (type === TYPES.CHANNEL && req.params.channelName) {
     attributes = {channelName: req.params.channelName};
   } 
-  if (type === 'SUBSCRIPTION' && req.params.id) {
+  if (type === TYPES.SUBSCRIPTION && req.params.id) {
     attributes = {subscriptionId: req.params.id};
   } 
 
