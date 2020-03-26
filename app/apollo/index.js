@@ -116,7 +116,7 @@ const createApolloServer = () => {
         );
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
-          context
+          context,
         );
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {

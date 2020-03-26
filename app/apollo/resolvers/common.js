@@ -24,28 +24,13 @@ const whoIs = me => {
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
-const validAuth = async (
-  me,
-  org_id,
-  action,
-  type,
-  models,
-  queryName,
-  req_id,
-  logger
-) => {
-  if (
-    me === null ||
-    !(await models.User.isAuthorized(me, org_id, action, type, req_id))
-  ) {
-    logger.error(
-      { req_id, me: whoIs(me), org_id, action, type },
-      `AuthenticationError - ${queryName}`
-    );
+const validAuth = async (me, org_id, action, type, models, queryName, req_id, logger) => {
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, req_id))) {
+    logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
     throw new AuthenticationError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`
     );
   }
 };
 
-module.exports = { whoIs, validAuth };
+module.exports =  { whoIs, validAuth };

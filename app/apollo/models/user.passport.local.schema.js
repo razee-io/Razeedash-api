@@ -162,21 +162,13 @@ UserPassportLocalSchema.statics.createToken = async (
   });
 };
 
-UserPassportLocalSchema.statics.signUp = async (
-  models,
-  args,
-  secret,
-  context
-) => {
-  logger.debug(`passport.local signUp: ${args}`);
+UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
-  logger.warn(
-    { req_id: context.req_id },
-    `Current authorization model ${AUTH_MODEL} does not support this option.`
-  );
+  logger.warn({ req_id: context.req_id }, `Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
@@ -201,10 +193,7 @@ UserPassportLocalSchema.statics.signIn = async (
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
-  logger.warn(
-    { req_id: context.req_id },
-    `Current authorization model ${AUTH_MODEL} does not support this option.`
-  );
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
@@ -258,10 +247,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   type,
   req_id
 ) {
-  logger.debug(
-    { req_id: req_id },
-    `passport.ocal isAuthorized ${me} ${action} ${type}`
-  );
+  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;

@@ -183,10 +183,7 @@ UserLocalSchema.statics.signIn = async (
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.findByLogin(login);
     if (!user) {
-      logger.warn(
-        { req_id: context.req_id },
-        'No user found with this login credentials.'
-      );
+      logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
       throw new UserInputError('No user found with this login credentials.');
     }
     const isValid = await user.validatePassword(password);
@@ -196,10 +193,7 @@ UserLocalSchema.statics.signIn = async (
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
-  logger.warn(
-    { req_id: context.req_id },
-    `Current authorization model ${AUTH_MODEL} does not support this option.`
-  );
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`
   );
@@ -246,17 +240,8 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(
-  me,
-  orgId,
-  action,
-  type,
-  req_id
-) {
-  logger.debug(
-    { req_id: req_id },
-    `local isAuthorized ${me} ${action} ${type}`
-  );
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, req_id) {
+  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -324,3 +309,4 @@ UserLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserLocalSchema;
+
