@@ -162,12 +162,13 @@ UserPassportLocalSchema.statics.createToken = async (
   });
 };
 
-UserPassportLocalSchema.statics.signUp = async (models, args, secret) => {
-  logger.debug(`passport.local signUp: ${args}`);
+UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id }, `Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -187,10 +188,12 @@ UserPassportLocalSchema.statics.signIn = async (
       password,
     });
     if (!user) {
+      logger.warn({ req_id: context.req_id }, 'Authentication has failed');
       throw new AuthenticationError('Authentication has failed');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -207,6 +210,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: req.id }, 'Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -216,6 +220,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     let token = connectionParams['authorization'];
@@ -227,6 +232,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: context.req_id }, 'Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -239,8 +245,9 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   orgId,
   action,
   type,
+  req_id
 ) {
-  logger.debug(`passport.ocal isAuthorized ${me} ${action} ${type}`);
+  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
