@@ -97,7 +97,6 @@
     "why-is-node-running": "^2.1.0",
     "sinon": "^9.0.1",
     "socket.io-mock": "^1.2.4",
-    "why-is-node-running": "^2.1.0",
     "yaml-lint": "^1.2.4"
   }
 }
