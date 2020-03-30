@@ -14,8 +14,28 @@
  * limitations under the License.
  */
 
-const { AUTH_MODEL } = require('./auth.consts');
-const AuthClass = require(`./auth.${AUTH_MODEL}`);
-const auth = new AuthClass();
+const initApp = (app, models, logger) => {
+  logger.info('Initialize apollo application for default auth');
+};
 
-module.exports = { auth };
+const buildApolloContext = async ({ models, req, res, connection, logger }) => {
+  if (connection) {
+    logger.trace({ connection, req, res }, 'context websocket connection is');
+    return {
+      models,
+      me: connection.context.me,
+      logger,
+    };
+  }
+  if (req) {
+    const me = await models.User.getMeFromRequest(req);
+    return {
+      models,
+      me,
+      logger,
+    };
+  }
+  return { models, me: {}, logger };
+};
+
+module.exports = { initApp, buildApolloContext };

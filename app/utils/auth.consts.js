@@ -45,5 +45,17 @@ const TYPES = {
   CHANNEL: 'channel',
   SUBSCRIPTION: 'subscription',
 };
-  
-module.exports = { ACTIONS, TYPES };
+
+const AUTH_MODELS = {
+  DEFAULT: 'default',
+  LOCAL: 'local',
+  PASSPORT_LOCAL: 'passport.local',
+  PASSPORT_GIT: 'passport.git',
+  PASSPORT_GHE: 'passport.ghe',
+  IAM: 'iam',
+  CUSTOM: 'custom'
+};
+
+const AUTH_MODEL = process.env.AUTH_MODEL || AUTH_MODELS.DEFAULT;
+
+module.exports = { ACTIONS, TYPES, AUTH_MODEL, AUTH_MODELS };

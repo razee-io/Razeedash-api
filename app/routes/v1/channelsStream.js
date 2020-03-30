@@ -15,7 +15,7 @@ const algorithm = 'aes-256-cbc';
 
 const getOrg = require('../../utils/orgs.js').getOrg;
 const { ACTIONS, TYPES } = require('../../utils/auth.consts');
-const { rbacAuth } = require('../../utils/auth');
+const { auth } = require('../../utils/auth');
 const encryptResource = require('../../utils/api_utils.js').encryptResource;
 
 router.use(ebl(getBunyanConfig('razee-api/v1ChannelsStream')));
@@ -48,7 +48,7 @@ const checkOrg = (req, res, next) => {
 //   --header 'x-api-key: razee-user-api-key' \
 //   --header 'x-user-id: razee-user-id' \
 //   --data @filename.goes.here.yaml
-router.post('/:channelName/version', checkOrg, getOrg, rbacAuth(ACTIONS.WRITE, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
+router.post('/:channelName/version', checkOrg, getOrg, auth.rbac(ACTIONS.WRITE, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   try {
     if (!req.get('resource-name')) {
       return res.status(400).send('A resource-name name was not included in the header');
