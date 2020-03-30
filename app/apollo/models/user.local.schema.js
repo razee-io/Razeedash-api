@@ -157,12 +157,16 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
-UserLocalSchema.statics.signUp = async (models, args, secret) => {
-  logger.debug(`local signUp ${args}`);
+UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -173,14 +177,17 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.findByLogin(login);
     if (!user) {
+      logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
       throw new UserInputError('No user found with this login credentials.');
     }
     const isValid = await user.validatePassword(password);
     if (!isValid) {
+      logger.warn({ req_id: context.req_id }, 'Invalid password.');
       throw new AuthenticationError('Invalid password.');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -197,6 +204,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id: req.id }, 'Session expired');
         throw new AuthenticationError('Your session expired. Sign in again.');
       }
     }
@@ -206,6 +214,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     let token = connectionParams['authorization'];
@@ -217,7 +226,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        // console.log(e.stack);
+        logger.warn({ req_id: context.req_id }, 'Session expired');
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
@@ -225,8 +234,8 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type) {
-  logger.debug(`local isAuthorized ${me} ${action} ${type}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, req_id) {
+  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -294,3 +303,4 @@ UserLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserLocalSchema;
+

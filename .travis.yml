@@ -6,15 +6,15 @@ services:
   - docker
 
 script:
- # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
- # since mongodb-memory-server is only used for api test under dev and not included prod, temporarily mark it
- # off until https://github.com/kevva/decompress/issues/71 and https://github.com/kevva/decompress/pull/73 
- # fixed/merged.
- #
- # the acorn vulnerability was found around march 6, 2020, which rewire depends on.  
- # rewire > eslint > espree > acorn
- # rewire is only used for api tests under dev sand not included in prod, temporarily mark it off
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a 1217 -w mongodb-memory-server acorn; else npx audit-ci --low || true; fi
+  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
+  # since mongodb-memory-server is only used for api test under dev and not included prod, temporarily mark it
+  # off until https://github.com/kevva/decompress/issues/71 and https://github.com/kevva/decompress/pull/73
+  # fixed/merged.
+  #
+  # the acorn vulnerability was found around march 6, 2020, which rewire depends on.
+  # rewire > eslint > espree > acorn
+  # rewire is only used for api tests under dev sand not included in prod, temporarily mark it off
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low ; else npx audit-ci --low || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:local
