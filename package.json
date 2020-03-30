@@ -87,7 +87,7 @@
     "minimist": "^1.2.5",
     "mocha": "^7.1.1",
     "mongo-mock": "^3.9.0",
-    "mongodb-memory-server": "^6.3.3",
+    "mongodb-memory-server": "^6.4.1",
     "nock": "^12.0.2",
     "node-mocks-http": "^1.8.1",
     "nodemon": "^2.0.2",
