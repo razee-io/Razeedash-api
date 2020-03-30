@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const { AUTH_MODEL } = require('./auth.consts');
-const AuthClass = require(`./auth.${AUTH_MODEL}`);
+const { AUTH_MODEL_CLASS } = require('./auth.consts');
+const AuthClass = require(`${AUTH_MODEL_CLASS}`);
 const auth = new AuthClass();
 
 module.exports = { auth };

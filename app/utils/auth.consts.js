@@ -58,4 +58,9 @@ const AUTH_MODELS = {
 
 const AUTH_MODEL = process.env.AUTH_MODEL || AUTH_MODELS.DEFAULT;
 
-module.exports = { ACTIONS, TYPES, AUTH_MODEL, AUTH_MODELS };
+// for given model above, if AUTH_MODEL_CLASS variable is defined, we
+// will load the class from the class variable, else the class name  will
+// be derived from AUTH_MODEL. 
+const AUTH_MODEL_CLASS = process.env.AUTH_MODEL_CLASS || `./auth_${AUTH_MODEL}`;
+
+module.exports = { ACTIONS, TYPES, AUTH_MODEL, AUTH_MODEL_CLASS, AUTH_MODELS };
