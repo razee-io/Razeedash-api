@@ -14,7 +14,7 @@ script:
   # the acorn vulnerability was found around march 6, 2020, which rewire depends on.
   # rewire > eslint > espree > acorn
   # rewire is only used for api tests under dev sand not included in prod, temporarily mark it off
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a 1217 -w mongodb-memory-server minimist; else npx audit-ci --low || true; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low ; else npx audit-ci --low || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:local
