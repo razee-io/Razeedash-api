@@ -24,15 +24,8 @@ const organizationResolvers = {
       const queryName = 'registrationUrl';
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.RESOURCE, models, queryName, req_id, logger);
 
-      const org = await models.Organization.findById(org_id);
-      if (process.env.EXTERNAL_URL) {
-        return {
-          url: `${process.env.EXTERNAL_URL}/api/install/cluster?orgKey=${org.orgKeys[0]}`,
-        };
-      }
-      return {
-        url: `http://localhost:3333/api/install/cluster?orgKey=${org.orgKeys[0]}`,
-      };
+      const url = await models.Organization.getRegistrationUrl(org_id, {models, me, req_id, logger});
+      return url;
     },
 
     organizations: async (parent, args, { models, me, req_id, logger }) => {

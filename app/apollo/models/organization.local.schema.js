@@ -45,6 +45,19 @@ const OrganizationLocalSchema = new mongoose.Schema({
   },
 });
 
+OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, context) {
+  context.logger.debug({org_id}, 'getRegistrationUrl enter');
+  const org = await this.findById(org_id);
+  if (process.env.EXTERNAL_URL) {
+    return {
+      url: `${process.env.EXTERNAL_URL}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
+    };
+  }
+  return {
+    url: `http://localhost:3333/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
+  };
+};
+
 OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
   let org = await this.findOne({
     name: args.name,

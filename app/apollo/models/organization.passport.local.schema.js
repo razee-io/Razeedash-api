@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 
-const { AUTH_MODEL } = require('./const');
+const OrganizationPassPortLocalSchema = require ('./organization.local.schema');
 
-const mongoose = require('mongoose');
-
-const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
-
-// import other Organization*Schemas and conditionally expose
-// one of them based on AUTH_MODEL.
-
-const Organization = mongoose.model('orgs', OrganizationSchema);
-
-module.exports = Organization;
+module.exports = OrganizationPassPortLocalSchema;
