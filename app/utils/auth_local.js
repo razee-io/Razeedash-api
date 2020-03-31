@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+const BaseAuth = require('./auth_base');
 const { models } = require('../apollo/models');
 const { TYPES } = require('./auth.consts');
 
@@ -25,10 +25,10 @@ const whoIs = me => {
   return me._id;
 };
 
-module.exports = class LocalAuth {
+module.exports = class LocalAuth extends BaseAuth  {
 
   constructor() {
-    this._name = 'Local RBAC';
+    super({name: 'Local RBAC'});
   }
       
   rbac(action, type) {

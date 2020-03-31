@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-module.exports = class DefaultAuth {
+const BaseAuth = require('./auth_base');
+
+module.exports = class DefaultAuth extends BaseAuth {
 
   constructor() {
-    this._name = 'Default RBAC';
+    super({name: 'Default RBAC'});
   }
     
   rbac(action, type) {
