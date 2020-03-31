@@ -44,7 +44,7 @@
     "fs-readfile-promise": "^3.0.1",
     "graphql": "^14.6.0",
     "graphql-iso-date": "^3.6.1",
-    "graphql-passport": "^0.6.1",
+    "graphql-passport": "^0.6.3",
     "graphql-redis-subscriptions": "^2.1.2",
     "graphql-resolvers": "^0.4.2",
     "graphql-tag": "^2.10.3",
