@@ -22,6 +22,7 @@ const organizationResolvers = {
 
     registrationUrl: async (parent, { org_id }, { models, me, req_id, logger}) => {
       const queryName = 'registrationUrl';
+      logger.debug({req_id, org_id}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.RESOURCE, models, queryName, req_id, logger);
 
       const url = await models.Organization.getRegistrationUrl(org_id, {models, me, req_id, logger});

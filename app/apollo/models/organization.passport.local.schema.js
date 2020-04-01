@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// share the same orgs schema as local
 const OrganizationPassPortLocalSchema = require ('./organization.local.schema');
 
 module.exports = OrganizationPassPortLocalSchema;

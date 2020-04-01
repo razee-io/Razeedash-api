@@ -299,7 +299,7 @@ UserPassportLocalSchema.methods.getEmail = async function() {
 };
 
 UserPassportLocalSchema.methods.getIdentifier = async function() {
-  return this.services.local.email;
+  return this.services.passportlocal.email;
 };
 
 UserPassportLocalSchema.methods.getMeta = async function() {
