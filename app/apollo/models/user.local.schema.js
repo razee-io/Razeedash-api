@@ -234,13 +234,13 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, req_id) {
-  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
+  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
