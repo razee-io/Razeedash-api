@@ -8,14 +8,15 @@ const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const url = require('url');
 const crypto = require('crypto');
 const tokenCrypt = require('../../utils/crypt');
 const algorithm = 'aes-256-cbc';
 
 const getOrg = require('../../utils/orgs.js').getOrg;
-const requireAuth = require('../../utils/api_utils.js').requireAuth;
+const { ACTIONS, TYPES } = require('../../utils/auth.consts');
+const { auth } = require('../../utils/auth');
 
 router.use(ebl(getBunyanConfig('razee-api/v1Channels')));
 
@@ -28,7 +29,7 @@ router.use(asyncHandler(async (req, res, next) => {
 //   curl --request GET \
 //     --url http://localhost:3333/api/v1/channels \
 //     --header 'razee-org-key: orgApiKey-api-key-goes-here'
-router.get('/', getOrg, requireAuth, asyncHandler(async(req, res)=>{
+router.get('/', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   try {
     const orgId = req.org._id;
     const Channels = req.db.collection('channels');
@@ -46,7 +47,7 @@ router.get('/', getOrg, requireAuth, asyncHandler(async(req, res)=>{
 //     --header 'content-type: application/json' \
 //     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
 //     --data '{"name": "channel-name-here"}'
-router.post('/', getOrg, requireAuth, asyncHandler(async(req, res, next)=>{
+router.post('/', getOrg, auth.rbac(ACTIONS.MANAGE, TYPES.CHANNEL), asyncHandler(async(req, res, next)=>{
   try {
     const orgId = req.org._id;
     const newDeployable = req.body.name;
@@ -81,7 +82,7 @@ router.post('/', getOrg, requireAuth, asyncHandler(async(req, res, next)=>{
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next)=>{
+router.get('/:channelName/:versionId', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res, next)=>{
   var orgId = req.org._id;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
@@ -147,7 +148,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName', getOrg, requireAuth, asyncHandler(async(req, res)=>{
+router.get('/:channelName', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   const orgId = req.org._id;
   const channelName = req.params.channelName + '';
 

@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-const mongoose = require('mongoose');
+const { AUTH_MODEL_CLASS } = require('./auth.consts');
+const AuthClass = require(`${AUTH_MODEL_CLASS}`);
+const auth = new AuthClass();
 
-const { AUTH_MODEL } = require('./const');
-
-let UserSchema = require(`./user.${AUTH_MODEL}.schema`);
-
-const User = mongoose.model('users', UserSchema);
-
-module.exports = User;
+module.exports = { auth };

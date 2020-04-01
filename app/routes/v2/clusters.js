@@ -15,7 +15,7 @@
 */
 
 const crypto = require('crypto');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');

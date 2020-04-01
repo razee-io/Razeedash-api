@@ -7,14 +7,15 @@ const mongoConf = require('../../conf.js').conf;
 const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
 const conf = require('../../conf.js').conf;
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const S3ClientClass = require('../../s3/s3Client');
 const AWS = require('aws-sdk');
 const crypto = require('crypto');
 const algorithm = 'aes-256-cbc';
 
 const getOrg = require('../../utils/orgs.js').getOrg;
-const requireAuth = require('../../utils/api_utils.js').requireAuth;
+const { ACTIONS, TYPES } = require('../../utils/auth.consts');
+const { auth } = require('../../utils/auth');
 const encryptResource = require('../../utils/api_utils.js').encryptResource;
 
 router.use(ebl(getBunyanConfig('razee-api/v1ChannelsStream')));
@@ -47,7 +48,7 @@ const checkOrg = (req, res, next) => {
 //   --header 'x-api-key: razee-user-api-key' \
 //   --header 'x-user-id: razee-user-id' \
 //   --data @filename.goes.here.yaml
-router.post('/:channelName/version', checkOrg, getOrg, requireAuth, asyncHandler(async(req, res)=>{
+router.post('/:channelName/version', checkOrg, getOrg, auth.rbac(ACTIONS.WRITE, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
   try {
     if (!req.get('resource-name')) {
       return res.status(400).send('A resource-name name was not included in the header');
