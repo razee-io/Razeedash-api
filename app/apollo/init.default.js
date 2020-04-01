@@ -14,12 +14,28 @@
  * limitations under the License.
  */
 
-const mongoose = require('mongoose');
+const initApp = (app, models, logger) => {
+  logger.info('Initialize apollo application for default auth');
+};
 
-const { AUTH_MODEL } = require('./const');
+const buildApolloContext = async ({ models, req, res, connection, logger }) => {
+  if (connection) {
+    logger.trace({ connection, req, res }, 'context websocket connection is');
+    return {
+      models,
+      me: connection.context.me,
+      logger,
+    };
+  }
+  if (req) {
+    const me = await models.User.getMeFromRequest(req);
+    return {
+      models,
+      me,
+      logger,
+    };
+  }
+  return { models, me: {}, logger };
+};
 
-let UserSchema = require(`./user.${AUTH_MODEL}.schema`);
-
-const User = mongoose.model('users', UserSchema);
-
-module.exports = User;
+module.exports = { initApp, buildApolloContext };
