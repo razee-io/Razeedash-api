@@ -19,7 +19,7 @@ const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError } = require('apollo-server');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -90,7 +90,7 @@ async function getOrCreateOrganization(models, args) {
     const orgArray = await Promise.all(
       models.OrganizationDistributed.map(od => {
         return od.createLocalOrg({
-          _id: `${uuid()}`,
+          _id: uuid(),
           type: 'local',
           name: orgName,
         });
@@ -99,7 +99,7 @@ async function getOrCreateOrganization(models, args) {
     return orgArray[0];
   }
   return models.Organization.createLocalOrg({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     name: orgName,
   });
@@ -109,7 +109,7 @@ UserLocalSchema.statics.createUser = async function(models, args) {
   const org = await getOrCreateOrganization(models, args);
 
   const user = await this.create({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     services: {
       local: {
