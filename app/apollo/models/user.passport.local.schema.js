@@ -240,15 +240,8 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserPassportLocalSchema.statics.isAuthorized = async function(
-  me,
-  orgId,
-  action,
-  type,
-  attributes,
-  req_id
-) {
-  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
+UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  context.logger.debug({req_id: context.req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -260,8 +253,9 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   return false;
 };
 
-UserPassportLocalSchema.statics.getOrgs = async function(models, me) {
+UserPassportLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {

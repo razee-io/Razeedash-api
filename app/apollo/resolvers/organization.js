@@ -15,22 +15,26 @@
  */
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { validAuth } = require ('./common');
+const { whoIs, validAuth } = require ('./common');
 
 const organizationResolvers = {
   Query: {
 
-    registrationUrl: async (parent, { org_id }, { models, me, req_id, logger}) => {
+    registrationUrl: async (parent, { org_id }, context) => {
       const queryName = 'registrationUrl';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, org_id}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.ORGANIZATION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
 
-      const url = await models.Organization.getRegistrationUrl(org_id, {models, me, req_id, logger});
+      const url = await models.Organization.getRegistrationUrl(org_id, context);
       return url;
     },
 
-    organizations: async (parent, args, { models, me, req_id, logger }) => {
-      return models.User.getOrgs(models, me, req_id, logger);
+    organizations: async (parent, args, context) => {
+      const queryName = 'organizations';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, args, me: whoIs(me) }, `${queryName} enter`);
+      return models.User.getOrgs(context);
     },
   },
 };

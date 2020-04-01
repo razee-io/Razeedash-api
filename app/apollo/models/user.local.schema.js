@@ -234,8 +234,8 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
-  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  context.logger.debug({ req_id: context.req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -247,8 +247,9 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   return false;
 };
 
-UserLocalSchema.statics.getOrgs = async function(models, me) {
+UserLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {

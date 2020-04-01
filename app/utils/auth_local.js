@@ -35,7 +35,7 @@ module.exports = class LocalAuth extends BaseAuth  {
     return async(req, res, next) => {
       const req_id = req.id;
       req.log.debug({name: this._name, action, type, req_id}, 'rbac enter...');
-    
+
       const me = await models.User.getMeFromRequest(req);
     
       if (!me) {
@@ -52,8 +52,10 @@ module.exports = class LocalAuth extends BaseAuth  {
       if (type === TYPES.SUBSCRIPTION && req.params.id) {
         attributes = {subscriptionId: req.params.id};
       } 
-    
-      if (!(await models.User.isAuthorized(me, org_id, action, type, attributes, req_id))) {
+      
+      // compose a context object 
+      const context = {me, req_id, models, logger: req.log };
+      if (!(await models.User.isAuthorized(me, org_id, action, type, attributes, context))) {
         req.log.debug({name: this._name, req_id, me: whoIs(me), org_id, action, type, attributes}, 'rbacAuth permission denied - 401');
         res.status(401).send('Permission denied.');
       }

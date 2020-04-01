@@ -67,12 +67,13 @@ const clusterResolvers = {
     clusterByClusterID: async (
       parent,
       { org_id: orgId, cluster_id: clusterId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterByClusterID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const result = await models.Cluster.findOne({
         org_id: orgId,
@@ -91,12 +92,13 @@ const clusterResolvers = {
     clustersByOrgID: async (
       parent,
       { org_id: orgId, limit, startingAfter },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clustersByOrgID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = { org_id: orgId };
       return commonClusterSearch(models, searchFilter, limit, startingAfter);
@@ -106,12 +108,13 @@ const clusterResolvers = {
     clusterZombies: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterZombies';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = {
         org_id: orgId,
@@ -125,12 +128,13 @@ const clusterResolvers = {
     clusterSearch: async (
       parent,
       { org_id: orgId, filter, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterSearch';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       let searchFilter;
       if (!filter) {
@@ -149,12 +153,13 @@ const clusterResolvers = {
     clusterCountByKubeVersion: async (
       parent,
       { org_id: orgId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterCountByKubeVersion';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const results = await models.Cluster.aggregate([
         {
