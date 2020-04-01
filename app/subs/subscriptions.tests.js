@@ -17,7 +17,7 @@
  */
 
 var rewire = require('rewire');
-var uuid = require('uuid').v4;
+const { v4: uuid } = require('uuid');
 
 const { assert } = require('chai');
 const chai = require('chai');
