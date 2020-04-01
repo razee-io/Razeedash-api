@@ -16,7 +16,7 @@
 
 const bunyan = require('bunyan');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const { AuthenticationError } = require('apollo-server');
 
 const { AUTH_MODELS, AUTH_MODEL } = require('./const');
