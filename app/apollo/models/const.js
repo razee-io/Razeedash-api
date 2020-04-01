@@ -24,6 +24,8 @@ const TYPES = {
   RESOURCE: 'resource',
   CLUSTER: 'cluster',
   MESSAGE: 'message',
+  CHANNEL: 'channel',
+  SUBSCRIPTION: 'subscription',
 };
 
 const AUTH_MODELS = {
