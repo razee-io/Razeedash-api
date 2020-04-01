@@ -245,14 +245,15 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   orgId,
   action,
   type,
+  attributes,
   req_id
 ) {
-  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type}`);
+  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
@@ -315,4 +316,3 @@ UserPassportLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserPassportLocalSchema;
-

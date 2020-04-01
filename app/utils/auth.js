@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.consts');
+const { AUTH_MODEL_CLASS } = require('./auth.consts');
+const AuthClass = require(`${AUTH_MODEL_CLASS}`);
+const auth = new AuthClass();
 
-const SECRET = process.env.SECRET || 'very-very-secret';
-const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
-const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
-
-module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING };
-
+module.exports = { auth };

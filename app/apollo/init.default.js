@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
-const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.consts');
+const initApp = (app, models, logger) => {
+  logger.info('Initialize apollo application for default auth');
+};
 
-const SECRET = process.env.SECRET || 'very-very-secret';
-const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
-const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
+const buildApolloContext = async ({ models, req, res, connection, logger }) => {
+  if (connection) {
+    logger.trace({ connection, req, res }, 'context websocket connection is');
+    return {
+      models,
+      me: connection.context.me,
+      logger,
+    };
+  }
+  if (req) {
+    const me = await models.User.getMeFromRequest(req);
+    return {
+      models,
+      me,
+      logger,
+    };
+  }
+  return { models, me: {}, logger };
+};
 
-module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING };
-
+module.exports = { initApp, buildApolloContext };

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.consts');
-
-const SECRET = process.env.SECRET || 'very-very-secret';
-const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
-const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
-
-module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING };
-
+module.exports = class BaseAuth {
+  constructor(params) {
+    this._name = params.name;
+  }
+      
+  rbac(action, type) {
+    throw new Error(`You have to implement rbac (${action}, ${type}}) method for <${this._name}> auth model.`);
+  }
+};
