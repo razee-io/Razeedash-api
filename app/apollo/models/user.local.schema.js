@@ -235,7 +235,8 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
 };
 
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
-  context.logger.debug({ req_id: context.req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+  const { me, req_id, logger } = context;
+  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
