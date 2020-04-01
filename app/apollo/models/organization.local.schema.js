@@ -15,7 +15,7 @@
  */
 
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const OrganizationLocalSchema = new mongoose.Schema({
   _id: {
@@ -64,8 +64,8 @@ OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
   });
 
   if (!org) {
-    const _id = args._id ? args._id : `${uuid()}`;
-    const orgKey = `orgApiKey-${uuid()}`;
+    const _id = args._id ? args._id : uuid();
+    const orgKey = 'orgApiKey-'+uuid();
     org = await this.create({ ...args, _id, orgKeys: [orgKey] });
   }
   return org;
