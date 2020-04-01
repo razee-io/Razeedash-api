@@ -537,16 +537,15 @@ the augmented data to the resource.
 The resource will have a new attribute `badges`.  The badge will replace any
 existing badge with the same webhook_id or if it does not exist, add to the array.
 
-## Graphql APIs
+## Graphql for local development
 We are still actively working on graphql improvements. By default the feature is disabled.
 To enable [Apollo](https://www.apollographql.com/docs/apollo-server/)-based graphql server 
-and test it on your local development ( WARNING: local and passport.local authorization models
-are ONLY for development, NOT for production environment.) 
+and test it on your local machine. (WARNING: do not enable bellow for any production environment.) 
 ```shell
 export ENABLE_GRAPHQL=true
 export AUTH_MODEL=local
 ```
-Then start the api server, you will see a message like bellow
+Then start the razeedash-api server, you will see a message like bellow from the console
 ```shell
 🏄 Apollo server listening on http://[::]:3333/graphql
 ```
@@ -574,7 +573,8 @@ mutation {
   }
 }
 ```
-Both APIs returns a JWT token, which you could use to query user's organizations, e.g.
+Both APIs return a JWT token, which you could use to query other graphql APIs. e.g. Following
+graphql query, will return organizations a user belongs to:
 ```
 query {organizations {
   _id
