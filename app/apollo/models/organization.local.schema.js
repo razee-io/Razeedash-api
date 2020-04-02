@@ -47,9 +47,10 @@ const OrganizationLocalSchema = new mongoose.Schema({
 OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, context) {
   context.logger.debug({org_id}, 'getRegistrationUrl enter');
   const org = await this.findById(org_id);
+  const protocol = context.req ? context.req.protocol : 'http';
   const host = context.req ? context.req.header('host') : 'localhost:3333';
   return {
-    url: `http://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
   }; 
 };
 
