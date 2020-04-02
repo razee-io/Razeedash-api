@@ -52,18 +52,19 @@ const createDefaultApp = () => {
 };
 
 const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
-  const context = await initModule.buildApolloContext({
+  let context = await initModule.buildApolloContext({
     models,
     req,
     res,
     connection,
     logger,
   });
-  // populate req_id to apollo context
+  // populate req and req_id to apollo context
   if (connection) {
-    context.req_id = connection.context.req_id ? connection.context.req_id : undefined;
+    const upgradeReq = connection.context.upgradeReq;
+    context = { req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, ...context};
   } else if (req) {
-    context.req_id = req.id;
+    context = { req, req_id: req.id, ...context};
   } 
   return context;
 };
@@ -110,7 +111,7 @@ const createApolloServer = () => {
           );
         }
         // add original upgrade request to the context 
-        return { me, req_id, logger };
+        return { me, upgradeReq: webSocket.upgradeReq, logger };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
