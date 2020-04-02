@@ -66,6 +66,11 @@ app.use(function errorHandler(err, req, res, next) {
   next();
 });
 
+app.get('/metrics', function (request, response) {
+  response.writeHead(200, {'Content-Type': promClient.register.contentType});
+  response.end(promClient.register.metrics());
+});
+
 const server = http.createServer(app);
 
 server.on('ready', onReady);
@@ -125,15 +130,3 @@ function onConnection(){
     connections.set(count);
   });
 }
-
-//Prometheus server configuration
-var metrics_server = http.createServer(function (request, response) {
-  response.writeHead(200, {'Content-Type': promClient.register.contentType});
-  response.end(promClient.register.metrics());
-});
-
-metrics_server.listen(9095, () => {
-  log.info(
-    `🏄  prometheus is listening on http://localhost:${9095}`,
-  );
-});
