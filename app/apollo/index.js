@@ -61,7 +61,7 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
   });
   // populate req_id to apollo context
   if (connection) {
-    context.req_id = connection.context.upgradeReq ? connection.context.upgradeReq.id : undefined;
+    context.req_id = connection.context.req_id ? connection.context.req_id : undefined;
   } else if (req) {
     context.req_id = req.id;
   } 
@@ -97,10 +97,11 @@ const createApolloServer = () => {
     subscriptions: {
       path: GRAPHQL_PATH,
       onConnect: async (connectionParams, webSocket, context) => {
-        logger.trace({ req_id: webSocket.upgradeReq.id, connectionParams, context }, 'subscriptions:onConnect');
+        const req_id = webSocket.upgradeReq.id;
+        logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
-          context,
+          {req_id, models, logger, ...context},
         );
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
@@ -109,7 +110,7 @@ const createApolloServer = () => {
           );
         }
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger, };
+        return { me, req_id, logger };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(

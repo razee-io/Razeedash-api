@@ -199,8 +199,9 @@ UserPassportLocalSchema.statics.signIn = async (
   );
 };
 
-UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
+UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -210,7 +211,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: req.id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -223,6 +224,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -232,7 +234,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: context.req_id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }

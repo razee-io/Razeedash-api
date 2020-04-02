@@ -36,13 +36,15 @@ module.exports = class LocalAuth extends BaseAuth  {
       const req_id = req.id;
       req.log.debug({name: this._name, action, type, req_id}, 'rbac enter...');
 
-      const me = await models.User.getMeFromRequest(req);
+      const context = {req_id, models, logger: req.log };
+      const me = await models.User.getMeFromRequest(req, context);
     
       if (!me) {
         res.status(403).send('could not locate the user.');
         return;
       }
     
+      context.me = me;
       const org_id = req.org._id;
       var attributes = null;
     
@@ -54,7 +56,6 @@ module.exports = class LocalAuth extends BaseAuth  {
       } 
       
       // compose a context object 
-      const context = {me, req_id, models, logger: req.log };
       if (!(await models.User.isAuthorized(me, org_id, action, type, attributes, context))) {
         req.log.debug({name: this._name, req_id, me: whoIs(me), org_id, action, type, attributes}, 'rbacAuth permission denied - 401');
         res.status(401).send('Permission denied.');

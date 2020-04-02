@@ -32,7 +32,7 @@ const buildApolloContext = async ({ models, req, res, connection, logger }) => {
     };
   }
   if (req) {
-    const me = await models.User.getMeFromRequest(req);
+    const me = await models.User.getMeFromRequest(req, {models, req_id: req.id, logger});
     return {
       models,
       me,
