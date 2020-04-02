@@ -20,7 +20,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 
