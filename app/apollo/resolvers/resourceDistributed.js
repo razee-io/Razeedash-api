@@ -54,11 +54,12 @@ const resourceDistributedResolvers = {
     resourcesDistributedCount: async (
       parent,
       { org_id },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'resourcesDistributedCount';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let result = 0;
       let resultsArray = [];
@@ -84,14 +85,15 @@ const resourceDistributedResolvers = {
     resourcesDistributed: async (
       parent,
       { org_id, filter, fromDate, toDate, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'resourcesDistributed';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
 
       if (limit < 0) limit = 20;
       if (limit > 50) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let searchFilter = { org_id: me.org_id, deleted: false };
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
@@ -114,14 +116,15 @@ const resourceDistributedResolvers = {
     resourcesDistributedByCluster: async (
       parent,
       { org_id, cluster_id, filter, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'resourcesDistributedByCluster';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
       if (limit < 0) limit = 20;
       if (limit > 50) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let searchFilter = {
         org_id: me.org_id,
@@ -140,8 +143,9 @@ const resourceDistributedResolvers = {
       );
     },
 
-    resourceDistributed: async (parent, { _id }, { models, me, req_id, logger }) => {
+    resourceDistributed: async (parent, { _id }, context) => {
       const queryName = 'resourceDistributed';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
@@ -149,7 +153,7 @@ const resourceDistributedResolvers = {
         let result = await rd.findById(_id).lean();
         if (result !== null) {
           // eslint-disable-next-line no-await-in-loop
-          await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+          await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
           return result;
         }
       }
@@ -159,11 +163,12 @@ const resourceDistributedResolvers = {
     resourceDistributedByKeys: async (
       parent,
       { org_id, cluster_id, selfLink },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'resourceDistributedByKeys';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
         // eslint-disable-next-line no-await-in-loop

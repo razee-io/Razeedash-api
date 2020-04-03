@@ -193,8 +193,9 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   );
 };
 
-UserLocalSchema.statics.getMeFromRequest = async function(req) {
+UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -204,7 +205,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: req.id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new AuthenticationError('Your session expired. Sign in again.');
       }
     }
@@ -217,6 +218,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -226,7 +228,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: context.req_id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
@@ -234,8 +236,9 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
-  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -247,8 +250,9 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   return false;
 };
 
-UserLocalSchema.statics.getOrgs = async function(models, me) {
+UserLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {

@@ -109,10 +109,11 @@ UserDefaultSchema.statics.signIn = async (models, login, password, secret, conte
   );
 };
 
-UserDefaultSchema.statics.getMeFromRequest = async function(req) {
+UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   const userId = req.get('x-user-id');
   const apiKey = req.get('x-api-key');
-  logger.debug({ req_id: req.id }, `default getMeFromRequest ${userId}`);
+  const {req_id, logger} = context;
+  logger.debug({ req_id }, `default getMeFromRequest ${userId}`);
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
     if (userId && apiKey) {
       return { userId, apiKey };
@@ -125,7 +126,8 @@ UserDefaultSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
   context
 ) {
-  logger.debug({ req_id: context.req_id }, `default getMeFromConnectionParams ${connectionParams}`);
+  const {req_id, logger} = context;
+  logger.debug({ req_id }, `default getMeFromConnectionParams ${connectionParams}`);
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
     const obj = connectionParams['authorization'];
     return obj;
