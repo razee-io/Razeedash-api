@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-const mongoose = require('mongoose');
-
-const { AUTH_MODEL } = require('./const');
-
-let UserSchema = require(`./user.${AUTH_MODEL}.schema`);
-
-const User = mongoose.model('users', UserSchema);
-
-module.exports = User;
+module.exports = class BaseAuth {
+  constructor(params) {
+    this._name = params.name;
+  }
+      
+  rbac(action, type) {
+    throw new Error(`You have to implement rbac (${action}, ${type}}) method for <${this._name}> auth model.`);
+  }
+};

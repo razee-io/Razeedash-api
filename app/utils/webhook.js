@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const request = require('request-promise-native');
 const objectPath = require('object-path');
 const { URL } = require('url');

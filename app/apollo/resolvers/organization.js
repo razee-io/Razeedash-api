@@ -22,7 +22,7 @@ const organizationResolvers = {
 
     registrationUrl: async (parent, { org_id }, { models, me, req_id, logger}) => {
       const queryName = 'registrationUrl';
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.ORGANIZATION, models, queryName, req_id, logger);
 
       const org = await models.Organization.findById(org_id);
       if (process.env.EXTERNAL_URL) {
