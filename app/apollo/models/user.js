@@ -17,8 +17,7 @@
 const mongoose = require('mongoose');
 
 const { AUTH_MODEL } = require('./const');
-
-let UserSchema = require(`./user.${AUTH_MODEL}.schema`);
+const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
 
 const User = mongoose.model('users', UserSchema);
 
