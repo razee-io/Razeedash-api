@@ -20,6 +20,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
+const _ = require('lodash');
 
 router.use(ebl(getBunyanConfig('razeedash-api/resources')));
 
@@ -39,15 +40,23 @@ const getResources = async (req, res, next) => {
       query['cluster_id'] = req.query.cluster_id;
     }
 
-    const options = { 
-      limit: 25,
-    };
+    var limit = 25;
+    var skip = 0;
     if(req.query && req.query.skip) { 
-      options['skip'] = parseInt(req.query.skip);
+      skip = parseInt(req.query.skip);
     }
+    if(req.query && req.query.limit){
+      limit = _.clamp(parseInt(req.query.limit), 1, 10000);
+    }
+    var options = {
+      limit, skip,
+    };
 
     const resources = await Resources.find(query, options).toArray();
-    return res.status(200).send({resources});
+    return res.status(200).send({
+      resources,
+      limit, skip,
+    });
   } catch (err) {
     req.log.error(err.message);
     next(err);
