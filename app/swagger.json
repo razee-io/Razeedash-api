@@ -60,13 +60,17 @@
             "in": "header",
             "name": "org-admin-key",
             "description": "The org admin api key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "body",
             "name": "name",
             "description": "The org name to be created",
-            "required": true
+            "required": true,
+            "schema": {
+              "type":"string"
+            }
           }
         ],
         "responses": {
@@ -101,7 +105,8 @@
             "in": "header",
             "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "query",
@@ -155,7 +160,8 @@
             "in": "header",
             "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "body",
@@ -206,7 +212,8 @@
             "in": "header",
             "name": "org-admin-key",
             "description": "Organization admin key",
-            "required": true
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -240,13 +247,15 @@
             "in": "header",
             "name": "razee-org-key",
             "description": "organization api key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "header",
             "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -331,13 +340,15 @@
             "in": "header",
             "name": "razee-org-key",
             "description": "organization api key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "header",
             "name": "org-admin-key",
             "description": "organization admin key",
-            "required": true
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -565,7 +576,8 @@
             "in": "header",
             "name": "org-admin-key",
             "description": "The org admin api key",
-            "required": true
+            "required": true,
+            "type": "string"
           },
           {
             "in": "query",
@@ -743,8 +755,8 @@
         "cluster_id": { "type": "string" },
         "org_id": { "type": "string" },
         "selfLink": { "type": "string" },
-        "created": { "type": "date" },
-        "updated": { "type": "date" },
+        "created": { "type": "string", "format": "date" },
+        "updated": { "type": "string", "format": "date" },
         "deleted": { "type": "boolean" },
         "hash": { "type": "string" },
         "searchableData": { 
@@ -828,12 +840,10 @@
         },
         "field": {
           "type": "string",
-          "required": false,
           "description": "Dot notation to the field to run regex filter. Example, 'metadata.name'"
         },
         "filter": {
           "type": "string",
-          "required": false,
           "description": "Regex to apply against the 'field'."
         },
         "trigger": {
