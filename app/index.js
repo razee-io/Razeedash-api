@@ -28,8 +28,13 @@ const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
-
 const apollo = require('./apollo');
+
+const promClient = require('prom-client');
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });    //Collect all default metrics
+const connections = new promClient.Gauge({ name: 'razee_server_connections_count', help: 'Razee server request count' });
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
@@ -61,11 +66,17 @@ app.use(function errorHandler(err, req, res, next) {
   next();
 });
 
+app.get('/metrics', function (request, response) {
+  response.writeHead(200, {'Content-Type': promClient.register.contentType});
+  response.end(promClient.register.metrics());
+});
+
 const server = http.createServer(app);
 
 server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
+server.on('connection', onConnection);
 
 require('./subs/index')(server);
 
@@ -110,4 +121,12 @@ function onError(error) {
       throw error;
   }
 
+}
+
+// emitted when new client connects
+function onConnection(){
+  server.getConnections(function(error,count){
+    //console.log('Number of concurrent connections to the server : ' + count);
+    connections.set(count);
+  });
 }
