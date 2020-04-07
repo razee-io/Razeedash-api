@@ -587,6 +587,13 @@
             "type": "string",
             "description": "Skip the first 25 results. ex: /resources?skip=25",
             "required": false
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string",
+            "description": "Limit the number of resources to return.  Max limit is 10000 and the default is 25. ex: /resources?limit=100",
+            "required": false
           }
         ],
         "responses": {
