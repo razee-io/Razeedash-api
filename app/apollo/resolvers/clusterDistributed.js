@@ -82,12 +82,13 @@ const clusterDistributedResolvers = {
     clusterDistributedByClusterID: async (
       parent,
       { org_id: orgId, cluster_id: clusterId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterDistributedByClusterID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       // We do not need a Promise.all here becuase the record can live in only one DB.
       // If we find it in the first DB, return the results, otherwise query the 2nd DB.
@@ -109,13 +110,14 @@ const clusterDistributedResolvers = {
     clustersDistributedByOrgID: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clustersDistributedByOrgID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       return commonClusterDistributedSearch(
         models,
@@ -130,13 +132,14 @@ const clusterDistributedResolvers = {
     clusterDistributedZombies: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterDistributedZombies';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = {
         org_id: orgId,
@@ -156,13 +159,14 @@ const clusterDistributedResolvers = {
     clusterDistributedSearch: async (
       parent,
       { org_id: orgId, filter, limit = 50 },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterDistributedSearch';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       // If no filter provide, just query based on orig id
       if (!filter) {
@@ -191,13 +195,14 @@ const clusterDistributedResolvers = {
     clusterDistributedCountByKubeVersion: async (
       parent,
       { org_id: orgId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterDistributedCountByKubeVersion';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       // Validate user, throw error if not valid
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       let resultsArray = [];
 

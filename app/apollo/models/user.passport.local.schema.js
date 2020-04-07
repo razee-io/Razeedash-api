@@ -199,8 +199,9 @@ UserPassportLocalSchema.statics.signIn = async (
   );
 };
 
-UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
+UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -210,7 +211,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: req.id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -223,6 +224,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -232,7 +234,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: context.req_id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -240,14 +242,8 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserPassportLocalSchema.statics.isAuthorized = async function(
-  me,
-  orgId,
-  action,
-  type,
-  attributes,
-  req_id
-) {
+UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
   logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
@@ -260,8 +256,9 @@ UserPassportLocalSchema.statics.isAuthorized = async function(
   return false;
 };
 
-UserPassportLocalSchema.statics.getOrgs = async function(models, me) {
+UserPassportLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {
@@ -300,7 +297,7 @@ UserPassportLocalSchema.methods.getEmail = async function() {
 };
 
 UserPassportLocalSchema.methods.getIdentifier = async function() {
-  return this.services.local.email;
+  return this.services.passportlocal.email;
 };
 
 UserPassportLocalSchema.methods.getMeta = async function() {
