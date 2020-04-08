@@ -32,12 +32,49 @@ const channelSchema = gql`
     created: Date!
     versions: [ChannelVersion]
   }
+  type AddChannelReply {
+    _id: String!
+  }
+  type EditChannelReply {
+    _id: String!
+    name: String!
+    success: Boolean
+  }
+  type AddChannelVersionReply {
+    version_uuid: String!
+    success: Boolean!
+  }
+  type RemoveChannelReply {
+    _id: String!
+    success: Boolean
+  }
   
   extend type Query {
      """
      Gets all channels for org_id
      """
      channels(org_id: String!): [Channel]
+  }
+  extend type Mutation {
+     """
+     Adds a channel
+     """
+     addChannel(org_id: String!, name: String!): AddChannelReply!
+     
+     """
+     Edits a channel
+     """
+     editChannel(org_id: String!, _id: String!, name: String!): EditChannelReply!
+     
+     """
+     Adds a yaml version to this channel
+     """
+     addChannelVersion(org_id: String!, channel_id: String!, name: String!, type: String!, content: String!, description: String): AddChannelVersionReply!
+     
+     """
+     Removes a channel
+     """
+     removeChannel(org_id: String!, _id: String!): RemoveChannelReply!
   }
 `;
 

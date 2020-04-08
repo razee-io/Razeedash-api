@@ -39,6 +39,10 @@ const subscriptionSchema = gql`
     _id: String!
     success: Boolean
   }
+  type EditChannelSubscriptionReply {
+    _id: String!
+    success: Boolean
+  }
   type AddChannelSubscriptionReply {
     _id: String!
   }
@@ -58,6 +62,11 @@ const subscriptionSchema = gql`
      Adds a subscription
      """
      addSubscription(org_id: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): AddChannelSubscriptionReply!
+     
+     """
+     Edits a subscription
+     """
+     editSubscription(org_id: String!, _id: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
      
      """
      Removes a subscription

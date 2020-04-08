@@ -96,6 +96,47 @@ const resourceResolvers = {
                 throw err;
             }
         },
+        editSubscription: async (parent, { org_id, _id, name, tags, channel_uuid, version_uuid }, { models, me, req_id, logger })=>{
+            const queryName = 'editSubscription';
+            logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+            await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+
+            try{
+                var subscription = await models.Subscription.findOne({ org_id, _id });
+                if(!subscription){
+                    throw `subscription { _id: "${_id}", org_id:${org_id} } not found`;
+                }
+
+                // loads the channel
+                var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
+                if(!channel){
+                    throw `channel uuid "${channel_uuid}" not found`;
+                }
+
+                // loads the version
+                var version = channel.versions.find((version)=>{
+                    return (version.uuid == version_uuid);
+                });
+                if(!version){
+                    throw `version uuid "${version_uuid}" not found`;
+                }
+
+                var sets = {
+                    name, tags,
+                    channel: channel.name, channel_uuid, version: version.name, version_uuid,
+                };
+                await models.Subscription.updateOne({ _id, org_id, }, { $set: sets });
+
+                return {
+                    _id,
+                    success: true,
+                };
+            }
+            catch(err){
+                logger.error(err);
+                throw err;
+            }
+        },
         removeSubscription: async (parent, { org_id, _id }, { models, me, req_id, logger })=>{
             const queryName = 'removeSubscription';
             logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
