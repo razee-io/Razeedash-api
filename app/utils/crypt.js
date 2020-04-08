@@ -18,7 +18,6 @@ const CryptoJS = require('crypto-js');
 
 const tokenCrypt = {
   encrypt: (str, token) => {
-    console.log(44444, str, token);
     var out = CryptoJS.AES.encrypt(str, token).toString();
     return out;
   },
