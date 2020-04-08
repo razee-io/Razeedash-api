@@ -23,110 +23,6 @@ const { whoIs, validAuth } = require ('./common');
 
 const { encryptOrgData } = require('../../utils/orgs');
 
-var addChannelVersion = async(parent, { org_id, channel_id, name, type, content, description }, { models, me, req_id, logger })=>{
-  // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
-  console.log(111111);
-  const org = await models.Organization.findOne({ _id: org_id });
-  const orgKey = _.first(org.orgKeys);
-  console.log(2222, org, orgKey);
-
-  if(!name){
-    throw 'A name was not included';
-  }
-  if(!type){
-    throw 'A "type" of application/json or application/yaml must be included';
-  }
-  if(!channel_id){
-    throw 'channel_id not specified';
-  }
-
-  const channel = await models.Channel.findOne({ _id: channel_id, org_id });
-  if(!channel){
-    throw `channel _id "${_id}" not found`;
-  }
-  console.log(111121);
-  const versions = await models.DeployableVersion.find({ org_id, channel_id });
-  const versionNameExists = !!versions.find((version)=>{
-    return (version.name == name);
-  });
-
-  if(versionNameExists && versionNameExists.length > 0) {
-    throw `The version name ${name} already exists`;
-  }
-
-  const iv = crypto.randomBytes(16);
-  const ivText = iv.toString('base64');
-
-  const location = 'mongo';
-
-  // todo: enable s3
-  // let location, data;
-  //
-  // if (conf.s3.endpoint) {
-  //     try {
-  //         const resourceName =  channel.name + '-' + version.name;
-  //         const bucket = `${conf.s3.bucketPrefix}-${orgId.toLowerCase()}`;
-  //         const s3Client = new S3ClientClass(conf);
-  //         try {
-  //             const exists = await s3Client.bucketExists(bucket);
-  //             if (!exists) {
-  //                 logger.warn('bucket does not exist', { bucket });
-  //                 await s3Client.createBucket(bucket);
-  //             }
-  //         } catch (error) {
-  //             logger.error('could not create bucket', { bucket: bucket });
-  //             throw error;
-  //         }
-  //         const s3 = new AWS.S3(conf.s3);
-  //         const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
-  //         const encrypt = crypto.createCipheriv(algorithm, key, iv);
-  //         const pipe = req.pipe(encrypt);
-  //         const params = {Bucket: bucket, Key: resourceName, Body: pipe};
-  //         const upload = s3.upload( params );
-  //         await upload.promise();
-  //
-  //         data = `https://${conf.s3.endpoint}/${bucket}/${resourceName}`;
-  //         location = 's3';
-  //     } catch (error) {
-  //         logger.error( 'S3 upload error', error );
-  //         throw error;
-  //     }
-  // } else {
-  //     data = await encryptResource(req);
-  //     location = 'mongo';
-  // }
-  console.log(111131);
-  const data = await encryptOrgData(orgKey, content);
-  console.log(111132);
-
-  const deployableVersionObj = {
-    _id: uuid(),
-    org_id,
-    uuid: uuid(),
-    channel_id, channel_name: channel.name,
-    name, description,
-    content: data, iv: ivText, type,
-  };
-
-  const versionObj = {
-    uuid: deployableVersionObj.uuid,
-    name, description, location,
-  };
-
-  var result = await models.DeployableVersion.create(deployableVersionObj);
-  console.log(111135, result);
-
-  await models.Channel.updateOne(
-    { org_id, uuid: channel.uuid },
-    { $push: { versions: versionObj } }
-  );
-  console.log(111141);
-  return {
-    success: true,
-    version_uuid: versionObj.uuid,
-  };
-};
-
 
 const resourceResolvers = {
   Query: {
@@ -186,9 +82,111 @@ const resourceResolvers = {
         throw err;
       }
     },
-    addChannelVersion: addChannelVersion,
+    addChannelVersion: async(parent, { org_id, channel_id, name, type, content, description }, { models, me, req_id, logger })=>{
+      const queryName = 'addChannelVersion';
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
 
-    removeChannel: async (parent, { org_id, _id, name }, { models, me, req_id, logger })=>{
+      // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
+      const org = await models.Organization.findOne({ _id: org_id });
+      const orgKey = _.first(org.orgKeys);
+
+      if(!name){
+        throw 'A name was not included';
+      }
+      if(!type){
+        throw 'A "type" of application/json or application/yaml must be included';
+      }
+      if(!channel_id){
+        throw 'channel_id not specified';
+      }
+
+      const channel = await models.Channel.findOne({ _id: channel_id, org_id });
+      if(!channel){
+        throw `channel _id "${channel_id}" not found`;
+      }
+
+      const versions = await models.DeployableVersion.find({ org_id, channel_id });
+      const versionNameExists = !!versions.find((version)=>{
+        return (version.name == name);
+      });
+
+      if(versionNameExists && versionNameExists.length > 0) {
+        throw `The version name ${name} already exists`;
+      }
+
+      const iv = crypto.randomBytes(16);
+      const ivText = iv.toString('base64');
+
+      const location = 'mongo';
+
+      // todo: enable s3
+      // let location, data;
+      //
+      // if (conf.s3.endpoint) {
+      //     try {
+      //         const resourceName =  channel.name + '-' + version.name;
+      //         const bucket = `${conf.s3.bucketPrefix}-${orgId.toLowerCase()}`;
+      //         const s3Client = new S3ClientClass(conf);
+      //         try {
+      //             const exists = await s3Client.bucketExists(bucket);
+      //             if (!exists) {
+      //                 logger.warn('bucket does not exist', { bucket });
+      //                 await s3Client.createBucket(bucket);
+      //             }
+      //         } catch (error) {
+      //             logger.error('could not create bucket', { bucket: bucket });
+      //             throw error;
+      //         }
+      //         const s3 = new AWS.S3(conf.s3);
+      //         const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
+      //         const encrypt = crypto.createCipheriv(algorithm, key, iv);
+      //         const pipe = req.pipe(encrypt);
+      //         const params = {Bucket: bucket, Key: resourceName, Body: pipe};
+      //         const upload = s3.upload( params );
+      //         await upload.promise();
+      //
+      //         data = `https://${conf.s3.endpoint}/${bucket}/${resourceName}`;
+      //         location = 's3';
+      //     } catch (error) {
+      //         logger.error( 'S3 upload error', error );
+      //         throw error;
+      //     }
+      // } else {
+      //     data = await encryptResource(req);
+      //     location = 'mongo';
+      // }
+
+      const data = await encryptOrgData(orgKey, content);
+
+
+      const deployableVersionObj = {
+        _id: uuid(),
+        org_id,
+        uuid: uuid(),
+        channel_id, channel_name: channel.name,
+        name, description,
+        content: data, iv: ivText, type,
+      };
+
+      const versionObj = {
+        uuid: deployableVersionObj.uuid,
+        name, description, location,
+      };
+
+      await models.DeployableVersion.create(deployableVersionObj);
+
+      await models.Channel.updateOne(
+        { org_id, uuid: channel.uuid },
+        { $push: { versions: versionObj } }
+      );
+      return {
+        success: true,
+        version_uuid: versionObj.uuid,
+      };
+    },
+
+    removeChannel: async (parent, { org_id, _id }, { models, me, req_id, logger })=>{
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, models, queryName, req_id, logger);
