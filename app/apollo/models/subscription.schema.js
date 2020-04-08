@@ -17,46 +17,46 @@
 const mongoose = require('mongoose');
 
 const SubscriptionSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-    },
-    org_id: {
-        type: String,
-    },
-    name: {
-        type: String,
-    },
-    uuid: {
-        type: String,
-    },
-    tags: [
-        {
-            type: String,
-        }
-    ],
-    channel_uuid: {
-        type: String,
-    },
-    channel: {
-        type: String,
-    },
-    version: {
-        type: String,
-    },
-    version_uuid: {
-        type: String,
-    },
-    owner: {
-        type: String,
-    },
-    created: {
-        type: Date,
-        default: Date.now,
-    },
-    updated: {
-        type: Date,
-        default: Date.now,
-    },
+  _id: {
+    type: String,
+  },
+  org_id: {
+    type: String,
+  },
+  name: {
+    type: String,
+  },
+  uuid: {
+    type: String,
+  },
+  tags: [
+    {
+      type: String,
+    }
+  ],
+  channel_uuid: {
+    type: String,
+  },
+  channel: {
+    type: String,
+  },
+  version: {
+    type: String,
+  },
+  version_uuid: {
+    type: String,
+  },
+  owner: {
+    type: String,
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+  },
+  updated: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 SubscriptionSchema.index({ org_id: 1 }, { });

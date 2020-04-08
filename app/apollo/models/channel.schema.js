@@ -17,38 +17,38 @@
 const mongoose = require('mongoose');
 
 const ChannelSchema = new mongoose.Schema({
-    _id: {
+  _id: {
+    type: String,
+  },
+  org_id: {
+    type: String,
+  },
+  name: {
+    type: String,
+  },
+  uuid: {
+    type: String,
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+  },
+  versions: [
+    {
+      uuid: {
         type: String,
-    },
-    org_id: {
+      },
+      name: {
         type: String,
-    },
-    name: {
+      },
+      description: {
         type: String,
-    },
-    uuid: {
+      },
+      location: {
         type: String,
-    },
-    created: {
-        type: Date,
-        default: Date.now,
-    },
-    versions: [
-        {
-            uuid: {
-                type: String,
-            },
-            name: {
-                type: String,
-            },
-            description: {
-                type: String,
-            },
-            location: {
-                type: String,
-            },
-        }
-    ],
+      },
+    }
+  ],
 });
 
 ChannelSchema.index({ org_id: 1 }, { });

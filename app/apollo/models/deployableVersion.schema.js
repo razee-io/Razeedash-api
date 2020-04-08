@@ -17,43 +17,43 @@
 const mongoose = require('mongoose');
 
 const DeployableVersionSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-    },
-    org_id: {
-        type: String,
-    },
-    channel_id: {
-        type: String,
-    },
-    channel_name: {
-        type: String,
-    },
-    name: {
-        type: String,
-    },
-    description: {
-        type: String,
-    },
-    uuid: {
-        type: String,
-    },
-    content: {
-        type: String,
-    },
-    iv: {
-        type: String,
-    },
-    location: {
-        type: String,
-    },
-    type: {
-        type: String,
-    },
-    created: {
-        type: Date,
-        default: Date.now,
-    },
+  _id: {
+    type: String,
+  },
+  org_id: {
+    type: String,
+  },
+  channel_id: {
+    type: String,
+  },
+  channel_name: {
+    type: String,
+  },
+  name: {
+    type: String,
+  },
+  description: {
+    type: String,
+  },
+  uuid: {
+    type: String,
+  },
+  content: {
+    type: String,
+  },
+  iv: {
+    type: String,
+  },
+  location: {
+    type: String,
+  },
+  type: {
+    type: String,
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+  },
 }, { collection: 'deployableVersions' });
 
 DeployableVersionSchema.index({ org_id: 1 }, { });
