@@ -16,27 +16,46 @@
 
 const mongoose = require('mongoose');
 
-const { AUTH_MODEL } = require('./const');
-const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
-const _ = require('lodash');
+const DeployableVersionSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+  },
+  org_id: {
+    type: String,
+  },
+  channel_id: {
+    type: String,
+  },
+  channel_name: {
+    type: String,
+  },
+  name: {
+    type: String,
+  },
+  description: {
+    type: String,
+  },
+  uuid: {
+    type: String,
+  },
+  content: {
+    type: String,
+  },
+  iv: {
+    type: String,
+  },
+  location: {
+    type: String,
+  },
+  type: {
+    type: String,
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+  },
+}, { collection: 'deployableVersions' });
 
-UserSchema.statics.getBasicUsersByIds = async function(ids){
-  if(!ids || ids.length < 1){
-    return [];
-  }
-  var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
-  users = users.map((user)=>{
-    var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
-    return {
-      _id,
-      name,
-    };
-  });
-  users = _.keyBy(users, '_id');
-  return users;
-};
+DeployableVersionSchema.index({ org_id: 1 }, { });
 
-const User = mongoose.model('users', UserSchema);
-
-module.exports = User;
+module.exports = DeployableVersionSchema;
