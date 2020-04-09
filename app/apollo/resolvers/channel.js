@@ -26,10 +26,12 @@ const { encryptOrgData } = require('../../utils/orgs');
 
 const resourceResolvers = {
   Query: {
-    channels: async(parent, { org_id }, { models, me, req_id, logger }) => {
+    channels: async(parent, { org_id }, context) => {
+      const { models, me, req_id, logger } = context;
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+
       try{
         var channels = await models.Channel.find({ org_id });
       }catch(err){
@@ -40,10 +42,11 @@ const resourceResolvers = {
     },
   },
   Mutation: {
-    addChannel: async (parent, { org_id, name }, { models, me, req_id, logger })=>{
+    addChannel: async (parent, { org_id, name }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
         const _id = uuid();
@@ -59,10 +62,11 @@ const resourceResolvers = {
         throw err;
       }
     },
-    editChannel: async (parent, { org_id, _id, name }, { models, me, req_id, logger })=>{
+    editChannel: async (parent, { org_id, _id, name }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
         const channel = models.Channel.findOne({ _id, org_id });
@@ -82,10 +86,11 @@ const resourceResolvers = {
         throw err;
       }
     },
-    addChannelVersion: async(parent, { org_id, channel_id, name, type, content, description }, { models, me, req_id, logger })=>{
+    addChannelVersion: async(parent, { org_id, channel_id, name, type, content, description }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
       const org = await models.Organization.findOne({ _id: org_id });
@@ -186,10 +191,11 @@ const resourceResolvers = {
       };
     },
 
-    removeChannel: async (parent, { org_id, _id }, { models, me, req_id, logger })=>{
+    removeChannel: async (parent, { org_id, _id }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
         const channel = models.Channel.findOne({ _id, org_id });

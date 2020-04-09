@@ -23,10 +23,12 @@ const { whoIs, validAuth } = require ('./common');
 
 const resourceResolvers = {
   Query: {
-    subscriptions: async(parent, { org_id }, { models, me, req_id, logger }) => {
+    subscriptions: async(parent, { org_id }, context) => {
+      const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+
       try{
         var subscriptions = await models.Subscription.find({ org_id }, {}, { lean: 1 });
       }catch(err){
@@ -43,10 +45,11 @@ const resourceResolvers = {
 
       return subscriptions;
     },
-    subscription: async(parent, { org_id, _id }, { models, me, req_id, logger }) => {
+    subscription: async(parent, { org_id, _id }, context) => {
+      const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscriptions = await resourceResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
@@ -61,10 +64,11 @@ const resourceResolvers = {
     },
   },
   Mutation: {
-    addSubscription: async (parent, { org_id, name, tags, channel_uuid, version_uuid }, { models, me, req_id, logger })=>{
+    addSubscription: async (parent, { org_id, name, tags, channel_uuid, version_uuid }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         const _id = uuid();
@@ -96,10 +100,11 @@ const resourceResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, _id, name, tags, channel_uuid, version_uuid }, { models, me, req_id, logger })=>{
+    editSubscription: async (parent, { org_id, _id, name, tags, channel_uuid, version_uuid }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id, _id });
@@ -137,10 +142,11 @@ const resourceResolvers = {
         throw err;
       }
     },
-    removeSubscription: async (parent, { org_id, _id }, { models, me, req_id, logger })=>{
+    removeSubscription: async (parent, { org_id, _id }, context)=>{
+      const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
       var success = false;
       try{

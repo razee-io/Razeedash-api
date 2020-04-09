@@ -16,14 +16,6 @@
 
 const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.consts');
 
-const AUTH_MODELS = {
-  LOCAL: 'local',
-  PASSPORT_LOCAL: 'passport.local',
-  PASSPORT_GITHUB: 'passport.github',
-  IAM: 'iam',
-};
-
-const AUTH_MODEL = process.env.AUTH_MODEL || AUTH_MODELS.LOCAL;
 const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
