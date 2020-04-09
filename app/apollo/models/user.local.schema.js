@@ -239,12 +239,19 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+
+  const orgMeta = me.meta.orgs.find((o)=>{
+    return (o._id == orgId);
+  });
+  if(!orgMeta){
+    return false;
+  }
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
-      return me.org_id === orgId;
+      return !!orgMeta;
     }
     if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
-      return me.org_id === orgId && me.role === 'ADMIN';
+      return orgMeta.role === 'ADMIN';
     }
   }
   return false;
