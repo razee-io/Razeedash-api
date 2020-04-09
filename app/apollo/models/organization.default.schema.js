@@ -54,17 +54,4 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   }; 
 };
 
-OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
-  let org = await this.findOne({
-    name: args.name,
-  });
-
-  if (!org) {
-    const _id = args._id ? args._id : uuid();
-    const orgKey = 'orgApiKey-'+uuid();
-    org = await this.create({ ...args, _id, orgKeys: [orgKey] });
-  }
-  return org;
-};
-
 module.exports = OrganizationLocalSchema;
