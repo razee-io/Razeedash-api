@@ -19,7 +19,7 @@ const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError } = require('apollo-server');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -90,7 +90,7 @@ async function getOrCreateOrganization(models, args) {
     const orgArray = await Promise.all(
       models.OrganizationDistributed.map(od => {
         return od.createLocalOrg({
-          _id: `${uuid()}`,
+          _id: uuid(),
           type: 'local',
           name: orgName,
         });
@@ -99,7 +99,7 @@ async function getOrCreateOrganization(models, args) {
     return orgArray[0];
   }
   return models.Organization.createLocalOrg({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     name: orgName,
   });
@@ -109,7 +109,7 @@ UserLocalSchema.statics.createUser = async function(models, args) {
   const org = await getOrCreateOrganization(models, args);
 
   const user = await this.create({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     services: {
       local: {
@@ -157,12 +157,16 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
-UserLocalSchema.statics.signUp = async (models, args, secret) => {
-  logger.debug(`local signUp ${args}`);
+UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn(
+    { req_id: context.req_id },
+    `Current authorization model ${AUTH_MODEL} does not support this option.`
+  );
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -173,21 +177,25 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const user = await models.User.findByLogin(login);
     if (!user) {
+      logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
       throw new UserInputError('No user found with this login credentials.');
     }
     const isValid = await user.validatePassword(password);
     if (!isValid) {
+      logger.warn({ req_id: context.req_id }, 'Invalid password.');
       throw new AuthenticationError('Invalid password.');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
 };
 
-UserLocalSchema.statics.getMeFromRequest = async function(req) {
+UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -197,6 +205,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new AuthenticationError('Your session expired. Sign in again.');
       }
     }
@@ -206,8 +215,10 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -217,7 +228,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        // console.log(e.stack);
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
@@ -225,8 +236,10 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type) {
-  logger.debug(`local isAuthorized ${me} ${action} ${type}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
@@ -237,15 +250,16 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type) {
     if (action === ACTIONS.READ) {
       return !!orgMeta;
     }
-    if (action === ACTIONS.MANAGE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
       return orgMeta.role === 'ADMIN';
     }
   }
   return false;
 };
 
-UserLocalSchema.statics.getOrgs = async function(models, me) {
+UserLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {
@@ -300,3 +314,4 @@ UserLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserLocalSchema;
+

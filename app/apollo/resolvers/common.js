@@ -24,8 +24,9 @@ const whoIs = me => {
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
-const validAuth = async (me, org_id, action, type, models, queryName, req_id, logger) => {
-  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type))) {
+const validAuth = async (me, org_id, action, type, queryName, context) => {
+  const {req_id, models, logger} = context;
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
     throw new AuthenticationError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
@@ -34,3 +35,4 @@ const validAuth = async (me, org_id, action, type, models, queryName, req_id, lo
 }; 
 
 module.exports =  { whoIs, validAuth };
+

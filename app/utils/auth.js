@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const mongoose = require('mongoose');
 
-const { AUTH_MODEL } = require('./const');
+const { AUTH_MODEL_CLASS } = require('./auth.consts');
+const AuthClass = require(`${AUTH_MODEL_CLASS}`);
+const auth = new AuthClass();
 
-const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
-
-const Organization = mongoose.model('orgs', OrganizationSchema);
-
-module.exports = Organization;
+module.exports = { auth };

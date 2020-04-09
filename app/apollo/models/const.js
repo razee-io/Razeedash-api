@@ -14,19 +14,7 @@
  * limitations under the License.
  */
 
-const ACTIONS = {
-  READ: 'read',
-  WRITE: 'write',
-  MANAGE: 'manage',
-};
-
-const TYPES = {
-  RESOURCE: 'resource',
-  CLUSTER: 'cluster',
-  MESSAGE: 'message',
-  CHANNEL: 'channel',
-  SUBSCRIPTION: 'subscription',
-};
+const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.consts');
 
 const AUTH_MODELS = {
   LOCAL: 'local',

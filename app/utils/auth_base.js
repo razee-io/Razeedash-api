@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const mongoose = require('mongoose');
 
-const { AUTH_MODEL } = require('./const');
-
-const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
-
-const Organization = mongoose.model('orgs', OrganizationSchema);
-
-module.exports = Organization;
+module.exports = class BaseAuth {
+  constructor(params) {
+    this._name = params.name;
+  }
+      
+  rbac(action, type) {
+    throw new Error(`You have to implement rbac (${action}, ${type}}) method for <${this._name}> auth model.`);
+  }
+};

@@ -18,7 +18,7 @@ const assert = require('assert');
 const mongodb = require('mongo-mock');
 var httpMocks = require('node-mocks-http');
 const log = require('../../log').log;
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const rewire = require('rewire');
 let v2 = rewire('./orgs');

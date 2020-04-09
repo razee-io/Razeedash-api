@@ -19,7 +19,7 @@ const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const { AuthenticationError } = require('apollo-server');
 
@@ -162,12 +162,13 @@ UserPassportLocalSchema.statics.createToken = async (
   });
 };
 
-UserPassportLocalSchema.statics.signUp = async (models, args, secret) => {
-  logger.debug(`passport.local signUp: ${args}`);
+UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
+  logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const user = await models.User.createUser(models, args);
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id }, `Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
@@ -187,17 +188,20 @@ UserPassportLocalSchema.statics.signIn = async (
       password,
     });
     if (!user) {
+      logger.warn({ req_id: context.req_id }, 'Authentication has failed');
       throw new AuthenticationError('Authentication has failed');
     }
     return { token: models.User.createToken(user, secret, '240m') };
   }
+  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
   throw new AuthenticationError(
     `Current authorization model ${AUTH_MODEL} does not support this option.`,
   );
 };
 
-UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
+UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -207,6 +211,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -216,8 +221,10 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req) {
 
 UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
+  context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -227,6 +234,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new Error('Your session expired. Sign in again.');
       }
     }
@@ -234,26 +242,23 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserPassportLocalSchema.statics.isAuthorized = async function(
-  me,
-  orgId,
-  action,
-  type,
-) {
-  logger.debug(`passport.ocal isAuthorized ${me} ${action} ${type}`);
+UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
+  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
   return false;
 };
 
-UserPassportLocalSchema.statics.getOrgs = async function(models, me) {
+UserPassportLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {
@@ -292,7 +297,7 @@ UserPassportLocalSchema.methods.getEmail = async function() {
 };
 
 UserPassportLocalSchema.methods.getIdentifier = async function() {
-  return this.services.local.email;
+  return this.services.passportlocal.email;
 };
 
 UserPassportLocalSchema.methods.getMeta = async function() {
@@ -308,4 +313,3 @@ UserPassportLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserPassportLocalSchema;
-

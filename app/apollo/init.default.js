@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-const cors = require('cors');
-const { SECRET } = require('./models/const');
-
 const initApp = (app, models, logger) => {
-  logger.info('Initialize apollo application for local auth');
-  app.use(cors());
+  logger.info('Initialize apollo application for default auth');
 };
 
 const buildApolloContext = async ({ models, req, res, connection, logger }) => {
@@ -36,7 +32,6 @@ const buildApolloContext = async ({ models, req, res, connection, logger }) => {
     return {
       models,
       me,
-      secret: SECRET,
       logger,
     };
   }
