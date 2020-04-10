@@ -164,14 +164,17 @@ const resourceResolvers = {
 
       const data = await encryptOrgData(orgKey, content);
 
-
       const deployableVersionObj = {
         _id: uuid(),
-        org_id,
+        org_id: org_id,
         uuid: uuid(),
-        channel_id, channel_name: channel.name,
-        name, description,
-        content: data, iv: ivText, type,
+        channel_id: channel.uuid,
+        channel_name: channel.name,
+        name,
+        description,
+        content: data,
+        iv: ivText,
+        type,
       };
 
       const versionObj = {
