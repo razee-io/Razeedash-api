@@ -82,7 +82,7 @@ router.post('/', getOrg, auth.rbac(ACTIONS.MANAGE, TYPES.CHANNEL), asyncHandler(
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName/:versionId', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res, next)=>{
+router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next)=>{
   var orgId = req.org._id;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
