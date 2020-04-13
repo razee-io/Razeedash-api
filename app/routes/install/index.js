@@ -31,6 +31,9 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args_array = Array.isArray(args) ? args : [args];
   args_array.push(`--razeedash-url=${req.protocol}://${req.get('host')}/api/v2`);
   args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
+  if(req.query.tags) {
+    args_array.push(`--razeedash-tags=${req.query.tags}`);
+  }
   args_array = JSON.stringify(args_array);
 
   try {
