@@ -21,9 +21,8 @@ var { sub } = require('../utils/pubsub.js');
 
 module.exports = async(orgKey, socket)=>{
   const tagsString = socket.handshake.query['tags'];
-  if (!tagsString) {
-    log.error(`no tags were supplied.  ${socket.id} disconnected`);
-    socket.disconnect(true);
+  if (!tagsString || tagsString === 'undefined') {
+    log.info(`client ${socket.id} no tags were supplied`);
     return false;
   }
   const tags = tagsStrToArr(tagsString);
@@ -31,7 +30,7 @@ module.exports = async(orgKey, socket)=>{
   const Orgs = db.collection('orgs');
   const org = await Orgs.findOne({ orgKeys: orgKey });
   if (!org) {
-    log.error(`bad org key.  ${socket.id} disconnected`);
+    log.error(`client ${socket.id} bad org key.  disconnected`);
     socket.disconnect(true);
     return false;
   }
@@ -74,7 +73,7 @@ module.exports = async(orgKey, socket)=>{
 
     var urls = await getSubscriptionUrls(orgId, tags, curSubs);
 
-    log.info(`sending urls to ${socket.id}`, { urls });
+    log.info(`client ${socket.id} sending urls `, { urls });
 
     // exposes the name and uuid fields to the user
     var publicSubs = _.map(curSubs, (sub)=>{
@@ -97,7 +96,7 @@ module.exports = async(orgKey, socket)=>{
   ];
 
   socket.on('disconnect', ()=>{
-    log.info(`disconnecting subscription ${socket.id}`);
+    log.info(`client ${socket.id} disconnecting subscription`);
     _.each(handles, (handle)=>{
       handle.unsubscribe();
     });
