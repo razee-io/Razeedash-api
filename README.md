@@ -77,7 +77,7 @@ brew link --force gettext
 
 ## Install on Kubernetes
 
-Setup so you can use `kubectl` commands on the target cluster.  For IBM Cloude
+Setup so you can use `kubectl` commands on the target cluster.  For IBM Cloud
 Kubernetes Service the following command will get the KUBECONFIG for your
 Kubernetes cluster and export the KUBECONFIG variable.
 
