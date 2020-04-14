@@ -22,10 +22,9 @@ const subscriptionSchema = gql`
     name: String!
   }
   type ChannelSubscription {
-    _id: String!
+    uuid: String!
     org_id: String!
     name: String!
-    uuid: String!
     tags: [String!]!
     channel_uuid: String!
     channel: String!
@@ -36,15 +35,15 @@ const subscriptionSchema = gql`
     updated: Date!
   }
   type RemoveChannelSubscriptionReply {
-    _id: String!
+    uuid: String!
     success: Boolean
   }
   type EditChannelSubscriptionReply {
-    _id: String!
+    uuid: String!
     success: Boolean
   }
   type AddChannelSubscriptionReply {
-    _id: String!
+    uuid: String!
   }
   
   extend type Query {
@@ -55,7 +54,7 @@ const subscriptionSchema = gql`
      """
      Get a single subscriptions
      """
-     subscription(org_id: String!, _id: String!): ChannelSubscription
+     subscription(org_id: String!, uuid: String!): ChannelSubscription
   }
   extend type Mutation {
      """
@@ -66,12 +65,12 @@ const subscriptionSchema = gql`
      """
      Edits a subscription
      """
-     editSubscription(org_id: String!, _id: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
+     editSubscription(org_id: String!, uuid: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
      
      """
      Removes a subscription
      """
-     removeSubscription(org_id: String!, _id: String!): RemoveChannelSubscriptionReply
+     removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
   }
 `;
 

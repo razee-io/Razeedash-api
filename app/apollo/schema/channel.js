@@ -25,18 +25,17 @@ const channelSchema = gql`
     location: String!  
   }
   type Channel {
-    _id: ID!
+    uuid: String!
     org_id: String!
     name: String!
-    uuid: String!
     created: Date!
     versions: [ChannelVersion]
   }
   type AddChannelReply {
-    _id: String!
+    uuid: String!
   }
   type EditChannelReply {
-    _id: String!
+    uuid: String!
     name: String!
     success: Boolean
   }
@@ -45,7 +44,7 @@ const channelSchema = gql`
     success: Boolean!
   }
   type RemoveChannelReply {
-    _id: String!
+    uuid: String!
     success: Boolean
   }
   
@@ -64,17 +63,17 @@ const channelSchema = gql`
      """
      Edits a channel
      """
-     editChannel(org_id: String!, _id: String!, name: String!): EditChannelReply!
+     editChannel(org_id: String!, uuid: String!, name: String!): EditChannelReply!
      
      """
      Adds a yaml version to this channel
      """
-     addChannelVersion(org_id: String!, channel_id: String!, name: String!, type: String!, content: String!, description: String): AddChannelVersionReply!
+     addChannelVersion(org_id: String!, channel_uuid: String!, name: String!, type: String!, content: String!, description: String): AddChannelVersionReply!
      
      """
      Removes a channel
      """
-     removeChannel(org_id: String!, _id: String!): RemoveChannelReply!
+     removeChannel(org_id: String!, uuid: String!): RemoveChannelReply!
   }
 `;
 

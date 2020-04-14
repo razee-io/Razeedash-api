@@ -15,7 +15,8 @@
  */
 
 const _ = require('lodash');
-const uuid = require('uuid').v4;
+const { v4: UUID } = require('uuid');
+const { pub } = require('../../utils/pubsub');
 
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
@@ -45,7 +46,7 @@ const resourceResolvers = {
 
       return subscriptions;
     },
-    subscription: async(parent, { org_id, _id }, context) => {
+    subscription: async(parent, { org_id, uuid }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -54,7 +55,7 @@ const resourceResolvers = {
       try{
         var subscriptions = await resourceResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
         var subscription = subscriptions.find((sub)=>{
-          return (sub._id == _id);
+          return (sub.uuid == uuid);
         });
         return subscription;
       }catch(err){
@@ -71,7 +72,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
-        const _id = uuid();
+        const uuid = UUID();
 
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
@@ -88,11 +89,19 @@ const resourceResolvers = {
         }
 
         await models.Subscription.create({
-          _id, org_id, name, tags, uuid: uuid(), owner: me._id,
+          _id: UUID(),
+          uuid, org_id, name, tags, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
+
+        var msg = {
+          orgId: org_id,
+          groupName: name,
+        };
+        pub('addSubscription', msg);
+
         return {
-          _id,
+          uuid,
         };
       }
       catch(err){
@@ -100,16 +109,16 @@ const resourceResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, _id, name, tags, channel_uuid, version_uuid }, context)=>{
+    editSubscription: async (parent, { org_id, uuid, name, tags, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
-        var subscription = await models.Subscription.findOne({ org_id, _id });
+        var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription { _id: "${_id}", org_id:${org_id} } not found`;
+          throw `subscription { uuid: "${uuid}", org_id:${org_id} } not found`;
         }
 
         // loads the channel
@@ -130,10 +139,17 @@ const resourceResolvers = {
           name, tags,
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
-        await models.Subscription.updateOne({ _id, org_id, }, { $set: sets });
+        await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
+
+        var msg = {
+          orgId: org_id,
+          groupName: name,
+          subscription,
+        };
+        pub('updateSubscription', msg);
 
         return {
-          _id,
+          uuid,
           success: true,
         };
       }
@@ -142,7 +158,7 @@ const resourceResolvers = {
         throw err;
       }
     },
-    removeSubscription: async (parent, { org_id, _id }, context)=>{
+    removeSubscription: async (parent, { org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -150,21 +166,28 @@ const resourceResolvers = {
 
       var success = false;
       try{
-        var subscription = await models.Subscription.findOne({ org_id, _id });
+        var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription id "${_id}" not found`;
+          throw `subscription uuid "${uuid}" not found`;
         }
         await subscription.deleteOne();
+
+        var msg = {
+          orgId: org_id,
+          groupName: subscription.name,
+        };
+        pub('removeSubscription', msg);
+
         success = true;
       }catch(err){
         logger.error(err);
         throw err;
       }
       return {
-        _id, success,
+        uuid, success,
       };
     },
-  }
+  },
 };
 
 module.exports = resourceResolvers;
