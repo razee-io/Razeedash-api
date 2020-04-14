@@ -15,7 +15,7 @@
  */
 
 const _ = require('lodash');
-const UUID = require('uuid').v4;
+const { v4: UUID } = require('uuid');
 const { pub } = require('../../utils/pubsub');
 
 const { ACTIONS, TYPES } = require('../models/const');

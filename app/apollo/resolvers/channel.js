@@ -15,7 +15,7 @@
  */
 
 const _ = require('lodash');
-const UUID = require('uuid').v4;
+const { v4: UUID } = require('uuid');
 const crypto = require('crypto');
 
 const { ACTIONS, TYPES } = require('../models/const');
