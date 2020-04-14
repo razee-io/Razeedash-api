@@ -26,6 +26,7 @@ const moment = require('moment');
 const request = require('request-promise-native');
 var glob = require('glob-promise');
 var fs = require('fs');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -405,7 +406,7 @@ const deleteCluster = async (req, res, next) => {
 router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
 // /api/v2/clusters/:cluster_id
-router.post('/:cluster_id', asyncHandler(addUpdateCluster));
+router.post('/:cluster_id', mongoSanitize({ replaceWith: '_' }), asyncHandler(addUpdateCluster));
 
 // /api/v2/clusters/:cluster_id/resources
 router.post('/:cluster_id/resources', asyncHandler(getCluster), asyncHandler(updateClusterResources));
