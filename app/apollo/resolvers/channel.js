@@ -15,7 +15,7 @@
  */
 
 const _ = require('lodash');
-const uuid = require('uuid').v4;
+const UUID = require('uuid').v4;
 const crypto = require('crypto');
 
 const { ACTIONS, TYPES } = require('../models/const');
@@ -49,35 +49,36 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
-        const _id = uuid();
+        const uuid = UUID();
 
         await models.Channel.create({
-          _id, org_id, name, uuid: uuid(), versions: [],
+          _id: UUID(),
+          uuid, org_id, name, versions: [],
         });
         return {
-          _id,
+          uuid,
         };
       } catch(err){
         logger.error(err);
         throw err;
       }
     },
-    editChannel: async (parent, { org_id, _id, name }, context)=>{
+    editChannel: async (parent, { org_id, uuid, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
-        const channel = models.Channel.findOne({ _id, org_id });
+        const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw `channel _id "${_id}" not found`;
+          throw `channel uuid "${uuid}" not found`;
         }
 
-        await models.Channel.updateOne({ _id }, { $set: { name } });
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
 
         return {
-          _id,
+          uuid,
           success: true,
           name,
         };
@@ -86,7 +87,7 @@ const resourceResolvers = {
         throw err;
       }
     },
-    addChannelVersion: async(parent, { org_id, channel_id, name, type, content, description }, context)=>{
+    addChannelVersion: async(parent, { org_id, channel_uuid, name, type, content, description }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -102,16 +103,16 @@ const resourceResolvers = {
       if(!type){
         throw 'A "type" of application/json or application/yaml must be included';
       }
-      if(!channel_id){
-        throw 'channel_id not specified';
+      if(!channel_uuid){
+        throw 'channel_uuid not specified';
       }
 
-      const channel = await models.Channel.findOne({ _id: channel_id, org_id });
+      const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
       if(!channel){
-        throw `channel _id "${channel_id}" not found`;
+        throw `channel uuid "${channel_uuid}" not found`;
       }
 
-      const versions = await models.DeployableVersion.find({ org_id, channel_id });
+      const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
       const versionNameExists = !!versions.find((version)=>{
         return (version.name == name);
       });
@@ -165,9 +166,9 @@ const resourceResolvers = {
       const data = await encryptOrgData(orgKey, content);
 
       const deployableVersionObj = {
-        _id: uuid(),
-        org_id: org_id,
-        uuid: uuid(),
+        _id: UUID(),
+        org_id,
+        uuid: UUID(),
         channel_id: channel.uuid,
         channel_name: channel.name,
         name,
@@ -194,16 +195,16 @@ const resourceResolvers = {
       };
     },
 
-    removeChannel: async (parent, { org_id, _id }, context)=>{
+    removeChannel: async (parent, { org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
-        const channel = models.Channel.findOne({ _id, org_id });
+        const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw `channel _id "${_id}" not found`;
+          throw `channel uuid "${uuid}" not found`;
         }
         const channel_uuid = channel.uuid;
 
@@ -213,10 +214,10 @@ const resourceResolvers = {
           throw `${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`;
         }
 
-        await models.Channel.deleteOne({ org_id, _id });
+        await models.Channel.deleteOne({ org_id, uuid });
 
         return {
-          _id,
+          uuid,
           success: true,
         };
       } catch(err){
