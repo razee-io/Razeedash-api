@@ -22,6 +22,10 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
 
+const conf = require('../../conf.js').conf;
+const S3ClientClass = require('../../s3/s3Client');
+const url = require('url');
+
 const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
   let results = [];
   try {
@@ -34,6 +38,39 @@ const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger
     logger.error(error, `commonResourcesDistributedSearch encountered an error for the request ${req_id}`);
     throw error;
   }  
+};
+
+const isLink = (s) => {
+  return /^(http|https):\/\/?/.test(s);
+};
+
+const s3IsDefined = () => {
+  return conf.s3.endpoint;
+};
+
+const getS3Data = async (s3Link, logger) => {
+  try {
+    const s3Client = new S3ClientClass(conf);
+    const link = url.parse(s3Link); 
+    const paths = link.path.split('/');
+    const bucket = paths[1];
+    const resourceName = decodeURI(paths[2]);
+    const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
+    const yaml = await readS3File(s3stream);
+    return yaml;
+  } catch (error) {
+    logger.error(error, 'Error retrieving data from s3 bucket');
+    throw(error);
+  }
+};
+
+const readS3File = async (readable) => {
+  readable.setEncoding('utf8');
+  let data = '';
+  for await (const chunk of readable) {
+    data += chunk;
+  }
+  return data;
 };
 
 const resourceResolvers = {
@@ -109,6 +146,13 @@ const resourceResolvers = {
       if (result != null) {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       }
+
+      // 'result.data' will either be a yaml string or will be a link to a file in COS.
+      // If it's a link then we need to download it and return its contents
+      if (result.data && isLink(result.data) && s3IsDefined()) {
+        const yaml = getS3Data(result.data, logger);
+        result.data = yaml;
+      } 
       return result;
     },
 
