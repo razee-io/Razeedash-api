@@ -200,6 +200,8 @@ const clusterResolvers = {
         const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
           cluster_id});
 
+        //TODO: soft delete the resources for now. We need to have a background process to
+        // clean up S3 contents based on deleted flag. 
         const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, 
           {$set: { deleted: true }}, { upsert: false });
 
@@ -228,6 +230,8 @@ const clusterResolvers = {
       try {
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
 
+        //TODO: soft delete the resources for now. We need to have a background process to
+        // clean up S3 contents based on deleted flag. 
         const deletedResources = await models.Resource.updateMany({ org_id }, 
           {$set: { deleted: true }}, { upsert: false });
 
