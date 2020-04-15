@@ -44,6 +44,16 @@ const clusterSchema = gql`
     count: Int
   }
 
+  type DeleteClusterByClusterIDResponse {
+    deletedClusterCount: Int,
+    deletedResourceCount: Int
+  }
+
+  type DeleteClustersResponse {
+    deletedClusterCount: Int,
+    deletedResourceCount: Int
+  }
+
   extend type Query {
     """
     Return a cluster based on **org_id** and **cluster_id**.
@@ -91,6 +101,19 @@ const clusterSchema = gql`
     """
     clusterCountByKubeVersion(org_id: String!): [ClusterCountByKubeVersion]!
   }
+
+  extend type Mutation {
+    """
+    Delete a cluster and all resources under the cluster
+    """
+    deleteClusterByClusterID(org_id: String!, cluster_id: String!): DeleteClusterByClusterIDResponse!
+
+    """
+    Delete all clusters under an organization and all resources under the deleted clusters
+    """
+    deleteClusters(org_id: String!): DeleteClustersResponse!
+  }
+
 `;
 
 module.exports = clusterSchema;

@@ -183,6 +183,65 @@ const clusterResolvers = {
       return results;
     }, // end clusterCountByKubeVersion
   }, // end query
+
+  Mutation: {
+    deleteClusterByClusterID: async (
+      parent,
+      { org_id, cluster_id },
+      context,
+    ) => {
+      const queryName = 'deleteClusterByClusterID';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, user: whoIs(me), org_id, cluster_id}, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
+          cluster_id});
+
+        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, 
+          {$set: { deleted: true }}, { upsert: false });
+
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
+
+        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0, 
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
+        
+      } catch (error) {
+        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end delete cluster by org_id and cluster_id
+
+    deleteClusters: async (
+      parent,
+      { org_id },
+      context,
+    ) => {
+      const queryName = 'deleteClusters';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, user: whoIs(me), org_id}, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const deletedClusters = await models.Cluster.deleteMany({ org_id });
+
+        const deletedResources = await models.Resource.updateMany({ org_id }, 
+          {$set: { deleted: true }}, { upsert: false });
+
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
+
+        return {deletedClusterCount: deletedClusters.deletedCount, 
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
+        
+      } catch (error) {
+        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end delete cluster by org_id 
+  }
 }; // end clusterResolvers
 
 module.exports = clusterResolvers;

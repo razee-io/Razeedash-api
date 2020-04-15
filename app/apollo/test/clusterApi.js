@@ -243,6 +243,48 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
+  const deleteClusterByClusterID = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String! $cluster_id: String!) {
+            deleteClusterByClusterID( org_id: $org_id cluster_id: $cluster_id) {
+              deletedClusterCount
+              deletedResourceCount
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const deleteClusters = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!) {
+            deleteClusters( org_id: $org_id ) {
+              deletedClusterCount
+              deletedResourceCount
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   return {
     byClusterID,
     byClusterIDDistributed,
@@ -254,6 +296,8 @@ const clusterFunc = grahqlUrl => {
     kubeVersionCountDistributed,
     zombies,
     zombiesDistributed,
+    deleteClusterByClusterID,
+    deleteClusters,
   };
 };
 
