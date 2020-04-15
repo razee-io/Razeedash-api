@@ -35,6 +35,7 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const clusterApi = clusterFunc(graphqlUrl);
 let token;
+let adminToken;
 
 let org01Data;
 let org77Data;
@@ -43,6 +44,7 @@ let org77;
 
 let user01Data;
 let user77Data;
+let userRootData;
 
 let presetOrgs;
 let presetUsers;
@@ -80,6 +82,13 @@ const createUsers = async () => {
     ),
   );
   await prepareUser(models, user77Data);
+  userRootData = JSON.parse(
+    fs.readFileSync(
+      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.root.json`,
+      'utf8',
+    ),
+  );
+  await prepareUser(models, userRootData);
   return {};
 };
 
@@ -228,6 +237,7 @@ describe('cluster graphql test suite', () => {
     // await getPresetClusters();
 
     token = await signInUser(models, resourceApi, user01Data);
+    adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
 
   after(async () => {
@@ -469,4 +479,150 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
+
+  it('user01 should NOT be able to delete cluster by clusterID', async () => {
+    try {
+      const clusterIdToBeDeleted = 'cluster_to_be_deleted_but_can_not_by_user01';
+      await models.Cluster.create({
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+        metadata: {
+          kube_version: {
+            major: '1',
+            minor: '17',
+            gitVersion: '1.99',
+            gitCommit: 'abc',
+            gitTreeState: 'def',
+            buildDate: 'a_date',
+            goVersion: '1.88',
+            complier: 'some compiler',
+            platform: 'linux/amd64',
+          },
+        },
+      });
+
+      const data = await clusterApi.deleteClusterByClusterID(token, {
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+      });
+      expect(data.data.data).to.equal(null);
+      expect(data.data.errors[0].message).to.be.a('string');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+
+  it('delete cluster by clusterID by an admin user', async () => {
+    try {
+      const clusterIdToBeDeleted = 'cluster_to_be_deleted';
+      await models.Cluster.create({
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+        metadata: {
+          kube_version: {
+            major: '1',
+            minor: '17',
+            gitVersion: '1.99',
+            gitCommit: 'abc',
+            gitTreeState: 'def',
+            buildDate: 'a_date',
+            goVersion: '1.88',
+            complier: 'some compiler',
+            platform: 'linux/amd64',
+          },
+        },
+      });
+
+      await models.Resource.create({
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+        selfLink: '/mybla/selfLink',
+        hash: 'any_hash',
+        deleted: false,
+        data: 'any_data',
+        searchableData: { key01: 'any value 01', key02: 'any value 02' },
+        searchableDataHash: 'some random hash.',
+      });
+
+      const {
+        data: {
+          data: { deleteClusterByClusterID },
+        },
+      } = await clusterApi.deleteClusterByClusterID(adminToken, {
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+      });
+
+      expect(deleteClusterByClusterID.deletedClusterCount).to.equal(1);
+      expect(deleteClusterByClusterID.deletedClusterCount).to.equal(1);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+
+  it('delete clusters by an admin user', async () => {
+    try {
+      const clusterIdToBeDeleted = 'cluster_to_be_deleted';
+      await models.Cluster.create({
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+        metadata: {
+          kube_version: {
+            major: '1',
+            minor: '17',
+            gitVersion: '1.99',
+            gitCommit: 'abc',
+            gitTreeState: 'def',
+            buildDate: 'a_date',
+            goVersion: '1.88',
+            complier: 'some compiler',
+            platform: 'linux/amd64',
+          },
+        },
+      });
+
+      await models.Resource.create({
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+        selfLink: '/mybla/selfLink',
+        hash: 'any_hash',
+        deleted: false,
+        data: 'any_data',
+        searchableData: { key01: 'any value 01', key02: 'any value 02' },
+        searchableDataHash: 'some random hash.',
+      });
+
+      const {
+        data: {
+          data: { deleteClusters },
+        },
+      } = await clusterApi.deleteClusters(adminToken, {
+        org_id: org01._id,
+        cluster_id: clusterIdToBeDeleted,
+      });
+
+      expect(deleteClusters.deletedClusterCount).to.be.above(0);
+      expect(deleteClusters.deletedResourceCount).to.be.above(0);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+  
 });
