@@ -1,4 +1,4 @@
 {
-    "type": "local",
+    "type": "passport.local",
     "name": "org_01"
 }
