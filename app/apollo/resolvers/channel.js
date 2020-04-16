@@ -82,7 +82,7 @@ const channelResolvers = {
           return deployableVersionObj;
         } else {
           //TODO: implement for S3
-          throw `fix me, not implement for S3 yet`;
+          throw 'fix me, not implement for S3 yet';
         }
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
