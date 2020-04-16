@@ -136,8 +136,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($_id: ID!) {
-            resource(_id: $_id) {
+          query ($org_id: String!, $_id: String!) {
+            resource(org_id: $org_id, _id: $_id) {
               _id
               org_id
               cluster_id
