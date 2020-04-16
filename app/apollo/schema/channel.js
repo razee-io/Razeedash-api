@@ -47,12 +47,33 @@ const channelSchema = gql`
     uuid: String!
     success: Boolean
   }
-  
+  type DeployableVersion {
+    org_id: String!
+    uuid: String!
+    channel_id: String!
+    channel_name: String!
+    name: String!
+    type: String!
+    description: String
+    content: String
+  }
+
   extend type Query {
      """
      Gets all channels for org_id
      """
      channels(org_id: String!): [Channel]
+
+     """
+     Gets a channel from the given org_id and uuid
+     """
+     channel(org_id: String!, uuid: String! ): Channel
+
+     """
+     Gets a yaml version from this channel
+     """
+     getChannelVersion(org_id: String!, channel_uuid: String!, version_uuid: String!): DeployableVersion!
+
   }
   extend type Mutation {
      """

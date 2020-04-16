@@ -64,4 +64,8 @@ const encryptOrgData = (orgKey, data) => {
   return tokenCrypt.encrypt(data, orgKey);
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData };
+const decryptOrgData = (orgKey, data) => {
+  return tokenCrypt.decrypt(data, orgKey);
+};
+
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData};
