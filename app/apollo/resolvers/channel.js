@@ -21,10 +21,9 @@ const crypto = require('crypto');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 
-const { encryptOrgData } = require('../../utils/orgs');
+const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
-
-const resourceResolvers = {
+const channelResolvers = {
   Query: {
     channels: async(parent, { org_id }, context) => {
       const { models, me, req_id, logger } = context;
@@ -35,11 +34,61 @@ const resourceResolvers = {
       try{
         var channels = await models.Channel.find({ org_id });
       }catch(err){
-        logger.error(err);
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
       return channels;
     },
+    channel: async(parent, { org_id, uuid }, context) => {
+      const { models, me, req_id, logger } = context;
+      const queryName = 'channel';
+      logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+
+      try{
+        var channel = await models.Channel.findOne({ org_id, uuid });
+      }catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+      return channel;
+    },
+    getChannelVersion: async(parent, { org_id, channel_uuid, version_uuid }, context) => {
+      const { models, me, req_id, logger } = context;
+      const queryName = 'getChannelVersion';
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, version_uuid }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+      try{
+
+        const org = await models.Organization.findOne({ _id: org_id });
+        const orgKey = _.first(org.orgKeys);
+
+        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        if(!channel){
+          throw `Could not find the channel with uuid "${channel_uuid}"`;
+        }
+
+        const versionObj = channel.versions.find(v => v.uuid === version_uuid);
+        if (!versionObj) {
+          throw `versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}.`;
+        }
+
+        if (versionObj.location === 'mongo') {  
+          const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
+          if (!deployableVersionObj) {
+            throw `DeployableVersion is not found for ${channel.name}:${channel.uuid}/${versionObj.name}:${versionObj.uuid}.`;
+          }
+          deployableVersionObj.content = await decryptOrgData(orgKey, deployableVersionObj.content);
+          return deployableVersionObj;
+        } else {
+          //TODO: implement for S3
+          throw 'fix me, not implement for S3 yet';
+        }
+      }catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      } 
+    }
   },
   Mutation: {
     addChannel: async (parent, { org_id, name }, context)=>{
@@ -228,4 +277,4 @@ const resourceResolvers = {
   },
 };
 
-module.exports = resourceResolvers;
+module.exports = channelResolvers;
