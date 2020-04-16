@@ -145,8 +145,8 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let result = await models.Resource.findOne({ org_id, _id: ObjectId(_id) }).lean();
-      if (result != null) {
-        await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      if(!result){
+        throw `resource { org_id: ${org_id}, _id: ${_id} } not found`;
       }
 
       // 'result.data' will either be a yaml string or will be a link to a file in COS.
