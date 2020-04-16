@@ -57,7 +57,7 @@ const resourceSchema = gql`
     """
     Return the resource by given resource **_id**.
     """
-    resource(_id: ID!): Resource
+    resource(org_id: String!, _id: String!): Resource
 
     """
     return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource.
