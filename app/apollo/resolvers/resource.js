@@ -21,6 +21,7 @@ const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
@@ -93,7 +94,6 @@ const resourceResolvers = {
       }
       return count;
     },
-
     resources: async (
       parent,
       { org_id, filter, fromDate, toDate, limit },
@@ -137,12 +137,14 @@ const resourceResolvers = {
       return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
     },
 
-    resource: async (parent, { _id }, context) => {
+    resource: async (parent, { org_id, _id }, context) => {
       const queryName = 'resource';
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
 
-      let result = await models.Resource.findById(_id).lean();
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      let result = await models.Resource.findOne({ org_id, _id: ObjectId(_id) }).lean();
       if (result != null) {
         await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       }
