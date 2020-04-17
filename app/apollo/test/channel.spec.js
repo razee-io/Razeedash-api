@@ -51,10 +51,12 @@ let presetClusters;
 
 const channel_01_name = 'fake_channel_01';
 const channel_01_uuid = 'fake_ch_01_uuid';
-let channel_01;
+
 const channel_02_name = 'fake_channel_02';
 const channel_02_uuid = 'fake_ch_02_uuid';
-let channel_02;
+
+const channel_03_name = 'fake_channel_03';
+const channel_03_uuid = 'fake_ch_03_uuid';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -126,7 +128,7 @@ const getPresetClusters = async () => {
 };
   
 const createChannels = async () => {
-  channel_01=await models.Channel.create({
+  await models.Channel.create({
     _id: 'fake_ch_id_1',
     org_id: org01._id,
     uuid: channel_01_uuid,
@@ -134,7 +136,7 @@ const createChannels = async () => {
     versions: []
   });
 
-  channel_02=await models.Channel.create({
+  await models.Channel.create({
     _id: 'fake_id_2',
     org_id: org01._id,
     uuid: channel_02_uuid,
@@ -142,6 +144,13 @@ const createChannels = async () => {
     versions: []
   });
 
+  await models.Channel.create({
+    _id: 'fake_id_2',
+    org_id: org77._id,
+    uuid: channel_03_uuid,
+    name: channel_03_name,
+    versions: []
+  });
 };
 
 describe('channel graphql test suite', () => {
