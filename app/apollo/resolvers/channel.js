@@ -94,7 +94,7 @@ const channelResolvers = {
     addChannel: async (parent, { org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
@@ -108,14 +108,14 @@ const channelResolvers = {
           uuid,
         };
       } catch(err){
-        logger.error(err);
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
     },
     editChannel: async (parent, { org_id, uuid, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
@@ -132,14 +132,14 @@ const channelResolvers = {
           name,
         };
       } catch(err){
-        logger.error(err);
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
     },
     addChannelVersion: async(parent, { org_id, channel_uuid, name, type, content, description }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
@@ -247,7 +247,7 @@ const channelResolvers = {
     removeChannel: async (parent, { org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       try{
@@ -270,7 +270,7 @@ const channelResolvers = {
           success: true,
         };
       } catch(err){
-        logger.error(err);
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
     },
