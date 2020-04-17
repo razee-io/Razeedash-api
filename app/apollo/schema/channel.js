@@ -56,6 +56,7 @@ const channelSchema = gql`
     type: String!
     description: String
     content: String
+    created: Date!
   }
 
   extend type Query {

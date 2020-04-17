@@ -299,6 +299,7 @@ describe('channel graphql test suite', () => {
       expect(getChannelVersion.channel_name).to.equal(channel_01_name);
       expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
       expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
+      expect(getChannelVersion.created).to.be.an('string');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

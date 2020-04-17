@@ -90,6 +90,7 @@ const channelFunc = grahqlUrl => {
               type
               description
               content
+              created
           }
         }
     `,
