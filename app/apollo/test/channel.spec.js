@@ -145,7 +145,7 @@ const createChannels = async () => {
   });
 
   await models.Channel.create({
-    _id: 'fake_id_2',
+    _id: 'fake_id_3',
     org_id: org77._id,
     uuid: channel_03_uuid,
     name: channel_03_name,
