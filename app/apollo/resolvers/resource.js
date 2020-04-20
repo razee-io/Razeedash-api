@@ -102,8 +102,9 @@ const resourceResolvers = {
       const queryName = 'resources';
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
-      if ( limit < 0 ) limit = 20;
-      if ( limit > 50 ) limit = 50;
+
+      limit = _.clamp(limit, 20, 500);
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let searchFilter = { org_id: org_id, deleted: false };
@@ -122,8 +123,8 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
-      if ( limit < 0 ) limit = 20;
-      if ( limit > 50 ) limit = 50;
+      limit = _.clamp(limit, 20, 500);
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let searchFilter = {
         org_id: org_id,
