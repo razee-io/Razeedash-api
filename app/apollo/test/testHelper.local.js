@@ -18,10 +18,10 @@ const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
 
 // This file contains auth specific impl to help prepare
 // org, users, and how to signin users
-async function prepareOrganization (models, orgData) {
+async function prepareOrganization(models, orgData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     return await models.Organization.createLocalOrg(orgData);
-  }
+  } 
   return null;
 }
 
