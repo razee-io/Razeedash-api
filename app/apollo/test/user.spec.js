@@ -47,7 +47,7 @@ const createOrganizations = async () => {
       `./app/apollo/test/data/${AUTH_MODEL}/user.spec.org_01.json`,
       'utf8',
     ),
-  );	
+  );
   org_01 = await prepareOrganization(models, org01Data);
   console.log(`org_01 is ${org_01}`);
 };
@@ -110,6 +110,7 @@ describe('user graphql', () => {
 
     await getPresetOrgs();
     await getPresetUsers();
+
   });
 
   after(async () => {
