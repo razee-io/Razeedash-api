@@ -25,23 +25,37 @@ async function prepareOrganization(models, orgData) {
   return null;
 }
 
-async function prepareUser (models, userData) {
+async function prepareUser(models, userData) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     return await models.User.createUser(models, userData);
   }
   return null;
 }
 
-async function signInUser (models, api, userData) {
+async function signInUser(models, api, userData) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const result0 = await api.signIn({
       login: userData.email,
-      password: userData.password
+      password: userData.password,
     });
     console.log(JSON.stringify(result0.data));
-    return result0.data.data.signIn.token;        
+    return result0.data.data.signIn.token;
   }
   return null;
 }
 
-module.exports = { prepareOrganization, prepareUser, signInUser };
+async function signUpUser(models, api, userData) {
+  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    const result0 = await api.signUp({
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      org_name: userData.orgName,
+      role: userData.role,
+    });
+    return result0.data.data.signUp.token;
+  }
+  return null;
+}
+
+module.exports = { prepareOrganization, prepareUser, signInUser, signUpUser };

@@ -23,7 +23,8 @@ const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+// TODO: need signUpUser in passport allso
+const { prepareUser, prepareOrganization, signInUser, signUpUser } = require(`./testHelper.${AUTH_MODEL}`);
 
 let mongoServer;
 let myApollo;
@@ -36,36 +37,24 @@ let org_01;
 
 let rootData;
 let user01Data;
+let user02Data;
 
 let presetOrgs;
 let presetUsers;
 
 const createOrganizations = async () => {
-  org01Data = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.org_01.json`,
-      'utf8',
-    ),
-  );
+  org01Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/user.spec.org_01.json`, 'utf8'));
   org_01 = await prepareOrganization(models, org01Data);
   console.log(`org_01 is ${org_01}`);
 };
 
 const createUsers = async () => {
-  user01Data = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user01.json`,
-      'utf8',
-    ),
-  );
+  user01Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/user.spec.user01.json`, 'utf8'));
   await prepareUser(models, user01Data);
 
-  rootData = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.root.json`,
-      'utf8',
-    ),
-  );
+  user02Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/user.spec.user02.json`, 'utf8'));
+
+  rootData = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/user.spec.root.json`, 'utf8'));
   await prepareUser(models, rootData);
 
   return {};
@@ -73,7 +62,7 @@ const createUsers = async () => {
 
 const getPresetOrgs = async () => {
   presetOrgs = await models.Organization.find();
-  presetOrgs = presetOrgs.map(user => {
+  presetOrgs = presetOrgs.map((user) => {
     return user.toJSON();
   });
   console.log(`presetOrgs=${JSON.stringify(presetOrgs)}`);
@@ -81,7 +70,7 @@ const getPresetOrgs = async () => {
 
 const getPresetUsers = async () => {
   presetUsers = await models.User.find();
-  presetUsers = presetUsers.map(user => {
+  presetUsers = presetUsers.map((user) => {
     return user.toJSON();
   });
   console.log(`presetUsers=${JSON.stringify(presetUsers)}`);
@@ -102,7 +91,6 @@ describe('user graphql', () => {
 
     await getPresetOrgs();
     await getPresetUsers();
-
   });
 
   after(async () => {
@@ -124,6 +112,31 @@ describe('user graphql', () => {
         expect(result1.data.data.me.email).to.be.a('string');
       } catch (error) {
         // console.error('error response is ', error.response);
+        console.error('error response is ', JSON.stringify(error.stack));
+        throw error;
+      }
+    });
+
+    it('sign up a new user and org', async () => {
+      try {
+        token = await signUpUser(models, api, user02Data);
+        console.log(`user01 token=${token}`);
+        const {
+          data: {
+            data: { me },
+          },
+        } = await api.me(token);
+        console.log(JSON.stringify(me, null, 4));
+        expect(me.id).to.be.a('string');
+        expect(me.email).to.be.a('string');
+        expect(me.email).to.equal(user02Data.email);
+        expect(me.org_id).to.be.a('string');
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
         console.error('error response is ', JSON.stringify(error.stack));
         throw error;
       }
