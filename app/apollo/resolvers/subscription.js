@@ -16,10 +16,13 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const { pub } = require('../../utils/pubsub');
-
+const { withFilter } = require('apollo-server');
+// const { pub } = require('../../utils/pubsub');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
+const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
+const { EVENTS, pubSubPlaceHolder, getStreamingTopic, channelSubChangedFunc } = require('../subscription');
+const { models } = require('../models');
 
 
 const resourceResolvers = {
@@ -88,17 +91,26 @@ const resourceResolvers = {
           throw `version uuid "${version_uuid}" not found`;
         }
 
-        await models.Subscription.create({
+        const subscription = await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, tags, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
-        var msg = {
-          orgId: org_id,
-          groupName: name,
-        };
-        pub('addSubscription', msg);
+        // var msg = {
+        //   uuid: uuid,
+        //   org_id: org_id,
+        //   name: name,
+        //   tags: tags,
+        //   channel_uuid: channel_uuid,
+        //   channel: channel.name,
+        //   version: version.name,
+        //   version_uuid: version_uuid,
+        //   owner: me._id
+        // };
+        // pub('addSubscription', msg);
+        // channelSubChangedFunc(msg);
+        channelSubChangedFunc(subscription);
 
         return {
           uuid,
@@ -140,13 +152,19 @@ const resourceResolvers = {
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
+        const updatedSubscription = await models.Subscription.findOne({ org_id, uuid });
 
-        var msg = {
-          orgId: org_id,
-          groupName: name,
-          subscription,
-        };
-        pub('updateSubscription', msg);
+        // var msg = {
+        //   org_id: org_id,
+        //   uuid: uuid,
+        //   name: name,
+        //   tags: tags,
+        //   subscription,
+        // };
+        // pub('updateSubscription', msg);
+        // channelSubChangedFunc(msg);
+        channelSubChangedFunc(updatedSubscription);
+
 
         return {
           uuid,
@@ -172,11 +190,12 @@ const resourceResolvers = {
         }
         await subscription.deleteOne();
 
-        var msg = {
-          orgId: org_id,
-          groupName: subscription.name,
-        };
-        pub('removeSubscription', msg);
+        // var msg = {
+        //   orgId: org_id,
+        //   subName: subscription.name,
+        // };
+        channelSubChangedFunc(subscription);
+        // pub('removeSubscription', msg);
 
         success = true;
       }catch(err){
@@ -186,6 +205,93 @@ const resourceResolvers = {
       return {
         uuid, success,
       };
+    },
+  },
+
+  Subscription: {
+    subscriptionUpdated: {
+      resolve: async (parent, args) => {
+        console.log('****************** Send data back to the subscriber client');
+        const { subscriptionUpdated } = parent;
+
+        try {
+          let curSubs = await models.Subscription.aggregate([
+            { $match: { 'org_id': subscriptionUpdated.sub.org_id} },
+            { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', subscriptionUpdated.sub.tags ] } } },
+            { $match: { 'isSubSet': true } }
+          ]);
+          curSubs = _.sortBy(curSubs, '_id');
+          console.log('curSubs');
+          console.log(curSubs);
+          console.log("match curSubs with set of tags from the user:")
+          console.log(args.tags);
+
+          const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
+          // exposes the name and uuid fields to the user
+          // const publicSubs = _.map(curSubs, (sub)=>{
+          //   return _.pick(sub, ['name', 'uuid']);
+          // });
+          // console.log({publicSubs, urls});
+          // console.log(urls);
+          subscriptionUpdated.sub.urls = urls;
+          
+        } catch (error) {
+          console.log(error);
+        }
+        console.log('updated subscription: ', subscriptionUpdated.sub);
+        
+        return subscriptionUpdated.sub;
+      },
+
+      subscribe: withFilter(
+        // eslint-disable-next-line no-unused-vars
+        (parent, args, context) => {
+          // args comes from clients that are initiating a subscription
+          console.log('A client is connected with args:', args);
+          const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, args.org_id);
+          return pubSubPlaceHolder.pubSub.asyncIterator(topic);
+        },
+        async (parent, args, context) => {
+          // this function determines whether or not to send data back to a subscriber
+          console.log('Verify client is authenticated and org_id matches the updated subscription org_id');
+          const { subscriptionUpdated } = parent;
+          const queryName = 'channel subscribe: withFilter';
+          const { me, req_id, logger } = context;
+          // validate user
+          // await validAuth(me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);  
+          let found = true;
+          console.log('----------------------------------------- ' + subscriptionUpdated.sub.org_id + ' vs ' + args.org_id);
+          if(subscriptionUpdated.sub.org_id !== args.org_id) {
+            found = false;
+          }
+
+          try {
+            let curSubs = await models.Subscription.aggregate([
+              { $match: { 'org_id': subscriptionUpdated.sub.org_id} },
+              { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', subscriptionUpdated.sub.tags ] } } },
+              { $match: { 'isSubSet': true } }
+            ]);
+            curSubs = _.sortBy(curSubs, '_id');
+            console.log('curSubs');
+            console.log(curSubs);
+            console.log("match curSubs with set of tags from the user:")
+            console.log(args.tags);
+            const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
+            console.log(urls);
+            
+            if(urls && urls.length > 0 ) {
+              found = true;
+            } else {
+              found = false;
+            }
+            
+          } catch (error) {
+            console.log(error);
+          }
+
+          return Boolean(found);
+        },
+      ),
     },
   },
 };

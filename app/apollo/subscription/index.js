@@ -29,6 +29,9 @@ const EVENTS = {
   RESOURCE: {
     UPDATED: 'APOLLO.RESOURCE.UPDATED',
   },
+  CHANNEL: {
+    UPDATED: 'APOLLO.CHANNEL.UPDATED',
+  },
 };
 
 const pubSubPlaceHolder = {
@@ -83,6 +86,21 @@ function getStreamingTopic(prefix, org_id) {
   return prefix;
 }
 
+
+async function channelSubChangedFunc(sub) {
+  if (pubSubPlaceHolder.enabled) {
+    let op = 'sub_updated';
+    try {
+      const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, sub.org_id);
+      logger.debug({ op, sub, topic }, 'Publishing channel subscription update');
+      await pubSubPlaceHolder.pubSub.publish(topic, { subscriptionUpdated: { sub, op }, });
+    } catch (error) {
+      logger.error(error, 'Channel subscription publish error');
+    }
+  }
+  return sub;
+}
+
 async function resourceChangedFunc(resource) {
   if (pubSubPlaceHolder.enabled) {
     let op = 'upsert';
@@ -102,4 +120,4 @@ async function resourceChangedFunc(resource) {
   return resource;
 }
 
-module.exports = { EVENTS, pubSubPlaceHolder, resourceChangedFunc, getStreamingTopic };
+module.exports = { EVENTS, pubSubPlaceHolder, resourceChangedFunc, getStreamingTopic, channelSubChangedFunc };

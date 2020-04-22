@@ -314,4 +314,3 @@ UserLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserLocalSchema;
-

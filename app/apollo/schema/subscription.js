@@ -45,6 +45,11 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
+  type SubscriptionUpdated {
+    uuid: String!
+    name: String!
+    urls: [String!]!
+  }
   
   extend type Query {
      """
@@ -71,6 +76,9 @@ const subscriptionSchema = gql`
      Removes a subscription
      """
      removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
+  }
+  extend type Subscription {
+    subscriptionUpdated(org_id: String!, tags: [String]): SubscriptionUpdated!
   }
 `;
 
