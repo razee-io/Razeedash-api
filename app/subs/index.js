@@ -13,7 +13,7 @@ module.exports = (server)=>{
     const orgKey = socket.handshake.query['razee-org-key'];
     var action = socket.handshake.query.action;
     if (!orgKey) {
-      log.error(`no org key.  ${socket.id} disconnected`);
+      log.error(`client ${socket.id} no org key.  disconnected`);
       socket.disconnect(true);
       return false;
     }
@@ -21,6 +21,7 @@ module.exports = (server)=>{
       await Subscriptions(orgKey, socket);
     }
     else{
+      log.error(`client ${socket.id} unknown action: ${action}`);
       throw `unknown socket.handshake.query['action'] "${action}"`;
     }
 

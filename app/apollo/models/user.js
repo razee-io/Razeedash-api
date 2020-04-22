@@ -16,16 +16,26 @@
 
 const mongoose = require('mongoose');
 
-const { AUTH_MODELS, AUTH_MODEL } = require('./const');
-const UserLocalSchema = require('./user.local.schema');
-const UserPassportLocalSchema = require('./user.passport.local.schema');
+const { AUTH_MODEL } = require('./const');
+const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
+const _ = require('lodash');
 
-let UserSchema = null;
-if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
-  UserSchema = UserLocalSchema;
-} else if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-  UserSchema = UserPassportLocalSchema;
-}
+UserSchema.statics.getBasicUsersByIds = async function(ids){
+  if(!ids || ids.length < 1){
+    return [];
+  }
+  var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
+  users = users.map((user)=>{
+    var _id = user._id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
+    return {
+      _id,
+      name,
+    };
+  });
+  users = _.keyBy(users, '_id');
+  return users;
+};
 
 const User = mongoose.model('users', UserSchema);
 

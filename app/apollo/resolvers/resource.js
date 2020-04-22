@@ -21,6 +21,11 @@ const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
+const ObjectId = require('mongoose').Types.ObjectId;
+
+const conf = require('../../conf.js').conf;
+const S3ClientClass = require('../../s3/s3Client');
+const url = require('url');
 
 const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
   let results = [];
@@ -36,12 +41,46 @@ const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger
   }  
 };
 
+const isLink = (s) => {
+  return /^(http|https):\/\/?/.test(s);
+};
+
+const s3IsDefined = () => {
+  return conf.s3.endpoint;
+};
+
+const getS3Data = async (s3Link, logger) => {
+  try {
+    const s3Client = new S3ClientClass(conf);
+    const link = url.parse(s3Link); 
+    const paths = link.path.split('/');
+    const bucket = paths[1];
+    const resourceName = decodeURI(paths[2]);
+    const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
+    const yaml = await readS3File(s3stream);
+    return yaml;
+  } catch (error) {
+    logger.error(error, 'Error retrieving data from s3 bucket');
+    throw(error);
+  }
+};
+
+const readS3File = async (readable) => {
+  readable.setEncoding('utf8');
+  let data = '';
+  for await (const chunk of readable) {
+    data += chunk;
+  }
+  return data;
+};
+
 const resourceResolvers = {
   Query: {
-    resourcesCount: async (parent, { org_id }, { models, me, req_id, logger }) => {
+    resourcesCount: async (parent, { org_id }, context) => {
       const queryName = 'resourcesCount';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let count = 0;
       try {
@@ -50,22 +89,23 @@ const resourceResolvers = {
           deleted: false,
         });
       } catch (error) {
-        logger.error(`resourcesCount encountered an error ${error.stack}`);
+        logger.error(error, 'resourcesCount encountered an error');
         throw error;
       }
       return count;
     },
-
     resources: async (
       parent,
       { org_id, filter, fromDate, toDate, limit },
-      { models, me, req_id, logger},
+      context,
     ) => {
       const queryName = 'resources';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
-      if ( limit < 0 ) limit = 20;
-      if ( limit > 50 ) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+
+      limit = _.clamp(limit, 20, 500);
+
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let searchFilter = { org_id: org_id, deleted: false };
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
@@ -77,14 +117,15 @@ const resourceResolvers = {
     resourcesByCluster: async (
       parent,
       { org_id, cluster_id, filter, limit },
-      { models, me, req_id, logger},
+      context,
     ) => {
       const queryName = 'resourcesByCluster';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
 
-      if ( limit < 0 ) limit = 20;
-      if ( limit > 50 ) limit = 50;
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      limit = _.clamp(limit, 20, 500);
+
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let searchFilter = {
         org_id: org_id,
         cluster_id: cluster_id,
@@ -97,26 +138,37 @@ const resourceResolvers = {
       return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
     },
 
-    resource: async (parent, { _id }, { models, me, req_id, logger }) => {
+    resource: async (parent, { org_id, _id }, context) => {
       const queryName = 'resource';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
 
-      let result = await models.Resource.findById(_id).lean();
-      if (result != null) {
-        await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      let result = await models.Resource.findOne({ org_id, _id: ObjectId(_id) }).lean();
+      if(!result){
+        throw `resource { org_id: ${org_id}, _id: ${_id} } not found`;
       }
+
+      // 'result.data' will either be a yaml string or will be a link to a file in COS.
+      // If it's a link then we need to download it and return its contents
+      if (result.data && isLink(result.data) && s3IsDefined()) {
+        const yaml = getS3Data(result.data, logger);
+        result.data = yaml;
+      } 
       return result;
     },
 
     resourceByKeys: async (
       parent,
       { org_id, cluster_id, selfLink },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'resourceByKeys';
+      const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, models, queryName, req_id, logger);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let result = await models.Resource.findOne({
         org_id,
         cluster_id,
@@ -147,11 +199,11 @@ const resourceResolvers = {
         },
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
-          const req_id = context.req_id;
-          context.logger.debug( {req_id, user: whoIs(context.me), args }, 
+          const { me, req_id, logger } = context;
+          logger.debug( {req_id, user: whoIs(me), args }, 
             `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
-          await validAuth(context.me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, context.models, queryName, req_id, context.logger);  
+          await validAuth(me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);  
           let found = true;
           const { resource } = parent.resourceUpdated;
           if (args.org_id !== resource.org_id) {
@@ -178,7 +230,7 @@ const resourceResolvers = {
               break;
             }
           }
-          context.logger.debug({ req_id, args, found }, 'subscribe: withFilter result');
+          logger.debug({ req_id, args, found }, 'subscribe: withFilter result');
           return Boolean(found);
         },
       ),

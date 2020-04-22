@@ -21,6 +21,8 @@ const userResolvers = require('./user');
 const resourceResolvers = require('./resource');
 const resourceDistributedResolvers = require('./resourceDistributed');
 const clusterResolvers = require('./cluster');
+const channelResolvers = require('./channel');
+const subscriptionResolvers = require('./subscription');
 const clusterDistributedResolvers = require('./clusterDistributed');
 const organizationResolvers = require('./organization');
 
@@ -36,6 +38,8 @@ const resolvers = [
   resourceResolvers,
   resourceDistributedResolvers,
   clusterResolvers,
+  subscriptionResolvers,
+  channelResolvers,
   clusterDistributedResolvers,
 ];
 

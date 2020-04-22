@@ -19,7 +19,7 @@ const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError } = require('apollo-server');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -90,7 +90,7 @@ async function getOrCreateOrganization(models, args) {
     const orgArray = await Promise.all(
       models.OrganizationDistributed.map(od => {
         return od.createLocalOrg({
-          _id: `${uuid()}`,
+          _id: uuid(),
           type: 'local',
           name: orgName,
         });
@@ -99,7 +99,7 @@ async function getOrCreateOrganization(models, args) {
     return orgArray[0];
   }
   return models.Organization.createLocalOrg({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     name: orgName,
   });
@@ -109,7 +109,7 @@ UserLocalSchema.statics.createUser = async function(models, args) {
   const org = await getOrCreateOrganization(models, args);
 
   const user = await this.create({
-    _id: `${uuid()}`,
+    _id: uuid(),
     type: 'local',
     services: {
       local: {
@@ -193,8 +193,9 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   );
 };
 
-UserLocalSchema.statics.getMeFromRequest = async function(req) {
+UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -204,7 +205,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req) {
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: req.id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromRequest Session expired');
         throw new AuthenticationError('Your session expired. Sign in again.');
       }
     }
@@ -217,6 +218,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -226,7 +228,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
       try {
         return jwt.verify(token, SECRET);
       } catch (e) {
-        logger.warn({ req_id: context.req_id }, 'Session expired');
+        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
         throw new AuthenticationError('Your session expired. Sign in again');
       }
     }
@@ -234,21 +236,30 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, req_id) {
-  logger.debug({ req_id: req_id },`local isAuthorized ${me} ${action} ${type}`);
+UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+
+  const orgMeta = me.meta.orgs.find((o)=>{
+    return (o._id == orgId);
+  });
+  if(!orgMeta){
+    return false;
+  }
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
-      return me.org_id === orgId;
+      return !!orgMeta;
     }
-    if (action === ACTIONS.MANAGE) {
-      return me.org_id === orgId && me.role === 'ADMIN';
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
+      return orgMeta.role === 'ADMIN';
     }
   }
   return false;
 };
 
-UserLocalSchema.statics.getOrgs = async function(models, me) {
+UserLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {

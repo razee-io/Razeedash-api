@@ -27,6 +27,8 @@ Razeedash-API is the interface used by
 | S3_BUCKET_PREFIX        | no                     | 'razee'|
 | ORG_ADMIN_KEY           | no                     | n/a |
 | ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
+| ENABLE_GRAPHQL          | no                     | false, [true , false] are supported |
+| AUTH_MODEL              | no                     | n/a, [local, passport.local] are supported |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.
@@ -75,7 +77,7 @@ brew link --force gettext
 
 ## Install on Kubernetes
 
-Setup so you can use `kubectl` commands on the target cluster.  For IBM Cloude
+Setup so you can use `kubectl` commands on the target cluster.  For IBM Cloud
 Kubernetes Service the following command will get the KUBECONFIG for your
 Kubernetes cluster and export the KUBECONFIG variable.
 
@@ -534,3 +536,83 @@ the augmented data to the resource.
 
 The resource will have a new attribute `badges`.  The badge will replace any
 existing badge with the same webhook_id or if it does not exist, add to the array.
+
+## Graphql for local development
+
+We are still actively working on graphql improvements. By default the feature is  
+disabled. To enable [Apollo](https://www.apollographql.com/docs/apollo-server/)  
+based graphql server and test it on your local machine. (WARNING: do not enable  
+bellow for any production environment.)
+
+```shell
+export ENABLE_GRAPHQL=true
+export AUTH_MODEL=local
+```
+
+Then start the razeedash-api server, you will see a message like bellow from the console
+
+```shell
+🏄 Apollo server listening on http://[::]:3333/graphql
+```
+
+the graphql playground is enabled and could be accessed at [http://localhost:3333/graphql](http://localhost:3333/graphql)  
+if `NODE_ENV` is not equal to `production`. For `local` authorization model, signUp graphql  
+API is provided to sign-up a user, for example:
+
+```graphql
+mutation {
+  signUp(
+    username: "test@test.com"
+    email: "test@test.com"
+    password: "password123"
+    org_name: "test_org"
+    role: "ADMIN"
+  ) {
+    token
+  }
+}
+```
+
+If a user is already signed up, then signIn api could be used to sign-in a user, for example:
+
+```graphql
+mutation {
+  signIn(login: "test@test.com" password:"password123") {
+    token
+  }
+}
+```
+
+Both APIs return a JWT token, which you could use to query other graphql APIs. e.g. Following
+graphql query, will return organizations a user belongs to:
+
+```graphql
+query {organizations {
+  _id
+  name
+}}
+```
+
+With the following HTTP Header:
+
+```json
+{"Authorization": "Bearer <the token value returned from signUp or signIn>"}
+```
+
+You could also query registrationUrl for the user, e.g.
+
+```graphql
+query {
+  registrationUrl(org_id: "<the orgnization_id returned from organizations graphql api >") {
+    url
+  }
+}
+```
+
+With the following HTTP Header:
+
+```json
+{"Authorization": "Bearer <the token value returned from signUp or signIn>"}
+```
+
+For all other supported graphql APIs, please click `DOCS` or `SCHEMA` from the graphql play-ground.

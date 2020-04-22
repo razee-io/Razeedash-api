@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 const mongoose = require('mongoose');
 
-const OrganizationLocalSchema = require('./organization.local.schema');
+const { AUTH_MODEL } = require('./const');
 
-// import other Organization*Schemas and conditionally expose
-// one of them based on AUTH_MODEL.
+const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
 
-const Organization = mongoose.model('orgs', OrganizationLocalSchema);
+const Organization = mongoose.model('orgs', OrganizationSchema);
 
 module.exports = Organization;

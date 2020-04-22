@@ -67,12 +67,13 @@ const clusterResolvers = {
     clusterByClusterID: async (
       parent,
       { org_id: orgId, cluster_id: clusterId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterByClusterID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const result = await models.Cluster.findOne({
         org_id: orgId,
@@ -91,12 +92,13 @@ const clusterResolvers = {
     clustersByOrgID: async (
       parent,
       { org_id: orgId, limit, startingAfter },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clustersByOrgID';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = { org_id: orgId };
       return commonClusterSearch(models, searchFilter, limit, startingAfter);
@@ -106,12 +108,13 @@ const clusterResolvers = {
     clusterZombies: async (
       parent,
       { org_id: orgId, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterZombies';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = {
         org_id: orgId,
@@ -125,12 +128,13 @@ const clusterResolvers = {
     clusterSearch: async (
       parent,
       { org_id: orgId, filter, limit },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterSearch';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       let searchFilter;
       if (!filter) {
@@ -149,12 +153,13 @@ const clusterResolvers = {
     clusterCountByKubeVersion: async (
       parent,
       { org_id: orgId },
-      { models, me, req_id, logger },
+      context,
     ) => {
       const queryName = 'clusterCountByKubeVersion';
+      const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, models, queryName, req_id, logger);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const results = await models.Cluster.aggregate([
         {
@@ -178,6 +183,69 @@ const clusterResolvers = {
       return results;
     }, // end clusterCountByKubeVersion
   }, // end query
+
+  Mutation: {
+    deleteClusterByClusterID: async (
+      parent,
+      { org_id, cluster_id },
+      context,
+    ) => {
+      const queryName = 'deleteClusterByClusterID';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, user: whoIs(me), org_id, cluster_id}, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
+          cluster_id});
+
+        //TODO: soft delete the resources for now. We need to have a background process to
+        // clean up S3 contents based on deleted flag. 
+        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, 
+          {$set: { deleted: true }}, { upsert: false });
+
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
+
+        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0, 
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
+        
+      } catch (error) {
+        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end delete cluster by org_id and cluster_id
+
+    deleteClusters: async (
+      parent,
+      { org_id },
+      context,
+    ) => {
+      const queryName = 'deleteClusters';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, user: whoIs(me), org_id}, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const deletedClusters = await models.Cluster.deleteMany({ org_id });
+
+        //TODO: soft delete the resources for now. We need to have a background process to
+        // clean up S3 contents based on deleted flag. 
+        const deletedResources = await models.Resource.updateMany({ org_id }, 
+          {$set: { deleted: true }}, { upsert: false });
+
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
+
+        return {deletedClusterCount: deletedClusters.deletedCount, 
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
+        
+      } catch (error) {
+        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end delete cluster by org_id 
+  }
 }; // end clusterResolvers
 
 module.exports = clusterResolvers;
