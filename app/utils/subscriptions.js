@@ -49,7 +49,7 @@ const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
     if(foundVersion.length > 0) {
       url = `api/v1/channels/${subscription.channel}/${foundVersion[0].uuid}`;
     } 
-    return url;
+    return {subscription_uuid: subscription.uuid, url: url};
   });
   urls = urls.filter(Boolean);
   return urls;

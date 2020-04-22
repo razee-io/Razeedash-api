@@ -45,10 +45,12 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
+  type UpdatedSubscription {
+    subscription_uuid: String!,
+    url: String!
+  }
   type SubscriptionUpdated {
-    uuid: String!
-    name: String!
-    urls: [String!]!
+    subscriptions: [UpdatedSubscription!]!
   }
   
   extend type Query {

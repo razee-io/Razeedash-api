@@ -86,13 +86,14 @@ function getStreamingTopic(prefix, org_id) {
   return prefix;
 }
 
-
 async function channelSubChangedFunc(sub) {
   if (pubSubPlaceHolder.enabled) {
     let op = 'sub_updated';
     try {
       const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, sub.org_id);
       logger.debug({ op, sub, topic }, 'Publishing channel subscription update');
+      console.log('Publishing to subscriptionUpdated...');
+      console.log(sub);
       await pubSubPlaceHolder.pubSub.publish(topic, { subscriptionUpdated: { sub, op }, });
     } catch (error) {
       logger.error(error, 'Channel subscription publish error');

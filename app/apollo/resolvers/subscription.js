@@ -17,13 +17,11 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
-// const { pub } = require('../../utils/pubsub');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic, channelSubChangedFunc } = require('../subscription');
 const { models } = require('../models');
-
 
 const resourceResolvers = {
   Query: {
@@ -97,19 +95,6 @@ const resourceResolvers = {
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
-        // var msg = {
-        //   uuid: uuid,
-        //   org_id: org_id,
-        //   name: name,
-        //   tags: tags,
-        //   channel_uuid: channel_uuid,
-        //   channel: channel.name,
-        //   version: version.name,
-        //   version_uuid: version_uuid,
-        //   owner: me._id
-        // };
-        // pub('addSubscription', msg);
-        // channelSubChangedFunc(msg);
         channelSubChangedFunc(subscription);
 
         return {
@@ -154,17 +139,7 @@ const resourceResolvers = {
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
         const updatedSubscription = await models.Subscription.findOne({ org_id, uuid });
 
-        // var msg = {
-        //   org_id: org_id,
-        //   uuid: uuid,
-        //   name: name,
-        //   tags: tags,
-        //   subscription,
-        // };
-        // pub('updateSubscription', msg);
-        // channelSubChangedFunc(msg);
         channelSubChangedFunc(updatedSubscription);
-
 
         return {
           uuid,
@@ -190,12 +165,7 @@ const resourceResolvers = {
         }
         await subscription.deleteOne();
 
-        // var msg = {
-        //   orgId: org_id,
-        //   subName: subscription.name,
-        // };
         channelSubChangedFunc(subscription);
-        // pub('removeSubscription', msg);
 
         success = true;
       }catch(err){
@@ -221,25 +191,14 @@ const resourceResolvers = {
             { $match: { 'isSubSet': true } }
           ]);
           curSubs = _.sortBy(curSubs, '_id');
-          console.log('curSubs');
-          console.log(curSubs);
-          console.log("match curSubs with set of tags from the user:")
-          console.log(args.tags);
 
           const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
-          // exposes the name and uuid fields to the user
-          // const publicSubs = _.map(curSubs, (sub)=>{
-          //   return _.pick(sub, ['name', 'uuid']);
-          // });
-          // console.log({publicSubs, urls});
-          // console.log(urls);
-          subscriptionUpdated.sub.urls = urls;
+          subscriptionUpdated.sub.subscriptions = urls; // the 'subscriptions' property matches the 'type SubscriptionUpdated' in the subscriptions.js schema
           
         } catch (error) {
           console.log(error);
         }
         console.log('updated subscription: ', subscriptionUpdated.sub);
-        
         return subscriptionUpdated.sub;
       },
 
@@ -247,6 +206,10 @@ const resourceResolvers = {
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
           // args comes from clients that are initiating a subscription
+
+          // TODO: send back data when clients initially connect
+          //      call channelSubChangedFunc(updatedSubscription); here
+
           console.log('A client is connected with args:', args);
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, args.org_id);
           return pubSubPlaceHolder.pubSub.asyncIterator(topic);
@@ -272,12 +235,7 @@ const resourceResolvers = {
               { $match: { 'isSubSet': true } }
             ]);
             curSubs = _.sortBy(curSubs, '_id');
-            console.log('curSubs');
-            console.log(curSubs);
-            console.log("match curSubs with set of tags from the user:")
-            console.log(args.tags);
             const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
-            console.log(urls);
             
             if(urls && urls.length > 0 ) {
               found = true;
