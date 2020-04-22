@@ -18,33 +18,33 @@ const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
 
 // This file contains auth specific impl to help prepare
 // org, users, and how to signin users
-async function prepareOrganization(models, orgData) {
+async function prepareOrganization (models, orgData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     return await models.Organization.createLocalOrg(orgData);
   }
   return null;
 }
 
-async function prepareUser(models, userData) {
+async function prepareUser (models, userData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     return await models.User.createUser(models, userData);
-  }
+  } 
   return null;
 }
 
-async function signInUser(models, api, userData) {
+async function signInUser (models, api, userData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const result0 = await api.signIn({
       login: userData.email,
-      password: userData.password,
+      password: userData.password
     });
     console.log(JSON.stringify(result0.data));
     return result0.data.data.signIn.token;
-  }
+  } 
   return null;
 }
 
-async function signUpUser(models, api, userData) {
+async function signUpUser (models, api, userData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const result0 = await api.signUp({
       username: userData.username,
