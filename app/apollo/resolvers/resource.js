@@ -16,6 +16,7 @@
 
 const _ = require('lodash');
 const { withFilter } = require('apollo-server');
+const GraphqlFields = require('graphql-fields');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
@@ -27,14 +28,29 @@ const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
-const commonResourcesSearch = async (models, searchFilter, limit, req_id, logger) => {
-  let results = [];
+const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, queryFields, req_id, logger }) => {
   try {
-    results = await models.Resource.find(searchFilter)
+    const resources = await models.Resource.find(searchFilter)
       .sort({ created: -1 })
       .limit(limit)
-      .lean();
-    return results;
+      .lean()
+    ;
+    // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
+    if(queryFields['cluster']){
+      const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
+      if(clusterIds.length > 0){
+        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }});
+        clusters = _.map(clusters, (cluster)=>{
+          cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
+          return cluster;
+        });
+        clusters = _.keyBy(clusters, 'cluster_id');
+        resources.forEach((resource)=>{
+          resource.cluster = clusters[resource.cluster_id] || null;
+        });
+      }
+    }
+    return resources;
   } catch (error) {
     logger.error(error, `commonResourcesDistributedSearch encountered an error for the request ${req_id}`);
     throw error;
@@ -98,7 +114,9 @@ const resourceResolvers = {
       parent,
       { org_id, filter, fromDate, toDate, limit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
@@ -111,14 +129,16 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
     },
 
     resourcesByCluster: async (
       parent,
       { org_id, cluster_id, filter, limit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
@@ -135,7 +155,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch(models, searchFilter, limit, req_id, logger);
+      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
     },
 
     resource: async (parent, { org_id, _id }, context) => {
