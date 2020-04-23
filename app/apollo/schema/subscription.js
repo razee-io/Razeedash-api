@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// type SubscriptionUpdated {
+//   subscriptions: [UpdatedSubscription!]!
+// }
+
 
 const { gql } = require('apollo-server-express');
 
@@ -46,11 +50,18 @@ const subscriptionSchema = gql`
     uuid: String!
   }
   type UpdatedSubscription {
+    subscription_name: String!,
+    subscription_channel: String!,
+    subscription_version: String!,
     subscription_uuid: String!,
     url: String!
   }
+  type ChannelsWithLinks {
+    channel: ChannelSubscription,
+    links: UpdatedSubscription
+  }
   type SubscriptionUpdated {
-    subscriptions: [UpdatedSubscription!]!
+    has_updates: Boolean
   }
   
   extend type Query {
@@ -62,6 +73,10 @@ const subscriptionSchema = gql`
      Get a single subscriptions
      """
      subscription(org_id: String!, uuid: String!): ChannelSubscription
+     """
+     Gets all subscriptions that match a set of tags for an org_id 
+     """
+     subscriptionsByTag(org_id: String! tags: String): [UpdatedSubscription]
   }
   extend type Mutation {
      """
@@ -80,7 +95,7 @@ const subscriptionSchema = gql`
      removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
-    subscriptionUpdated(org_id: String!, tags: [String]): SubscriptionUpdated!
+    subscriptionUpdated(org_id: String!, tags: String): SubscriptionUpdated!
   }
 `;
 

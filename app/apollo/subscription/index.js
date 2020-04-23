@@ -20,6 +20,7 @@ const { RedisPubSub } = require('graphql-redis-subscriptions');
 const isPortReachable = require('is-port-reachable');
 const { PubSub } = require('apollo-server');
 const { APOLLO_STREAM_SHARDING } = require('../models/const');
+// const { models } = require('../models');
 
 const { getBunyanConfig } = require('../../utils/bunyan');
 
@@ -86,20 +87,20 @@ function getStreamingTopic(prefix, org_id) {
   return prefix;
 }
 
-async function channelSubChangedFunc(sub) {
+async function channelSubChangedFunc(data) {
+  console.log('channelSubChangedFunc');
   if (pubSubPlaceHolder.enabled) {
-    let op = 'sub_updated';
     try {
-      const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, sub.org_id);
-      logger.debug({ op, sub, topic }, 'Publishing channel subscription update');
+      const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
+      logger.debug({ data, topic }, 'Publishing channel subscription update');
       console.log('Publishing to subscriptionUpdated...');
-      console.log(sub);
-      await pubSubPlaceHolder.pubSub.publish(topic, { subscriptionUpdated: { sub, op }, });
+      console.log(data);
+      await pubSubPlaceHolder.pubSub.publish(topic, { subscriptionUpdated: { data }, });
     } catch (error) {
       logger.error(error, 'Channel subscription publish error');
     }
   }
-  return sub;
+  return data;
 }
 
 async function resourceChangedFunc(resource) {

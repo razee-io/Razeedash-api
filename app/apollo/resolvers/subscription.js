@@ -20,11 +20,60 @@ const { withFilter } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
+const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, pubSubPlaceHolder, getStreamingTopic, channelSubChangedFunc } = require('../subscription');
 const { models } = require('../models');
 
-const resourceResolvers = {
+const subscriptionResolvers = {
   Query: {
+    subscriptionsByTag: async(parent, { org_id, tags }, context) => {
+      const { models, logger } = context;
+      const query = 'subscriptionsByTag';
+
+      // TODO: move this to a common auth function
+      const orgKey = context.req.headers['razee-org-key'] || '';
+      if (!orgKey) {
+        logger.error(`No razee-org-key was supplied for ${org_id}`);
+        return []; 
+      }
+
+      const org = await models.Organization.findOne({ _id: org_id });
+      if(!org) {
+        logger.error(`An org with id ${org_id} was not found`);
+        return [];
+      }
+
+      const foundOrgKey = _.first(org.orgKeys);
+      if(foundOrgKey !== orgKey) {
+        logger.error(`Invalid razee-org-key for ${org_id}`);
+        return [];
+      }
+
+      const userTags = tagsStrToArr(tags);
+
+      logger.debug({user: 'graphql api user', org_id, tags }, `${query} enter`);
+      let urls = [];
+      try {
+        // Return subscriptions where $tags stored in mongo are a subset of the userTags passed in from the query
+        // examples:
+        //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> false
+        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
+        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
+        //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
+        const foundSubscriptions = await models.Subscription.aggregate([
+          { $match: { 'org_id': org_id} },
+          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
+          { $match: { 'isSubSet': true } }
+        ]);
+              
+        if(foundSubscriptions && foundSubscriptions.length > 0 ) {
+          urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
+        }
+      } catch (error) {
+        logger.error(error, `There was an error getting ${query} from mongo`);
+      }
+      return urls;
+    },
     subscriptions: async(parent, { org_id }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
@@ -54,7 +103,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
-        var subscriptions = await resourceResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
+        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid);
         });
@@ -89,13 +138,13 @@ const resourceResolvers = {
           throw `version uuid "${version_uuid}" not found`;
         }
 
-        const subscription = await models.Subscription.create({
+        await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, tags, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
-        channelSubChangedFunc(subscription);
+        channelSubChangedFunc({org_id: org_id});
 
         return {
           uuid,
@@ -137,9 +186,8 @@ const resourceResolvers = {
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
-        const updatedSubscription = await models.Subscription.findOne({ org_id, uuid });
 
-        channelSubChangedFunc(updatedSubscription);
+        channelSubChangedFunc({org_id: org_id});
 
         return {
           uuid,
@@ -165,7 +213,7 @@ const resourceResolvers = {
         }
         await subscription.deleteOne();
 
-        channelSubChangedFunc(subscription);
+        channelSubChangedFunc({org_id: org_id});
 
         success = true;
       }catch(err){
@@ -180,71 +228,61 @@ const resourceResolvers = {
 
   Subscription: {
     subscriptionUpdated: {
+      // eslint-disable-next-line no-unused-vars
       resolve: async (parent, args) => {
-        console.log('****************** Send data back to the subscriber client');
-        const { subscriptionUpdated } = parent;
-
-        try {
-          let curSubs = await models.Subscription.aggregate([
-            { $match: { 'org_id': subscriptionUpdated.sub.org_id} },
-            { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', subscriptionUpdated.sub.tags ] } } },
-            { $match: { 'isSubSet': true } }
-          ]);
-          curSubs = _.sortBy(curSubs, '_id');
-
-          const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
-          subscriptionUpdated.sub.subscriptions = urls; // the 'subscriptions' property matches the 'type SubscriptionUpdated' in the subscriptions.js schema
-          
-        } catch (error) {
-          console.log(error);
-        }
-        console.log('updated subscription: ', subscriptionUpdated.sub);
-        return subscriptionUpdated.sub;
+        //  
+        // Sends data back to a subscribed client
+        // 'args' contains the set of tags sent by a connected client
+        // 'parent' is the object representing the subscription that was updated
+        // 
+        return { 'has_updates': true };
       },
 
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
-          // args comes from clients that are initiating a subscription
-
-          // TODO: send back data when clients initially connect
-          //      call channelSubChangedFunc(updatedSubscription); here
-
-          console.log('A client is connected with args:', args);
+          //  
+          //  This function runs when a client initially connects
+          // 'args' contains the set of tags and razee-org-key sent by a connected client
+          // 
+          const { logger } = context;
+          logger.info('A client is connected with args:', args);
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, args.org_id);
           return pubSubPlaceHolder.pubSub.asyncIterator(topic);
         },
+        // eslint-disable-next-line no-unused-vars
         async (parent, args, context) => {
+          // 
           // this function determines whether or not to send data back to a subscriber
-          console.log('Verify client is authenticated and org_id matches the updated subscription org_id');
-          const { subscriptionUpdated } = parent;
-          const queryName = 'channel subscribe: withFilter';
-          const { me, req_id, logger } = context;
-          // validate user
-          // await validAuth(me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);  
+          //
+          const { logger, apiKey } = context;
           let found = true;
-          console.log('----------------------------------------- ' + subscriptionUpdated.sub.org_id + ' vs ' + args.org_id);
-          if(subscriptionUpdated.sub.org_id !== args.org_id) {
-            found = false;
+
+          logger.info('Verify client is authenticated and org_id matches the updated subscription org_id');
+          const { subscriptionUpdated } = parent;
+
+          // TODO: move to a common auth function
+          const orgKey = apiKey || '';
+          if (!orgKey) {
+            logger.error(`No razee-org-key was supplied for ${args.org_id}`);
+            return Boolean(false);
           }
 
-          try {
-            let curSubs = await models.Subscription.aggregate([
-              { $match: { 'org_id': subscriptionUpdated.sub.org_id} },
-              { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', subscriptionUpdated.sub.tags ] } } },
-              { $match: { 'isSubSet': true } }
-            ]);
-            curSubs = _.sortBy(curSubs, '_id');
-            const urls = await getSubscriptionUrls(subscriptionUpdated.sub.org_id, args.tags, curSubs);
-            
-            if(urls && urls.length > 0 ) {
-              found = true;
-            } else {
-              found = false;
-            }
-            
-          } catch (error) {
-            console.log(error);
+          const org = await models.Organization.findOne({ _id: args.org_id });
+          if(!org) {
+            logger.error(`An org with id ${args.org_id} was not found`);
+            return Boolean(false);
+          }
+
+          const foundOrgKey = _.first(org.orgKeys);
+          if(foundOrgKey !== orgKey) {
+            logger.error(`Invalid razee-org-key for ${args.org_id}`);
+            return Boolean(false);
+          }
+
+          if(subscriptionUpdated.data.org_id !== args.org_id) {
+            console.log('wrong org id for this subscription.  returning false');
+            found = false;
           }
 
           return Boolean(found);
@@ -254,4 +292,4 @@ const resourceResolvers = {
   },
 };
 
-module.exports = resourceResolvers;
+module.exports = subscriptionResolvers;

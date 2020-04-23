@@ -62,7 +62,8 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
   // populate req and req_id to apollo context
   if (connection) {
     const upgradeReq = connection.context.upgradeReq;
-    context = { req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, ...context};
+    const apiKey = connection.context.orgKey;
+    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, ...context };
   } else if (req) {
     context = { req, req_id: req.id, ...context};
   } 
@@ -110,8 +111,13 @@ const createApolloServer = () => {
             'Can not find the session for this subscription request.',
           );
         }
+        let orgKey;
+        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
+          orgKey = connectionParams.headers['razee-org-key'];
+        }
+        
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger };
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
