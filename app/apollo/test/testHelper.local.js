@@ -44,4 +44,18 @@ async function signInUser (models, api, userData) {
   return null;
 }
 
-module.exports = { prepareOrganization, prepareUser, signInUser };
+async function signUpUser (models, api, userData) {
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const result0 = await api.signUp({
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      org_name: userData.orgName,
+      role: userData.role,
+    });
+    return result0.data.data.signUp.token;
+  }
+  return null;
+}
+
+module.exports = { prepareOrganization, prepareUser, signInUser, signUpUser };
