@@ -87,7 +87,6 @@ function getStreamingTopic(prefix, org_id) {
 }
 
 async function channelSubChangedFunc(data) {
-  console.log('channelSubChangedFunc');
   if (pubSubPlaceHolder.enabled) {
     try {
       const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);

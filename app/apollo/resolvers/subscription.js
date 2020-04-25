@@ -231,8 +231,8 @@ const subscriptionResolvers = {
       // eslint-disable-next-line no-unused-vars
       resolve: async (parent, args) => {
         //  
-        // Sends data back to a subscribed client
-        // 'args' contains the set of tags sent by a connected client
+        // Sends a message back to a subscribed client
+        // 'args' contains the org_id of a connected client
         // 'parent' is the object representing the subscription that was updated
         // 
         return { 'has_updates': true };
@@ -243,7 +243,7 @@ const subscriptionResolvers = {
         (parent, args, context) => {
           //  
           //  This function runs when a client initially connects
-          // 'args' contains the set of tags and razee-org-key sent by a connected client
+          // 'args' contains the razee-org-key sent by a connected client
           // 
           const { logger } = context;
           logger.info('A client is connected with args:', args);
@@ -281,7 +281,7 @@ const subscriptionResolvers = {
           }
 
           if(subscriptionUpdated.data.org_id !== args.org_id) {
-            console.log('wrong org id for this subscription.  returning false');
+            logger.error('wrong org id for this subscription.  returning false');
             found = false;
           }
 

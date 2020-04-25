@@ -95,7 +95,7 @@ const subscriptionSchema = gql`
      removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
-    subscriptionUpdated(org_id: String!, tags: String): SubscriptionUpdated!
+    subscriptionUpdated(org_id: String!): SubscriptionUpdated!
   }
 `;
 
