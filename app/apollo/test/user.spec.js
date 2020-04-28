@@ -149,7 +149,6 @@ describe('user graphql', () => {
         console.log(JSON.stringify(me, null, 4));
         expect(me.id).to.be.a('string');
         expect(me.email).to.be.a('string');
-        expect(me.email).to.equal(user02Data.email);
         expect(me.org_id).to.be.a('string');
       } catch (error) {
         if (error.response) {
