@@ -1,7 +1,5 @@
 
-const mongoConf = require('../conf.js').conf;
-const MongoClientClass = require('../mongo/mongoClient.js');
-const MongoClient = new MongoClientClass(mongoConf);
+const { models } = require('../apollo/models');
 
 const _ = require('lodash');
 
@@ -30,12 +28,10 @@ const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
     });
   });
 
-  const db = await MongoClient.getClient();
-  const Channels = db.collection('channels');
-  const matchingChannels = await Channels.find({
+  const matchingChannels = await models.Channel.find({
     org_id: orgId,
     name: { $in: _.map(matchingSubscriptions, 'channel') },
-  }).toArray();
+  });
   
   const matchingChannelsByName = _.keyBy(matchingChannels, 'name');
 
