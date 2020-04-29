@@ -112,7 +112,7 @@ describe('utils', () => {
       assert.equal(response.statusCode, 401);
     });
 
-    it('should return 403 if cannot find cluster', async () => {
+    it('should return 404 if cannot find cluster', async () => {
       // Setup
       var request = httpMocks.createRequest({
         method: 'POST',
@@ -140,7 +140,7 @@ describe('utils', () => {
 
       assert.equal(nextCalled, false);
 
-      assert.equal(response.statusCode, 403);
+      assert.equal(response.statusCode, 404);
     });
 
     it('should call next', async () => {
