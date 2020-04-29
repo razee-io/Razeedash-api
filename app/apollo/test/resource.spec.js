@@ -17,6 +17,9 @@
 const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const { RedisPubSub } = require('graphql-redis-subscriptions');
+var Redis = require('ioredis-mock');
+
 // const why = require('why-is-node-running');
 
 const apiFunc = require('./api');
@@ -135,6 +138,16 @@ const getPresetResources = async () => {
   console.log(`presetResources=${JSON.stringify(presetResources)}`);
 };
 
+const mockRedis = async () => {
+  pubSub.enabled = true;
+  const sub = new Redis();
+  const pub = sub.createConnectedClient();
+  pubSub.pubSub = new RedisPubSub({
+    publisher: pub,
+    subscriber: sub,
+  });
+};
+
 describe('resource graphql test suite', () => {
   function sleep(ms) {
     return new Promise(resolve => {
@@ -155,6 +168,7 @@ describe('resource graphql test suite', () => {
     await getPresetOrgs();
     await getPresetUsers();
     await getPresetResources();
+    mockRedis();
     //setTimeout(function() {
     //  why(); // logs out active handles that are keeping node running
     //}, 5000);
@@ -315,7 +329,7 @@ describe('resource graphql test suite', () => {
   describe('resourceUpdated (org_id: String!, filter: String): ResourceUpdated!', () => {
     before(function() {
       if (pubSub.enabled === false) {
-        this.skip();
+        // this.skip();
       }
     });
 
