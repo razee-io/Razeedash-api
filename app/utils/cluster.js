@@ -142,7 +142,7 @@ const getCluster = async (req, res, next) => {
   const Clusters = req.db.collection('clusters');
   const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: cluster_id });
   if (!cluster) {
-    res.status(403).send(`Cluster ${cluster_id} not found`);
+    res.status(404).send(`Cluster ${cluster_id} not found`);
     return;
   }
   req.cluster = cluster; // eslint-disable-line require-atomic-updates

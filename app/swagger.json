@@ -355,7 +355,7 @@
           "200": {
             "description": "Cluster resources removed"
           },
-          "403": {
+          "404": {
             "description": "Cluster not found"
           },
           "500": {
