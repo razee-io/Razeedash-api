@@ -21,8 +21,10 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
-const { EVENTS, pubSubPlaceHolder, getStreamingTopic, channelSubChangedFunc } = require('../subscription');
+const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { models } = require('../models');
+
+const pubSub = GraphqlPubSub.getInstance();
 
 const subscriptionResolvers = {
   Query: {
@@ -144,7 +146,7 @@ const subscriptionResolvers = {
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
-        channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id});
 
         return {
           uuid,
@@ -187,7 +189,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
 
-        channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id});
 
         return {
           uuid,
@@ -213,7 +215,7 @@ const subscriptionResolvers = {
         }
         await subscription.deleteOne();
 
-        channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id});
 
         success = true;
       }catch(err){
@@ -248,7 +250,7 @@ const subscriptionResolvers = {
           const { logger } = context;
           logger.info('A client is connected with args:', args);
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, args.org_id);
-          return pubSubPlaceHolder.pubSub.asyncIterator(topic);
+          return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         // eslint-disable-next-line no-unused-vars
         async (parent, args, context) => {

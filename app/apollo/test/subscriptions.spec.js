@@ -24,6 +24,7 @@ const subscriptionsFunc = require('./subscriptionsApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
+const { GraphqlPubSub } = require('../subscription');
 
 const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`); 
 let mongoServer;
@@ -227,6 +228,7 @@ describe('subscriptions graphql test suite', () => {
   
   after(async () => {
     await myApollo.stop(myApollo);
+    GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
   }); // after
 

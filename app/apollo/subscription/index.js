@@ -34,45 +34,8 @@ const EVENTS = {
   },
 };
 
-const pubSubPlaceHolder = {
-  enabled: false,
-  pubSub: new PubSub(),
-};
-
 function obscureUrl(url) {
   return url.replace(/:\/\/.*@/gi, '://xxxxxxx'.concat(':yyyyyyyy', '@'));
-}
-
-async function isRedisReachable(redisUrl) {
-  const url = new URL(redisUrl);
-  if (await isPortReachable(url.port, { host: url.hostname, timeout: 5000 })) {
-    const options = process.env.REDIS_CERTIFICATE_PATH
-      ? { tls: { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } }
-      : {};
-    pubSubPlaceHolder.pubSub = new RedisPubSub({
-      publisher: new Redis(redisUrl, options),
-      subscriber: new Redis(redisUrl, options),
-    });
-    pubSubPlaceHolder.enabled = true;
-    logger.info(
-      `Apollo streaming is enabled on redis endpoint ${url.hostname}:${url.port}`,
-    );
-    return true;
-  }
-  logger.warn(
-    `Apollo streaming is disabled because ${url.hostname}:${url.port} is unreachable.`,
-  );
-  return false;
-}
-
-const redisUrl = process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
-if (process.env.ENABLE_GRAPHQL) {
-  logger.info(
-    `Apollo streaming service is configured on redisUrl: ${obscureUrl(
-      redisUrl,
-    )}`,
-  );
-  isRedisReachable(redisUrl);
 }
 
 function getStreamingTopic(prefix, org_id) {
@@ -86,36 +49,95 @@ function getStreamingTopic(prefix, org_id) {
   return prefix;
 }
 
-async function channelSubChangedFunc(data) {
-  if (pubSubPlaceHolder.enabled) {
-    try {
-      const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
-      logger.debug({ data, topic }, 'Publishing channel subscription update');
-      await pubSubPlaceHolder.pubSub.publish(topic, { subscriptionUpdated: { data }, });
-    } catch (error) {
-      logger.error(error, 'Channel subscription publish error');
+class PubSubImpl {
+  
+  constructor(params) {
+    this.enabled = false;
+    this.pubSub = null;
+    this.redisUrl = params.redisUrl || process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
+    if (process.env.ENABLE_GRAPHQL) {
+      logger.info(
+        `Apollo streaming service is configured on redisUrl: ${obscureUrl(
+          this.redisUrl,
+        )}`,
+      );
+      this.isRedisReachable();
     }
   }
-  return data;
-}
-
-async function resourceChangedFunc(resource) {
-  if (pubSubPlaceHolder.enabled) {
-    let op = 'upsert';
-    if (resource.deleted) {
-      op = 'delete';
-    }
-    try {
-      const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.org_id);
-      logger.debug({ op, resource, topic }, 'Publishing resource updates');
-      await pubSubPlaceHolder.pubSub.publish(topic, {
-        resourceUpdated: { resource, op },
+    
+  async isRedisReachable() {
+    const url = new URL(this.redisUrl);
+    if (await isPortReachable(url.port, { host: url.hostname, timeout: 5000 })) {
+      const options = process.env.REDIS_CERTIFICATE_PATH
+        ? { tls: { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } }
+        : {};
+      this.pubSub = new RedisPubSub({
+        publisher: new Redis(this.redisUrl, options),
+        subscriber: new Redis(this.redisUrl, options),
       });
-    } catch (error) {
-      logger.error(error, 'Resource publish error');
+      this.enabled = true;
+      logger.info(
+        `Apollo streaming is enabled on redis endpoint ${url.hostname}:${url.port}`,
+      );
+      return true;
     }
+    logger.warn(
+      `Apollo streaming is disabled because ${url.hostname}:${url.port} is unreachable.`,
+    );
+    this.enabled = false;
+    this.pubSub = new PubSub();
+    return false;
   }
-  return resource;
+
+  async channelSubChangedFunc(data) {
+    if (this.enabled) {
+      try {
+        const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
+        logger.debug({ data, topic }, 'Publishing channel subscription update');
+        await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
+      } catch (error) {
+        logger.error(error, 'Channel subscription publish error');
+      }
+    }
+    return data;
+  }
+
+  async resourceChangedFunc(resource) {
+    if (this.enabled) {
+      let op = 'upsert';
+      if (resource.deleted) {
+        op = 'delete';
+      }
+      try {
+        const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.org_id);
+        logger.debug({ op, resource, topic }, 'Publishing resource updates');
+        await this.pubSub.publish(topic, {
+          resourceUpdated: { resource, op },
+        });
+      } catch (error) {
+        logger.error(error, 'Resource publish error');
+      }
+    }
+    return resource;
+  }
 }
 
-module.exports = { EVENTS, pubSubPlaceHolder, resourceChangedFunc, getStreamingTopic, channelSubChangedFunc };
+var GraphqlPubSub = (function() {
+  var singleton;
+  return {
+    getInstance: function () {
+      if (!singleton) {
+        singleton = new PubSubImpl({});
+      }
+      return singleton;
+    },
+    deleteInstance: function () {
+      if (singleton && singleton.enabled) {
+        singleton.pubSub.close();
+        singleton = undefined;
+      }      
+    }
+  };
+})();
+
+module.exports = { EVENTS, GraphqlPubSub, getStreamingTopic };

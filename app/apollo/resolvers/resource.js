@@ -19,7 +19,7 @@ const { withFilter } = require('apollo-server');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
-const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
+const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
@@ -195,7 +195,7 @@ const resourceResolvers = {
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.org_id);
           context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
           // TODO: in future probably we should valid authorization here
-          return pubSubPlaceHolder.pubSub.asyncIterator(topic);
+          return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
