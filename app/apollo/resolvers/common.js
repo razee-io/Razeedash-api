@@ -35,4 +35,3 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
 }; 
 
 module.exports =  { whoIs, validAuth };
-

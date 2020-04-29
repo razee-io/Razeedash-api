@@ -17,29 +17,40 @@
 const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+// const why = require('why-is-node-running');
 
-const { models } = require('../models');
 const apiFunc = require('./api');
-const subscriptionsFunc = require('./subscriptionsApi');
-
+const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`); 
+// const subscriptionsFunc = require('./subscriptionsApi');
+
+const { 
+  prepareUser, 
+  prepareOrganization, 
+  signInUser 
+} = require(`./testHelper.${AUTH_MODEL}`);
+
+const SubClient = require('./subClient');
+const { channelSubChangedFunc, pubSubPlaceHolder } = require('../subscription');
+
 let mongoServer;
 let myApollo;
-const graphqlPort = 18000;
+const graphqlPort = 18009;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
+const subscriptionUrl = `ws://localhost:${graphqlPort}/graphql`;
 const api = apiFunc(graphqlUrl);
-const subscriptionsApi = subscriptionsFunc(graphqlUrl);
-let token;
+// const subscriptionsApi = subscriptionsFunc(graphqlUrl);
+
+// let token;
 let adminToken;
 let orgKey;
 
 let org01Data;
 let org77Data;
 let org01;
-let org77;
+// let org77;
 
 let user01Data;
 let user77Data;
@@ -201,12 +212,17 @@ const getOrgKey = async () => {
 };
 
 describe('subscriptions graphql test suite', () => {
+  function sleep(ms) {
+    return new Promise(resolve => {
+      setTimeout(resolve, ms);
+    });
+  }
+
   before(async () => {
     process.env.NODE_ENV = 'test';
     mongoServer = new MongoMemoryServer();
     const mongoUrl = await mongoServer.getConnectionString();
-    console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
-  
+    console.log(`subscriptionSubs.spec.js in memory test mongodb url is ${mongoUrl}`);
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
   
     await createOrganizations();
@@ -227,50 +243,72 @@ describe('subscriptions graphql test suite', () => {
   
   after(async () => {
     await myApollo.stop(myApollo);
+    if (pubSubPlaceHolder.enabled) {
+      await pubSubPlaceHolder.pubSub.close();
+    }
     await mongoServer.stop();
-  }); // after
+  }); 
 
-  it('get should return a subscription with a matching tag', async () => {
-    try {
-      const {
-        data: {
-          data: { subscriptionsByTag },
-        },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        org_id: org01._id,
-        tags: sub_01_tags
-      }, orgKey);
-
-      expect(subscriptionsByTag).to.have.length(1);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
+  describe('subscriptionUpdated(org_id: String!): SubscriptionUpdated!', () => {
+    // process.env.REDIS_PUBSUB_URL = 'redis://127.0.0.1:6379/1';
+    before(function() {
+      if (pubSubPlaceHolder.enabled === false) {
+        this.skip();
       } else {
-        console.error('error encountered:  ', error);
+        pubSubPlaceHolder.pubSub.close();
       }
-      throw error;
-    }
+    });
+
+    it('A subscribed client should receive an update when a razee subscription has changed', async () => {
+      try {
+         
+        if (pubSubPlaceHolder.enabled === false) {
+          return this.skip();
+        }
+        let dataReceivedFromSub;
+        
+        const subClient = new SubClient({
+          wsUrl: subscriptionUrl,
+          adminToken,
+          orgKey
+        });
+        
+        const query = `subscription ($org_id: String!) {
+            subscriptionUpdated (org_id: $org_id) {
+              has_updates
+            }
+          }`;
+
+        const unsub = subClient
+          .request(query, {
+            org_id: org01._id,
+          })
+          .subscribe({
+            next: data => {
+              dataReceivedFromSub = data.data.subscriptionUpdated.has_updates;
+            },
+            error: error => {
+              console.error('subscription failed', error.stack);
+              throw error;
+            },
+          });
+    
+        await sleep(1200);
+        await channelSubChangedFunc({org_id: org01._id});
+        await sleep(1800);
+        expect(dataReceivedFromSub).to.be.true;
+        await unsub.unsubscribe();
+        await sleep(1200);
+        await subClient.close();
+      } catch (error) {
+        console.log(error);
+        console.error('error response is ', error.response);
+        throw error;
+      }
+    });
+
   });
 
-  it('get should return an empty array when there are no matching tags', async () => {
-    try {
-      const {
-        data: {
-          data: { subscriptionsByTag },
-        },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        org_id: org01._id,
-        tags: ''
-      }, orgKey);
-      expect(subscriptionsByTag).to.have.length(0);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
+ 
 
 });

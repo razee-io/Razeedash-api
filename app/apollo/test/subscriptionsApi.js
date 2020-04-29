@@ -41,9 +41,31 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
+  
+  const removeSubscriptions = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $uuid: String!) {
+            removeSubscription( org_id: $org_id, uuid: $uuid) {
+              uuid
+              success
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
   return {
-    subscriptionsByTag
+    subscriptionsByTag,
+    removeSubscriptions
   };
 };
     

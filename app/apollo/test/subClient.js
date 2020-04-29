@@ -27,6 +27,9 @@ module.exports = class SubClient {
         reconnect: true,
         connectionParams: {
           'authorization': options.token,
+          'headers': {
+            'razee-org-key': options.orgKey
+          }
         },
       },
       ws,
@@ -45,4 +48,3 @@ module.exports = class SubClient {
     this._wsClient.close();
   }
 };
-
