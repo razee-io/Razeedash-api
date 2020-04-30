@@ -17,6 +17,7 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
+const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
@@ -32,23 +33,22 @@ const subscriptionResolvers = {
       const { models, logger } = context;
       const query = 'subscriptionsByTag';
 
-      // TODO: move this to a common auth function
       const orgKey = context.req.headers['razee-org-key'] || '';
       if (!orgKey) {
         logger.error(`No razee-org-key was supplied for ${org_id}`);
-        return []; 
+        throw new ForbiddenError(`No razee-org-key was supplied for ${org_id}`);
       }
 
       const org = await models.Organization.findOne({ _id: org_id });
       if(!org) {
         logger.error(`An org with id ${org_id} was not found`);
-        return [];
+        throw new ForbiddenError('org id was not found');
       }
 
       const foundOrgKey = _.first(org.orgKeys);
       if(foundOrgKey !== orgKey) {
         logger.error(`Invalid razee-org-key for ${org_id}`);
-        return [];
+        throw new ForbiddenError(`Invalid razee-org-key for ${org_id}`);
       }
 
       const userTags = tagsStrToArr(tags);
@@ -263,7 +263,6 @@ const subscriptionResolvers = {
           logger.info('Verify client is authenticated and org_id matches the updated subscription org_id');
           const { subscriptionUpdated } = parent;
 
-          // TODO: move to a common auth function
           const orgKey = apiKey || '';
           if (!orgKey) {
             logger.error(`No razee-org-key was supplied for ${args.org_id}`);
