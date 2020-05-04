@@ -45,7 +45,7 @@ async function signInUser (models, api, userData) {
 }
 
 async function signUpUser (models, api, userData) {
-  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {   
     const result0 = await api.signUp({
       username: userData.username,
       email: userData.email,
