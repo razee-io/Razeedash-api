@@ -175,7 +175,7 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
       meta: me.meta,
     };
   } else {
-      logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
+    logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
   }
   return result;
 };
