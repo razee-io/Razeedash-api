@@ -18,11 +18,17 @@ const { gql } = require('apollo-server-express');
 
 const resourceSchema = gql`
   scalar JSON
+  
+  type ClusterInfo {
+    cluster_id: String!
+    name: String!
+  }
 
   type Resource {
     _id: ID!
     org_id: String!
     cluster_id: String!
+    cluster: ClusterInfo!
     selfLink: String!
     hash: String
     data: String

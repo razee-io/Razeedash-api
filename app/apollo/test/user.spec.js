@@ -23,7 +23,7 @@ const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+const { prepareUser, prepareOrganization, signInUser, signUpUser } = require(`./testHelper.${AUTH_MODEL}`);
 
 let mongoServer;
 let myApollo;
@@ -36,6 +36,7 @@ let org_01;
 
 let rootData;
 let user01Data;
+let user02Data;
 
 let presetOrgs;
 let presetUsers;
@@ -59,6 +60,13 @@ const createUsers = async () => {
     ),
   );
   await prepareUser(models, user01Data);
+
+  user02Data = JSON.parse(
+    fs.readFileSync(
+      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user02.json`, 
+      'utf8'
+    )
+  );
 
   rootData = JSON.parse(
     fs.readFileSync(
@@ -124,6 +132,30 @@ describe('user graphql', () => {
         expect(result1.data.data.me.email).to.be.a('string');
       } catch (error) {
         // console.error('error response is ', error.response);
+        console.error('error response is ', JSON.stringify(error.stack));
+        throw error;
+      }
+    });
+
+    it('sign up a new user and org', async () => {
+      try {
+        token = await signUpUser(models, api, user02Data);
+        console.log(`user01 token=${token}`);
+        const {
+          data: {
+            data: { me },
+          },
+        } = await api.me(token);
+        console.log(JSON.stringify(me, null, 4));
+        expect(me.id).to.be.a('string');
+        expect(me.email).to.be.a('string');
+        expect(me.org_id).to.be.a('string');
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
         console.error('error response is ', JSON.stringify(error.stack));
         throw error;
       }
