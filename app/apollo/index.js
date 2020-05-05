@@ -75,7 +75,7 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
 const createApolloServer = () => {
   const server = new ApolloServer({
     introspection: true,
-    plugins: [apolloMetricsPlugin],
+    plugins: (process.env.GRAPHQL_ENABLE_TRACING === 'true' ? [apolloMetricsPlugin] : []),
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,
