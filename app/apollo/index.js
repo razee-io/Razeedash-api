@@ -29,6 +29,8 @@ const resolvers = require('./resolvers');
 const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
+const createMetricsPlugin = require('apollo-metrics');
+const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 
 const initModule = require(`./init.${AUTH_MODEL}`);
 
@@ -72,6 +74,8 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
 const createApolloServer = () => {
   const server = new ApolloServer({
     introspection: true,
+    plugins: [apolloMetricsPlugin],
+    tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,
     resolvers,
