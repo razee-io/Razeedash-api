@@ -29,6 +29,7 @@ const resolvers = require('./resolvers');
 const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
+const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 
