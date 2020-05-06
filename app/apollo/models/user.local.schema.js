@@ -157,6 +157,24 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
+UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
+  let result = me;
+  if (result != null) {
+    result = {
+      type: me.type,
+      id: me._id,
+      email: me.email,
+      identifier: me.identifier,
+      org_id: me.org_id,
+      role: me.role,
+      meta: me.meta,
+    };
+  } else {
+    logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
+  }
+  return result;
+};
+
 UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
   logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
