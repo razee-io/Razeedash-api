@@ -124,7 +124,7 @@ module.exports = class MongoClient {
 
   async _clientConnect(){
     if (!this._client) {
-      const options = {useNewUrlParser: true};
+      const options = {useNewUrlParser: true, useUnifiedTopology: true};
       if(fs.existsSync(this._mongo.cert)) {
         options['tlsCAFile'] = this._mongo.cert;
         this.log.info(`Using tlsCAFile: ${this._mongo.cert}`);
