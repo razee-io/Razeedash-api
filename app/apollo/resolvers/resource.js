@@ -142,7 +142,7 @@ const resourceResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 20, 500);
 
@@ -164,7 +164,7 @@ const resourceResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 20, 500);
 
@@ -204,7 +204,7 @@ const resourceResolvers = {
       const queryName = 'resourceByKeys';
       const { models, me, req_id, logger } = context;
 
-      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink, queryFields}, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
