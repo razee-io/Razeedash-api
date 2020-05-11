@@ -16,28 +16,14 @@
 
 const userResolvers = {
   Query: {
-    me: async (parent, args, { models, me , req_id, logger }) => {
+    me: async (parent, args, context) => {
+      const { models, me , req_id, logger } = context;
       if (!me) {
         logger.debug(`There is no user information on this context for the request ${req_id}`);
         return null;
       }
-      // TODO: we probably skip database query and directly return user info from
-      // JWT token.
-      let result = await models.User.findOne({ _id: me._id });
-      if (result != null) {
-        result = {
-          type: result.type,
-          id: result.getId(),
-          email: result.getEmail(),
-          identifier: typeof result.getIdentifier === 'function' ? result.getIdentifier() : null, 
-          org_id: result.getCurrentOrgId(),
-          role: result.getCurrentRole(),
-          meta: result.getMeta(),
-        };
-      } else {
-        logger.debug(`Can not locate the user for the user _id: ${me._id} for the request ${req_id}`);
-      }
-      return result;
+
+      return models.User.getCurrentUser(context);
     },
   },
 

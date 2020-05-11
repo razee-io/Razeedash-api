@@ -52,7 +52,7 @@ const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, quer
     }
     return resources;
   } catch (error) {
-    logger.error(error, `commonResourcesDistributedSearch encountered an error for the request ${req_id}`);
+    logger.error(error, `commonResourcesSearch encountered an error for the request ${req_id}`);
     throw error;
   }  
 };
@@ -90,6 +90,29 @@ const readS3File = async (readable) => {
   return data;
 };
 
+const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields, req_id, logger }) => {
+  try {
+
+    let resource = await models.Resource.findOne(searchFilter).lean();
+
+    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
+      const yaml = getS3Data(resource.data, context.logger);
+      resource.data = yaml;
+    }
+
+    if(queryFields['cluster']) {
+      let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id});
+      cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
+      resource.cluster = cluster;
+    }
+
+    return resource;
+  } catch (error) {
+    logger.error(error, `commonResourceSearch encountered an error for the request ${req_id}`);
+    throw error;
+  }
+};
+
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { org_id }, context) => {
@@ -119,7 +142,7 @@ const resourceResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 20, 500);
 
@@ -141,7 +164,7 @@ const resourceResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 20, 500);
 
@@ -158,43 +181,35 @@ const resourceResolvers = {
       return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
     },
 
-    resource: async (parent, { org_id, _id }, context) => {
+    resource: async (parent, { org_id, _id }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resource';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
+
+      logger.debug( {req_id, user: whoIs(me), _id, queryFields}, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      let result = await models.Resource.findOne({ org_id, _id: ObjectId(_id) }).lean();
-      if(!result){
-        throw `resource { org_id: ${org_id}, _id: ${_id} } not found`;
-      }
-
-      // 'result.data' will either be a yaml string or will be a link to a file in COS.
-      // If it's a link then we need to download it and return its contents
-      if (result.data && isLink(result.data) && s3IsDefined()) {
-        const yaml = getS3Data(result.data, logger);
-        result.data = yaml;
-      } 
-      return result;
+      const searchFilter = { org_id, _id: ObjectId(_id) };
+      return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
     },
 
     resourceByKeys: async (
       parent,
       { org_id, cluster_id, selfLink },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourceByKeys';
       const { models, me, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink}, `${queryName} enter`);
+
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink, queryFields}, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-      let result = await models.Resource.findOne({
-        org_id,
-        cluster_id,
-        selfLink,
-      }).lean();
-      return result;
+
+      const searchFilter = { org_id, cluster_id, selfLink };
+      return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
     },
   },
 
