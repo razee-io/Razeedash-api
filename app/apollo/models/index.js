@@ -16,8 +16,11 @@
 
 const bunyan = require('bunyan');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
-const User = require('./user');
+module.exports = {};
+
+const { User } = require('./user');
 const Resource = require('./resource');
 const ResourceSchema = require('./resource.schema');
 const Cluster = require('./cluster');
@@ -147,4 +150,6 @@ async function setupDistributedCollections(mongoUrlsString) {
   });
 }
 
-module.exports = { models, connectDb, setupDistributedCollections, closeDistributedConnections };
+_.assign(module.exports, {
+  models, connectDb, setupDistributedCollections, closeDistributedConnections,
+});

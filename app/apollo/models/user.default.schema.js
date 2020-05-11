@@ -135,6 +135,10 @@ UserDefaultSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
+  return this.isAuthorized(me.user, orgId, action, type, attributes, context);
+};
+
 UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
   logger.debug({ req_id: req_id },`default isAuthorized ${me} ${action} ${type} ${attributes}`);
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {

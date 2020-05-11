@@ -26,6 +26,17 @@ const whoIs = me => {
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
+
+  if(me && me.type == 'userToken'){
+    const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, null, context);
+    if(!result){
+      throw new AuthenticationError(
+        `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
+      );
+    }
+    return;
+  }
+
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
     throw new AuthenticationError(
