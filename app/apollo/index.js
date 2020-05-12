@@ -96,6 +96,7 @@ const createApolloServer = () => {
   }
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
+    introspection: process.env.NODE_ENV !== 'production',
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
