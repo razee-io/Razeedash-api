@@ -166,7 +166,7 @@ const channelResolvers = {
         return (version.name == name);
       });
 
-      if(versionNameExists && versionNameExists.length > 0) {
+      if(versionNameExists) {
         throw `The version name ${name} already exists`;
       }
 
