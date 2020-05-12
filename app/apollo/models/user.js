@@ -62,7 +62,7 @@ const loadMeFromUserToken = async function(userToken, models){
 
 const getMeFromConnectionParamsBase = UserSchema.statics.getMeFromConnectionParams;
 UserSchema.statics.getMeFromRequest = async function(...args){
-  const [req, {models, req_id, logger}] = args;
+  const [req, {models}] = args;
   const userToken = req.get('userToken');
 
   if(userToken){
@@ -74,7 +74,7 @@ UserSchema.statics.getMeFromRequest = async function(...args){
 
 const getMeFromRequestBase = UserSchema.statics.getMeFromRequest;
 UserSchema.statics.getMeFromRequest = async function(...args){
-  const [req, {models, req_id, logger}] = args;
+  const [req, {models}] = args;
   const userToken = req.get('userToken');
 
   if(userToken){

@@ -34,13 +34,10 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const api = apiFunc(graphqlUrl);
 const subscriptionsApi = subscriptionsFunc(graphqlUrl);
 let token;
-let adminToken;
 let orgKey;
 
 let org01Data;
-let org77Data;
 let org01;
-let org77;
 
 let user01Data;
 let user77Data;
@@ -74,13 +71,6 @@ const createOrganizations = async () => {
     ),
   );
   org01 = await prepareOrganization(models, org01Data);
-  org77Data = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_77.json`,
-      'utf8',
-    ),
-  );
-  org77 = await prepareOrganization(models, org77Data);
 };
   
 const createUsers = async () => {
@@ -222,7 +212,6 @@ describe('subscriptions graphql test suite', () => {
     // await getPresetSubs();
   
     token = await signInUser(models, api, user01Data);
-    adminToken = await signInUser(models, api, userRootData);
     orgKey = await getOrgKey();
   }); // before
   

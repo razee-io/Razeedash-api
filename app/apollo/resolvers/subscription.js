@@ -142,7 +142,7 @@ const subscriptionResolvers = {
 
         await models.Subscription.create({
           _id: UUID(),
-          uuid, org_id, name, tags, owner: me._id,
+          uuid, org_id, name, tags, owner: me.user._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
