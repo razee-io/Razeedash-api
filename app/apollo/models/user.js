@@ -15,14 +15,13 @@
  */
 
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
 const { AuthenticationError } = require('apollo-server');
 
 const { AUTH_MODEL } = require('./const');
 const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
 const _ = require('lodash');
 
-const loadMeFromUserToken = async function(userToken, models){
+const loadMeFromUserToken = async function(userToken){
   const user = await this.findOne({ userToken }, {}, { lean:true });
   if(!user){
     throw new AuthenticationError('No user found for userToken');
