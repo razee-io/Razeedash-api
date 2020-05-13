@@ -144,7 +144,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 20, 500);
+      limit = _.clamp(limit, 1, 500);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
@@ -166,7 +166,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 20, 500);
+      limit = _.clamp(limit, 1, 500);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let searchFilter = {
@@ -229,7 +229,6 @@ const resourceResolvers = {
         (parent, args, context) => {
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.org_id);
           context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
-          // TODO: in future probably we should valid authorization here
           return pubSubPlaceHolder.pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
