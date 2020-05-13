@@ -262,6 +262,10 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
+  return this.isAuthorized(me.user, orgId, action, type, attributes, context);
+};
+
 UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);

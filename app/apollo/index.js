@@ -66,7 +66,8 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
   if (connection) {
     const upgradeReq = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
-    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, ...context };
+    const userToken = connection.context.userToken;
+    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, ...context };
   } else if (req) {
     context = { req, req_id: req.id, ...context};
   } 
@@ -105,10 +106,20 @@ const createApolloServer = () => {
       path: GRAPHQL_PATH,
       onConnect: async (connectionParams, webSocket, context) => {
         const req_id = webSocket.upgradeReq.id;
+
+        let orgKey;
+        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
+          orgKey = connectionParams.headers['razee-org-key'];
+        }
+        let userToken;
+        if(connectionParams.headers && connectionParams.headers['userToken']) {
+          userToken = connectionParams.headers['userToken'];
+        }
+
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
-          {req_id, models, logger, ...context},
+          {req_id, models, logger, orgKey, userToken, ...context},
         );
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
@@ -116,13 +127,9 @@ const createApolloServer = () => {
             'Can not find the session for this subscription request.',
           );
         }
-        let orgKey;
-        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
-          orgKey = connectionParams.headers['razee-org-key'];
-        }
         
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey };
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, userToken };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
