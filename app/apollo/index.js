@@ -74,10 +74,32 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
   return context;
 };
 
+const loadCustomPlugins =  () => {
+  if (process.env.GRAPHQL_CUSTOM_PLUGINS) {
+    try {
+      const pluginStrs = process.env.GRAPHQL_CUSTOM_PLUGINS.split(';');
+      return pluginStrs.map( str => {
+        logger.info('Loading custom plugin: ' + str);
+        return require(str);
+      });
+    } catch (err) {
+      logger.error(err, 'Error encountered when loading custom plugin.');
+      process.exit(1);
+    }
+  }
+  return [];
+};
+
 const createApolloServer = () => {
+  const customPlugins = loadCustomPlugins();
+  if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
+    logger.info('Adding metrics plugin: apollo-metrics');
+    customPlugins.push(apolloMetricsPlugin);
+  }
+  logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
-    introspection: true,
-    plugins: (process.env.GRAPHQL_ENABLE_TRACING === 'true' ? [apolloMetricsPlugin] : []),
+    introspection: process.env.NODE_ENV !== 'production',
+    plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,

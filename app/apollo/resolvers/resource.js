@@ -144,7 +144,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 20, 500);
+      limit = _.clamp(limit, 1, 500);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
@@ -166,7 +166,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 20, 500);
+      limit = _.clamp(limit, 1, 500);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let searchFilter = {
