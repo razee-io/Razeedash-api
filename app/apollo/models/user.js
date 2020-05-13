@@ -23,36 +23,9 @@ const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
 const _ = require('lodash');
 
 const loadMeFromUserToken = async function(userToken, models){
-  let obj, userId, orgId;
-  try {
-    obj = jwt.decode(userToken);
-    userId = obj.userId;
-    orgId = obj.orgId;
-  }catch(err){
-    throw new AuthenticationError('Failed to parse userToken');
-  }
-  if(!userId){
-    throw new AuthenticationError('No user id found in userToken');
-  }
-  const user = await this.findById(userId, {}, { lean:true });
+  const user = await this.findOne({ userToken }, {}, { lean:true });
   if(!user){
     throw new AuthenticationError('No user found for userToken');
-  }
-  const org = await models.Organization.findById(orgId);
-  if(!org){
-    throw new AuthenticationError('No org found for userToken');
-  }
-  const hasVerifiedToken = _.some(org.orgKeys, (orgKey)=>{
-    try{
-      jwt.verify(userToken, orgKey);
-      return true;
-    }
-    catch(err){
-      return false;
-    }
-  });
-  if(!hasVerifiedToken){
-    throw new AuthenticationError('userToken could not be verified');
   }
   return {
     type: 'userToken',
@@ -61,7 +34,7 @@ const loadMeFromUserToken = async function(userToken, models){
 };
 
 const getMeFromConnectionParamsBase = UserSchema.statics.getMeFromConnectionParams;
-UserSchema.statics.getMeFromRequest = async function(...args){
+UserSchema.statics.getMeFromConnectionParams = async function(...args){
   const [req, {models}] = args;
   const userToken = req.get('userToken');
 
