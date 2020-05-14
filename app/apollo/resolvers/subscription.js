@@ -29,28 +29,22 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const subscriptionResolvers = {
   Query: {
-    subscriptionsByTag: async(parent, { org_id, tags }, context) => {
+    subscriptionsByTag: async(parent, { tags }, context) => {
       const { models, logger } = context;
       const query = 'subscriptionsByTag';
 
       const orgKey = context.req.headers['razee-org-key'] || '';
       if (!orgKey) {
-        logger.error(`No razee-org-key was supplied for ${org_id}`);
-        throw new ForbiddenError(`No razee-org-key was supplied for ${org_id}`);
+        logger.error('No razee-org-key was supplied');
+        throw new ForbiddenError('No razee-org-key was supplied');
       }
 
-      const org = await models.Organization.findOne({ _id: org_id });
+      const org = await models.Organization.findOne({ orgKeys: orgKey });
       if(!org) {
-        logger.error(`An org with id ${org_id} was not found`);
+        logger.error('An org was not found for this razee-org-key');
         throw new ForbiddenError('org id was not found');
       }
-
-      const foundOrgKey = _.first(org.orgKeys);
-      if(foundOrgKey !== orgKey) {
-        logger.error(`Invalid razee-org-key for ${org_id}`);
-        throw new ForbiddenError(`Invalid razee-org-key for ${org_id}`);
-      }
-
+      const org_id = org._id;
       const userTags = tagsStrToArr(tags);
 
       logger.debug({user: 'graphql api user', org_id, tags }, `${query} enter`);
@@ -234,7 +228,6 @@ const subscriptionResolvers = {
       resolve: async (parent, args) => {
         //  
         // Sends a message back to a subscribed client
-        // 'args' contains the org_id of a connected client
         // 'parent' is the object representing the subscription that was updated
         // 
         return { 'has_updates': true };
@@ -242,14 +235,26 @@ const subscriptionResolvers = {
 
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
-        (parent, args, context) => {
+        async (parent, args, context) => {
           //  
           //  This function runs when a client initially connects
           // 'args' contains the razee-org-key sent by a connected client
           // 
           const { logger } = context;
-          logger.info('A client is connected with args:', args);
-          const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, args.org_id);
+          const orgKey = context.apiKey || '';
+          if (!orgKey) {
+            logger.error('No razee-org-key was supplied');
+            throw new ForbiddenError('No razee-org-key was supplied');
+          }
+
+          const org = await models.Organization.findOne({ orgKeys: orgKey });
+          if(!org) {
+            logger.error('An org was not found for this razee-org-key');
+            throw new ForbiddenError('org id was not found');
+          }
+          const orgId = org._id;
+          const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
+
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         // eslint-disable-next-line no-unused-vars

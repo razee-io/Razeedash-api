@@ -74,9 +74,9 @@ const subscriptionSchema = gql`
      """
      subscription(org_id: String!, uuid: String!): ChannelSubscription
      """
-     Gets all subscriptions that match a set of tags for an org_id 
+     Gets all subscriptions that match a set of tags for an org
      """
-     subscriptionsByTag(org_id: String! tags: String): [UpdatedSubscription]
+     subscriptionsByTag(tags: String): [UpdatedSubscription]
   }
   extend type Mutation {
      """
@@ -95,7 +95,7 @@ const subscriptionSchema = gql`
      removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
-    subscriptionUpdated(org_id: String!): SubscriptionUpdated!
+    subscriptionUpdated: SubscriptionUpdated!
   }
 `;
 

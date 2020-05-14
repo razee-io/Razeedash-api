@@ -22,7 +22,7 @@ const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
 const _ = require('lodash');
 
 const loadMeFromUserToken = async function(userToken){
-  const user = await this.findOne({ userToken }, {}, { lean:true });
+  const user = await this.findOne({ apiKey: userToken }, {}, { lean:true });
   if(!user){
     throw new AuthenticationError('No user found for userToken');
   }
