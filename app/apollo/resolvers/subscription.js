@@ -235,26 +235,27 @@ const subscriptionResolvers = {
 
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
-        async (parent, args, context) => {
+        (parent, args, context) => {
           //  
           //  This function runs when a client initially connects
           // 'args' contains the razee-org-key sent by a connected client
           // 
           const { logger } = context;
+
           const orgKey = context.apiKey || '';
           if (!orgKey) {
             logger.error('No razee-org-key was supplied');
             throw new ForbiddenError('No razee-org-key was supplied');
           }
 
-          const org = await models.Organization.findOne({ orgKeys: orgKey });
-          if(!org) {
-            logger.error('An org was not found for this razee-org-key');
-            throw new ForbiddenError('org id was not found');
+          const orgId = context.orgId || '';
+          if (!orgId) {
+            logger.error('No org was found for this org key');
+            throw new ForbiddenError('No org was found');
           }
-          const orgId = org._id;
-          const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
 
+          logger.debug('setting pub sub topic for org id:', orgId);
+          const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         // eslint-disable-next-line no-unused-vars
@@ -262,31 +263,25 @@ const subscriptionResolvers = {
           // 
           // this function determines whether or not to send data back to a subscriber
           //
-          const { logger, apiKey } = context;
+          const { logger } = context;
           let found = true;
 
           logger.info('Verify client is authenticated and org_id matches the updated subscription org_id');
           const { subscriptionUpdated } = parent;
 
-          const orgKey = apiKey || '';
+          const orgKey = context.apiKey || '';
           if (!orgKey) {
-            logger.error(`No razee-org-key was supplied for ${args.org_id}`);
+            logger.error('No razee-org-key was supplied');
+            return Boolean(false);
+          }
+          
+          const orgId = context.orgId || '';
+          if (!orgId) {
+            logger.error('No org was found for this org key. returning false');
             return Boolean(false);
           }
 
-          const org = await models.Organization.findOne({ _id: args.org_id });
-          if(!org) {
-            logger.error(`An org with id ${args.org_id} was not found`);
-            return Boolean(false);
-          }
-
-          const foundOrgKey = _.first(org.orgKeys);
-          if(foundOrgKey !== orgKey) {
-            logger.error(`Invalid razee-org-key for ${args.org_id}`);
-            return Boolean(false);
-          }
-
-          if(subscriptionUpdated.data.org_id !== args.org_id) {
+          if(subscriptionUpdated.data.org_id !== orgId) {
             logger.error('wrong org id for this subscription.  returning false');
             found = false;
           }

@@ -67,7 +67,8 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
     const upgradeReq = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
-    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, ...context };
+    const orgId = connection.context.orgId;
+    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, orgId, ...context };
   } else if (req) {
     context = { req, req_id: req.id, ...context};
   } 
@@ -129,9 +130,11 @@ const createApolloServer = () => {
       onConnect: async (connectionParams, webSocket, context) => {
         const req_id = webSocket.upgradeReq.id;
 
-        let orgKey;
+        let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
+          const org = await models.Organization.findOne({ orgKeys: orgKey });
+          orgId = org._id;
         }
         let userToken;
         if(connectionParams.headers && connectionParams.headers['userToken']) {
@@ -141,7 +144,7 @@ const createApolloServer = () => {
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams(
           connectionParams,
-          {req_id, models, logger, orgKey, userToken, ...context},
+          {req_id, models, logger, orgKey, userToken, orgId, ...context},
         );
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
@@ -151,7 +154,7 @@ const createApolloServer = () => {
         }
         
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, userToken };
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, userToken, orgId };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(

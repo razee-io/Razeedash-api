@@ -193,4 +193,3 @@ UserDefaultSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserDefaultSchema;
-
