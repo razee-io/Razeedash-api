@@ -34,8 +34,7 @@ const loadMeFromUserToken = async function(userToken){
 
 const getMeFromConnectionParamsBase = UserSchema.statics.getMeFromConnectionParams;
 UserSchema.statics.getMeFromConnectionParams = async function(...args){
-  const [req, {models}] = args;
-  const userToken = req.get('userToken');
+  const [, {models, userToken}] = args;
 
   if(userToken){
     return await loadMeFromUserToken.bind(this)(userToken, models);
