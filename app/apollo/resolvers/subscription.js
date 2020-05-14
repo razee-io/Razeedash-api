@@ -23,7 +23,6 @@ const { whoIs, validAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { models } = require('../models');
 
 const pubSub = GraphqlPubSub.getInstance();
 
