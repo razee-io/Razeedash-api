@@ -104,6 +104,8 @@ items:
                   optional: true
             - name: REDIS_CONN_JSON
               value: '{"host":"redis-service", "port": 6379}'
+            - name: ENABLE_GRAPHQL
+              value: true
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
