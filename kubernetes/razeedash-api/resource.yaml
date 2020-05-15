@@ -105,7 +105,9 @@ items:
             - name: REDIS_CONN_JSON
               value: '{"host":"redis-service", "port": 6379}'
             - name: ENABLE_GRAPHQL
-              value: true
+              value: "true"
+            - name: AUTH_MODEL
+              value: "default"
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
