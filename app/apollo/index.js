@@ -138,8 +138,8 @@ const createApolloServer = () => {
           orgId = org._id;
         }
         let userToken;
-        if(connectionParams.headers && connectionParams.headers['userToken']) {
-          userToken = connectionParams.headers['userToken'];
+        if(connectionParams.headers && connectionParams.headers['x-api-key']) {
+          userToken = connectionParams.headers['x-api-key'];
         }
 
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');

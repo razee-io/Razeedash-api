@@ -46,7 +46,7 @@ UserSchema.statics.getMeFromConnectionParams = async function(...args){
 const getMeFromRequestBase = UserSchema.statics.getMeFromRequest;
 UserSchema.statics.getMeFromRequest = async function(...args){
   const [req, {models}] = args;
-  const userToken = req.get('userToken');
+  const userToken = req.get('x-api-key');
 
   if(userToken){
     return await loadMeFromUserToken.bind(this)(userToken, models);
