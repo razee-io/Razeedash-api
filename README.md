@@ -27,7 +27,6 @@ Razeedash-API is the interface used by
 | S3_BUCKET_PREFIX        | no                     | 'razee'|
 | ORG_ADMIN_KEY           | no                     | n/a |
 | ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
-| ENABLE_GRAPHQL          | no                     | false, [true , false] are supported |
 | AUTH_MODEL              | no                     | n/a, [local, passport.local] are supported |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
@@ -537,15 +536,9 @@ the augmented data to the resource.
 The resource will have a new attribute `badges`.  The badge will replace any
 existing badge with the same webhook_id or if it does not exist, add to the array.
 
-## Graphql for local development
-
-We are still actively working on graphql improvements. By default the feature is  
-disabled. To enable [Apollo](https://www.apollographql.com/docs/apollo-server/)  
-based graphql server and test it on your local machine. (WARNING: do not enable  
-bellow for any production environment.)
+## GraphQL for local development
 
 ```shell
-export ENABLE_GRAPHQL=true
 export AUTH_MODEL=local
 ```
 

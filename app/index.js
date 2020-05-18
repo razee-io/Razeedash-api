@@ -85,10 +85,7 @@ initialize().then((db) => {
 
 
 async function onReady() {
-  if (process.env.ENABLE_GRAPHQL === 'true') {
-    // before listening on the port, apply apollo server if enabled
-    await apollo({app, httpServer: server});
-  } 
+  await apollo({app, httpServer: server});
   server.listen(port);
 }
 

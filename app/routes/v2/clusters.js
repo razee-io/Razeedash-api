@@ -244,7 +244,7 @@ const updateClusterResources = async (req, res, next) => {
 
           const result = await Resources.updateOne(key, changes, options);
           // publish notification to graphql
-          if (process.env.ENABLE_GRAPHQL === 'true' && result) {
+          if (result) {
             let resourceId = null;
             let resourceCreated = Date.now; 
             if (result.upsertedId) {
@@ -291,9 +291,7 @@ const updateClusterResources = async (req, res, next) => {
               }
             );
             await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
-            if (process.env.ENABLE_GRAPHQL === 'true') {
-              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
-            }
+            pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
           }
           break;
         }

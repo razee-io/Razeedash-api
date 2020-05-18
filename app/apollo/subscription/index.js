@@ -55,14 +55,12 @@ class PubSubImpl {
     this.enabled = false;
     this.pubSub = null;
     this.redisUrl = params.redisUrl || process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
-    if (process.env.ENABLE_GRAPHQL) {
-      logger.info(
-        `Apollo streaming service is configured on redisUrl: ${obscureUrl(
-          this.redisUrl,
-        )}`,
-      );
-      this.isRedisReachable();
-    }
+    logger.info(
+      `Apollo streaming service is configured on redisUrl: ${obscureUrl(
+        this.redisUrl,
+      )}`,
+    );
+    this.isRedisReachable();
   }
     
   async isRedisReachable() {
