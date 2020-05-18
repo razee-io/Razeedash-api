@@ -127,7 +127,7 @@ const createApolloServer = () => {
     },
     subscriptions: {
       path: GRAPHQL_PATH,
-      keepAlive: 30000,
+      keepAlive: 10000,
       onConnect: async (connectionParams, webSocket, context) => {
         const req_id = webSocket.upgradeReq.id;
 
