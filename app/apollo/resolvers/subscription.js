@@ -155,6 +155,7 @@ const subscriptionResolvers = {
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} passed validAuth check`);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
@@ -182,6 +183,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
 
+        logger.debug(`calling channelSubChangedFunc for ${org_id}`);
         pubSub.channelSubChangedFunc({org_id: org_id});
 
         return {
