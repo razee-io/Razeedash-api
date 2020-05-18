@@ -90,7 +90,6 @@ class PubSubImpl {
   }
 
   async channelSubChangedFunc(data) {
-    logger.debug(`channelSubChangedFunc this.enabled is: ${this.enabled}`);
     if (this.enabled) {
       try {
         const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
@@ -99,8 +98,6 @@ class PubSubImpl {
       } catch (error) {
         logger.error(error, 'Channel subscription publish error');
       }
-    } else {
-      logger.debug('channelSubChangedFunc skipping publish since pubsub is not enabled');
     }
     return data;
   }

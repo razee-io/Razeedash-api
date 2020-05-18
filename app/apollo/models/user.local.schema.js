@@ -265,7 +265,6 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
 
   // a userToken user would have already been verified in loadMeFromUserToken
-  logger.debug(context.me.type, 'local user type');
   if(context.me.type === 'userToken' ) {
     logger.debug('razeedash userToken user. Setting isAuthorized=true');
     return true;
