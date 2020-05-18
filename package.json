@@ -54,7 +54,7 @@
     "graphql-resolvers": "^0.4.2",
     "graphql-tag": "^2.10.3",
     "graphql-type-json": "^0.3.1",
-    "ioredis": "^4.16.1",
+    "ioredis": "^4.17.1",
     "is-port-reachable": "^3.0.0",
     "json-key-validate": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
