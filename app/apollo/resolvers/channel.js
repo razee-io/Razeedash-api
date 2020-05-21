@@ -98,9 +98,13 @@ const channelResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
-      try{
+      try {
+        // might not necessary with uunique index. Worth to check to return error better.
+        const channel = await models.Channel.findOne({ name, org_id });
+        if(channel){
+          throw new ValidationError(`The channel name ${name} already exists.`);
+        }
         const uuid = UUID();
-
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
@@ -228,12 +232,12 @@ const channelResolvers = {
         type,
       };
 
+      const dObj = await models.DeployableVersion.create(deployableVersionObj);
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description, location,
+        created: dObj.created
       };
-
-      await models.DeployableVersion.create(deployableVersionObj);
 
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },

@@ -142,6 +142,18 @@ async function initialize(){
           options: { name: 'org_id.cluster_id'}
         }
       ],
+      channels: [
+        {
+          keys: { org_id: 1, name: 1 },
+          options: { name: 'org_id.name', unique: true }
+        }
+      ],
+      deployableVersions: [
+        {
+          keys: { org_id: 1, channel_id: 1, name: 1},
+          options: { name: 'org_id.channel_id.name', unique: true }
+        }
+      ],
       resourceStats:[
         {
           keys: { org_id: 1 },
