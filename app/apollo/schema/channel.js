@@ -22,7 +22,8 @@ const channelSchema = gql`
     uuid: String!
     name: String!
     description: String
-    location: String!  
+    location: String!
+    created: Date
   }
   type Channel {
     uuid: String!

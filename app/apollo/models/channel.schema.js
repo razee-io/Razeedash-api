@@ -47,6 +47,10 @@ const ChannelSchema = new mongoose.Schema({
       location: {
         type: String,
       },
+      created: {
+        type: Date,
+        default: Date.now,
+      }
     }
   ],
 });
