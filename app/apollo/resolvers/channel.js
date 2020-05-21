@@ -232,7 +232,7 @@ const channelResolvers = {
         type,
       };
 
-      dObj = await models.DeployableVersion.create(deployableVersionObj);
+      const dObj = await models.DeployableVersion.create(deployableVersionObj);
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description, location,
