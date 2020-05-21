@@ -15,62 +15,9 @@
  */
 
 const mongoose = require('mongoose');
-const { AuthenticationError } = require('apollo-server');
 
 const { AUTH_MODEL } = require('./const');
 const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
-const _ = require('lodash');
-
-const loadMeFromUserToken = async function(userToken){
-  const user = await this.findOne({ apiKey: userToken }, {}, { lean:true });
-  if(!user){
-    throw new AuthenticationError('No user found for userToken');
-  }
-  return {
-    type: 'userToken',
-    user,
-  };
-};
-
-const getMeFromConnectionParamsBase = UserSchema.statics.getMeFromConnectionParams;
-UserSchema.statics.getMeFromConnectionParams = async function(...args){
-  const [, {models, userToken}] = args;
-
-  if(userToken){
-    return await loadMeFromUserToken.bind(this)(userToken, models);
-  }
-
-  return await getMeFromConnectionParamsBase.bind(this)(...args);
-};
-
-const getMeFromRequestBase = UserSchema.statics.getMeFromRequest;
-UserSchema.statics.getMeFromRequest = async function(...args){
-  const [req, {models}] = args;
-  const userToken = req.get('x-api-key');
-
-  if(userToken){
-    return await loadMeFromUserToken.bind(this)(userToken, models);
-  }
-
-  return await getMeFromRequestBase.bind(this)(...args);
-};
-
-UserSchema.statics.getBasicUsersByIds = async function(ids){
-  if(!ids || ids.length < 1){
-    return [];
-  }
-  var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
-  users = users.map((user)=>{
-    var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
-    return {
-      _id,
-      name,
-    };
-  });
-  users = _.keyBy(users, '_id');
-  return users;
-};
 
 const User = mongoose.model('users', UserSchema);
 

@@ -137,16 +137,10 @@ const createApolloServer = () => {
           const org = await models.Organization.findOne({ orgKeys: orgKey });
           orgId = org._id;
         }
-        let userToken;
-        if(connectionParams.headers && connectionParams.headers['x-api-key']) {
-          userToken = connectionParams.headers['x-api-key'];
-        }
 
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
-        const me = await models.User.getMeFromConnectionParams(
-          connectionParams,
-          {req_id, models, logger, orgKey, userToken, orgId, ...context},
-        );
+        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
+        
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
           throw Error(
@@ -155,7 +149,7 @@ const createApolloServer = () => {
         }
         
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, userToken, orgId };
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(

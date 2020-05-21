@@ -29,16 +29,12 @@ const pubSub = GraphqlPubSub.getInstance();
 const subscriptionResolvers = {
   Query: {
     subscriptionsByTag: async(parent, { tags }, context) => {
-      const { models, logger } = context;
+      const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByTag';
+      logger.debug({req_id, user: whoIs(me)}, `${query} enter`);
+      await validAuth(me, null, ACTIONS.READ, TYPES.SUBSCRIPTION, query, context);
 
-      const orgKey = context.req.headers['razee-org-key'] || '';
-      if (!orgKey) {
-        logger.error('No razee-org-key was supplied');
-        throw new ForbiddenError('No razee-org-key was supplied');
-      }
-
-      const org = await models.Organization.findOne({ orgKeys: orgKey });
+      const org = await models.User.getOrg(models, me);
       if(!org) {
         logger.error('An org was not found for this razee-org-key');
         throw new ForbiddenError('org id was not found');
@@ -135,7 +131,7 @@ const subscriptionResolvers = {
 
         await models.Subscription.create({
           _id: UUID(),
-          uuid, org_id, name, tags, owner: me.user._id,
+          uuid, org_id, name, tags, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 

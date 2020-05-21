@@ -19,6 +19,7 @@ const whoIs = me => {
   if (me === null || me === undefined) return 'null';
   if (me.email) return me.email;
   if (me.identifier) return me.identifier;
+  if (me.type) return me.type;
   return me._id;
 };
 
@@ -26,12 +27,25 @@ const whoIs = me => {
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
+  logger.debug('validAuth', me);
 
+  // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, null, context);
     if(!result){
       throw new AuthenticationError(
         `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
+      );
+    }
+    return;
+  }
+
+  // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
+  if(me && me.type == 'cluster'){
+    const result = await models.User.isValidOrgKey(models, me);
+    if(!result){
+      throw new AuthenticationError(
+        `You are not allowed to ${action} on ${type} for the query ${queryName}. (using razee-org-key)`,
       );
     }
     return;
