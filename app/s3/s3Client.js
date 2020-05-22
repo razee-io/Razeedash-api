@@ -142,7 +142,7 @@ module.exports = class S3Client {
       }
     }catch(err){
       this.log.error('could not create bucket', { bucketName });
-      throw error;
+      throw err;
     }
 
     const key = Buffer.concat([Buffer.from(encryptionKey)], 32);
