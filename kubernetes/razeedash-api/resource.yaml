@@ -115,7 +115,7 @@ items:
                 path: /api/kube/liveness
                 port: 3333
               initialDelaySeconds: 5
-              periodSeconds: 10
+              periodSeconds: 20
               timeoutSeconds: 2
             resources:
               requests:

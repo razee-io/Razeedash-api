@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { AuthenticationError } = require('apollo-server');
+const { ForbiddenError, ApolloError } = require('apollo-server');
+
 
 const whoIs = me => { 
   if (me === null || me === undefined) return 'null';
@@ -27,12 +28,20 @@ const whoIs = me => {
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
-    logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
-    throw new AuthenticationError(
+    logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
+    throw new ForbiddenError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
     );
   }
 }; 
 
-module.exports =  { whoIs, validAuth };
+// Not Found Error when look up db
+class NotFoundError extends ApolloError {
+  constructor(message) {
+    super(message, 'NOT_FOUND');
+    Object.defineProperty(this, 'name', { value: 'NotFoundError' });
+  }
+}
+
+module.exports =  { whoIs, validAuth, NotFoundError };
 

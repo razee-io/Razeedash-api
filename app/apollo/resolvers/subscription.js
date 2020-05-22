@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { pub } = require('../../utils/pubsub');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 
 const resourceResolvers = {
@@ -77,7 +77,7 @@ const resourceResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw `channel uuid "${channel_uuid}" not found`;
+          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
         // loads the version
@@ -85,7 +85,7 @@ const resourceResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw `version uuid "${version_uuid}" not found`;
+          throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
 
         await models.Subscription.create({
@@ -118,13 +118,13 @@ const resourceResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription { uuid: "${uuid}", org_id:${org_id} } not found`;
+          throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
         }
 
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw `channel uuid "${channel_uuid}" not found`;
+          throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
         // loads the version
@@ -132,7 +132,7 @@ const resourceResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw `version uuid "${version_uuid}" not found`;
+          throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
 
         var sets = {
@@ -168,7 +168,7 @@ const resourceResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription uuid "${uuid}" not found`;
+          throw  new NotFoundError(`subscription uuid "${uuid}" not found`);
         }
         await subscription.deleteOne();
 
