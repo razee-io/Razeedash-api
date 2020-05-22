@@ -167,7 +167,7 @@ module.exports = class S3Client {
     };
   }
 
-  async getAndDecryptFile(bucketName, path, key, iv) {
+  getAndDecryptFile(bucketName, path, key, iv) {
     return new Promise(async (resolve, reject) => {
       try {
         const { WritableStreamBuffer } = require('stream-buffers');
