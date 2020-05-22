@@ -17,6 +17,7 @@ const clone = require('clone');
 const AWS = require('aws-sdk');
 const crypto = require('crypto');
 const _ = require('lodash');
+const stream = require('stream');
 
 const encryptionAlgorithm = 'aes-256-cbc';
 
@@ -182,60 +183,62 @@ module.exports = class S3Client {
 
     const cipher = crypto.createCipheriv(encryptionAlgorithm, key, iv);
 
-    // let encrypted = cipher.update(content);
-    // encrypted = Buffer.concat([encrypted, cipher.final()]);
-
-    const awsPromise = this._aws.upload({
+    const awsStream = this._aws.upload({
       Bucket: bucketName,
       Key: path,
-      Body: cipher,
-    }).promise();
-
-    cipher.write(content);
-    cipher.end();
-
-    await awsPromise;
-
-    console.log('encrypted with', bucketName, path, content, key, iv, ivText);
+      Body: stream.Readable.from(content).pipe(cipher),
+    });
+    await awsStream.promise();
 
     const url = `${this._conf.endpoint.match(/^http/i) ? '' : 'https://'}${this._conf.endpoint}/${bucketName}/${path}`;
-
     return {
       url, ivText,
     };
   }
 
-  async getAndDecryptFile(bucketName, path, key, iv){
-    console.log(1110, bucketName, path, key, iv);
-    if(_.isString(iv)){
-      iv = Buffer.from(iv, 'base64');
-    }
-    key = Buffer.concat([Buffer.from(key)], 32);
+  async getAndDecryptFile(bucketName, path, key, iv) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const { WritableStreamBuffer } = require('stream-buffers');
 
-    var result = await this.getObject(bucketName, path).promise();
-    var content = result.Body;
-    console.log(3333, bucketName, path, content, key, iv);
-    const decipher = crypto.createDecipheriv(encryptionAlgorithm, key, iv);
-    let out = decipher.update(content);
-    out = Buffer.concat([out, decipher.final()]);
-    out = out.toString('utf8');
-    console.log(4444, out);
-    return out;
+        //path = path + 'adsfsdfdf';
+        console.log(1110, bucketName, path, key, iv);
+        if (_.isString(iv)) {
+          iv = Buffer.from(iv, 'base64');
+        }
+        key = Buffer.concat([Buffer.from(key)], 32);
 
+        const awsStream = this.getObject(bucketName, path).createReadStream();
+        const decipher = crypto.createDecipheriv(encryptionAlgorithm, key, iv);
 
-    // try {
-    //   const s3stream = this.getObject(bucketName, path).createReadStream();
-    //   const yaml = await readS3File(s3stream);
-    //   return yaml;
-    // }
-    // catch (error) {
-    //   this.log.error(error, 'Error retrieving data from s3 bucket');
-    //   throw(error);
-    // }
+        var buf = new WritableStreamBuffer();
+        stream.pipeline(
+          awsStream,
+          decipher,
+          buf,
+          (err) => {
+            if(err){
+              reject(err);
+              return;
+            }
+            try {
+              //buf = null;
+              resolve(buf.getContents().toString('utf8'));
+            }
+            catch(err){
+              reject(err);
+            }
+          }
+        );
+      }
+      catch(err){
+        reject(err);
+      }
+    });
   }
 };
 
-setTimeout(async()=>{
+;((async()=>{
   var s3Client = new module.exports(require('../conf.js').conf);
   var bucketName = 'razee--k4tty77xnpmgjppfw';
   var path = 'blah';
@@ -246,14 +249,14 @@ setTimeout(async()=>{
 
   console.log(11111, bucketName, path, content, encryptionKey, ivText, iv);
 
-  await s3Client.encryptAndUploadFile(bucketName, path, content, encryptionKey, iv);
+  var out = await s3Client.encryptAndUploadFile(bucketName, path, content, encryptionKey, iv);
 
-  console.log('uploaded');
+  console.log('uploaded', out);
 
-  await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
+  var out = await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
 
-  console.log('downloaded');
-},1);
+  console.log('downloaded', out);
+})());
 
 // const readS3File = async (readable) => {
 //   readable.setEncoding('utf8');
