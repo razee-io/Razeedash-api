@@ -133,35 +133,6 @@ module.exports = class S3Client {
     }
   }
 
-  // async uploadFile(bucketName, path, content){
-  //   try {
-  //     const exists = await this.bucketExists(bucketName);
-  //     if(!exists){
-  //       this.log.warn('bucket does not exist', { bucketName });
-  //       await this.createBucket(bucketName);
-  //     }
-  //   }catch(err){
-  //     this.log.error('could not create bucket', { bucketName });
-  //     throw err;
-  //   }
-  //
-  //   const result = await this._aws.upload({
-  //     Bucket: bucketName,
-  //     Key: path,
-  //     Body: content,
-  //   }).promise();
-  //
-  //   return `${this._conf.endpoint.match(/^http/i) ? 'https://' : ''}${this._conf.endpoint}/${bucketName}/${path}`;
-  // }
-
-  // const s3 = new AWS.S3(conf.s3);
-  // const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
-  // const encrypt = crypto.createCipheriv(algorithm, key, iv);
-  // const pipe = req.pipe(encrypt);
-  // const params = {Bucket: bucket, Key: resourceName, Body: pipe};
-  // const upload = s3.upload( params );
-  // await upload.promise();
-
   async encryptAndUploadFile(bucketName, path, content, encryptionKey, iv=null){
     try {
       const exists = await this.bucketExists(bucketName);
@@ -201,8 +172,6 @@ module.exports = class S3Client {
       try {
         const { WritableStreamBuffer } = require('stream-buffers');
 
-        //path = path + 'adsfsdfdf';
-        console.log(1110, bucketName, path, key, iv);
         if (_.isString(iv)) {
           iv = Buffer.from(iv, 'base64');
         }
@@ -222,7 +191,6 @@ module.exports = class S3Client {
               return;
             }
             try {
-              //buf = null;
               resolve(buf.getContents().toString('utf8'));
             }
             catch(err){
@@ -238,31 +206,23 @@ module.exports = class S3Client {
   }
 };
 
-;((async()=>{
-  var s3Client = new module.exports(require('../conf.js').conf);
-  var bucketName = 'razee--k4tty77xnpmgjppfw';
-  var path = 'blah';
-  var content = 'this is teh content';
-  var encryptionKey = 'orgApiKey-21fd8bfa-cc1d-43dd-988f-ddec98d72db7';
-  var ivText = 'oRAApY8YmWQx5a98rUVkhg==';
-  var iv = Buffer.from(ivText, 'base64');
+// ;((async()=>{
+//   var s3Client = new module.exports(require('../conf.js').conf);
+//   var bucketName = 'razee--k4tty77xnpmgjppfw';
+//   var path = 'blah';
+//   var content = 'this is teh content';
+//   var encryptionKey = 'orgApiKey-21fd8bfa-cc1d-43dd-988f-ddec98d72db7';
+//   var ivText = 'oRAApY8YmWQx5a98rUVkhg==';
+//   var iv = Buffer.from(ivText, 'base64');
+//
+//   console.log(11111, bucketName, path, content, encryptionKey, ivText, iv);
+//
+//   var out = await s3Client.encryptAndUploadFile(bucketName, path, content, encryptionKey, iv);
+//
+//   console.log('uploaded', out);
+//
+//   var out = await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
+//
+//   console.log('downloaded', out);
+// })());
 
-  console.log(11111, bucketName, path, content, encryptionKey, ivText, iv);
-
-  var out = await s3Client.encryptAndUploadFile(bucketName, path, content, encryptionKey, iv);
-
-  console.log('uploaded', out);
-
-  var out = await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
-
-  console.log('downloaded', out);
-})());
-
-// const readS3File = async (readable) => {
-//   readable.setEncoding('utf8');
-//   let data = '';
-//   for await (const chunk of readable) {
-//     data += chunk;
-//   }
-//   return data;
-// };

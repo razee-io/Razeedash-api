@@ -202,8 +202,6 @@ const channelResolvers = {
         const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, content, orgKey, iv);
         data = result.url;
 
-        console.log(22222, result);
-
         location = 's3';
       }
 
