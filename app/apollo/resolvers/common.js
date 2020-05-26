@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { AuthenticationError } = require('apollo-server');
+const { ForbiddenError, ApolloError } = require('apollo-server');
+
 
 const whoIs = me => { 
   if (me === null || me === undefined) return 'null';
@@ -33,7 +34,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, null, context);
     if(!result){
-      throw new AuthenticationError(
+      throw new ForbiddenError(
         `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
       );
     }
@@ -44,7 +45,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
   if(me && me.type == 'cluster'){
     const result = await models.User.isValidOrgKey(models, me);
     if(!result){
-      throw new AuthenticationError(
+      throw new ForbiddenError(
         `You are not allowed to ${action} on ${type} for the query ${queryName}. (using razee-org-key)`,
       );
     }
@@ -52,11 +53,19 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
   }
 
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
-    logger.error({req_id, me: whoIs(me), org_id, action, type}, `AuthenticationError - ${queryName}`);
-    throw new AuthenticationError(
+    logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
+    throw new ForbiddenError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
     );
   }
 }; 
 
-module.exports =  { whoIs, validAuth };
+// Not Found Error when look up db
+class NotFoundError extends ApolloError {
+  constructor(message) {
+    super(message, 'NOT_FOUND');
+    Object.defineProperty(this, 'name', { value: 'NotFoundError' });
+  }
+}
+
+module.exports =  { whoIs, validAuth, NotFoundError };

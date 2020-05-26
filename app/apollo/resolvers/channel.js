@@ -17,9 +17,10 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const crypto = require('crypto');
+const { UserInputError, ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
@@ -65,18 +66,18 @@ const channelResolvers = {
 
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         if(!channel){
-          throw `Could not find the channel with uuid "${channel_uuid}"`;
+          throw new NotFoundError(`Could not find the channel with uuid ${channel_uuid}.`);
         }
 
         const versionObj = channel.versions.find(v => v.uuid === version_uuid);
         if (!versionObj) {
-          throw `versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}.`;
+          throw NotFoundError(`versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}`);
         }
 
         if (versionObj.location === 'mongo') {  
           const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
           if (!deployableVersionObj) {
-            throw `DeployableVersion is not found for ${channel.name}:${channel.uuid}/${versionObj.name}:${versionObj.uuid}.`;
+            throw new NotFoundError(`DeployableVersion is not found for ${channel.name}:${channel.uuid}/${versionObj.name}:${versionObj.uuid}.`);
           }
           deployableVersionObj.content = await decryptOrgData(orgKey, deployableVersionObj.content);
           return deployableVersionObj;
@@ -97,9 +98,13 @@ const channelResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
-      try{
+      try {
+        // might not necessary with uunique index. Worth to check to return error better.
+        const channel = await models.Channel.findOne({ name, org_id });
+        if(channel){
+          throw new ValidationError(`The channel name ${name} already exists.`);
+        }
         const uuid = UUID();
-
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
@@ -121,7 +126,7 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw `channel uuid "${uuid}" not found`;
+          throw new NotFoundError(`channel uuid "${uuid}" not found`);
         }
 
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
@@ -147,7 +152,7 @@ const channelResolvers = {
       const orgKey = _.first(org.orgKeys);
 
       if(!name){
-        throw 'A name was not included';
+        throw new UserInputError('A name was not included');
       }
       if(!type){
         throw 'A "type" of application/json or application/yaml must be included';
@@ -158,7 +163,7 @@ const channelResolvers = {
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
       if(!channel){
-        throw `channel uuid "${channel_uuid}" not found`;
+        throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
       }
 
       const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
@@ -167,7 +172,7 @@ const channelResolvers = {
       });
 
       if(versionNameExists) {
-        throw `The version name ${name} already exists`;
+        throw new ValidationError(`The version name ${name} already exists`);
       }
 
       const iv = crypto.randomBytes(16);
@@ -227,12 +232,12 @@ const channelResolvers = {
         type,
       };
 
+      const dObj = await models.DeployableVersion.create(deployableVersionObj);
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description, location,
+        created: dObj.created
       };
-
-      await models.DeployableVersion.create(deployableVersionObj);
 
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
@@ -253,14 +258,14 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw `channel uuid "${uuid}" not found`;
+          throw new NotFoundError(`channel uuid "${uuid}" not found`);
         }
         const channel_uuid = channel.uuid;
 
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
 
         if(subCount > 0){
-          throw `${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`;
+          throw new ValidationError(`${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`);
         }
 
         await models.Channel.deleteOne({ org_id, uuid });

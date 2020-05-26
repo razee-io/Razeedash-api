@@ -15,11 +15,15 @@
 */
 
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
 
 // /kube/liveness
-const kube = router.get('/liveness', (req, res) => {
+const kube = router.get('/liveness', asyncHandler(async(req, res) => {
+  // does a db call to make sure we didnt disconnect
+  await require('../../apollo/models').models.Cluster.find({}, { _id:1 }, { limit:1 });
+
   return res.sendStatus(200);
-});
+}));
 
 module.exports = kube;

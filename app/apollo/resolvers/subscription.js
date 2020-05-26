@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs, validAuth, NotFoundError } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -118,7 +118,7 @@ const subscriptionResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw `channel uuid "${channel_uuid}" not found`;
+          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
         // loads the version
@@ -126,7 +126,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw `version uuid "${version_uuid}" not found`;
+          throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
 
         await models.Subscription.create({
@@ -155,13 +155,13 @@ const subscriptionResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription { uuid: "${uuid}", org_id:${org_id} } not found`;
+          throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
         }
 
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw `channel uuid "${channel_uuid}" not found`;
+          throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
         // loads the version
@@ -169,7 +169,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw `version uuid "${version_uuid}" not found`;
+          throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
 
         var sets = {
@@ -200,7 +200,7 @@ const subscriptionResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw `subscription uuid "${uuid}" not found`;
+          throw  new NotFoundError(`subscription uuid "${uuid}" not found`);
         }
         await subscription.deleteOne();
 
