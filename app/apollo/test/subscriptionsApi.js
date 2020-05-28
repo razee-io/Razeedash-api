@@ -22,8 +22,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!, $tags: String) {
-            subscriptionsByTag( org_id: $org_id, tags: $tags) {
+          query($tags: String) {
+            subscriptionsByTag( tags: $tags) {
               subscription_name
               subscription_channel
               subscription_uuid

@@ -99,7 +99,6 @@ UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, acti
 
 UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
   logger.debug({ req_id: req_id },`default isAuthorized ${action} ${type} ${attributes}`);
-  logger.debug('default isAuthorized me', me);
 
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
     const user = await this.findOne({ apiKey: me.apiKey }).lean();
@@ -114,7 +113,7 @@ UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type,
 };
 
 UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
-  logger.debug('default isValidOrgKey', me);
+  logger.debug('default isValidOrgKey');
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
 
     const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
@@ -122,6 +121,7 @@ UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
       logger.error('An org was not found for this razee-org-key');
       throw new ForbiddenError('org id was not found');
     }
+    logger.debug('org found using orgKey');
     return org;
   }
   return false;

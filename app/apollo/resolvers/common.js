@@ -28,7 +28,6 @@ const whoIs = me => {
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
-  logger.debug('validAuth', me);
 
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){

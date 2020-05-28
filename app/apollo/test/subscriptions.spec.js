@@ -19,34 +19,23 @@ const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const apiFunc = require('./api');
 const subscriptionsFunc = require('./subscriptionsApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { GraphqlPubSub } = require('../subscription');
 
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`); 
+const { prepareOrganization } = require(`./testHelper.${AUTH_MODEL}`); 
 let mongoServer;
 let myApollo;
 const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const api = apiFunc(graphqlUrl);
 const subscriptionsApi = subscriptionsFunc(graphqlUrl);
 let token;
 let orgKey;
 
 let org01Data;
 let org01;
-
-let user01Data;
-let user77Data;
-let userRootData;
-
-let presetOrgs;
-let presetUsers;
-let presetClusters;
-let presetSubs;
 
 const channel_01_name = 'fake_channel_01';
 const channel_01_uuid = 'fake_ch_01_uuid';
@@ -71,67 +60,6 @@ const createOrganizations = async () => {
     ),
   );
   org01 = await prepareOrganization(models, org01Data);
-};
-  
-const createUsers = async () => {
-  user01Data = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user01.json`,
-      'utf8',
-    ),
-  );
-  await prepareUser(models, user01Data);
-  user77Data = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user77.json`,
-      'utf8',
-    ),
-  );
-  await prepareUser(models, user77Data);
-  userRootData = JSON.parse(
-    fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.root.json`,
-      'utf8',
-    ),
-  );
-  await prepareUser(models, userRootData);
-  return {};
-};
-  
-// eslint-disable-next-line no-unused-vars
-const getPresetOrgs = async () => {
-  presetOrgs = await models.Organization.find();
-  presetOrgs = presetOrgs.map(user => {
-    return user.toJSON();
-  });
-  console.log(`presetOrgs=${JSON.stringify(presetOrgs)}`);
-};
-  
-// eslint-disable-next-line no-unused-vars
-const getPresetUsers = async () => {
-  presetUsers = await models.User.find();
-  presetUsers = presetUsers.map(user => {
-    return user.toJSON();
-  });
-  console.log(`presetUsers=${JSON.stringify(presetUsers)}`);
-};
-  
-// eslint-disable-next-line no-unused-vars
-const getPresetClusters = async () => {
-  presetClusters = await models.Cluster.find();
-  presetClusters = presetClusters.map(cluster => {
-    return cluster.toJSON();
-  });
-  console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
-};
-
-// eslint-disable-next-line no-unused-vars
-const getPresetSubs= async () => {
-  presetSubs = await models.Subscription.find();
-  presetSubs = presetSubs.map(sub=> {
-    return sub.toJSON();
-  });
-  console.log(`presetSubs=${JSON.stringify(presetSubs)}`);
 };
   
 const createChannels = async () => {
@@ -191,77 +119,68 @@ const getOrgKey = async () => {
   return presetOrgs[0].orgKeys[0];
 };
 
-describe('subscriptions graphql test suite', () => {
-  before(async () => {
-    process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getConnectionString();
-    console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
+if(AUTH_MODEL === 'default') {
+  describe('subscriptions graphql test suite', () => {
+    before(async () => {
+      process.env.NODE_ENV = 'test';
+      mongoServer = new MongoMemoryServer();
+      const mongoUrl = await mongoServer.getConnectionString();
+      console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
   
-    myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
+      myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
   
-    await createOrganizations();
-    await createUsers();
-    await createChannels();
-    await createSubscriptions();
+      await createOrganizations();
+      await createChannels();
+      await createSubscriptions();
+      orgKey = await getOrgKey();
+    }); // before
   
-    // Can be uncommented if you want to see the test data that was added to the DB
-    // await getPresetOrgs();
-    // await getPresetUsers();
-    // await getPresetClusters();
-    // await getPresetSubs();
-  
-    token = await signInUser(models, api, user01Data);
-    orgKey = await getOrgKey();
-  }); // before
-  
-  after(async () => {
-    await myApollo.stop(myApollo);
-    GraphqlPubSub.deleteInstance();
-    await mongoServer.stop();
-  }); // after
+    after(async () => {
+      await myApollo.stop(myApollo);
+      GraphqlPubSub.deleteInstance();
+      await mongoServer.stop();
+    }); // after
 
-  it('get should return a subscription with a matching tag', async () => {
-    try {
-      const {
-        data: {
-          data: { subscriptionsByTag },
-        },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        org_id: org01._id,
-        tags: sub_01_tags
-      }, orgKey);
+    it('get should return a subscription with a matching tag', async () => {
+      try {
+        const {
+          data: {
+            data: { subscriptionsByTag },
+          },
+        } = await subscriptionsApi.subscriptionsByTag(token, {
+          tags: sub_01_tags
+        }, orgKey);
 
-      expect(subscriptionsByTag).to.have.length(1);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
+        expect(subscriptionsByTag).to.have.length(1);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
       }
-      throw error;
-    }
-  });
+    });
 
-  it('get should return an empty array when there are no matching tags', async () => {
-    try {
-      const {
-        data: {
-          data: { subscriptionsByTag },
-        },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        org_id: org01._id,
-        tags: ''
-      }, orgKey);
-      expect(subscriptionsByTag).to.have.length(0);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
+    it('get should return an empty array when there are no matching tags', async () => {
+      try {
+        const {
+          data: {
+            data: { subscriptionsByTag },
+          },
+        } = await subscriptionsApi.subscriptionsByTag(token, {
+          tags: '' 
+        }, orgKey);
+        expect(subscriptionsByTag).to.have.length(0);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
       }
-      throw error;
-    }
-  });
+    });
 
-});
+  });
+}
