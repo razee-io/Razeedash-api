@@ -17,7 +17,8 @@
 const Moment = require('moment');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
-
+const { v4: UUID } = require('uuid');
+const { UserInputError } = require('apollo-server');
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -245,6 +246,34 @@ const clusterResolvers = {
         throw error;
       }
     }, // end delete cluster by org_id 
+
+    registerCluster: async (parent, { org_id, registration }, context) => {
+      const queryName = 'registerCluster';
+      const { models, me, req_id, logger } = context;
+      logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const registration_parsed = JSON.parse(registration);
+        if (await models.Cluster.findOne({ org_id: org_id, 'registration.name': registration_parsed.name }).lean()) {
+          logger.debug('another cluster exists with registration.name', registration_parsed.name);
+          throw new UserInputError(`another cluster exists with registration.name ${registration_parsed.name}`);
+        }
+        const uuid = UUID();
+        logger.debug('calling cluster create');
+        await models.Cluster.create({ org_id, cluster_id: uuid, registration: registration_parsed, created: new Date(), updated: new Date() });
+        const org = await models.Organization.findOne({ _id: org_id });
+        const protocol = context.req ? context.req.protocol : 'http';
+        const host = context.req ? context.req.header('host') : 'localhost:3333';
+        return {
+          url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}??clusterKey=${uuid}`,
+        };
+      } catch (error) {
+        logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end registerCluster 
   }
 }; // end clusterResolvers
 

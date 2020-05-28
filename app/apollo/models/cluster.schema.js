@@ -68,6 +68,11 @@ const ClusterSchema = new mongoose.Schema({
       },
     },
   ],
+  registration: {
+    name: {
+      type: String,
+    },
+  },
   dirty: {
     type: Boolean,
     default: false,

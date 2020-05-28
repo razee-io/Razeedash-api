@@ -27,8 +27,10 @@ const clusterSchema = gql`
     _id: ID!
     org_id: String!
     cluster_id: String!
+    state: String
     metadata: JSON
     comments: [Comment]
+    registration: JSON
     created: Date
     updated: Date
     dirty: Boolean
@@ -107,6 +109,11 @@ const clusterSchema = gql`
     Delete all clusters under an organization and all resources under the deleted clusters
     """
     deleteClusters(org_id: String!): DeleteClustersResponse!
+
+    """
+    Create a cluster under an organization and set the dirty field to true
+    """ 
+    registerCluster (org_id: String!, registration: JSON!): URL!
   }
 
 `;
