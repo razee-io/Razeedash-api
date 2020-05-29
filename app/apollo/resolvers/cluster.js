@@ -15,10 +15,10 @@
  */
 
 const Moment = require('moment');
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_STATES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 const { v4: UUID } = require('uuid');
-const { UserInputError } = require('apollo-server');
+const { UserInputError, ValidationError } = require('apollo-server');
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -255,20 +255,31 @@ const clusterResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
 
       try {
-        const registration_parsed = JSON.parse(registration);
-        if (await models.Cluster.findOne({ org_id: org_id, 'registration.name': registration_parsed.name }).lean()) {
-          logger.debug('another cluster exists with registration.name', registration_parsed.name);
-          throw new UserInputError(`another cluster exists with registration.name ${registration_parsed.name}`);
+        if (await models.Cluster.findOne({ org_id: org_id, 'registration.name': registration.name }).lean()) {
+          logger.info('another cluster exists with the same registration name ', registration.name);
+          throw new UserInputError(`Another cluster exists with the same registration name ${registration.name}`);
         }
-        const uuid = UUID();
+        // validate the number of total clusters are under the limit
+        const total = await models.Cluster.count({org_id});
+        if ( total > CLUSTER_LIMITS.MAX_TOTAL ) {
+          logger.info(`Too many clusters are registered under ${org_id}.`);
+          throw new ValidationError(`Too many clusters are registered under ${org_id}.`);          
+        }
+
+        // validate the number of pending clusters are under the limit
+        const total_pending = await models.Cluster.count({org_id, state: {$in: [CLUSTER_STATES.PENDING]}});
+        if ( total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
+          logger.info(`Too many concurrent pending clusters under ${org_id}.`);
+          throw new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
+        }
+
+        const cluster_id = UUID();
         logger.debug('calling cluster create');
-        await models.Cluster.create({ org_id, cluster_id: uuid, registration: registration_parsed, created: new Date(), updated: new Date() });
-        const org = await models.Organization.findOne({ _id: org_id });
-        const protocol = context.req ? context.req.protocol : 'http';
-        const host = context.req ? context.req.header('host') : 'localhost:3333';
-        return {
-          url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}??clusterKey=${uuid}`,
-        };
+        await models.Cluster.create({ org_id, cluster_id, state: CLUSTER_STATES.PENDING, registration });
+        
+        var { url } = await models.Organization.getRegistrationUrl(org_id, context);
+        url = url + `&clusterId=${cluster_id}&clusterName=${registration.name}`;
+        return { url };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
         throw error;

@@ -111,9 +111,13 @@ const clusterSchema = gql`
     deleteClusters(org_id: String!): DeleteClustersResponse!
 
     """
-    Create a cluster under an organization and set the dirty field to true
+    register a cluster under an organization
     """ 
-    registerCluster (org_id: String!, registration: JSON!): URL!
+    registerCluster (
+      org_id: String!, 
+      "**registration** the cluster registration data, name of the cluster is required"
+      registration: JSON!
+    ): URL!
   }
 
 `;

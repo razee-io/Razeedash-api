@@ -15,6 +15,7 @@
  */
 
 const mongoose = require('mongoose');
+const { CLUSTER_STATES } = require('../models/const');
 
 const ClusterSchema = new mongoose.Schema({
   org_id: {
@@ -69,9 +70,12 @@ const ClusterSchema = new mongoose.Schema({
     },
   ],
   registration: {
-    name: {
-      type: String,
-    },
+    type: Map,
+    default: {},
+  },
+  state: {
+    type: String,
+    default: CLUSTER_STATES.REGISTERED
   },
   dirty: {
     type: Boolean,

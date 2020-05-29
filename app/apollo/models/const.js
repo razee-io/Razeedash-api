@@ -20,5 +20,16 @@ const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
 
-module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING };
+const CLUSTER_LIMITS = {
+  MAX_TOTAL: 20000, // max total cluster allowed per account
+  MAX_PENDING: 512  // max clusters are under register and pending states
+};
+
+const CLUSTER_STATES = {
+  PENDING: 'pending', 
+  REGISTERED: 'registered',
+};
+
+module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
+  CLUSTER_LIMITS, CLUSTER_STATES};
 
