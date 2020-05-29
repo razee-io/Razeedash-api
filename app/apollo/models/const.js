@@ -25,11 +25,11 @@ const CLUSTER_LIMITS = {
   MAX_PENDING: 512  // max clusters are under register and pending states
 };
 
-const CLUSTER_STATES = {
+const CLUSTER_REG_STATES = {
   PENDING: 'pending', 
   REGISTERED: 'registered',
 };
 
 module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
-  CLUSTER_LIMITS, CLUSTER_STATES};
+  CLUSTER_LIMITS, CLUSTER_REG_STATES};
 

@@ -37,7 +37,7 @@ const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearch
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 const resourceChangedFunc = require('../../apollo/subscription/index.js').resourceChangedFunc;
-const { CLUSTER_STATES } = require('../../apollo/models/const');
+const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
 
 
 const addUpdateCluster = async (req, res, next) => {
@@ -46,20 +46,22 @@ const addUpdateCluster = async (req, res, next) => {
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
-    const state = CLUSTER_STATES.REGISTERED;
+    const state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
-      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, state, metadata, created: new Date(), updated: new Date() });
+      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, registration: { state }, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
       res.status(200).send('Welcome to Razee');
     }
     else {
       if (cluster.dirty) {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, state, updated: new Date(), dirty: false } });
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
+          { $set: { metadata, 'registration.state': state, updated: new Date(), dirty: false } });
         res.status(205).send('Please resync');
       }
       else {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, state, updated: new Date() } });
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, 
+          { $set: { metadata, 'registration.state': state, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
     }

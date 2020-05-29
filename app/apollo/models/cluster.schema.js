@@ -70,12 +70,16 @@ const ClusterSchema = new mongoose.Schema({
     },
   ],
   registration: {
-    type: Map,
-    default: {},
-  },
-  state: {
-    type: String,
-    default: CLUSTER_STATES.REGISTERED
+    name: {
+      type: String,
+    },
+    state: {
+      type: String,
+    },
+    data: {
+      type: Map,
+      default: {},
+    },
   },
   dirty: {
     type: Boolean,

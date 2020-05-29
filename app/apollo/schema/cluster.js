@@ -23,6 +23,12 @@ const clusterSchema = gql`
     created: Date
   }
 
+  type Registration {
+    name: String!
+    state: String
+    data: JSON
+  }
+
   type Cluster {
     _id: ID!
     org_id: String!
@@ -30,7 +36,7 @@ const clusterSchema = gql`
     state: String
     metadata: JSON
     comments: [Comment]
-    registration: JSON
+    registration: Registration
     created: Date
     updated: Date
     dirty: Boolean
@@ -115,8 +121,8 @@ const clusterSchema = gql`
     """ 
     registerCluster (
       org_id: String!, 
-      "**registration** the cluster registration data, name of the cluster is required"
-      registration: JSON!
+      name: String!
+      data: JSON
     ): URL!
   }
 
