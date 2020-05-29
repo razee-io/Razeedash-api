@@ -27,7 +27,7 @@ Razeedash-API is the interface used by
 | S3_BUCKET_PREFIX        | no                     | 'razee'|
 | ORG_ADMIN_KEY           | no                     | n/a |
 | ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
-| AUTH_MODEL              | no                     | n/a, [local, passport.local] are supported |
+| AUTH_MODEL              | no                     | 'default' [default, local, passport.local] are supported |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.

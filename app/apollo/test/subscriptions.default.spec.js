@@ -119,68 +119,66 @@ const getOrgKey = async () => {
   return presetOrgs[0].orgKeys[0];
 };
 
-if(AUTH_MODEL === 'default') {
-  describe('subscriptions graphql test suite', () => {
-    before(async () => {
-      process.env.NODE_ENV = 'test';
-      mongoServer = new MongoMemoryServer();
-      const mongoUrl = await mongoServer.getConnectionString();
-      console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
+describe('subscriptions graphql test suite', () => {
+  before(async () => {
+    process.env.NODE_ENV = 'test';
+    mongoServer = new MongoMemoryServer();
+    const mongoUrl = await mongoServer.getConnectionString();
+    console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
   
-      myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
+    myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
   
-      await createOrganizations();
-      await createChannels();
-      await createSubscriptions();
-      orgKey = await getOrgKey();
-    }); // before
+    await createOrganizations();
+    await createChannels();
+    await createSubscriptions();
+    orgKey = await getOrgKey();
+  }); // before
   
-    after(async () => {
-      await myApollo.stop(myApollo);
-      GraphqlPubSub.deleteInstance();
-      await mongoServer.stop();
-    }); // after
+  after(async () => {
+    await myApollo.stop(myApollo);
+    GraphqlPubSub.deleteInstance();
+    await mongoServer.stop();
+  }); // after
 
-    it('get should return a subscription with a matching tag', async () => {
-      try {
-        const {
-          data: {
-            data: { subscriptionsByTag },
-          },
-        } = await subscriptionsApi.subscriptionsByTag(token, {
-          tags: sub_01_tags
-        }, orgKey);
+  it('get should return a subscription with a matching tag', async () => {
+    try {
+      const {
+        data: {
+          data: { subscriptionsByTag },
+        },
+      } = await subscriptionsApi.subscriptionsByTag(token, {
+        tags: sub_01_tags
+      }, orgKey);
 
-        expect(subscriptionsByTag).to.have.length(1);
-      } catch (error) {
-        if (error.response) {
-          console.error('error encountered:  ', error.response.data);
-        } else {
-          console.error('error encountered:  ', error);
-        }
-        throw error;
+      expect(subscriptionsByTag).to.have.length(1);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
       }
-    });
-
-    it('get should return an empty array when there are no matching tags', async () => {
-      try {
-        const {
-          data: {
-            data: { subscriptionsByTag },
-          },
-        } = await subscriptionsApi.subscriptionsByTag(token, {
-          tags: '' 
-        }, orgKey);
-        expect(subscriptionsByTag).to.have.length(0);
-      } catch (error) {
-        if (error.response) {
-          console.error('error encountered:  ', error.response.data);
-        } else {
-          console.error('error encountered:  ', error);
-        }
-        throw error;
-      }
-    });
-
+      throw error;
+    }
   });
-}
+
+  it('get should return an empty array when there are no matching tags', async () => {
+    try {
+      const {
+        data: {
+          data: { subscriptionsByTag },
+        },
+      } = await subscriptionsApi.subscriptionsByTag(token, {
+        tags: '' 
+      }, orgKey);
+      expect(subscriptionsByTag).to.have.length(0);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+});

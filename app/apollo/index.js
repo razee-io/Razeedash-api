@@ -173,11 +173,6 @@ const stop = async (apollo) => {
 
 const apollo = async (options = {}) => {
 
-  if (!process.env.AUTH_MODEL) {
-    logger.error('apollo server is enabled, however AUTH_MODEL is not defined.');
-    process.exit(1);
-  }
-
   try {
     const db = await connectDb(options.mongo_url);
     const mongoUrls =
