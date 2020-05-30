@@ -26,8 +26,9 @@ const CLUSTER_LIMITS = {
 };
 
 const CLUSTER_REG_STATES = {
-  PENDING: 'pending', 
-  REGISTERED: 'registered',
+  REGISTERING: 'registering', // cluster db entry is created
+  PENDING: 'pending', // razeedeploy-job yaml is downloaded, maybe already applied to the target cluster
+  REGISTERED: 'registered',  // watch-keeper reported heat-beat back
 };
 
 module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,

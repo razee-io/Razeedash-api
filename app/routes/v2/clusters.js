@@ -46,9 +46,9 @@ const addUpdateCluster = async (req, res, next) => {
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
-    const state = CLUSTER_REG_STATES.REGISTERED;
+    const reg_state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
-      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, registration: { state }, metadata, created: new Date(), updated: new Date() });
+      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
       res.status(200).send('Welcome to Razee');
@@ -56,12 +56,12 @@ const addUpdateCluster = async (req, res, next) => {
     else {
       if (cluster.dirty) {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
-          { $set: { metadata, 'registration.state': state, updated: new Date(), dirty: false } });
+          { $set: { metadata, reg_state, updated: new Date(), dirty: false } });
         res.status(205).send('Please resync');
       }
       else {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, 
-          { $set: { metadata, 'registration.state': state, updated: new Date() } });
+          { $set: { metadata, reg_state, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
     }

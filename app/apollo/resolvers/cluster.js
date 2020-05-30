@@ -247,39 +247,42 @@ const clusterResolvers = {
       }
     }, // end delete cluster by org_id 
 
-    registerCluster: async (parent, { org_id, name, data }, context) => {
+    registerCluster: async (parent, { org_id, registration }, context) => {
       const queryName = 'registerCluster';
       const { models, me, req_id, logger } = context;
-      logger.debug({ req_id, user: whoIs(me), org_id, name, data }, `${queryName} enter`);
+      logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
 
       try {
-        if (await models.Cluster.findOne({ org_id: org_id, 'registration.name': name }).lean()) {
-          logger.info('another cluster exists with the same registration name ', name);
-          throw new UserInputError(`Another cluster exists with the same registration name ${name}`);
+        var error;
+        if (!registration.name) {
+          error = new UserInputError('cluster name is not defined in registration data.');
         }
+
         // validate the number of total clusters are under the limit
         const total = await models.Cluster.count({org_id});
-        if ( total > CLUSTER_LIMITS.MAX_TOTAL ) {
-          logger.info(`Too many clusters are registered under ${org_id}.`);
-          throw new ValidationError(`Too many clusters are registered under ${org_id}.`);          
+        if (!error && total > CLUSTER_LIMITS.MAX_TOTAL ) {
+          error = new ValidationError(`Too many clusters are registered under ${org_id}.`);                
         }
 
         // validate the number of pending clusters are under the limit
-        const total_pending = await models.Cluster.count({org_id, 'registration.state': {$in: [CLUSTER_REG_STATES.PENDING]}});
-        if ( total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
-          logger.info(`Too many concurrent pending clusters under ${org_id}.`);
-          throw new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
+        const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
+        if (!error && total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
+          error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
         }
 
+        if (!error && await models.Cluster.findOne({ org_id: org_id, 'registration.name': registration.name }).lean()) {
+          error = new UserInputError(`Another cluster exists with the same registration name ${registration.name}`);
+        }
+        if (error) throw error;
+
         const cluster_id = UUID();
-        const registration = { name, state: CLUSTER_REG_STATES.PENDING, data };
-        logger.debug('calling cluster create');
-        await models.Cluster.create({ org_id, cluster_id, registration });
+        const reg_state = CLUSTER_REG_STATES.REGISTERING;
+        await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
         
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-        url = url + `&clusterId=${cluster_id}&clusterName=${name}`;
+        url = url + `&clusterId=${cluster_id}`;
         return { url };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
