@@ -22,6 +22,7 @@ const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
 
 const { AuthenticationError } = require('apollo-server');
+const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
 const { getBunyanConfig } = require('../../utils/bunyan');
@@ -298,6 +299,25 @@ UserPassportLocalSchema.statics.getOrgs = async function(context) {
   }
   return results;
 };
+
+
+UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
+  if(!ids || ids.length < 1){
+    return [];
+  }
+  var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
+  users = users.map((user)=>{
+    var _id = user._id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || _id;
+    return {
+      _id,
+      name,
+    };
+  });
+  users = _.keyBy(users, '_id');
+  return users;
+};
+
 
 UserPassportLocalSchema.pre('save', async function() {
   this.services.passportlocal.password = await this.generatePasswordHash();
