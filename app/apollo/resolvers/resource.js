@@ -96,7 +96,7 @@ const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields,
     let resource = await models.Resource.findOne(searchFilter).lean();
 
     if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = getS3Data(resource.data, context.logger);
+      const yaml = getS3Data(resource.data, logger);
       resource.data = yaml;
     }
 
