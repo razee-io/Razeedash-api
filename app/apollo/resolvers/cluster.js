@@ -272,8 +272,15 @@ const clusterResolvers = {
           error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
         }
 
-        if (!error && await models.Cluster.findOne({ org_id: org_id, 'registration.name': registration.name }).lean()) {
-          error = new UserInputError(`Another cluster exists with the same registration name ${registration.name}`);
+        if (!error && await models.Cluster.findOne(
+          { $and: [ 
+            { org_id: org_id },
+            {$or: [
+              {'registration.name': registration.name },
+              {'metadata.name': registration.name },
+            ]}
+          ]}).lean()) {
+          error = new UserInputError(`Another cluster already exists with the same registration name ${registration.name}`);
         }
         if (error) throw error;
 
