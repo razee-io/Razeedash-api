@@ -69,6 +69,11 @@ const resourceSchema = gql`
     return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource.
     """
     resourceByKeys(org_id: String! cluster_id: String! selfLink: String!): Resource
+
+    """
+    Search resources against **org_id** and **subscription_id**.
+    """
+    resourcesBySubscription(org_id: String! subscription_id: String!): [Resource!]
   }
 
   extend type Subscription {

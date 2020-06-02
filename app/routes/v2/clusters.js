@@ -203,9 +203,20 @@ const updateClusterResources = async (req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          const currentResource = await Resources.findOne(key);
-          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          let searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+
+          const rrSearchKey =  { 
+            org_id: req.org._id, 
+            'searchableData.kind': 'RemoteResource', 
+            'searchableData.children': selfLink 
+          };
+          const remoteResource = await Resources.findOne(rrSearchKey);
+          if(remoteResource) {
+            searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
+          } 
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
+
+          const currentResource = await Resources.findOne(key);
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
