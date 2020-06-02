@@ -37,7 +37,7 @@ const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearch
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 const resourceChangedFunc = require('../../apollo/subscription/index.js').resourceChangedFunc;
-const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
+const { CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 
 
 const addUpdateCluster = async (req, res, next) => {
@@ -48,6 +48,16 @@ const addUpdateCluster = async (req, res, next) => {
     const metadata = req.body;
     const reg_state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
+      // new cluster flow requires a cluster to be registered first.
+      if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
+        res.status(410).send({error: 'Gone, the api requires you to register the cluster first.'});
+        return;
+      }
+      const total = await Clusters.count({org_id:  req.org._id});
+      if (total > CLUSTER_LIMITS.MAX_TOTAL ) {
+        res.status(400).send({error: 'Too many clusters registered under this organization.'});
+        return;
+      }
       await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
