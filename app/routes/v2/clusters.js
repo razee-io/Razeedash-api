@@ -50,12 +50,12 @@ const addUpdateCluster = async (req, res, next) => {
     if (!cluster) {
       // new cluster flow requires a cluster to be registered first.
       if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
-        res.status(410).send({error: 'Gone, the api requires you to register the cluster first.'});
+        res.status(404).send({error: 'Not found, the api requires you to register the cluster first.'});
         return;
       }
       const total = await Clusters.count({org_id:  req.org._id});
       if (total > CLUSTER_LIMITS.MAX_TOTAL ) {
-        res.status(400).send({error: 'Too many clusters registered under this organization.'});
+        res.status(400).send({error: 'Too many clusters are registered under this organization.'});
         return;
       }
       await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
