@@ -8,74 +8,18 @@ const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
-const { v4: uuid } = require('uuid');
 const url = require('url');
 const crypto = require('crypto');
 const tokenCrypt = require('../../utils/crypt');
 const algorithm = 'aes-256-cbc';
 
 const getOrg = require('../../utils/orgs.js').getOrg;
-const { ACTIONS, TYPES } = require('../../utils/auth.consts');
-const { auth } = require('../../utils/auth');
 
 router.use(ebl(getBunyanConfig('razee-api/v1Channels')));
 
 router.use(asyncHandler(async (req, res, next) => {
   req.db = await MongoClient.getClient();
   next();
-}));
-
-// get all channels for an org
-//   curl --request GET \
-//     --url http://localhost:3333/api/v1/channels \
-//     --header 'razee-org-key: orgApiKey-api-key-goes-here'
-router.get('/', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
-  try {
-    const orgId = req.org._id;
-    const Channels = req.db.collection('channels');
-    const channels = await Channels.find({ org_id: orgId }).toArray();
-    res.status(200).json({status: 'success', channels: channels});
-  } catch (error) {
-    req.log.error(error);
-    return res.status(500).json({ status: 'error', message: error}); 
-  }
-}));
-
-// create a new channel 
-//   curl --request POST \
-//     --url http://localhost:3333/api/v1/channels\
-//     --header 'content-type: application/json' \
-//     --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-//     --data '{"name": "channel-name-here"}'
-router.post('/', getOrg, auth.rbac(ACTIONS.MANAGE, TYPES.CHANNEL), asyncHandler(async(req, res, next)=>{
-  try {
-    const orgId = req.org._id;
-    const newDeployable = req.body.name;
-
-    const Channels = req.db.collection('channels');
-    const nameAlreadyExists = await Channels.find({
-      org_id: orgId,
-      name: newDeployable
-    }).count();
-
-    if(nameAlreadyExists) {
-      res.status(403).json({ status: 'error', message: 'This deployable name already exists'  });
-    } else {
-      const deployableId = uuid();
-      let resp = await Channels.insertOne({ 'org_id': orgId, 'name': newDeployable, 'uuid': deployableId, 'created': new Date(), 'versions': []}); 
-      if(resp.insertedCount == 1) {
-        const UserLog = req.db.collection('user_log');
-        const userId = req.get('x-user-id');
-        UserLog.insertOne({ userid: userId, action: 'addChannel', message: `API: Add channel ${orgId}:${newDeployable}`, created: new Date() });
-        res.status(200).json({ status: 'success', id: deployableId, 'name': newDeployable }); 
-      } else {
-        res.status(403).json({ status: 'error', message: 'Error inserting a new deployable'}); 
-      }
-    }
-  } catch (error) {
-    req.log.error(error);
-    next(error);
-  }
 }));
 
 // Get yaml for a channel. Retrieves this data either from mongo or from COS
@@ -141,28 +85,6 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     } catch (error) {
       return res.status(500).json({ status: 'error', message: error }); 
     }
-  }
-}));
-
-// Get an individual channel object
-//   curl --request GET \
-//   --url http://localhost:3333/api/v1/channels/:channelName \
-//   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName', getOrg, auth.rbac(ACTIONS.READ, TYPES.CHANNEL), asyncHandler(async(req, res)=>{
-  const orgId = req.org._id;
-  const channelName = req.params.channelName + '';
-
-  try {
-    const Channels = req.db.collection('channels');
-    const channel = await Channels.findOne({ org_id: orgId, name: channelName});
-    if(!channel){
-      res.status(404).send({status: 'error', message: `channel ${channelName} not found for this org`});
-      return;
-    } else {
-      return res.status(200).send({status: 'success', channel: channel});
-    }
-  } catch (error) {
-    return res.status(500).send({status: 'error', message: error});
   }
 }));
 
