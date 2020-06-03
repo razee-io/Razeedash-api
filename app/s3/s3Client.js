@@ -133,7 +133,7 @@ module.exports = class S3Client {
     }
   }
 
-  async encryptAndUploadFile(bucketName, path, content, encryptionKey, iv=null){
+  async encryptAndUploadFile(bucketName, path, fileStream, encryptionKey, iv=null){
     try {
       const exists = await this.bucketExists(bucketName);
       if(!exists){
@@ -157,7 +157,7 @@ module.exports = class S3Client {
     const awsStream = this._aws.upload({
       Bucket: bucketName,
       Key: path,
-      Body: stream.Readable.from(content).pipe(cipher),
+      Body: fileStream.pipe(cipher),
     });
     await awsStream.promise();
 

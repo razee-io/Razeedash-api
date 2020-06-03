@@ -20,6 +20,8 @@ const crypto = require('crypto');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const { UserInputError, ValidationError } = require('apollo-server');
+const { WritableStreamBuffer } = require('stream-buffers');
+const stream = require('stream');
 
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, NotFoundError} = require ('./common');
@@ -155,10 +157,11 @@ const channelResolvers = {
         throw err;
       }
     },
-    addChannelVersion: async(parent, { org_id, channel_uuid, name, type, content, description }, context)=>{
+    addChannelVersion: async(parent, { org_id, channel_uuid, name, type, content, file, description }, context)=>{
       const { models, me, req_id, logger } = context;
+
       const queryName = 'addChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
@@ -173,6 +176,9 @@ const channelResolvers = {
       }
       if(!channel_uuid){
         throw 'channel_uuid not specified';
+      }
+      if(!file && !content){
+        throw `Please specify either file or content`;
       }
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
@@ -189,11 +195,21 @@ const channelResolvers = {
         throw new ValidationError(`The version name ${name} already exists`);
       }
 
+      //console.log(33333, file);
+      let fileStream = null;
+      if(file){
+        fileStream = (await file).createReadStream();
+      }
+      else{
+        fileStream = stream.Readable.from([ content ]);
+      }
+      console.log(33334);
+
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 
       let location = 'mongo';
-      let data = await encryptOrgData(orgKey, content);
+      let data = null;
 
       if(conf.s3.endpoint){
         const resourceName = `${channel.name}-${name}`;
@@ -204,11 +220,28 @@ const channelResolvers = {
         await s3Client.ensureBucketExists(bucketName);
 
         //data is now the s3 hostpath to the resource
-        const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, content, orgKey, iv);
+        const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, fileStream, orgKey, iv);
         data = result.url;
 
         location = 's3';
       }
+      else{
+        var buf = new WritableStreamBuffer();
+        await stream.pipeline(
+          fileStream,
+          buf,
+          (err)=>{
+            if(err){
+              resolve(err);
+            }
+          }
+        );
+        const content = buf.getContents().toString('utf8');
+        data = await encryptOrgData(orgKey, content);
+      }
+
+      console.log(1111, data);
+      //return;
 
       const deployableVersionObj = {
         _id: UUID(),
