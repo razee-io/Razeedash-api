@@ -110,12 +110,19 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-const pushToS3 = async (req, key, dataStr) => {
+const pushToS3 = async (req, key, dataStr, prefix) => {
   //if its a new or changed resource, write the data out to an S3 object
   const orgId = key.org_id.toLowerCase(); 
   const bucket = `razee-${orgId}`;
   const hash = crypto.createHash('sha256');
-  const hashKey = hash.update(JSON.stringify(key)).digest('hex');
+  var hashKey;
+
+  if (prefix){
+    hashKey = prefix + "_" + hash.update(JSON.stringify(key)).digest('hex');
+  }else{
+    hashKey = hash.update(JSON.stringify(key)).digest('hex');
+  }
+
   await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
   return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
 };
@@ -277,7 +284,7 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3) {
-            dataStr = await pushToS3(req, key, dataStr);
+            dataStr = await pushToS3(req, key, dataStr, "delete");
           }
           if (currentResource) {
             await Resources.updateOne(
