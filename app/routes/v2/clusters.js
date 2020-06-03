@@ -147,7 +147,7 @@ const syncClusterResources = async(req, res)=>{
 
   var result = await Resources.updateMany(
     { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
-    { $set: { deleted: true }, $currentDate: { updated: true } },
+    { $set: { deleted: true, expireAt: new Date() }, $currentDate: { updated: true } },
   );
   req.log.debug({ org_id: orgId, cluster_id: clusterId }, `${result.modifiedCount} resources marked as deleted:true`);
 
@@ -282,7 +282,7 @@ const updateClusterResources = async (req, res, next) => {
           if (currentResource) {
             await Resources.updateOne(
               key, {
-                $set: { deleted: true, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+                $set: { deleted: true, expireAt: new Date(), data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
                 $currentDate: { updated: true },
                 ...pushCmd
               }
