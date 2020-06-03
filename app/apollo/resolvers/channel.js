@@ -178,7 +178,7 @@ const channelResolvers = {
         throw 'channel_uuid not specified';
       }
       if(!file && !content){
-        throw `Please specify either file or content`;
+        throw 'Please specify either file or content';
       }
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
@@ -195,7 +195,6 @@ const channelResolvers = {
         throw new ValidationError(`The version name ${name} already exists`);
       }
 
-      //console.log(33333, file);
       let fileStream = null;
       if(file){
         fileStream = (await file).createReadStream();
@@ -203,7 +202,6 @@ const channelResolvers = {
       else{
         fileStream = stream.Readable.from([ content ]);
       }
-      console.log(33334);
 
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
@@ -227,21 +225,21 @@ const channelResolvers = {
       }
       else{
         var buf = new WritableStreamBuffer();
-        await stream.pipeline(
-          fileStream,
-          buf,
-          (err)=>{
-            if(err){
+        await new Promise((resolve, reject)=>{
+          return stream.pipeline(
+            fileStream,
+            buf,
+            (err)=>{
+              if(err){
+                reject(err);
+              }
               resolve(err);
             }
-          }
-        );
+          );
+        });
         const content = buf.getContents().toString('utf8');
         data = await encryptOrgData(orgKey, content);
       }
-
-      console.log(1111, data);
-      //return;
 
       const deployableVersionObj = {
         _id: UUID(),
