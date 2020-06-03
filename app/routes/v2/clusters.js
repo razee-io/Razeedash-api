@@ -118,7 +118,7 @@ const pushToS3 = async (req, key, dataStr, prefix) => {
   var hashKey;
 
   if (prefix){
-    hashKey = prefix + "_" + hash.update(JSON.stringify(key)).digest('hex');
+    hashKey = prefix + '_' + hash.update(JSON.stringify(key)).digest('hex');
   }else{
     hashKey = hash.update(JSON.stringify(key)).digest('hex');
   }
@@ -284,7 +284,7 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3) {
-            dataStr = await pushToS3(req, key, dataStr, "delete");
+            dataStr = await pushToS3(req, key, dataStr, 'delete');
           }
           if (currentResource) {
             await Resources.updateOne(
