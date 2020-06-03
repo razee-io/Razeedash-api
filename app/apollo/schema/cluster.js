@@ -111,10 +111,10 @@ const clusterSchema = gql`
     deleteClusters(org_id: String!): DeleteClustersResponse!
 
     """
-    register a cluster under an organization
+    Register a cluster with razee api for an organization. registration.name is required.
     """ 
     registerCluster (
-      org_id: String!,
+      org_id: String!
       registration: JSON!
     ): URL!
   }
