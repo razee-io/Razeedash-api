@@ -41,7 +41,6 @@ const organizationResolvers = {
       const queryName = 'organization';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, args, me: whoIs(me) }, `${queryName} enter`);
-      await validAuth(me, null, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       return models.User.getOrg(models, me);
     },
   },
