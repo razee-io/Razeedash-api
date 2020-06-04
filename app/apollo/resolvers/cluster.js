@@ -203,7 +203,7 @@ const clusterResolvers = {
         //TODO: soft delete the resources for now. We need to have a background process to
         // clean up S3 contents based on deleted flag. 
         const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, 
-          {$set: { deleted: true, expireAt: new Date() }}, { upsert: false });
+          {$set: { deleted: true }, $currentDate: { expireAt: true }}, { upsert: false });
 
         logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
 
@@ -233,7 +233,7 @@ const clusterResolvers = {
         //TODO: soft delete the resources for now. We need to have a background process to
         // clean up S3 contents based on deleted flag. 
         const deletedResources = await models.Resource.updateMany({ org_id }, 
-          {$set: { deleted: true, expireAt: new Date() }}, { upsert: false });
+          {$set: { deleted: true }, $currentDate: { expireAt: true }}, { upsert: false });
 
         logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
 
