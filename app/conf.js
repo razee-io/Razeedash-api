@@ -25,7 +25,10 @@ const conf = {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     locationConstraint: process.env.S3_LOCATION_CONSTRAINT || 'us-standard',
-    bucketPrefix: process.env.S3_BUCKET_PREFIX || 'razee'
+    bucketPrefix: process.env.S3_BUCKET_PREFIX || 'razee',
+    s3ForcePathStyle: true,
+    signatureVersion: 'v4',
+    sslEnabled: !process.env.S3_DISABLE_SSL, //for local minio support
   }
 };
 

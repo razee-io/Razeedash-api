@@ -72,6 +72,7 @@
     "request": "^2.88.2",
     "request-promise-native": "^1.0.8",
     "socket.io": "^2.3.0",
+    "stream-buffers": "^3.0.2",
     "subscriptions-transport-ws": "^0.9.16",
     "swagger-ui-express": "^4.1.4",
     "uuid": "^7.0.3",
