@@ -24,7 +24,7 @@ const S3Client = rewire('./s3Client');
 AwsS3Mock.config.basePath = '/tmp/buckets';
 S3Client.__set__({
   AWS: AwsS3Mock,
-  bucketExists: ()=>{return true}, //mock library doesnt have this function
+  bucketExists: ()=>{return true;}, //mock library doesnt have this function
 });
 
 describe('s3', () => {
@@ -53,16 +53,15 @@ describe('s3', () => {
       var iv = Buffer.from(ivText, 'base64');
 
       await s3Client.createBucket(bucketName);
-      s3Client.bucketExists = ()=>{return true};
+      s3Client.bucketExists = ()=>{return true;};
 
-      //console.log(11111, bucketName, path, inContent, encryptionKey, ivText, iv);
+      // encrypts and uploads
+      await s3Client.encryptAndUploadFile(bucketName, path, fileStream, encryptionKey, iv);
 
-      var out = await s3Client.encryptAndUploadFile(bucketName, path, fileStream, encryptionKey, iv);
-
-      //console.log('uploaded', out);
-
+      // downloads and decrypts
       var outContent = await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
 
+      // makes sure we got the right content back
       assert.equal(inContent, outContent);
     });
   });
