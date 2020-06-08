@@ -46,7 +46,7 @@ const resourceSchema = gql`
 
   type ResourcesList {
     count: Int
-    resources: [Resource!]
+    resources: [Resource!]!
   }
 
   extend type Query {
