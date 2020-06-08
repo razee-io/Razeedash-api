@@ -24,6 +24,20 @@ const whoIs = me => {
   return me._id;
 };
 
+const validClusterAuth = async (me, queryName, context) => {
+  const { models } = context;
+  // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
+  if(me && me.type == 'cluster'){
+    const result = await models.User.isValidOrgKey(models, me);
+    if(!result){
+      throw new ForbiddenError(
+        `Invalid razee-org-key was submitted for ${queryName}`,
+      );
+    }
+    return;
+  }
+}; 
+
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
@@ -35,17 +49,6 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
     if(!result){
       throw new ForbiddenError(
         `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
-      );
-    }
-    return;
-  }
-
-  // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
-  if(me && me.type == 'cluster'){
-    const result = await models.User.isValidOrgKey(models, me);
-    if(!result){
-      throw new ForbiddenError(
-        `You are not allowed to ${action} on ${type} for the query ${queryName}. (using razee-org-key)`,
       );
     }
     return;
@@ -67,4 +70,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError };
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth };

@@ -16,7 +16,6 @@
 
 const express = require('express');
 const router = express.Router();
-const streamedRoutes = express.Router();
 const asyncHandler = require('express-async-handler');
 
 const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
@@ -39,8 +38,6 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
-const ChannelsStream = require('./v1/channelsStream.js');
-const Subscriptions = require('./v1/subscriptions.js');
 
 router.use('/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));
@@ -82,11 +79,6 @@ router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
 
 router.use('/v1/channels', Channels);
-// streamedRoutes is defined so we can have a path that isn't affected by body-parser.  
-// The POST route in ChannelsStream uses streams to upload to s3 and this would break
-// if we applied the body-parser middelware on this route. 
-streamedRoutes.use('/v1/channels', ChannelsStream); 
-router.use('/v1/subscriptions', Subscriptions);
 
 async function initialize(){
   const options = {
@@ -224,4 +216,4 @@ async function initialize(){
   return db;
 }
 
-module.exports = {router, initialize, streamedRoutes};
+module.exports = {router, initialize };

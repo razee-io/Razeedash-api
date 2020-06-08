@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -32,7 +32,7 @@ const subscriptionResolvers = {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByTag';
       logger.debug({req_id, user: whoIs(me)}, `${query} enter`);
-      await validAuth(me, null, ACTIONS.READ, TYPES.SUBSCRIPTION, query, context);
+      await validClusterAuth(me, query, context);
 
       const org = await models.User.getOrg(models, me);
       if(!org) {

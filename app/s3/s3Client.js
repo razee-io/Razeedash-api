@@ -15,6 +15,11 @@
  */
 const clone = require('clone');
 const AWS = require('aws-sdk');
+const crypto = require('crypto');
+const _ = require('lodash');
+const stream = require('stream');
+
+const encryptionAlgorithm = 'aes-256-cbc';
 
 module.exports = class S3Client {
   constructor(options) {
@@ -104,7 +109,8 @@ module.exports = class S3Client {
     const nop = {
       error: () => {},
       info: () => {},
-      debug: () => {}
+      debug: () => {},
+      warn: () => {},
     };
     const result = this._log || nop;
     return result;
@@ -113,4 +119,90 @@ module.exports = class S3Client {
   set log(logger) {
     this._log = logger;
   }
+
+  async ensureBucketExists(bucketName){
+    try {
+      const exists = await this.bucketExists(bucketName);
+      if(!exists){
+        this.log.warn('bucket does not exist', { bucketName });
+        await this.createBucket(bucketName);
+      }
+    }catch(err){
+      this.log.error('could not create bucket', { bucketName });
+      throw err;
+    }
+  }
+
+  async encryptAndUploadFile(bucketName, path, fileStream, encryptionKey, iv=null){
+    try {
+      const exists = await this.bucketExists(bucketName);
+      if(!exists){
+        this.log.warn('bucket does not exist', { bucketName });
+        await this.createBucket(bucketName);
+      }
+    }catch(err){
+      this.log.error('could not create bucket', { bucketName });
+      throw err;
+    }
+
+    const key = Buffer.concat([Buffer.from(encryptionKey)], 32);
+
+    if(!iv){
+      iv = crypto.randomBytes(16);
+    }
+    const ivText = iv.toString('base64');
+
+    const cipher = crypto.createCipheriv(encryptionAlgorithm, key, iv);
+
+    const awsStream = this._aws.upload({
+      Bucket: bucketName,
+      Key: path,
+      Body: fileStream.pipe(cipher),
+    });
+    await awsStream.promise();
+
+    const url = `${this._conf.endpoint.match(/^http/i) ? '' : 'https://'}${this._conf.endpoint}/${bucketName}/${path}`;
+    return {
+      url, ivText,
+    };
+  }
+
+  async getAndDecryptFile(bucketName, path, key, iv) {
+    return new Promise((resolve, reject) => {
+      try {
+        const { WritableStreamBuffer } = require('stream-buffers');
+
+        if (_.isString(iv)) {
+          iv = Buffer.from(iv, 'base64');
+        }
+        key = Buffer.concat([Buffer.from(key)], 32);
+
+        const awsStream = this.getObject(bucketName, path).createReadStream();
+        const decipher = crypto.createDecipheriv(encryptionAlgorithm, key, iv);
+
+        var buf = new WritableStreamBuffer();
+        stream.pipeline(
+          awsStream,
+          decipher,
+          buf,
+          (err) => {
+            if(err){
+              reject(err);
+              return;
+            }
+            try {
+              resolve(buf.getContents().toString('utf8'));
+            }
+            catch(err){
+              reject(err);
+            }
+          }
+        );
+      }
+      catch(err){
+        reject(err);
+      }
+    });
+  }
 };
+
