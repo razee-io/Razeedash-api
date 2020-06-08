@@ -206,12 +206,15 @@ const apiFunc = grahqlUrl => {
         query: `
           query ($org_id: String! $filter: String $fromDate: Date $toDate: Date){
             resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate) {
-              _id
-              org_id
-              cluster_id
-              selfLink
-              searchableData
-              created
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
             }
           }
         `,
@@ -231,12 +234,15 @@ const apiFunc = grahqlUrl => {
         query: `
           query ($org_id: String! $cluster_id: String! $filter: String){
             resourcesByCluster (org_id: $org_id cluster_id: $cluster_id filter: $filter) {
-              _id
-              org_id
-              cluster_id
-              selfLink
-              searchableData
-              created
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
             }
           }
         `,
