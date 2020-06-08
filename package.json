@@ -78,7 +78,7 @@
     "subscriptions-transport-ws": "^0.9.16",
     "swagger-ui-express": "^4.1.4",
     "uuid": "^7.0.3",
-    "validator": "^12.2.0",
+    "validator": "^13.0.0",
     "ws": "^7.2.3"
   },
   "devDependencies": {
