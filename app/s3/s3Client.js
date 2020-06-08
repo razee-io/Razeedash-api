@@ -206,23 +206,3 @@ module.exports = class S3Client {
   }
 };
 
-// ;((async()=>{
-//   var s3Client = new module.exports(require('../conf.js').conf);
-//   var bucketName = 'razee--k4tty77xnpmgjppfw';
-//   var path = 'blah';
-//   var content = 'this is teh content';
-//   var encryptionKey = 'orgApiKey-21fd8bfa-cc1d-43dd-988f-ddec98d72db7';
-//   var ivText = 'oRAApY8YmWQx5a98rUVkhg==';
-//   var iv = Buffer.from(ivText, 'base64');
-//
-//   console.log(11111, bucketName, path, content, encryptionKey, ivText, iv);
-//
-//   var out = await s3Client.encryptAndUploadFile(bucketName, path, content, encryptionKey, iv);
-//
-//   console.log('uploaded', out);
-//
-//   var out = await s3Client.getAndDecryptFile(bucketName, path, encryptionKey, iv);
-//
-//   console.log('downloaded', out);
-// })());
-
