@@ -14,34 +14,13 @@
  * limitations under the License.
  */
 
-const { gql } = require('apollo-server-express');
+const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
 
-const organizationSchema = gql`
-  type URL {
-    url: String!
-  }
+async function prepareOrganization(models, orgData) {
+  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
+    return await models.Organization.createLocalOrg(orgData);
+  } 
+  return null;
+}
 
-  type Organization {
-    _id: ID!
-    name: String!
-  }
-
-  extend type Query {
-    """
-    Return the cluster registration Url for a given **org_id**.
-    """
-    registrationUrl(org_id: String!): URL!   
-
-    """
-    Return Organizations the current user belongs to.
-    """
-    organizations: [Organization!]
-
-    """
-    Return an Organization 
-    """
-    organization: Organization!
-  }
-`;
-
-module.exports = organizationSchema;
+module.exports = { prepareOrganization };

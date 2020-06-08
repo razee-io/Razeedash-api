@@ -36,7 +36,10 @@ const buildSearchableDataForResource = require('../../utils/cluster.js').buildSe
 const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
-const resourceChangedFunc = require('../../apollo/subscription/index.js').resourceChangedFunc;
+const { GraphqlPubSub } = require('../../apollo/subscription');
+
+const pubSub = GraphqlPubSub.getInstance();
+
 
 
 const addUpdateCluster = async (req, res, next) => {
@@ -248,7 +251,7 @@ const updateClusterResources = async (req, res, next) => {
 
           const result = await Resources.updateOne(key, changes, options);
           // publish notification to graphql
-          if (process.env.ENABLE_GRAPHQL === 'true' && result) {
+          if (result) {
             let resourceId = null;
             let resourceCreated = Date.now; 
             if (result.upsertedId) {
@@ -258,7 +261,7 @@ const updateClusterResources = async (req, res, next) => {
               resourceCreated = currentResource.created;
             }
             if (resourceId) {
-              resourceChangedFunc(
+              pubSub.resourceChangedFunc(
                 {_id: resourceId, data: dataStr, created: resourceCreated,
                   deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, 
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
@@ -295,9 +298,7 @@ const updateClusterResources = async (req, res, next) => {
               }
             );
             await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
-            if (process.env.ENABLE_GRAPHQL === 'true') {
-              resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
-            }
+            pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
           }
           break;
         }

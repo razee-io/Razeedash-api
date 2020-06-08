@@ -20,13 +20,40 @@ const whoIs = me => {
   if (me === null || me === undefined) return 'null';
   if (me.email) return me.email;
   if (me.identifier) return me.identifier;
+  if (me.type) return me.type;
   return me._id;
 };
+
+const validClusterAuth = async (me, queryName, context) => {
+  const { models } = context;
+  // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
+  if(me && me.type == 'cluster'){
+    const result = await models.User.isValidOrgKey(models, me);
+    if(!result){
+      throw new ForbiddenError(
+        `Invalid razee-org-key was submitted for ${queryName}`,
+      );
+    }
+    return;
+  }
+}; 
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
+
+  // razeedash users (x-api-key)
+  if(me && me.type == 'userToken'){
+    const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, null, context);
+    if(!result){
+      throw new ForbiddenError(
+        `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
+      );
+    }
+    return;
+  }
+
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     throw new ForbiddenError(
@@ -43,5 +70,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError };
-
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth };

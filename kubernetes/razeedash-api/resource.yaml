@@ -102,8 +102,8 @@ items:
                   name: razeedash-secret
                   key: add_cluster_webhook_url
                   optional: true
-            - name: REDIS_CONN_JSON
-              value: '{"host":"redis-service", "port": 6379}'
+            - name: REDIS_PUBSUB_URL
+              value: 'redis://redis-service:6379/0'
             image: "quay.io/razee/razeedash-api:{{TRAVIS_TAG}}"
             imagePullPolicy: Always
             name: razeedash-api
