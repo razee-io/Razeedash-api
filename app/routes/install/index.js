@@ -44,9 +44,8 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
         {cluster_id: req.query.clusterId, reg_state: CLUSTER_REG_STATES.REGISTERING}, 
         {$set: {reg_state: CLUSTER_REG_STATES.PENDING}});
       if (preUpdatedCluster && preUpdatedCluster.value) {
-        req.log.info(`preUpdatedCluster = ${JSON.stringify(preUpdatedCluster)}`);
+        req.log.debug(`preUpdatedCluster = ${JSON.stringify(preUpdatedCluster)}`);
         const valuesString = JSON.stringify(preUpdatedCluster.value.registration);
-        req.log.info(valuesString);
         const base64String = Buffer.from(valuesString).toString('base64');
         args_array.push(`--razeedash-cluster-metadata64=${base64String}`);
       } else {
