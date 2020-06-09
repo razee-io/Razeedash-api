@@ -75,7 +75,7 @@ const channelResolvers = {
 
         const versionObj = channel.versions.find(v => v.uuid === version_uuid);
         if (!versionObj) {
-          throw NotFoundError(`versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}`);
+          throw new NotFoundError(`versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}`);
         }
 
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
