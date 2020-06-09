@@ -284,10 +284,7 @@ const channelResolvers = {
         const org = await models.Organization.findOne({ _id: org_id });
         const orgKey = _.first(org.orgKeys);
         const data = await encryptOrgData(orgKey, content);
-        const decrptData = await decryptOrgData(orgKey, data);
-        console.log("decrptData", decrptData);
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { content: data } });
-        console
         return {
           uuid,
           success: true
