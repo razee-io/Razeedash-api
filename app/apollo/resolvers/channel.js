@@ -112,7 +112,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
         // might not necessary with uunique index. Worth to check to return error better.
@@ -137,7 +137,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
@@ -162,7 +162,7 @@ const channelResolvers = {
 
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
       const org = await models.Organization.findOne({ _id: org_id });
@@ -276,7 +276,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });

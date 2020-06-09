@@ -275,7 +275,9 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     if (action === ACTIONS.READ) {
       return !!orgMeta;
     }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE ||
+      action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
+      || action === ACTIONS.SETVERSION) {
       return orgMeta.role === 'ADMIN';
     }
   }

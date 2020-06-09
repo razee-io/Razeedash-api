@@ -35,6 +35,11 @@ const ACTIONS = {
   READ: 'read',
   WRITE: 'write',
   MANAGE: 'manage',
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  MANAGEVERSION: 'manageversion',
+  SETVERSION: 'setversion',
 };
     
 const TYPES = {
