@@ -27,7 +27,7 @@ const { AUTH_MODEL } = require('../models/const');
 const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
 const { GraphqlPubSub } = require('../subscription');
 
- const why = require('why-is-node-running');
+//const why = require('why-is-node-running');
 
 
 let mongoServer;
