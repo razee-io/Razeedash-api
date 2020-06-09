@@ -277,6 +277,7 @@ const clusterResolvers = {
         var tags = false;
         if (registration.tags && Array.isArray(registration.tags)) {
           tags = registration.tags.join(',');
+          registration.tagsString = tags;
         }
 
         if (!error && await models.Cluster.findOne(
