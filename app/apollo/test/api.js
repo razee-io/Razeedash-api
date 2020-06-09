@@ -206,12 +206,15 @@ const apiFunc = grahqlUrl => {
         query: `
           query ($org_id: String! $filter: String $fromDate: Date $toDate: Date){
             resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate) {
-              _id
-              org_id
-              cluster_id
-              selfLink
-              searchableData
-              created
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
             }
           }
         `,
@@ -231,12 +234,43 @@ const apiFunc = grahqlUrl => {
         query: `
           query ($org_id: String! $cluster_id: String! $filter: String){
             resourcesByCluster (org_id: $org_id cluster_id: $cluster_id filter: $filter) {
-              _id
-              org_id
-              cluster_id
-              selfLink
-              searchableData
-              created
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      },
+    );
+
+  const resourcesBySubscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query ($org_id: String! $subscription_id: String!){
+            resourcesBySubscription(org_id: $org_id subscription_id: $subscription_id ) {
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
             }
           }
         `,
@@ -396,6 +430,7 @@ const apiFunc = grahqlUrl => {
     resourcesCount,
     resources,
     resourcesByCluster,
+    resourcesBySubscription,
     resourceDistributed,
     resourceDistributedByKeys,
     resourcesDistributedCount,
