@@ -35,8 +35,9 @@ const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, quer
       .limit(limit)
       .lean()
     ;
+    var count = await models.Resource.find(searchFilter).count();
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
-    if(queryFields['cluster']){
+    if((queryFields.resources||{}).cluster){
       const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
       if(clusterIds.length > 0){
         let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }});
@@ -50,7 +51,10 @@ const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, quer
         });
       }
     }
-    return resources;
+    return {
+      count,
+      resources,
+    };
   } catch (error) {
     logger.error(error, `commonResourcesSearch encountered an error for the request ${req_id}`);
     throw error;
@@ -144,7 +148,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 1, 500);
+      limit = _.clamp(limit, 1, 10000);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
@@ -166,7 +170,7 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
-      limit = _.clamp(limit, 1, 500);
+      limit = _.clamp(limit, 1, 10000);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       let searchFilter = {
