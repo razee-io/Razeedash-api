@@ -190,6 +190,50 @@ const subscriptionResolvers = {
         throw err;
       }
     },
+    setSubscription: async (parent, { org_id, uuid, version_uuid }, context)=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'setSubscription';
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+
+      try{
+        var subscription = await models.Subscription.findOne({ org_id, uuid });
+        if(!subscription){
+          throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
+        }
+
+        // loads the channel
+        var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
+        if(!channel){
+          throw new NotFoundError(`channel uuid "${subscription.channel_uuid}" not found`);
+        }
+
+        // loads the version
+        var version = channel.versions.find((version)=>{
+          return (version.uuid == version_uuid);
+        });
+        if(!version){
+          throw new NotFoundError(`version uuid "${version_uuid}" not found`);
+        }
+
+        var sets = {
+          version_uuid,
+        };
+        await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
+
+        pubSub.channelSubChangedFunc({org_id: org_id});
+
+        return {
+          uuid,
+          success: true,
+        };
+      }
+      catch(err){
+        logger.error(err);
+        throw err;
+      }
+    },
+
     removeSubscription: async (parent, { org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
