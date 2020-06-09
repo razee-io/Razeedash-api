@@ -190,9 +190,9 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    setConfigurationVersion: async (parent, { org_id, uuid, version_uuid }, context)=>{
+    setSubscription: async (parent, { org_id, uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
-      const queryName = 'setConfigurationVersion';
+      const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
 
@@ -217,7 +217,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          version: version.name, version_uuid,
+          version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 

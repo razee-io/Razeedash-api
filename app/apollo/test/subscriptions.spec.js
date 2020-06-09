@@ -27,6 +27,7 @@ const { AUTH_MODEL } = require('../models/const');
 const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
 const { GraphqlPubSub } = require('../subscription');
 
+ const why = require('why-is-node-running');
 
 
 let mongoServer;
@@ -260,6 +261,9 @@ describe('subscription graphql test suite', () => {
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
+    // setTimeout(function() {
+    //  why(); // logs out active handles that are keeping node running
+    // }, 5000);
   }); // after
 
   it('get subscriptions', async () => {
@@ -372,15 +376,15 @@ describe('subscription graphql test suite', () => {
       //step1, edit the subscription's configurationVerision 
       const {
         data: {
-          data: { setConfigurationVersion },
+          data: { setSubscription },
         },
-      } = await subscriptionApi.setConfigurationVersion(adminToken, {
+      } = await subscriptionApi.setSubscription(adminToken, {
         org_id: org01._id,
         uuid: subscription_02_uuid,
         version_uuid: channelVersion_01_uuid,
       });
-      expect(setConfigurationVersion.uuid).to.be.an('string');
-      expect(setConfigurationVersion.success).to.equal(true);
+      expect(setSubscription.uuid).to.be.an('string');
+      expect(setSubscription.success).to.equal(true);
       //step2, get the updated subscription
       const {
         data: {

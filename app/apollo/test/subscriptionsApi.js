@@ -149,13 +149,13 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  const setConfigurationVersion = async (token, variables) =>
+  const setSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
           mutation($org_id: String!, $uuid: String!, $version_uuid: String!) {
-            setConfigurationVersion( org_id: $org_id, uuid: $uuid, version_uuid: $version_uuid) {
+            setSubscription( org_id: $org_id, uuid: $uuid, version_uuid: $version_uuid) {
               uuid
               success
             }
@@ -198,7 +198,7 @@ const subscriptionsFunc = grahqlUrl => {
     subscription,
     addSubscription,
     editSubscription,
-    setConfigurationVersion,
+    setSubscription,
     removeSubscriptions
   };
 };

@@ -42,7 +42,7 @@ const subscriptionSchema = gql`
     uuid: String!
     success: Boolean
   }
-  type SetChannelSubscriptionVersionReply {
+  type SetSubscriptionReply {
     uuid: String!
     success: Boolean
   }
@@ -92,7 +92,7 @@ const subscriptionSchema = gql`
      """
      Set a configurationVersion
      """
-     setConfigurationVersion(org_id: String!, uuid: String!, version_uuid: String! ): SetChannelSubscriptionVersionReply!
+     setSubscription(org_id: String!, uuid: String!, version_uuid: String! ): SetSubscriptionReply!
      
      """
      Removes a subscription
