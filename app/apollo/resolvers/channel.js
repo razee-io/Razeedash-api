@@ -271,7 +271,32 @@ const channelResolvers = {
         version_uuid: versionObj.uuid,
       };
     },
-
+    uploadChannelVersion: async (parent, { org_id, uuid, content }, context)=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'uploadChannelVersion';
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      try{
+        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+        if(!deployableVersionObj){
+          throw new NotFoundError(`version uuid "${uuid}" not found`);
+        }
+        const org = await models.Organization.findOne({ _id: org_id });
+        const orgKey = _.first(org.orgKeys);
+        const data = await encryptOrgData(orgKey, content);
+        const decrptData = await decryptOrgData(orgKey, data);
+        console.log("decrptData", decrptData);
+        await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { content: data } });
+        console
+        return {
+          uuid,
+          success: true
+        };
+      } catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+    },
     removeChannel: async (parent, { org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
@@ -293,6 +318,42 @@ const channelResolvers = {
 
         await models.Channel.deleteOne({ org_id, uuid });
 
+        return {
+          uuid,
+          success: true,
+        };
+      } catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+    },
+    removeChannelVersion: async (parent, { org_id, uuid }, context)=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'removeChannelVersion';
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      try{
+        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+        if(!deployableVersionObj){
+          throw new NotFoundError(`version uuid "${uuid}" not found`);
+        }
+        const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
+        if(subCount > 0){
+          throw new ValidationError(`${subCount} subscriptions depend on this channel version. Please update/remove them before removing this channel version.`);
+        }
+        await models.DeployableVersion.deleteOne({ org_id, uuid});
+        const channel_uuid = deployableVersionObj.channel_id;
+        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        if(!channel){
+          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
+        }
+        const versionObjs = channel.versions;
+        const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
+        versionObjs.splice(vIndex, 1);
+        await models.Channel.updateOne(
+          { org_id, uuid: channel_uuid },
+          { versions: versionObjs }
+        );
         return {
           uuid,
           success: true,
