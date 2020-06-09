@@ -194,11 +194,11 @@ describe('resource graphql test suite', () => {
           filter: 'mybla',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resources[0].selfLink).to.equal(
+        expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
         );
 
-        const { _id } = result1.data.data.resources[0];
+        const { _id } = result1.data.data.resources.resources[0];
         const result2 = await api.resource(token, { org_id: meResult.data.data.me.org_id, _id: _id.toString() });
         console.log(JSON.stringify(result2.data));
         expect(result2.data.data.resource._id).to.equal(_id);
@@ -285,7 +285,7 @@ describe('resource graphql test suite', () => {
           filter: 'mybla',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resources[0].selfLink).to.equal(
+        expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
         );
       } catch (error) {
@@ -312,10 +312,10 @@ describe('resource graphql test suite', () => {
           filter: 'selfLink',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesByCluster[0].cluster_id).to.equal(
+        expect(result1.data.data.resourcesByCluster.resources[0].cluster_id).to.equal(
           'cluster_01',
         );
-        expect(result1.data.data.resourcesByCluster[0].selfLink).to.equal(
+        expect(result1.data.data.resourcesByCluster.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
         );
       } catch (error) {
