@@ -215,8 +215,19 @@ const resourceResolvers = {
       const searchFilter = { org_id, cluster_id, selfLink };
       return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
     },
+    resourcesBySubscription: async ( parent, { org_id, subscription_id}, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
+      const queryName = 'resourcesBySubscription';
+      const { models, me, req_id, logger } = context;
+  
+      logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
+  
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+  
+      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
+      return commonResourcesSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+    },
   },
-
   Subscription: {
     resourceUpdated: {
       resolve: (parent, { org_id, filter }, { models, me, req_id, logger }) => {
