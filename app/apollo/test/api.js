@@ -255,6 +255,34 @@ const apiFunc = grahqlUrl => {
       },
     );
 
+  const resourcesBySubscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query ($org_id: String! $subscription_id: String!){
+            resourcesBySubscription(org_id: $org_id subscription_id: $subscription_id ) {
+              count
+              resources{
+                _id
+                org_id
+                cluster_id
+                selfLink
+                searchableData
+                created
+              }
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      },
+    );
+
   const resourceDistributed = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -402,6 +430,7 @@ const apiFunc = grahqlUrl => {
     resourcesCount,
     resources,
     resourcesByCluster,
+    resourcesBySubscription,
     resourceDistributed,
     resourceDistributedByKeys,
     resourcesDistributedCount,

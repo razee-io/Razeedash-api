@@ -78,7 +78,7 @@ const resourceSchema = gql`
     """
     Search resources against **org_id** and **subscription_id**.
     """
-    resourcesBySubscription(org_id: String! subscription_id: String!): [Resource!]
+    resourcesBySubscription(org_id: String! subscription_id: String!): ResourcesList!
   }
 
   extend type Subscription {

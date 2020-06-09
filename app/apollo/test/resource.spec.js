@@ -99,7 +99,7 @@ const createResources = async () => {
     hash: 'any_hash',
     deleted: false,
     data: 'any_data',
-    searchableData: { key01: 'any value 01', key02: 'any value 02' },
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
@@ -321,6 +321,36 @@ describe('resource graphql test suite', () => {
       } catch (error) {
         console.error('error response is ', error.response);
         // console.error('error response is ', JSON.stringify(error.response.data));
+        throw error;
+      }
+    });
+  });
+
+
+  describe('resourcesBySubscription(org_id: String! filter: String): ResourcesList!', () => {
+    let token;
+
+    it('a user should only see resources for given subscription id', async () => {
+      try {
+        token = await signInUser(models, api, user01Data);
+        console.log(`user01 token=${token}`);
+
+        const meResult = await api.me(token);
+
+        const result1 = await api.resourcesBySubscription(token, {
+          org_id: meResult.data.data.me.org_id,
+          subscription_id: 'abc-123'
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resourcesBySubscription.resources[0].cluster_id).to.equal(
+          'cluster_01',
+        );
+        expect(result1.data.data.resourcesBySubscription.resources[0].searchableData.subscription_id).to.equal(
+          'abc-123',
+        );
+        
+      } catch (error) {
+        console.error('error response is ', error.response);
         throw error;
       }
     });
