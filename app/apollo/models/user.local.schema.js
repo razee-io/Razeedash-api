@@ -21,6 +21,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError } = require('apollo-server');
+const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
 const { getBunyanConfig } = require('../../utils/bunyan');
@@ -254,6 +255,12 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+
+
+UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
+  return this.isAuthorized(me.user, orgId, action, type, attributes, context);
+};
+
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
@@ -294,6 +301,23 @@ UserLocalSchema.statics.getOrgs = async function(context) {
   return results;
 };
 
+UserLocalSchema.statics.getBasicUsersByIds = async function(ids){
+  if(!ids || ids.length < 1){
+    return [];
+  }
+  var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
+  users = users.map((user)=>{
+    var _id = user._id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
+    return {
+      _id,
+      name,
+    };
+  });
+  users = _.keyBy(users, '_id');
+  return users;
+};
+
 UserLocalSchema.pre('save', async function() {
   this.services.local.password = await this.generatePasswordHash();
 });
@@ -332,4 +356,3 @@ UserLocalSchema.methods.getCurrentRole = async function() {
 };
 
 module.exports = UserLocalSchema;
-

@@ -16,7 +16,7 @@
 
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
-const OrganizationLocalSchema = new mongoose.Schema({
+const OrganizationDefaultSchema = new mongoose.Schema({
   _id: {
     type: String,
   },
@@ -44,7 +44,7 @@ const OrganizationLocalSchema = new mongoose.Schema({
   },
 });
 
-OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, context) {
+OrganizationDefaultSchema.statics.getRegistrationUrl = async function(org_id, context) {
   context.logger.debug({org_id}, 'getRegistrationUrl enter');
   const org = await this.findById(org_id);
   const protocol = context.req ? context.req.protocol : 'http';
@@ -54,7 +54,7 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   }; 
 };
 
-OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
+OrganizationDefaultSchema.statics.createLocalOrg = async function(args) {
   let org = await this.findOne({
     name: args.name,
   });
@@ -67,4 +67,4 @@ OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
   return org;
 };
 
-module.exports = OrganizationLocalSchema;
+module.exports = OrganizationDefaultSchema;

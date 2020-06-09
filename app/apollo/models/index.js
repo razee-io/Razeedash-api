@@ -16,7 +16,6 @@
 
 const bunyan = require('bunyan');
 const mongoose = require('mongoose');
-
 const User = require('./user');
 const Resource = require('./resource');
 const ResourceSchema = require('./resource.schema');

@@ -17,6 +17,9 @@
 const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const { RedisPubSub } = require('graphql-redis-subscriptions');
+var Redis = require('ioredis-mock');
+
 // const why = require('why-is-node-running');
 
 const apiFunc = require('./api');
@@ -31,7 +34,7 @@ const {
 } = require(`./testHelper.${AUTH_MODEL}`);
 
 const SubClient = require('./subClient');
-const { resourceChangedFunc, pubSubPlaceHolder } = require('../subscription');
+const { GraphqlPubSub } = require('../subscription');
 
 let mongoServer;
 let myApollo;
@@ -39,6 +42,7 @@ const graphqlPort = 18004;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const subscriptionUrl = `ws://localhost:${graphqlPort}/graphql`;
 const api = apiFunc(graphqlUrl);
+const pubSub = GraphqlPubSub.getInstance();
 
 let org01Data;
 let org02Data;
@@ -134,6 +138,16 @@ const getPresetResources = async () => {
   console.log(`presetResources=${JSON.stringify(presetResources)}`);
 };
 
+const mockRedis = async () => {
+  pubSub.enabled = true;
+  const sub = new Redis();
+  const pub = sub.createConnectedClient();
+  pubSub.pubSub = new RedisPubSub({
+    publisher: pub,
+    subscriber: sub,
+  });
+};
+
 describe('resource graphql test suite', () => {
   function sleep(ms) {
     return new Promise(resolve => {
@@ -154,6 +168,7 @@ describe('resource graphql test suite', () => {
     await getPresetOrgs();
     await getPresetUsers();
     await getPresetResources();
+    mockRedis();
     //setTimeout(function() {
     //  why(); // logs out active handles that are keeping node running
     //}, 5000);
@@ -161,9 +176,7 @@ describe('resource graphql test suite', () => {
 
   after(async () => {
     await myApollo.stop(myApollo);
-    if (pubSubPlaceHolder.enabled) {
-      await pubSubPlaceHolder.pubSub.close();
-    }
+    GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
   });
 
@@ -315,8 +328,8 @@ describe('resource graphql test suite', () => {
 
   describe('resourceUpdated (org_id: String!, filter: String): ResourceUpdated!', () => {
     before(function() {
-      if (pubSubPlaceHolder.enabled === false) {
-        this.skip();
+      if (pubSub.enabled === false) {
+        // this.skip();
       }
     });
 
@@ -340,9 +353,6 @@ describe('resource graphql test suite', () => {
 
     it('a user subscribe an org and filter should be able to get notification is a new/updated resource matches', async () => {
       try {
-        if (pubSubPlaceHolder.enabled === false) {
-          return this.skip();
-        }
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
@@ -389,7 +399,7 @@ describe('resource graphql test suite', () => {
         await sleep(200);
         aResource.org_id = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
-        resourceChangedFunc(aResource);
+        pubSub.resourceChangedFunc(aResource);
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
@@ -399,7 +409,7 @@ describe('resource graphql test suite', () => {
         // sleep 0.1 second and send a resourceChanged event
         await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
-        resourceChangedFunc(anotherResource);
+        pubSub.resourceChangedFunc(anotherResource);
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();
