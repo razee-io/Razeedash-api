@@ -29,6 +29,8 @@ const clusterSchema = gql`
     cluster_id: String!
     metadata: JSON
     comments: [Comment]
+    registration: JSON
+    reg_state: String
     created: Date
     updated: Date
     dirty: Boolean
@@ -107,6 +109,14 @@ const clusterSchema = gql`
     Delete all clusters under an organization and all resources under the deleted clusters
     """
     deleteClusters(org_id: String!): DeleteClustersResponse!
+
+    """
+    Register a cluster with razee api for an organization. registration.name is required.
+    """ 
+    registerCluster (
+      org_id: String!
+      registration: JSON!
+    ): URL!
   }
 
 `;

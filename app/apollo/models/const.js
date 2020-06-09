@@ -20,5 +20,17 @@ const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
 
-module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING };
+const CLUSTER_LIMITS = {
+  MAX_TOTAL: 20000, // max total cluster allowed per account
+  MAX_PENDING: 512  // max clusters are under register and pending states
+};
+
+const CLUSTER_REG_STATES = {
+  REGISTERING: 'registering', // cluster db entry is created
+  PENDING: 'pending', // razeedeploy-job yaml is downloaded, maybe already applied to the target cluster
+  REGISTERED: 'registered',  // watch-keeper reported heat-beat back
+};
+
+module.exports = { ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
+  CLUSTER_LIMITS, CLUSTER_REG_STATES};
 

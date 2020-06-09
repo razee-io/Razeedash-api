@@ -22,6 +22,7 @@ const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
 const request = require('request-promise-native');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
+const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
 
 router.use(ebl(getBunyanConfig('/api/install')));
 
@@ -33,6 +34,32 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
   if(req.query.tags) {
     args_array.push(`--razeedash-tags=${req.query.tags}`);
+  }
+  if(req.query.clusterId) {
+    args_array.push(`--razeedash-cluster-id=${req.query.clusterId}`);
+    try {
+      // populate registration data into --razeedash-cluster-metadata64
+      const Clusters = req.db.collection('clusters');
+      const preUpdatedCluster = await Clusters.findOneAndUpdate(
+        {cluster_id: req.query.clusterId, reg_state: CLUSTER_REG_STATES.REGISTERING}, 
+        {$set: {reg_state: CLUSTER_REG_STATES.PENDING}});
+      if (preUpdatedCluster && preUpdatedCluster.value) {
+        req.log.debug(`preUpdatedCluster = ${JSON.stringify(preUpdatedCluster)}`);
+        const valuesString = JSON.stringify(preUpdatedCluster.value.registration);
+        const base64String = Buffer.from(valuesString).toString('base64');
+        args_array.push(`--razeedash-cluster-metadata64=${base64String}`);
+      } else {
+        const error = new Error(`Can not find and update the cluster registration state for cluster_id ${req.query.clusterId}`);
+        req.log.error(error);
+        res.setHeader('content-type', 'application/json');
+        res.status(410).send({error: error.message});
+        return;
+      }
+    } catch (err) {
+      req.log.error(err.message);
+      next(err);
+      return;
+    }
   }
   args_array = JSON.stringify(args_array);
 
