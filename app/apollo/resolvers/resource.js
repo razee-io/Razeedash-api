@@ -20,7 +20,7 @@ const GraphqlFields = require('graphql-fields');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
-const { EVENTS, pubSubPlaceHolder, getStreamingTopic } = require('../subscription');
+const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
@@ -229,7 +229,8 @@ const resourceResolvers = {
         (parent, args, context) => {
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.org_id);
           context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
-          return pubSubPlaceHolder.pubSub.asyncIterator(topic);
+          // TODO: in future probably we should valid authorization here
+          return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';

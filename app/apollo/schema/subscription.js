@@ -45,6 +45,20 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
+  type UpdatedSubscription {
+    subscription_name: String!,
+    subscription_channel: String!,
+    subscription_version: String!,
+    subscription_uuid: String!,
+    url: String!
+  }
+  type ChannelsWithLinks {
+    channel: ChannelSubscription,
+    links: UpdatedSubscription
+  }
+  type SubscriptionUpdated {
+    has_updates: Boolean
+  }
   
   extend type Query {
      """
@@ -55,6 +69,10 @@ const subscriptionSchema = gql`
      Get a single subscriptions
      """
      subscription(org_id: String!, uuid: String!): ChannelSubscription
+     """
+     Gets all subscriptions that match a set of tags for an org
+     """
+     subscriptionsByTag(tags: String): [UpdatedSubscription]
   }
   extend type Mutation {
      """
@@ -71,6 +89,9 @@ const subscriptionSchema = gql`
      Removes a subscription
      """
      removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
+  }
+  extend type Subscription {
+    subscriptionUpdated: SubscriptionUpdated!
   }
 `;
 

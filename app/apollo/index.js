@@ -65,7 +65,10 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
   // populate req and req_id to apollo context
   if (connection) {
     const upgradeReq = connection.context.upgradeReq;
-    context = { req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, ...context};
+    const apiKey = connection.context.orgKey;
+    const userToken = connection.context.userToken;
+    const orgId = connection.context.orgId;
+    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, orgId, ...context };
   } else if (req) {
     context = { req, req_id: req.id, ...context};
   } 
@@ -124,21 +127,29 @@ const createApolloServer = () => {
     },
     subscriptions: {
       path: GRAPHQL_PATH,
+      keepAlive: 10000,
       onConnect: async (connectionParams, webSocket, context) => {
         const req_id = webSocket.upgradeReq.id;
+
+        let orgKey, orgId;
+        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
+          orgKey = connectionParams.headers['razee-org-key'];
+          const org = await models.Organization.findOne({ orgKeys: orgKey });
+          orgId = org._id;
+        }
+
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
-        const me = await models.User.getMeFromConnectionParams(
-          connectionParams,
-          {req_id, models, logger, ...context},
-        );
+        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
+        
         logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
           throw Error(
             'Can not find the session for this subscription request.',
           );
         }
+        
         // add original upgrade request to the context 
-        return { me, upgradeReq: webSocket.upgradeReq, logger };
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
@@ -161,11 +172,6 @@ const stop = async (apollo) => {
 };
 
 const apollo = async (options = {}) => {
-
-  if (!process.env.AUTH_MODEL) {
-    logger.error('apollo server is enabled, however AUTH_MODEL is not defined.');
-    process.exit(1);
-  }
 
   try {
     const db = await connectDb(options.mongo_url);
