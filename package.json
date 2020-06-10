@@ -89,7 +89,7 @@
     "dotenv": "^8.2.0",
     "eslint": "^6.8.0",
     "ioredis-mock": "^4.19.0",
-    "markdownlint-cli": "^0.22.0",
+    "markdownlint-cli": "^0.23.1",
     "mocha": "^7.1.1",
     "mongo-mock": "^4.0.0",
     "mongodb-memory-server": "^6.6.1",
