@@ -284,6 +284,25 @@ const clusterFunc = grahqlUrl => {
         },
       },
     );
+  const registerCluster = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!,$registration: JSON!) {
+            registerCluster( org_id: $org_id registration: $registration) {
+              url
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
   return {
     byClusterID,
@@ -298,6 +317,7 @@ const clusterFunc = grahqlUrl => {
     zombiesDistributed,
     deleteClusterByClusterID,
     deleteClusters,
+    registerCluster,
   };
 };
 
