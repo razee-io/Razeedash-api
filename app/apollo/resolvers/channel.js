@@ -249,6 +249,7 @@ const channelResolvers = {
         channel_name: channel.name,
         name,
         description,
+        location,
         content: data,
         iv: ivText,
         type,

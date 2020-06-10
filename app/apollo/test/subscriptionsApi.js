@@ -41,6 +41,135 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
+  const subscriptions = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($org_id: String!) {
+            subscriptions( org_id: $org_id) {
+              uuid
+              org_id
+              name
+              tags
+              channel_uuid
+              channel
+              version
+              version_uuid
+              created
+              updated
+              owner {
+                _id
+                name
+              }
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const subscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($org_id: String!, $uuid: String! ) {
+            subscription( org_id: $org_id uuid: $uuid ) {
+              uuid
+              org_id
+              name
+              tags
+              channel_uuid
+              channel
+              version
+              version_uuid
+              created
+              updated
+              owner {
+                _id
+                name
+              }
+          }
+        }
+      `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+
+  const addSubscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            addSubscription(org_id: $org_id, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid){
+			        uuid
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const editSubscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $uuid: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            editSubscription( org_id: $org_id, uuid: $uuid, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid) {
+              uuid
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const setSubscription = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $uuid: String!, $version_uuid: String!) {
+            setSubscription( org_id: $org_id, uuid: $uuid, version_uuid: $version_uuid) {
+              uuid
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   
   const removeSubscriptions = async (token, variables) =>
     axios.post(
@@ -65,6 +194,11 @@ const subscriptionsFunc = grahqlUrl => {
 
   return {
     subscriptionsByTag,
+    subscriptions,
+    subscription,
+    addSubscription,
+    editSubscription,
+    setSubscription,
     removeSubscriptions
   };
 };

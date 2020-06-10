@@ -36,11 +36,10 @@ const buildSearchableDataForResource = require('../../utils/cluster.js').buildSe
 const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
+const { CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { GraphqlPubSub } = require('../../apollo/subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
-
-
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -48,19 +47,32 @@ const addUpdateCluster = async (req, res, next) => {
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
+    const reg_state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
-      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, metadata, created: new Date(), updated: new Date() });
+      // new cluster flow requires a cluster to be registered first.
+      if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
+        res.status(404).send({error: 'Not found, the api requires you to register the cluster first.'});
+        return;
+      }
+      const total = await Clusters.count({org_id:  req.org._id});
+      if (total > CLUSTER_LIMITS.MAX_TOTAL ) {
+        res.status(400).send({error: 'Too many clusters are registered under this organization.'});
+        return;
+      }
+      await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
       res.status(200).send('Welcome to Razee');
     }
     else {
       if (cluster.dirty) {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date(), dirty: false } });
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
+          { $set: { metadata, reg_state, updated: new Date(), dirty: false } });
         res.status(205).send('Please resync');
       }
       else {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, { $set: { metadata, updated: new Date() } });
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, 
+          { $set: { metadata, reg_state, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
     }
@@ -203,9 +215,20 @@ const updateClusterResources = async (req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          const currentResource = await Resources.findOne(key);
-          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          let searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+
+          const rrSearchKey =  { 
+            org_id: req.org._id, 
+            'searchableData.kind': 'RemoteResource', 
+            'searchableData.children': selfLink 
+          };
+          const remoteResource = await Resources.findOne(rrSearchKey);
+          if(remoteResource) {
+            searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
+          } 
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
+
+          const currentResource = await Resources.findOne(key);
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
