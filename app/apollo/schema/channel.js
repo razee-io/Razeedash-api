@@ -105,7 +105,7 @@ const channelSchema = gql`
      """
      upload content for this channel version
      """
-     uploadChannelVersion(org_id: String!, uuid: String!, content: String!): uploadChannelVersionReply!
+     uploadChannelVersion(org_id: String!, uuid: String!, content: String, file: Upload): uploadChannelVersionReply!
      
      """
      Removes a channel

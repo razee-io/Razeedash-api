@@ -271,7 +271,7 @@ const channelResolvers = {
         version_uuid: versionObj.uuid,
       };
     },
-    uploadChannelVersion: async (parent, { org_id, uuid, content }, context)=>{
+    uploadChannelVersion: async (parent, { org_id, uuid, content, file }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'uploadChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
@@ -283,7 +283,50 @@ const channelResolvers = {
         }
         const org = await models.Organization.findOne({ _id: org_id });
         const orgKey = _.first(org.orgKeys);
-        const data = await encryptOrgData(orgKey, content);
+        
+        let fileStream = null;
+        if(file){
+          fileStream = (await file).createReadStream();
+        }
+        else{
+          fileStream = stream.Readable.from([ content ]);
+        }
+
+        const iv = crypto.randomBytes(16);
+
+        let data = null;
+
+        if(conf.s3.endpoint){
+          const resourceName = `${deployableVersionObj.channel_name}-${deployableVersionObj.name}`;
+          const bucketName = `${conf.s3.bucketPrefix}-${org_id.toLowerCase()}`;
+
+          const s3Client = new S3ClientClass(conf);
+
+          await s3Client.ensureBucketExists(bucketName);
+
+          //data is now the s3 hostpath to the resource
+          const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, fileStream, orgKey, iv);
+          data = result.url;
+
+        }
+        else{
+          var buf = new WritableStreamBuffer();
+          await new Promise((resolve, reject)=>{
+            return stream.pipeline(
+              fileStream,
+              buf,
+              (err)=>{
+                if(err){
+                  reject(err);
+                }
+                resolve(err);
+              }
+            );
+          });
+          const content = buf.getContents().toString('utf8');
+          data = await encryptOrgData(orgKey, content);
+        }
+
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { content: data } });
         return {
           uuid,
@@ -338,12 +381,28 @@ const channelResolvers = {
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this channel version. Please update/remove them before removing this channel version.`);
         }
-        await models.DeployableVersion.deleteOne({ org_id, uuid});
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         if(!channel){
           throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
+        const versionObj = channel.versions.find(v => v.uuid === uuid);
+        if (!versionObj) {
+          throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`);
+        }
+        if(versionObj.location === 's3'){
+          const url = deployableVersionObj.content;
+          const urlObj = new URL(url);
+          const fullPath = urlObj.pathname;
+          var parts = _.filter(_.split(fullPath, '/'));
+          var bucketName = parts.shift();
+          var path = `${parts.join('/')}`;
+
+          const s3Client = new S3ClientClass(conf);
+          await s3Client.deleteObject(bucketName, path);
+        }
+        await models.DeployableVersion.deleteOne({ org_id, uuid});
+        
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
         versionObjs.splice(vIndex, 1);
