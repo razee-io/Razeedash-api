@@ -272,13 +272,7 @@ const clusterResolvers = {
           error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
         }
 
-        // handle tags in registration.
-        // TODO: validation against labels are in a different PR
-        var tags = false;
-        if (registration.tags && Array.isArray(registration.tags)) {
-          tags = registration.tags.join(',');
-          registration.tagsString = tags;
-        }
+        // we do not handle tags here, it is handled by labelCluster Api
 
         if (!error && await models.Cluster.findOne(
           { $and: [ 
@@ -297,7 +291,7 @@ const clusterResolvers = {
         await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
         
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-        url = url + `&clusterId=${cluster_id}` + (tags ? `&tags=${tags}`: '');
+        url = url + `&clusterId=${cluster_id}`;
         return { url };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
