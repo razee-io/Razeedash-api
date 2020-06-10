@@ -146,6 +146,12 @@ async function initialize(){
           options: { name: 'org_id.channel_id.name', unique: true }
         }
       ],
+      labels: [
+        {
+          keys: { orgId: 1, name: 1 },
+          options: { name: 'orgId.name', unique: true }
+        }
+      ],
       resourceStats:[
         {
           keys: { org_id: 1 },

@@ -120,6 +120,12 @@ const subscriptionResolvers = {
         if(!channel){
           throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
+       
+        // validate tags are all exists in label dbs
+        var labels = await models.Label.find({orgId: org_id, name: {$in: tags} }).lean();
+        if (labels.length < tags.length) {
+          labels = await models.Label.findOrCreateList(models, org_id, tags, context);
+        }
 
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -164,6 +170,12 @@ const subscriptionResolvers = {
           throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
+        // validate tags are all exists in label dbs
+        var labels = await models.Label.find({orgId: org_id, name: {$in: tags} }).lean();
+        if (labels.length < tags.length) {
+          labels = await models.Label.findOrCreateList(models, org_id, tags, context);
+        }
+        
         // loads the version
         var version = channel.versions.find((version)=>{
           return (version.uuid == version_uuid);
