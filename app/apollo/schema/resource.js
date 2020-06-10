@@ -44,6 +44,11 @@ const resourceSchema = gql`
     op: String!
   }
 
+  type ResourcesList {
+    count: Int
+    resources: [Resource!]!
+  }
+
   extend type Query {
     """
     Return total resource count for given **org_id**.
@@ -53,12 +58,12 @@ const resourceSchema = gql`
     """
     Search resources against **org_id**, **filter** string, and date ranges.
     """
-    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500): [Resource!]
+    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500): ResourcesList!
 
     """
     Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges.
     """
-    resourcesByCluster(org_id: String! cluster_id: String! filter: String limit: Int = 500): [Resource!]
+    resourcesByCluster(org_id: String! cluster_id: String! filter: String limit: Int = 500): ResourcesList!
 
     """
     Return the resource by given resource **_id**.
@@ -69,6 +74,11 @@ const resourceSchema = gql`
     return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource.
     """
     resourceByKeys(org_id: String! cluster_id: String! selfLink: String!): Resource
+
+    """
+    Search resources against **org_id** and **subscription_id**.
+    """
+    resourcesBySubscription(org_id: String! subscription_id: String!): ResourcesList!
   }
 
   extend type Subscription {

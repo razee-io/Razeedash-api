@@ -624,5 +624,25 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
-  
+
+  it('pre register Cluster by an admin user', async () => {
+    try {
+      const {
+        data: {
+          data: { registerCluster },
+        },
+      } = await clusterApi.registerCluster(adminToken, {
+        org_id: org01._id,
+        registration: { name: 'my-cluster' },
+      });
+      expect(registerCluster.url).to.be.an('string');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });

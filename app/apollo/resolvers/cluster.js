@@ -15,9 +15,10 @@
  */
 
 const Moment = require('moment');
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
-
+const { v4: UUID } = require('uuid');
+const { UserInputError, ValidationError } = require('apollo-server');
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -245,6 +246,64 @@ const clusterResolvers = {
         throw error;
       }
     }, // end delete cluster by org_id 
+
+    registerCluster: async (parent, { org_id, registration }, context) => {
+      const queryName = 'registerCluster';
+      const { models, me, req_id, logger } = context;
+      logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        var error;
+        if (!registration.name) {
+          error = new UserInputError('cluster name is not defined in registration data.');
+        }
+
+        // validate the number of total clusters are under the limit
+        const total = await models.Cluster.count({org_id});
+        if (!error && total > CLUSTER_LIMITS.MAX_TOTAL ) {
+          error = new ValidationError(`Too many clusters are registered under ${org_id}.`);                
+        }
+
+        // validate the number of pending clusters are under the limit
+        const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
+        if (!error && total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
+          error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
+        }
+
+        // handle tags in registration.
+        // TODO: validation against labels are in a different PR
+        var tags = false;
+        if (registration.tags && Array.isArray(registration.tags)) {
+          tags = registration.tags.join(',');
+          registration.tagsString = tags;
+        }
+
+        if (!error && await models.Cluster.findOne(
+          { $and: [ 
+            { org_id: org_id },
+            {$or: [
+              {'registration.name': registration.name },
+              {'metadata.name': registration.name },
+            ]}
+          ]}).lean()) {
+          error = new UserInputError(`Another cluster already exists with the same registration name ${registration.name}`);
+        }
+        if (error) throw error;
+
+        const cluster_id = UUID();
+        const reg_state = CLUSTER_REG_STATES.REGISTERING;
+        await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
+        
+        var { url } = await models.Organization.getRegistrationUrl(org_id, context);
+        url = url + `&clusterId=${cluster_id}` + (tags ? `&tags=${tags}`: '');
+        return { url };
+      } catch (error) {
+        logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end registerCluster 
   }
 }; // end clusterResolvers
 
