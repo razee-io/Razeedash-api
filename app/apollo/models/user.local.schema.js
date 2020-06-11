@@ -20,7 +20,7 @@ const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
-const { AuthenticationError, UserInputError } = require('apollo-server');
+const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-server');
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -267,7 +267,20 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+UserLocalSchema.statics.isValidOrgKey = async function(models, me) {
+  logger.debug('default isValidOrgKey');
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
 
+    const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+    if(!org) {
+      logger.error('An org was not found for this razee-org-key');
+      throw new ForbiddenError('org id was not found');
+    }
+    logger.debug('org found using orgKey');
+    return org;
+  }
+  return false;
+};
 
 UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);

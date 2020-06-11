@@ -87,8 +87,8 @@ UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionP
   const {req_id, logger} = context;
   logger.debug({ req_id, connectionParams }, 'default getMeFromConnectionParams');
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const obj = connectionParams.headers['razee-org-key'];
-    return obj;
+    const orgKey = connectionParams.headers['razee-org-key'];
+    return {orgKey, type: 'cluster'};
   }
   return null;
 };
