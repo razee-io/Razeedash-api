@@ -282,6 +282,14 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   return false;
 };
 
+UserLocalSchema.statics.getOrg = async function(models, me) {
+  let org;
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  }
+  return org;
+};
+
 UserLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
   const { models, me } = context;
