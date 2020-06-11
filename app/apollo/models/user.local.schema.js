@@ -215,6 +215,11 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
 UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const {req_id, logger} = context;
+    const orgKey = req.get('razee-org-key');
+    if (orgKey) {
+      // cluster facing api (e.g. subscriptionsByTag)
+      return {orgKey, type: 'cluster'};  
+    }
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -237,6 +242,13 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    if (connectionParams.headers) {
+      const orgKey = connectionParams.headers['razee-org-key'];
+      if (orgKey) {
+        // cluster facing api (e.g. subscriptionsByTag)
+        return {orgKey, type: 'cluster'};
+      }
+    }
     const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
@@ -265,6 +277,11 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
 
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    return false;
+  }
+    
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });

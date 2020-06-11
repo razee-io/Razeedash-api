@@ -181,8 +181,6 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   return result;
 };
 
-
-
 UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
   logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
@@ -223,6 +221,12 @@ UserPassportLocalSchema.statics.signIn = async (
 UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const {req_id, logger} = context;
+    const orgKey = req.get('razee-org-key');
+    if (orgKey) {
+      // cluster facing api (e.g. subscriptionsByTag)
+      return {orgKey, type: 'cluster'};  
+    }
+    // user facing api
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -246,6 +250,13 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const {req_id, logger} = context;
+    if (connectionParams.headers) {
+      const orgKey = connectionParams.headers['razee-org-key'];
+      if (orgKey) {
+        // cluster facing api (e.g. subscriptionsByTag)
+        return {orgKey, type: 'cluster'};
+      }
+    }
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -270,6 +281,12 @@ UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId
 UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
+
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    return false;
+  }
+  
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
