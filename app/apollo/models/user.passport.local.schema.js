@@ -274,9 +274,10 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
     }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE ||
-      action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
-      || action === ACTIONS.SETVERSION) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE
+      || action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
+      || action === ACTIONS.SETVERSION || action === ACTIONS.ATTACH || action === ACTIONS.DETACH
+      || action === ACTIONS.REGISTER) {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
