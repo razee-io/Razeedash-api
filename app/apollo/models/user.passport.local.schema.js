@@ -284,10 +284,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
 UserPassportLocalSchema.statics.getOrg = async function(models, me) {
   let org;
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const meFromDB = await models.User.findOne({ _id: me._id });
-    if (meFromDB) {
-      org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
-    }
+    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
   }
   return org;
 };
