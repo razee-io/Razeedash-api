@@ -38,6 +38,9 @@ const ACTIONS = {
   CREATE: 'create',
   UPDATE: 'update',
   DELETE: 'delete',
+  ATTACH: 'attach',
+  DETACH: 'detach',
+  REGISTER: 'register',
   MANAGEVERSION: 'manageversion',
   SETVERSION: 'setversion',
 };
