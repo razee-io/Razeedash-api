@@ -371,7 +371,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  it.only('set a subscription configurationVersion', async () => {
+  it('set a subscription configurationVersion', async () => {
     try {
       //step1, edit the subscription's configurationVerision 
       const {
