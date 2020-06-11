@@ -40,7 +40,7 @@ async function validateTags(org_id, tags, context) {
       labelCount = await models.Label.count({orgId: org_id, name: {$in: tags} });
     }
   }
-  logger.debug({req_id, user: whoIs(me), tags, org_id, labelCount}, 'validateTags exit');
+  logger.debug({req_id, user: whoIs(me), tags, org_id, labelCount}, 'validateTags');
   return labelCount;
 }
 
@@ -65,7 +65,6 @@ const subscriptionResolvers = {
       }
       await validateTags(org_id, userTags, context);
 
-      logger.debug({user: 'graphql api user', org_id, tags }, `${query} enter`);
       let urls = [];
       try {
         // Return subscriptions where $tags stored in mongo are a subset of the userTags passed in from the query

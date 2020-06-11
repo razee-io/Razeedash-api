@@ -44,10 +44,14 @@ LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
   const {me, logger} = context;
   logger.debug({tags, orgId, req_id: context.req_id}, 'findOrCreateList enter');
 
-  const labels = tags.map(tag => {
-    return models.Label.findOneAndUpdate ({orgId, name: tag}, {_id: UUID(), uuid: UUID(), owner: me._id ? me._id : 'undefined' }, {new: true, lean: 1}).lean();
-  });
+  const labels = await Promise.all(tags.map(async tag => {
+    return await models.Label.findOneAndUpdate (
+      {orgId, name: tag},
+      {_id: UUID(), uuid: UUID(), orgId, name: tag, owner: me._id ? me._id : 'undefined' }, 
+      {new: true, upsert: true, useFindAndModify: false}).lean();
+  }));
 
+  logger.debug({tags, orgId, req_id: context.req_id, labels}, 'findOrCreateList exit');
   return labels;
 };
 
