@@ -330,7 +330,7 @@ const channelResolvers = {
           data = await encryptOrgData(orgKey, content);
         }
 
-        await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { content: data } });
+        await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { location, content: data } });
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         const versionObj = channel.versions.find(v => v.uuid === uuid);
