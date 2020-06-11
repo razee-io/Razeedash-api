@@ -45,7 +45,7 @@ LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
   logger.debug({tags, orgId, req_id: context.req_id}, 'findOrCreateList enter');
 
   const labels = tags.map(tag => {
-    return models.Label.findOneAndUpdate ({orgId, name: tag}, {_id: UUID(), uuid: UUID(), owner: me._id }, {new: true, lean: 1}).lean();
+    return models.Label.findOneAndUpdate ({orgId, name: tag}, {_id: UUID(), uuid: UUID(), owner: me._id ? me._id : 'undefined' }, {new: true, lean: 1}).lean();
   });
 
   return labels;

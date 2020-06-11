@@ -168,7 +168,6 @@ const labelResolvers = {
         }
   
         const subCount = await models.Subscription.count({ org_id: orgId, tags: label.name });
-  
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this label. Please update/remove them before removing this label.`);
         }

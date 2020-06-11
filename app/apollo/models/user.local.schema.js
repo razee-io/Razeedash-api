@@ -303,7 +303,7 @@ UserLocalSchema.statics.getOrgs = async function(context) {
 
 UserLocalSchema.statics.getBasicUsersByIds = async function(ids){
   if(!ids || ids.length < 1){
-    return [];
+    return {};
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
@@ -315,6 +315,7 @@ UserLocalSchema.statics.getBasicUsersByIds = async function(ids){
     };
   });
   users = _.keyBy(users, '_id');
+  users['undefined'] = {_id: 'undefined', name: 'undefined'};
   return users;
 };
 
