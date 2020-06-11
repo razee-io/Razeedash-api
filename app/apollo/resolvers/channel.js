@@ -294,6 +294,7 @@ const channelResolvers = {
 
         const iv = crypto.randomBytes(16);
 
+        let location = 'mongo';
         let data = null;
 
         if(conf.s3.endpoint){
@@ -307,6 +308,8 @@ const channelResolvers = {
           //data is now the s3 hostpath to the resource
           const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, fileStream, orgKey, iv);
           data = result.url;
+
+          location = 's3';
 
         }
         else{
@@ -328,6 +331,16 @@ const channelResolvers = {
         }
 
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: { content: data } });
+        const channel_uuid = deployableVersionObj.channel_id;
+        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        const versionObj = channel.versions.find(v => v.uuid === uuid);
+        if (!versionObj) {
+          throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`);
+        }
+        await models.Channel.updateOne(
+          { org_id, uuid: channel_uuid, 'versions.uuid': uuid },
+          { $set: { 'versions.$.location' : location}}
+        );
         return {
           uuid,
           success: true
