@@ -105,7 +105,10 @@ const subscriptionResolvers = {
       if (!cluster) {
         throw new ValidationError(`could not locate the cluster with ${cluster_id}`);
       }
-      const userTags = cluster.labels.map(l => l.name);
+      var userTags = [];
+      if (cluster.labels) {
+        userTags = cluster.labels.map(l => l.name);
+      }
       logger.debug({user: 'graphql api user', org_id, userTags }, `${query} enter`);
       let urls = [];
       try {
