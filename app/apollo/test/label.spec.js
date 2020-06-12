@@ -21,7 +21,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
-const clusterFunc = require('./clusterApi');
+//const clusterFunc = require('./clusterApi');
 const labelFunc = require('./labelApi');
 
 const apollo = require('../index');
@@ -35,10 +35,10 @@ let myApollo;
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
-const clusterApi = clusterFunc(graphqlUrl);
+//const clusterApi = clusterFunc(graphqlUrl);
 const labelApi = labelFunc(graphqlUrl);
 let token;
-let adminToken;
+//let adminToken;
 
 let org01Data;
 let org77Data;
