@@ -265,7 +265,7 @@ describe('label graphql test suite', () => {
     // await getPresetClusters();
   
     token = await signInUser(models, resourceApi, user01Data);
-    adminToken = await signInUser(models, resourceApi, userRootData);
+    // adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
   
   after(async () => {
