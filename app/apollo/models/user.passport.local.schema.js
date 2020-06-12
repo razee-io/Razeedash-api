@@ -342,7 +342,6 @@ UserPassportLocalSchema.statics.getOrgs = async function(context) {
   return results;
 };
 
-
 UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
   if(!ids || ids.length < 1){
     return {};
@@ -350,7 +349,7 @@ UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
     var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || _id;
     return {
       _id,
       name,
