@@ -45,20 +45,6 @@ const UserDefaultSchema = new mongoose.Schema({
       type: String,
     },
   },
-
-  services: {
-    default: {
-      username: {
-        type: String,
-        unique: true,
-      },
-      email: {
-        type: String,
-        unique: true,
-      }
-    },
-  },
-
   meta: {
     orgs: [
       {
