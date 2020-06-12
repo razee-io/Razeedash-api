@@ -273,7 +273,7 @@ describe('label graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it.only('get all labels by Org ID', async () => {
+  it('get all labels by Org ID', async () => {
     try {
       const {
         data: {
