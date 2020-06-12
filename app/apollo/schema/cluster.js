@@ -23,6 +23,11 @@ const clusterSchema = gql`
     created: Date
   }
 
+  type ClusterTag {
+    uuid: String!
+    name: String!
+  }
+
   type Cluster {
     _id: ID!
     org_id: String!
@@ -31,6 +36,7 @@ const clusterSchema = gql`
     comments: [Comment]
     registration: JSON
     reg_state: String
+    tags: [ClusterTag]
     created: Date
     updated: Date
     dirty: Boolean

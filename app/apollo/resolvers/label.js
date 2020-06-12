@@ -59,7 +59,7 @@ const labelResolvers = {
 
         const subscriptionCount = await models.Subscription.count({ org_id: orgId, tags: label.name });
 
-        const clusterCount = await models.Cluster.count({ org_id: orgId, 'labels.uuid': label.uuid });
+        const clusterCount = await models.Cluster.count({ org_id: orgId, 'tags.uuid': label.uuid });
 
         label.owner = owners[label.owner];
         return {clusterCount, subscriptionCount, ...label};
@@ -83,7 +83,7 @@ const labelResolvers = {
 
         const subscriptionCount = await models.Subscription.count({ org_id: orgId, tags: label.name });
 
-        const clusterCount = await models.Cluster.count({ org_id: orgId, 'labels.uuid': label.uuid });
+        const clusterCount = await models.Cluster.count({ org_id: orgId, 'tags.uuid': label.uuid });
 
         label.owner = owners[label.owner];
         return {clusterCount, subscriptionCount, ...label};
@@ -138,7 +138,7 @@ const labelResolvers = {
           throw new ValidationError(`${subCount} subscriptions depend on this label. Please update/remove them before removing this label.`);
         }
         
-        const clusterCount = await models.Cluster.count({ org_id: orgId, 'labels.uuid': label.uuid });
+        const clusterCount = await models.Cluster.count({ org_id: orgId, 'tags.uuid': label.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this label. Please update/remove the label from the clusters.`);
         }      
@@ -172,7 +172,7 @@ const labelResolvers = {
           throw new ValidationError(`${subCount} subscriptions depend on this label. Please update/remove them before removing this label.`);
         }
         
-        const clusterCount = await models.Cluster.count({ org_id: orgId, 'labels.uuid': label.uuid });
+        const clusterCount = await models.Cluster.count({ org_id: orgId, 'tags.uuid': label.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this label. Please update/remove the label from the clusters.`);
         }      
@@ -205,8 +205,8 @@ const labelResolvers = {
 
         // update clusters label array with the above label
         const res = await models.Cluster.updateMany(
-          {org_id: orgId, cluster_id: {$in: clusters}, 'labels.uuid': {$nin: [uuid]}}, 
-          {$push: {labels: {uuid: label.uuid, name: label.name}}});
+          {org_id: orgId, cluster_id: {$in: clusters}, 'tags.uuid': {$nin: [uuid]}}, 
+          {$push: {tags: {uuid: label.uuid, name: label.name}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
@@ -233,8 +233,8 @@ const labelResolvers = {
 
         // update clusters label array with the above label
         const res = await models.Cluster.updateMany(
-          {org_id: orgId, cluster_id: {$in: clusters}, 'labels.uuid': {$in: [uuid]}}, 
-          {$pull: {labels: {uuid}}});
+          {org_id: orgId, cluster_id: {$in: clusters}, 'tags.uuid': {$in: [uuid]}}, 
+          {$pull: {tags: {uuid}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };

@@ -102,7 +102,7 @@ const subscriptionResolvers = {
 
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean();
       if (!cluster) {
-        throw new ValidationError(`could not locate the cluster with ${cluster_id}`);
+        throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
       }
       var userTags = [];
       if (cluster.labels) {
