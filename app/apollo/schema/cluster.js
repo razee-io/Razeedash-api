@@ -56,6 +56,7 @@ const clusterSchema = gql`
     orgId: String!
     orgKey: String!
     clusterId: String!
+    regState: String!
     registration: JSON!
   }
 
