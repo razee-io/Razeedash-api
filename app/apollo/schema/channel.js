@@ -44,7 +44,15 @@ const channelSchema = gql`
     version_uuid: String!
     success: Boolean!
   }
+  type uploadChannelVersionReply{
+    uuid: String!
+    success: Boolean
+  }
   type RemoveChannelReply {
+    uuid: String!
+    success: Boolean
+  }
+  type RemoveChannelVersionReply {
     uuid: String!
     success: Boolean
   }
@@ -102,11 +110,21 @@ const channelSchema = gql`
      Requires either content:String or file:Upload
      """
      addChannelVersion(org_id: String!, channel_uuid: String!, name: String!, type: String!, content: String, file: Upload, description: String): AddChannelVersionReply!
+
+     """
+     upload content for this channel version
+     """
+     uploadChannelVersion(org_id: String!, uuid: String!, content: String, file: Upload): uploadChannelVersionReply!
      
      """
      Removes a channel
      """
      removeChannel(org_id: String!, uuid: String!): RemoveChannelReply!
+
+     """
+     Removes a channel version
+     """
+     removeChannelVersion(org_id: String!, uuid: String!): RemoveChannelVersionReply!
   }
 `;
 

@@ -275,11 +275,22 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     if (action === ACTIONS.READ) {
       return !!orgMeta;
     }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
+    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE
+      || action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
+      || action === ACTIONS.SETVERSION || action === ACTIONS.ATTACH || action === ACTIONS.DETACH
+      || action === ACTIONS.REGISTER) {
       return orgMeta.role === 'ADMIN';
     }
   }
   return false;
+};
+
+UserLocalSchema.statics.getOrg = async function(models, me) {
+  let org;
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  }
+  return org;
 };
 
 UserLocalSchema.statics.getOrgs = async function(context) {

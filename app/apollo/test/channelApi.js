@@ -124,6 +124,48 @@ const channelFunc = grahqlUrl => {
       },
     );
 
+  const uploadChannelVersion = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $uuid: String!, $content: String!) {
+            uploadChannelVersion( org_id: $org_id uuid: $uuid content: $content) {
+              uuid
+              success
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const removeChannelVersion = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($org_id: String!, $uuid: String!) {
+            removeChannelVersion( org_id: $org_id uuid: $uuid) {
+              uuid
+              success
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   const addChannel = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -192,6 +234,8 @@ const channelFunc = grahqlUrl => {
     channel,
     getChannelVersion,
     addChannelVersion,
+    uploadChannelVersion,
+    removeChannelVersion,
     addChannel,
     editChannel,
     removeChannel
