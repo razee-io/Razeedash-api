@@ -260,7 +260,6 @@ const resourceResolvers = {
         searchObj.updated = updatedSearchObj;
       }
 
-      //todo: add current resource doc to list
       const histObjs = await models.ResourceYamlHist.find(searchObj, { _id:1, updated:1 }, { limit, lean: true });
       const count = await models.ResourceYamlHist.find(searchObj).count();
 
