@@ -195,7 +195,7 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id, cluster_id}, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+      await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
       try {
         const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
@@ -226,7 +226,7 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id}, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+      await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
       try {
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
@@ -252,7 +252,7 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CLUSTER, queryName, context);
+      await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
 
       try {
         var error;
