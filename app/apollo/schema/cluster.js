@@ -53,6 +53,7 @@ const clusterSchema = gql`
 
   type RegisterClusterResponse {
     url: String!
+    orgId: String!
     orgKey: String!
     clusterId: String!
     registration: JSON!
