@@ -296,9 +296,10 @@ const clusterResolvers = {
         const reg_state = CLUSTER_REG_STATES.REGISTERING;
         await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
         
+        const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}` + (tags ? `&tags=${tags}`: '');
-        return { url };
+        return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
         throw error;
