@@ -79,9 +79,9 @@ UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionP
   return null;
 };
 
-UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
-  const {req_id, models, logger} = context;
-  logger.debug({ req_id: req_id }, `default userTokenIsAuthorized ${action} ${type} ${attributes}`);
+UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, action, type, context) {
+  const {req_id, logger} = context;
+  logger.debug({ req_id: req_id }, `default userTokenIsAuthorized ${action} ${type}`);
 
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
     const user = await this.findOne({ apiKey: me.apiKey }).lean();
@@ -89,18 +89,6 @@ UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, acti
       logger.error('A user was not found for this apiKey');
       throw new ForbiddenError('user not found');
     }
-    const orgName = user.profile.currentOrgName;
-    if(!orgName) {
-      logger.error('An org has not been set for this user');
-      throw new ForbiddenError('An org has not been set for this user');
-    } 
-    const org = await models.Organization.findOne({ name: orgName }).lean();
-    if(!org || org._id !== orgId) {
-      logger.error('User is not authorized for this organization');
-      throw new ForbiddenError('user is not authorized');
-    } 
-    
-    logger.debug('user found using apiKey', user);
     return user;
   }
   return false;
