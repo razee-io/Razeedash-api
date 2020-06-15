@@ -217,7 +217,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          version_uuid,
+          version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 

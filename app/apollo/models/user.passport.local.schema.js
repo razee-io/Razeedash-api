@@ -284,6 +284,14 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
   return false;
 };
 
+UserPassportLocalSchema.statics.getOrg = async function(models, me) {
+  let org;
+  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  }
+  return org;
+};
+
 UserPassportLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
   const { models, me } = context;

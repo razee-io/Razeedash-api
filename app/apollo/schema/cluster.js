@@ -51,6 +51,15 @@ const clusterSchema = gql`
     deletedResourceCount: Int
   }
 
+  type RegisterClusterResponse {
+    url: String!
+    orgId: String!
+    orgKey: String!
+    clusterId: String!
+    regState: String!
+    registration: JSON!
+  }
+
   extend type Query {
     """
     Return a cluster based on **org_id** and **cluster_id**.
@@ -116,7 +125,7 @@ const clusterSchema = gql`
     registerCluster (
       org_id: String!
       registration: JSON!
-    ): URL!
+    ): RegisterClusterResponse!
   }
 
 `;
