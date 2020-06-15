@@ -156,6 +156,58 @@ const apiFunc = grahqlUrl => {
       },
     );
 
+  const resourceHistId = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query ($org_id: String!, $_id: String!, $histId: String) {
+            resource(org_id: $org_id, _id: $_id, histId: $histId) {
+              _id
+              org_id
+              cluster_id
+              selfLink
+              searchableData
+              created
+              data
+              updated
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      },
+    );
+
+  const resourceHistory = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query ($org_id: String!, $cluster_id: String!, $resourceSelfLink: String!, $beforeDate: Date, $afterDate: Date, $limit: Int = 20) {
+            resourceHistory(org_id: $org_id, cluster_id: $cluster_id, resourceSelfLink: $resourceSelfLink, beforeDate: $beforeDate, afterDate: $afterDate, limit: $limit) {
+              count,
+              items{
+                _id
+                updated
+              }
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      },
+    );
+
+
   const resourceByKeys = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -425,6 +477,8 @@ const apiFunc = grahqlUrl => {
     signUp,
     signIn,
     resource,
+    resourceHistId,
+    resourceHistory,
     resourceByKeys,
     resourceChanged,
     resourcesCount,

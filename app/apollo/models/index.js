@@ -25,6 +25,7 @@ const Organization = require('./organization');
 const Channel = require('./channel');
 const Subscription = require('./subscription');
 const DeployableVersion = require('./deployableVersion');
+const ResourceYamlHist = require('./resourceYamlHist');
 
 const { getBunyanConfig } = require('../../utils/bunyan');
 
@@ -75,6 +76,7 @@ const models = {
   Channel,
   Subscription,
   DeployableVersion,
+  ResourceYamlHist,
   dbConnections: [],
   ClusterDistributed: [],
   ResourceDistributed: [],
