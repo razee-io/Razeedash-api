@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs, validAuth, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
@@ -202,7 +202,7 @@ const resourceResolvers = {
       return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
     },
 
-    resource: async (parent, { org_id, _id }, context, fullQuery) => {
+    resource: async (parent, { org_id, _id, histId }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resource';
       const { models, me, req_id, logger } = context;
@@ -212,7 +212,16 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, _id: ObjectId(_id) };
-      return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      var resource = await commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      if(histId && histId != _id){
+        var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
+        if(!resourceYamlHistObj){
+          throw new NotFoundError(`hist _id "${histId}" not found`);
+        }
+        resource.data = resourceYamlHistObj.yamlStr;
+        resource.updated = resourceYamlHistObj.updated;
+      }
+      return resource;
     },
 
     resourceByKeys: async (
@@ -243,6 +252,73 @@ const resourceResolvers = {
   
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
       return commonResourcesSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+    },
+
+    resourceHistory: async(parent, { org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
+      const { models, me, req_id, logger } = context;
+
+      limit = _.clamp(limit, 1, 1000);
+
+      const queryName = 'resourceHistory';
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      var searchObj = {
+        org_id, cluster_id, resourceSelfLink
+      };
+      var updatedSearchObj = {};
+      if(beforeDate){
+        updatedSearchObj.$lte = beforeDate;
+      }
+      if(afterDate){
+        updatedSearchObj.$gte = afterDate;
+      }
+      if(!_.isEmpty(updatedSearchObj)){
+        searchObj.updated = updatedSearchObj;
+      }
+
+      const histObjs = await models.ResourceYamlHist.find(searchObj, { _id:1, updated:1 }, { limit, lean: true });
+      const count = await models.ResourceYamlHist.find(searchObj).count();
+
+      return {
+        count,
+        items: histObjs,
+      };
+    },
+
+    resourceContent: async(parent, { org_id, cluster_id, resourceSelfLink, histId=null }, context)=>{
+      const { models, me, req_id, logger } = context;
+
+      const queryName = 'resourceContent';
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      var getContent = async(obj)=>{
+        return obj.yamlStr;
+      };
+
+      const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink });
+      if(!histId || histId == resource._id.toString()){
+        let content = await getContent(resource);
+        return {
+          _id: resource._id,
+          content,
+          updated: resource.updated,
+        };
+      }
+
+      const obj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
+      if(!obj){
+        return null;
+      }
+
+      const content = await getContent(obj);
+
+      return {
+        _id: obj._id,
+        content,
+        updated: obj.updated,
+      };
     },
   },
   Subscription: {

@@ -77,6 +77,10 @@ const subscriptionSchema = gql`
      Gets all subscriptions that match a set of tags for an org
      """
      subscriptionsByTag(tags: String): [UpdatedSubscription]
+     """
+     Gets all subscriptions for a cluster
+     """
+     subscriptionsByCluster(cluster_id: String): [UpdatedSubscription]
   }
   extend type Mutation {
      """

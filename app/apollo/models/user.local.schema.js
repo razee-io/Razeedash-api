@@ -20,7 +20,7 @@ const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
-const { AuthenticationError, UserInputError } = require('apollo-server');
+const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-server');
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -215,6 +215,11 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
 UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     const {req_id, logger} = context;
+    const orgKey = req.get('razee-org-key');
+    if (orgKey) {
+      // cluster facing api (e.g. subscriptionsByTag)
+      return {orgKey, type: 'cluster'};  
+    }
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -237,6 +242,13 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   context
 ) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    if (connectionParams.headers) {
+      const orgKey = connectionParams.headers['razee-org-key'];
+      if (orgKey) {
+        // cluster facing api (e.g. subscriptionsByTag)
+        return {orgKey, type: 'cluster'};
+      }
+    }
     const {req_id, logger} = context;
     let token = connectionParams['authorization'];
     if (token) {
@@ -255,7 +267,20 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+UserLocalSchema.statics.isValidOrgKey = async function(models, me) {
+  logger.debug('default isValidOrgKey');
+  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
 
+    const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+    if(!org) {
+      logger.error('An org was not found for this razee-org-key');
+      throw new ForbiddenError('org id was not found');
+    }
+    logger.debug('org found using orgKey');
+    return org;
+  }
+  return false;
+};
 
 UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
@@ -265,6 +290,11 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
 
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    return false;
+  }
+    
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
@@ -314,7 +344,7 @@ UserLocalSchema.statics.getOrgs = async function(context) {
 
 UserLocalSchema.statics.getBasicUsersByIds = async function(ids){
   if(!ids || ids.length < 1){
-    return [];
+    return {};
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
@@ -326,6 +356,7 @@ UserLocalSchema.statics.getBasicUsersByIds = async function(ids){
     };
   });
   users = _.keyBy(users, '_id');
+  users['undefined'] = {_id: 'undefined', name: 'undefined'};
   return users;
 };
 
