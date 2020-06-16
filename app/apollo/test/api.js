@@ -204,8 +204,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date){
-            resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate) {
+          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date, $sort: [SortObj!]){
+            resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate, sort: $sort) {
               count
               resources{
                 _id
@@ -214,6 +214,7 @@ const apiFunc = grahqlUrl => {
                 selfLink
                 searchableData
                 created
+                updated
               }
             }
           }

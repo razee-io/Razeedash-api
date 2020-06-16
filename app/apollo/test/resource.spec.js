@@ -102,6 +102,29 @@ const createResources = async () => {
     searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
     searchableDataHash: 'some random hash.',
   });
+
+  await models.Resource.create({
+    org_id: org_02._id,
+    cluster_id: 'cluster_04',
+    selfLink: '/mybla/cluster04/selfLink1',
+    hash: 'any_hash',
+    deleted: false,
+    data: 'any_data',
+    updated: new Date(1400000000000),
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableDataHash: 'some random hash.',
+  });
+  await models.Resource.create({
+    org_id: org_02._id,
+    cluster_id: 'cluster_04',
+    selfLink: '/mybla/cluster04/selfLink2',
+    hash: 'any_hash',
+    deleted: false,
+    data: 'any_data',
+    updated: new Date(1500000000000),
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableDataHash: 'some random hash.',
+  });
   await models.Resource.create({
     org_id: org_01._id,
     cluster_id: 'cluster_03',
@@ -203,6 +226,40 @@ describe('resource graphql test suite', () => {
         console.log(JSON.stringify(result2.data));
         expect(result2.data.data.resource._id).to.equal(_id);
         expect(result2.data.data.resource.selfLink).to.equal('/mybla/selfLink');
+      } catch (error) {
+        // console.error('error response is ', error.response);
+        console.error(
+          'error response is ',
+          JSON.stringify(error.response.data),
+        );
+        throw error;
+      }
+    });
+
+    it('should sort based on the users input', async()=>{
+      try {
+        token = await signInUser(models, api, user02Data);
+        console.log(`user01 token=${token}`);
+        const meResult = await api.me(token);
+
+        const result1 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          filter: 'mybla',
+          sort: [{ field: 'selfLink', desc: true }],
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resources.resources[0].selfLink).to.equal(
+          '/mybla/cluster04/selfLink2',
+        );
+        const result2 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          filter: 'mybla',
+          sort: [{ field: 'selfLink' }],
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result2.data.data.resources.resources[0].selfLink).to.equal(
+          '/mybla/cluster04/selfLink1',
+        );
       } catch (error) {
         // console.error('error response is ', error.response);
         console.error(

@@ -39,6 +39,11 @@ const linkSchema = gql`
   type Subscription {
     _: Boolean
   }
+  
+  input SortObj {
+    field: String!
+    desc: Boolean = false
+  }
 `;
 
 const schemas = [ linkSchema,
