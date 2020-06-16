@@ -83,7 +83,6 @@ const channelSchema = gql`
      Gets a yaml version from this channel
      """
      getChannelVersion(org_id: String!, channel_uuid: String!, version_uuid: String!): DeployableVersion!
-
   }
   extend type Mutation {
      """
