@@ -304,11 +304,9 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     const results = objectArray.map( o => {
       if (o.action === ACTIONS.READ) {
         return !!orgMeta;
-      }
-      if (o.action === ACTIONS.MANAGE || o.action === ACTIONS.WRITE) {
+      } else {
         return orgMeta.role === 'ADMIN';
       }
-      return false;
     });
     logger.debug({ req_id, orgId, results, me },'local isAuthorizedBatch exit..');
     return results;
@@ -339,11 +337,7 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     if (action === ACTIONS.READ) {
       return !!orgMeta;
-    }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE
-      || action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
-      || action === ACTIONS.SETVERSION || action === ACTIONS.ATTACH || action === ACTIONS.DETACH
-      || action === ACTIONS.REGISTER) {
+    } else {
       return orgMeta.role === 'ADMIN';
     }
   }

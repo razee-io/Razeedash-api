@@ -295,28 +295,37 @@ UserPassportLocalSchema.statics.userTokenIsAuthorizedBatch = async function(me, 
 
 UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArray, context) {
   const { req_id, logger } = context;
-  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+  logger.debug({ req_id, orgId, objectArray, me },'local isAuthorizedBatch enter..');
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'local isAuthorizedBatch exit..');
     return new Array(objectArray.length).fill(false);
   }
+
+  if (me.type === 'user') {
+    me = me.user;
+  }
+
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
-  if(!orgMeta){
-    return new Array(objectArray.length).fill(false);
+
+  if (orgMeta && AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const results = objectArray.map( o => {
+      if (o.action === ACTIONS.READ) {
+        return !!orgMeta;
+      } else {
+        return orgMeta.role === 'ADMIN';
+      }
+    });
+    logger.debug({ req_id, orgId, results, me },'local isAuthorizedBatch exit..');
+    return results;
   }
-  if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
-    if (action === ACTIONS.READ) {
-      return new Array(objectArray.length).fill(!!orgMeta);
-    }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE) {
-      return new Array(objectArray.length).fill(orgMeta.role === 'ADMIN');
-    }
-  }
-  return false;
+  logger.debug({ req_id, orgId, me, orgMeta, AUTH_MODEL }, 'local isAuthorizedBatch exit..');
+  return new Array(objectArray.length).fill(false);
 };
+
 
 UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
@@ -334,11 +343,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
-    }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE
-      || action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
-      || action === ACTIONS.SETVERSION || action === ACTIONS.ATTACH || action === ACTIONS.DETACH
-      || action === ACTIONS.REGISTER) {
+    } else {
       return me.org_id === orgId && me.role === 'ADMIN';
     }
   }
