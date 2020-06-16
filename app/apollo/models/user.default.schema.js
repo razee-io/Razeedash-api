@@ -153,19 +153,11 @@ UserDefaultSchema.statics.getOrgs = async function(models, me) {
 };
 
 UserDefaultSchema.statics.getOrgById = async function(models, orgId) {
-  let org;
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    org = await models.Organization.findOne({ _id: orgId}).lean();
-  }
-  return org;
+  return await models.Organization.findOne({ _id: orgId}).lean();
 };
 
 UserDefaultSchema.statics.getOrg = async function(models, me) {
-  let org;
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
-  }
-  return org;
+  return await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
 };
 
 UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){
