@@ -180,7 +180,7 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         const uuid = UUID();
@@ -223,7 +223,7 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
@@ -270,7 +270,8 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+
+      // await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
@@ -280,7 +281,7 @@ const subscriptionResolvers = {
 
         // validate user has enough tag permissions to for this sub
         // TODO: we should use specific tag action bellow instead of manage, e.g. setSubscription action
-        const userTags = await getUserTags(me, org_id, ACTIONS.MANAGE, 'name', queryName, context);
+        const userTags = await getUserTags(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
         if (subscription.tags.some(t => {return userTags.indexOf(t) === -1;})) {
           // if some tag of the sub does not in user's tag list, throws an error
           throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.tags} tags. `);
@@ -301,7 +302,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          version_uuid,
+          version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 
@@ -322,7 +323,7 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
 
       var success = false;
       try{
