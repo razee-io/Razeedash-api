@@ -282,6 +282,41 @@ UserLocalSchema.statics.isValidOrgKey = async function(models, me) {
   return false;
 };
 
+UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArray, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id, orgId, objectArray, me },'local isAuthorizedBatch enter..');
+
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'local isAuthorizedBatch exit..');
+    return new Array(objectArray.length).fill(false);
+  }
+
+  if (me.type === 'user') {
+    me = me.user;
+  }
+
+  const orgMeta = me.meta.orgs.find((o)=>{
+    return (o._id == orgId);
+  });
+
+  if (orgMeta && AUTH_MODEL === AUTH_MODELS.LOCAL) {
+    const results = objectArray.map( o => {
+      if (o.action === ACTIONS.READ) {
+        return !!orgMeta;
+      }
+      if (o.action === ACTIONS.MANAGE || o.action === ACTIONS.WRITE) {
+        return orgMeta.role === 'ADMIN';
+      }
+      return false;
+    });
+    logger.debug({ req_id, orgId, results, me },'local isAuthorizedBatch exit..');
+    return results;
+  }
+  logger.debug({ req_id, orgId, me, orgMeta, AUTH_MODEL }, 'local isAuthorizedBatch exit..');
+  return new Array(objectArray.length).fill(false);
+};
+
 UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
 };

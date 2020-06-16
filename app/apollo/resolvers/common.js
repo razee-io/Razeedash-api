@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 const { ForbiddenError, ApolloError } = require('apollo-server');
-
+const { TYPES, ACTIONS } = require('../models/const');
 
 const whoIs = me => { 
   if (me === null || me === undefined) return 'null';
@@ -37,6 +37,60 @@ const validClusterAuth = async (me, queryName, context) => {
     return;
   }
 }; 
+
+// return user permitted tags in an array 
+const getUserTags = async (me, org_id, action, field, queryName, context) => {
+  const {req_id, models, logger} = context;
+
+  logger.debug({req_id, user: whoIs(me), org_id, field, action }, `getUserTags enter for ${queryName}`);
+  const labels = await models.Label.find({orgId: org_id}).lean();
+  const objectArray = labels.map(l => {
+    return {type: TYPES.LABEL, action, uuid: l.uuid, name: l.name};
+  });
+  const decisions = await models.User.isAuthorizedBatch(me, org_id, objectArray, context);
+
+  const allowedTags = [];
+  decisions.forEach( (d, i) => {
+    if (d) {
+      allowedTags.push(objectArray[i][field]);
+    }
+  });
+  logger.debug({req_id, user: whoIs(me), org_id, action, allowedTags}, `getUserTags exit for ${queryName}`);
+  return allowedTags;
+};
+
+// the condition will be true if one of tag exists in user permitted tags or no tag at all
+const getUserTagOrConditions = async (me, org_id, action, field, queryName, context) => {
+  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
+  if (field === 'uuid') {
+    return {
+      $or: [
+        {'tags.uuid': {$in: userTags}}, 
+        {'tags.uuid': { $exists: false }}
+      ]
+    };
+  } 
+  return {
+    $or: [
+      {'tags': {$in: userTags}}, 
+      {'tags': { $exists: false }}
+    ]    
+  };
+};
+
+// the condition will be true if all tags are subset of user permitted tags
+const getUserTagAndConditions = async (me, org_id, action, field, queryName, context) => {
+  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
+  if (field === 'uuid') {
+    return {
+      'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}}
+    };
+  } 
+  return {
+    'tags': {$not: {$elemMatch: {$nin: userTags}}}
+  };
+};
+
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
@@ -70,4 +124,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth };
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTags, getUserTagOrConditions, getUserTagAndConditions };

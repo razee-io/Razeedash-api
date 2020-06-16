@@ -16,10 +16,10 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs, validAuth, getUserTagOrConditions } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
-const buildSearchFilter = (ordId, searchStr) => {
+const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
   if(tokens.length > 0) {
@@ -33,9 +33,9 @@ const buildSearchFilter = (ordId, searchStr) => {
     });
   }
 
-  ands.push({
-    org_id: ordId,
-  });
+  ands.push({org_id: ordId});
+
+  ands.push(condition);
 
   const search = {
     $and: ands,
@@ -74,11 +74,13 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      const conditions = await getUserTagOrConditions(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const result = await models.Cluster.findOne({
         org_id: orgId,
         cluster_id: clusterId,
+        ...conditions
       }).lean();
 
       return result;
@@ -99,9 +101,10 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      //await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      const conditions = await getUserTagOrConditions(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
-      const searchFilter = { org_id: orgId };
+      const searchFilter = { org_id: orgId , ...conditions};
       return commonClusterSearch(models, searchFilter, limit, startingAfter);
     }, // end clusterByOrgId
 
@@ -135,17 +138,22 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      // first get all users permitted labels, 
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      const conditions = await getUserTagOrConditions(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       let searchFilter;
       if (!filter) {
         searchFilter = {
           org_id: orgId,
+          ...conditions
         };
       } else {
-        searchFilter = buildSearchFilter(orgId, filter);
+        searchFilter = buildSearchFilter(orgId, conditions, filter);
       }
 
+      logger.debug({req_id, user: whoIs(me), orgId, searchFilter}, `${queryName} search filer is.. `);
+      
       return commonClusterSearch(models, searchFilter, limit);
     }, // end clusterSearch
 
@@ -160,13 +168,15 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      const conditions = await getUserTagOrConditions(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const results = await models.Cluster.aggregate([
         {
           $match: {
             org_id: orgId,
             updated: { $gte: new Moment().subtract(1, 'day').toDate() },
+            ...conditions
           },
         },
         {
