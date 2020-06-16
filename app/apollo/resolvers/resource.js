@@ -117,8 +117,8 @@ const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields,
   }
 };
 
+// usage: buildSortObj([{field: 'updated', desc: true}], ['_id', 'name', 'created', 'updated']);
 const buildSortObj = (sortArr, allowedFields)=>{
-  // buildSortObj([{field: 'updated', desc: true}], ['_id', 'name', 'created', 'updated']);
   if(!allowedFields){
     throw new Error('you need to pass allowedFields into buildSortObj()');
   }
