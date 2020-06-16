@@ -45,7 +45,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
 
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
-    const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, null, context);
+    const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
     if(!result){
       throw new ForbiddenError(
         `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
