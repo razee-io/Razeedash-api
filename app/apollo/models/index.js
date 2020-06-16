@@ -25,7 +25,8 @@ const Organization = require('./organization');
 const Channel = require('./channel');
 const Subscription = require('./subscription');
 const DeployableVersion = require('./deployableVersion');
-
+const ResourceYamlHist = require('./resourceYamlHist');
+const Label = require('./label');
 const { getBunyanConfig } = require('../../utils/bunyan');
 
 mongoose.Promise = global.Promise; // use global es6 promises
@@ -73,8 +74,10 @@ const models = {
   Resource,
   Cluster,
   Channel,
+  Label,
   Subscription,
   DeployableVersion,
+  ResourceYamlHist,
   dbConnections: [],
   ClusterDistributed: [],
   ResourceDistributed: [],

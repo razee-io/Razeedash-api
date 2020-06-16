@@ -50,6 +50,7 @@ const TYPES = {
   CLUSTER: 'cluster',
   ORGANIZATION: 'organization',
   MESSAGE: 'message',
+  LABEL: 'label',
   CHANNEL: 'channel',
   SUBSCRIPTION: 'subscription',
 };
