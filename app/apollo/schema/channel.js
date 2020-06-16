@@ -67,10 +67,6 @@ const channelSchema = gql`
     content: String
     created: Date!
   }
-  type DeployableVersionList{
-    count: Int
-    versions: [DeployableVersion!]
-  }
 
   extend type Query {
      """
@@ -87,12 +83,6 @@ const channelSchema = gql`
      Gets a yaml version from this channel
      """
      getChannelVersion(org_id: String!, channel_uuid: String!, version_uuid: String!): DeployableVersion!
-     
-     """
-     Lets the $limit most recent versions for a channel
-     """
-     getChannelVersions(org_id: String!, channel_uuid: String!, limit: Int = 500): DeployableVersionList!
-
   }
   extend type Mutation {
      """
