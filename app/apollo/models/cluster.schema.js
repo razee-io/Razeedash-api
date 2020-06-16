@@ -23,6 +23,16 @@ const ClusterSchema = new mongoose.Schema({
   cluster_id: {
     type: String,
   },
+  tags: [
+    {
+      uuid: {
+        type: String,
+      },
+      name: {
+        type: String,
+      },
+    }
+  ],
   metadata: {
     kube_version: {
       major: {

@@ -20,6 +20,7 @@ const GraphQLJSON = require('graphql-type-json');
 const userResolvers = require('./user');
 const resourceResolvers = require('./resource');
 const resourceDistributedResolvers = require('./resourceDistributed');
+const labelResolvers = require('./label');
 const clusterResolvers = require('./cluster');
 const channelResolvers = require('./channel');
 const subscriptionResolvers = require('./subscription');
@@ -37,6 +38,7 @@ const resolvers = [
   userResolvers,
   resourceResolvers,
   resourceDistributedResolvers,
+  labelResolvers,
   clusterResolvers,
   subscriptionResolvers,
   channelResolvers,

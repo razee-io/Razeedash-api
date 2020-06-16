@@ -73,8 +73,8 @@ UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionP
   const {req_id, logger} = context;
   logger.debug({ req_id, connectionParams }, 'default getMeFromConnectionParams');
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const obj = connectionParams.headers['razee-org-key'];
-    return obj;
+    const orgKey = connectionParams.headers['razee-org-key'];
+    return {orgKey, type: 'cluster'};
   }
   return null;
 };
@@ -164,18 +164,19 @@ UserDefaultSchema.statics.getOrg = async function(models, me) {
 
 UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){
   if(!ids || ids.length < 1){
-    return [];
+    return {};
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
     var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.local.username') || _id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'service.default.username') || _id;
     return {
       _id,
       name,
     };
   });
   users = _.keyBy(users, '_id');
+  users['undefined'] = {_id: 'undefined', name: 'undefined'};
   return users;
 };
 
