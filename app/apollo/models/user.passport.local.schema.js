@@ -21,7 +21,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
 
-const { AuthenticationError } = require('apollo-server');
+const { AuthenticationError, ForbiddenError } = require('apollo-server');
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
@@ -181,8 +181,6 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   return result;
 };
 
-
-
 UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
   logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
@@ -223,6 +221,12 @@ UserPassportLocalSchema.statics.signIn = async (
 UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const {req_id, logger} = context;
+    const orgKey = req.get('razee-org-key');
+    if (orgKey) {
+      // cluster facing api (e.g. subscriptionsByTag)
+      return {orgKey, type: 'cluster'};  
+    }
+    // user facing api
     let token = req.headers['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -246,6 +250,13 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
 ) {
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const {req_id, logger} = context;
+    if (connectionParams.headers) {
+      const orgKey = connectionParams.headers['razee-org-key'];
+      if (orgKey) {
+        // cluster facing api (e.g. subscriptionsByTag)
+        return {orgKey, type: 'cluster'};
+      }
+    }
     let token = connectionParams['authorization'];
     if (token) {
       if (token.startsWith('Bearer ')) {
@@ -263,6 +274,23 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
+UserPassportLocalSchema.statics.isValidOrgKey = async function(models, me) {
+  logger.debug('default isValidOrgKey');
+  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
+
+    const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+    if(!org) {
+      logger.error('An org was not found for this razee-org-key');
+      throw new ForbiddenError('org id was not found');
+    }
+    logger.debug('org found using orgKey');
+    return org;
+  }
+  return false;
+};
+
+
+
 UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
 };
@@ -270,6 +298,12 @@ UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId
 UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
+
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    return false;
+  }
+  
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     if (action === ACTIONS.READ) {
       return me.org_id === orgId;
@@ -311,10 +345,9 @@ UserPassportLocalSchema.statics.getOrgs = async function(context) {
   return results;
 };
 
-
 UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
   if(!ids || ids.length < 1){
-    return [];
+    return {};
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
@@ -326,9 +359,9 @@ UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
     };
   });
   users = _.keyBy(users, '_id');
+  users['undefined'] = {_id: 'undefined', name: 'undefined'};
   return users;
 };
-
 
 UserPassportLocalSchema.pre('save', async function() {
   this.services.passportlocal.password = await this.generatePasswordHash();
