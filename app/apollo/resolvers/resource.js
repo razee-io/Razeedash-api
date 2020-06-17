@@ -15,41 +15,60 @@
  */
 
 const _ = require('lodash');
-const { withFilter } = require('apollo-server');
+const { withFilter, ForbiddenError } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getUserTags, getUserTagOrConditions, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
-const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort={created: -1} }) => {
+const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500, queryFields, sort = {created: -1} }) => {
+  const { models, me, req_id, logger } = context;
   try {
-    const resources = await models.Resource.find(searchFilter)
-      .sort(sort)
-      .limit(limit)
-      .lean()
-    ;
-    var count = await models.Resource.find(searchFilter).count();
+
+    const userTags = await getUserTags(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourcesSearch', context);
+
+    const lookup = {
+      from: 'clusters',
+      localField: 'cluster_id',
+      foreignField: 'cluster_id',
+      as: 'cluster'
+    };
+    const match = {$and: [
+      searchFilter, 
+      {$or: [
+        {'cluster.tags.uuid': { $exists: false }} , 
+        {'cluster.tags.uuid': { $in: userTags }}
+      ]}
+    ]};
+    const resources =  await models.Resource.aggregate([
+      { $lookup: lookup },
+      { $unwind: '$cluster'},
+      { $match: match },
+      { $sort: Object.keys(sort).length > 0 ? sort : {created: -1}},
+      { $limit: limit },
+    ]);
+
+    var [ countResults ] = await models.Resource.aggregate([
+      { $lookup: lookup },
+      { $unwind: '$cluster'},
+      { $match: match },
+      { $count: 'count'}
+    ]);
+    
+    var count = (countResults && countResults.count) ? countResults.count : 0;
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
     if((queryFields.resources||{}).cluster){
-      const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
-      if(clusterIds.length > 0){
-        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }});
-        clusters = _.map(clusters, (cluster)=>{
-          cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
-          return cluster;
-        });
-        clusters = _.keyBy(clusters, 'cluster_id');
-        resources.forEach((resource)=>{
-          resource.cluster = clusters[resource.cluster_id] || null;
-        });
-      }
+      resources.forEach((resource)=>{
+        const c = resource.cluster;
+        resource.cluster.name = c.name || (c.metadata||{}).name || c.cluster_id;
+      });
     }
     return {
       count,
@@ -94,18 +113,26 @@ const readS3File = async (readable) => {
   return data;
 };
 
-const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields, req_id, logger }) => {
+const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
+  const { models, me, req_id, logger } = context;
   try {
+    const conditions = await getUserTagOrConditions(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     let resource = await models.Resource.findOne(searchFilter).lean();
+
+    if (!resource) return resource;
 
     if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
       const yaml = getS3Data(resource.data, logger);
       resource.data = yaml;
     }
 
+    let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions});
+    if (!cluster) {
+      throw new ForbiddenError('you are not allowed to access this resource due to missing cluster tag permission.');
+    }
+
     if(queryFields['cluster']) {
-      let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id});
       cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
       resource.cluster = cluster;
     }
@@ -160,7 +187,7 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
@@ -173,7 +200,7 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
+      return commonResourcesSearch({ org_id, searchFilter, limit, queryFields, sort, context });
     },
 
     resourcesByCluster: async (
@@ -184,7 +211,7 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
@@ -199,7 +226,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
+      return commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
     },
 
     resource: async (parent, { org_id, _id, histId }, context, fullQuery) => {
@@ -212,7 +239,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, _id: ObjectId(_id) };
-      var resource = await commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
@@ -232,26 +259,25 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourceByKeys';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
 
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink, queryFields}, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      return commonResourceSearch({ context, org_id, searchFilter, queryFields });
     },
     resourcesBySubscription: async ( parent, { org_id, subscription_id}, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
-      const { models, me, req_id, logger } = context;
+      const {  me, req_id, logger } = context;
   
       logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
   
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-  
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);  
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
-      return commonResourcesSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      return commonResourcesSearch({ context, org_id, searchFilter, queryFields });
     },
 
     resourceHistory: async(parent, { org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
