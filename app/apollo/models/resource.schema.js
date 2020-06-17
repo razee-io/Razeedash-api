@@ -52,7 +52,12 @@ const ResourceSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  expireAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
+ResourceSchema.index({'expireAt': 1 }, { expireAfterSeconds: 86400 });
 module.exports = ResourceSchema;
 
