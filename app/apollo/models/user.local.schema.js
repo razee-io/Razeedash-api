@@ -300,7 +300,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     return (o._id == orgId);
   });
 
-  if (orgMeta && AUTH_MODEL === AUTH_MODELS.LOCAL) {
+  if (orgMeta) {
     const results = objectArray.map( o => {
       if (o.action === ACTIONS.READ) {
         return !!orgMeta;
