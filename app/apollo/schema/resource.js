@@ -74,7 +74,7 @@ const resourceSchema = gql`
     """
     Search resources against **org_id**, **filter** string, and date ranges.
     """
-    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500): ResourcesList!
+    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500, sort: [SortObj!]): ResourcesList!
 
     """
     Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges.

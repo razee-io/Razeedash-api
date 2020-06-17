@@ -28,10 +28,10 @@ const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
-const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, queryFields, req_id, logger }) => {
+const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort={created: -1} }) => {
   try {
     const resources = await models.Resource.find(searchFilter)
-      .sort({ created: -1 })
+      .sort(sort)
       .limit(limit)
       .lean()
     ;
@@ -117,6 +117,21 @@ const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields,
   }
 };
 
+// usage: buildSortObj([{field: 'updated', desc: true}], ['_id', 'name', 'created', 'updated']);
+const buildSortObj = (sortArr, allowedFields)=>{
+  if(!allowedFields){
+    throw new Error('you need to pass allowedFields into buildSortObj()');
+  }
+  var out = {};
+  _.each(sortArr, (sortObj)=>{
+    if(!_.includes(allowedFields, sortObj.field)){
+      throw new Error(`You are not allowed to sort on field "${sortObj.field}"`);
+    }
+    out[sortObj.field] = (sortObj.desc ? -1 : 1);
+  });
+  return out;
+};
+
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { org_id }, context) => {
@@ -139,7 +154,7 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { org_id, filter, fromDate, toDate, limit },
+      { org_id, filter, fromDate, toDate, limit, sort },
       context,
       fullQuery
     ) => {
@@ -152,11 +167,13 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
+      sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'deleted', 'hash']);
+
       let searchFilter = { org_id: org_id, deleted: false };
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
+      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
     },
 
     resourcesByCluster: async (
