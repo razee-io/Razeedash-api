@@ -287,6 +287,7 @@ describe('resource graphql test suite', () => {
           'error response is ',
           JSON.stringify(error.response.data),
         );
+      }
     });
     
     it('should see resource history item', async()=>{
