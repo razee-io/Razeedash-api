@@ -48,7 +48,7 @@ LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
     return await models.Label.findOneAndUpdate (
       {orgId, name: tag},
       {_id: UUID(), uuid: UUID(), orgId, name: tag, owner: me._id ? me._id : 'undefined' }, 
-      {new: true, upsert: true, useFindAndModify: false}).lean();
+      {new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false}).lean();
   }));
 
   logger.debug({tags, orgId, req_id: context.req_id, labels}, 'findOrCreateList exit');
