@@ -48,6 +48,22 @@ const resourceSchema = gql`
     count: Int
     resources: [Resource!]!
   }
+  
+  type ResourceHistObj{
+    _id: String!
+    updated: Date!
+  }
+  type ResourceHistList{
+    count: Int
+    items: [ResourceHistObj!]!
+  }
+  type ResourceContentObj{
+    _id: String!
+    content: String!
+    updated: Date!
+  }
+  
+  
 
   extend type Query {
     """
@@ -58,7 +74,7 @@ const resourceSchema = gql`
     """
     Search resources against **org_id**, **filter** string, and date ranges.
     """
-    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500): ResourcesList!
+    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500, sort: [SortObj!]): ResourcesList!
 
     """
     Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges.
@@ -68,7 +84,7 @@ const resourceSchema = gql`
     """
     Return the resource by given resource **_id**.
     """
-    resource(org_id: String!, _id: String!): Resource
+    resource(org_id: String!, _id: String!, histId: String): Resource
 
     """
     return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource.
@@ -79,6 +95,16 @@ const resourceSchema = gql`
     Search resources against **org_id** and **subscription_id**.
     """
     resourcesBySubscription(org_id: String! subscription_id: String!): ResourcesList!
+    
+    """
+    Gets the yaml history for a resource
+    """
+    resourceHistory(org_id: String!, cluster_id: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
+    
+    """
+    Gets the content for a yaml hist item
+    """
+    resourceContent(org_id: String!, cluster_id: String!, resourceSelfLink: String!, histId: String): ResourceContentObj
   }
 
   extend type Subscription {

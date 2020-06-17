@@ -326,7 +326,6 @@ UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, ob
   return new Array(objectArray.length).fill(false);
 };
 
-
 UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
 };

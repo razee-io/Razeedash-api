@@ -18,7 +18,9 @@ const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const { RedisPubSub } = require('graphql-redis-subscriptions');
+const ObjectId = require('mongoose').Types.ObjectId;
 var Redis = require('ioredis-mock');
+const _ = require('lodash');
 
 // const why = require('why-is-node-running');
 
@@ -59,6 +61,8 @@ let presetOrgs;
 let presetUsers;
 let presetResources;
 
+let resourceObjId = new ObjectId('aaaabbbbccccddddeeeeffff');
+
 const createOrganizations = async () => {
   org01Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.org_01.json`, 'utf8'));
   org_01 = await prepareOrganization(models, org01Data);
@@ -93,12 +97,36 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
+    _id: resourceObjId,
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     selfLink: '/mybla/selfLink',
     hash: 'any_hash',
     deleted: false,
     data: 'any_data',
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableDataHash: 'some random hash.',
+  });
+
+  await models.Resource.create({
+    org_id: org_02._id,
+    cluster_id: 'cluster_04',
+    selfLink: '/mybla/cluster04/selfLink1',
+    hash: 'any_hash',
+    deleted: false,
+    data: 'any_data',
+    updated: new Date(1400000000000),
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableDataHash: 'some random hash.',
+  });
+  await models.Resource.create({
+    org_id: org_02._id,
+    cluster_id: 'cluster_04',
+    selfLink: '/mybla/cluster04/selfLink2',
+    hash: 'any_hash',
+    deleted: false,
+    data: 'any_data',
+    updated: new Date(1500000000000),
     searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
     searchableDataHash: 'some random hash.',
   });
@@ -111,6 +139,22 @@ const createResources = async () => {
     data: 'any_data',
     searchableData: { key01: 'any value 01', key02: 'any value 02' },
     searchableDataHash: 'some random hash.',
+  });
+  await models.ResourceYamlHist.create({
+    _id: 'resourceYamlHist_01',
+    org_id: org_01._id,
+    cluster_id: 'cluster_01',
+    resourceSelfLink: '/mybla/selfLink',
+    yamlStr: 'YAML_HIST_DATA_01',
+    updated: new Date(),
+  });
+  await models.ResourceYamlHist.create({
+    _id: 'resourceYamlHist_02',
+    org_id: org_01._id,
+    cluster_id: 'cluster_01',
+    resourceSelfLink: '/mybla/selfLink',
+    yamlStr: 'YAML_HIST_DATA_02',
+    updated: new Date(),
   });
 };
 
@@ -209,6 +253,98 @@ describe('resource graphql test suite', () => {
           'error response is ',
           JSON.stringify(error.response.data),
         );
+        throw error;
+      }
+    });
+
+    it('should sort based on the users input', async()=>{
+      try {
+        token = await signInUser(models, api, user02Data);
+        console.log(`user01 token=${token}`);
+        const meResult = await api.me(token);
+
+        const result1 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          filter: 'mybla',
+          sort: [{ field: 'selfLink', desc: true }],
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resources.resources[0].selfLink).to.equal(
+          '/mybla/cluster04/selfLink2',
+        );
+        const result2 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          filter: 'mybla',
+          sort: [{ field: 'selfLink' }],
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result2.data.data.resources.resources[0].selfLink).to.equal(
+          '/mybla/cluster04/selfLink1',
+        );
+      } catch (error) {
+        // console.error('error response is ', error.response);
+        console.error(
+          'error response is ',
+          JSON.stringify(error.response.data),
+        );
+      }
+    });
+    
+    it('should see resource history item', async()=>{
+      try{
+        token = await signInUser(models, api, user01Data);
+        console.log(`user01 token=${token}`);
+        const meResult = await api.me(token);
+
+
+        const result1 = await api.resourceHistId(token, {
+          _id: resourceObjId,
+          org_id: meResult.data.data.me.org_id,
+          filter: 'mybla',
+          histId: 'resourceYamlHist_01',
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resource.data).to.equal(
+          'YAML_HIST_DATA_01',
+        );
+      }catch(error){
+        console.error(
+          'error response is ',
+          JSON.stringify(error.response.data),
+        );
+        throw error;
+      }
+    });
+  });
+
+  describe('resourceHistory(org_id: String!, cluster_id: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20)', ()=>{
+    it('should view history list for a resource', async()=>{
+      let token;
+      try {
+        token = await signInUser(models, api, user01Data);
+        console.log(`user01 token=${token}`);
+
+        const meResult = await api.me(token);
+
+        const result1 = await api.resourceHistory(token, {
+          org_id: meResult.data.data.me.org_id,
+          cluster_id: 'cluster_01',
+          resourceSelfLink: '/mybla/selfLink',
+          beforeDate: null,
+          afterDate: null,
+          limit: 20,
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resourceHistory.count).to.equal(
+          2
+        );
+        var ids = _.map(result1.data.data.resourceHistory.items, '_id');
+        expect(ids.length).to.equal(
+          2
+        );
+        expect(ids).to.have.members(['resourceYamlHist_01', 'resourceYamlHist_02']);
+      } catch (error) {
+        console.error('error response is ', error.response);
         throw error;
       }
     });
