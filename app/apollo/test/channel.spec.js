@@ -373,68 +373,6 @@ describe('channel graphql test suite', () => {
       throw error;
     }
   });
-  it('upload content for a configuration version', async () => {
-    try {
-      // step 1: add a channel version by admin token
-      const {
-        data: {
-          data: { addChannelVersion },
-        },
-      } = await channelApi.addChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
-        name: `${channel_01_name}:v.0.3`,
-        type: 'json',
-        content: '{"n0": 123.45}',
-        description: `${channel_01_name}:v.0.3`
-      });
-      //step 2: get channel version by an adminToken
-      const {
-        data: {
-          data: { getChannelVersion },
-        },
-      } = await channelApi.getChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
-        version_uuid: addChannelVersion.version_uuid,
-      }); 
-      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.3`);
-      expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
-      expect(getChannelVersion.created).to.be.an('string');
-      // step 3: upload new content in channel version by an adminToken
-      const {
-        data: {
-          data: { uploadChannelVersion },
-        },
-      } = await channelApi.uploadChannelVersion(adminToken, {
-        org_id: org01._id,
-        uuid: addChannelVersion.version_uuid,
-        content: '{"n0": 456.78}' ,
-      });
-      expect(uploadChannelVersion.success).to.equal(true);
-      expect(uploadChannelVersion.uuid).to.be.an('string');
-      //step 4: get the new channel version by an adminToken
-      const {
-        data: {
-          data: { getChannelVersion: getChannelVersion2 },
-        },
-      } = await channelApi.getChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
-        version_uuid: uploadChannelVersion.uuid,
-      }); 
-      expect(getChannelVersion2.name).to.equal(`${channel_01_name}:v.0.3`);
-      expect(getChannelVersion2.content).to.equal('{"n0": 456.78}');
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
   it('remove configuration version, channel has multiple versions ', async () => {
     try {
       // step 1.1: add a channel version by admin token
@@ -488,7 +426,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });  
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);
-      expect(channel.versions.length).to.equal(3);  
+      expect(channel.versions.length).to.equal(2);  
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
