@@ -305,7 +305,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
       try{
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
         if(!deployableVersionObj){
