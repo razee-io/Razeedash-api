@@ -4,6 +4,7 @@
   "description": "API for razeedash and graphql",
   "license": "Apache-2.0",
   "main": "app/index.js",
+  "repository": "https://github.com/razee-io/Razeedash-api",
   "scripts": {
     "start": "node app/index.js",
     "dev": "nodemon -r dotenv/config app/index.js | bunyan",
