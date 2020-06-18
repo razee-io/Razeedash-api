@@ -256,8 +256,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date, $sort: [SortObj!]){
-            resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate, sort: $sort) {
+          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date, $kinds: [String!], $sort: [SortObj!]){
+            resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate, kinds: $kinds, sort: $sort) {
               count
               resources{
                 _id

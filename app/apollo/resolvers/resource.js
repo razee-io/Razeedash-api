@@ -154,7 +154,7 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { org_id, filter, fromDate, toDate, limit, sort },
+      { org_id, filter, fromDate, toDate, limit, kinds = [], sort },
       context,
       fullQuery
     ) => {
@@ -169,9 +169,12 @@ const resourceResolvers = {
 
       sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'deleted', 'hash']);
 
-      let searchFilter = { org_id: org_id, deleted: false };
+      let searchFilter = { org_id: org_id, deleted: false, };
+      if(kinds.length > 0){
+        searchFilter['searchableData.kind'] = { $in: kinds };
+      }
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
-        searchFilter = buildSearchForResources(searchFilter, filter);
+        searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
       }
       return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
     },
