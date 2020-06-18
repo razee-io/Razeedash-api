@@ -62,11 +62,19 @@ UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   const orgKey = req.get('razee-org-key');
 
   logger.debug({ req_id }, 'default getMeFromRequest');
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    let type = apiKey ? 'userToken': 'cluster';
-    return {apiKey, orgKey, type}; 
+  let type, id;
+  if(apiKey) {
+    type = 'userToken';
+    const user = await this.findOne({ apiKey: apiKey }).lean();
+    if(!user) {
+      logger.error('A user was not found for this apiKey');
+      throw new ForbiddenError('user not found');
+    }
+    id = user._id;
+  } else {
+    type = 'cluster';
   }
-  return null;
+  return {apiKey, orgKey, type, _id: id}; 
 };
 
 UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionParams, context){
