@@ -44,15 +44,6 @@ const UserDefaultSchema = new mongoose.Schema({
       type: String,
     },
   },
-  meta: {
-    orgs: [
-      {
-        _id: {
-          type: String,
-        }
-      },
-    ],
-  },
 });
 
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
@@ -130,14 +121,15 @@ UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
 
 UserDefaultSchema.statics.getOrgs = async function(models, me) {
   const results = [];
-  const meFromDB = await models.User.findOne({ _id: me.userId });
-  if (meFromDB && meFromDB.meta.orgs) {
+  const meFromDB = await models.User.findOne({ _id: me._id}).lean();
+  if (meFromDB && meFromDB.orgs) {
     // eslint-disable-next-line no-restricted-syntax
-    for (const org of meFromDB.meta.orgs) {
+    for (const org of meFromDB.orgs) {
       // eslint-disable-next-line no-await-in-loop
-      const orgFromDB = await models.Organization.findOne({ _id: org._id }).lean();
+      // of the github|bitbucket orgs a user belongs to, find ones that are registered in razee
+      const orgFromDB = await models.Organization.findOne({ gheOrgId: org.gheOrgId }).lean();
       if (orgFromDB) {
-        results.push({ name: orgFromDB.name, _id: org._id });
+        results.push({ name: orgFromDB.name, _id: orgFromDB._id });
       }
     }
   }

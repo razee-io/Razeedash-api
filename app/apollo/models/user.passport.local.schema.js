@@ -326,9 +326,8 @@ UserPassportLocalSchema.statics.getOrg = async function(models, me) {
   return org;
 };
 
-UserPassportLocalSchema.statics.getOrgs = async function(context) {
+UserPassportLocalSchema.statics.getOrgs = async function(models, me) {
   const results = [];
-  const { models, me } = context;
   if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
     const meFromDB = await models.User.findOne({ _id: me._id });
     if (meFromDB && meFromDB.meta.orgs) {
