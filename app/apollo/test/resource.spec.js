@@ -116,7 +116,7 @@ const createResources = async () => {
     deleted: false,
     data: 'any_data',
     updated: new Date(1400000000000),
-    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123', kind: 'Deployment', },
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
@@ -127,7 +127,7 @@ const createResources = async () => {
     deleted: false,
     data: 'any_data',
     updated: new Date(1500000000000),
-    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123', kind: 'StatefulSet' },
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
@@ -280,6 +280,43 @@ describe('resource graphql test suite', () => {
         console.log(JSON.stringify(result1.data));
         expect(result2.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/cluster04/selfLink1',
+        );
+      } catch (error) {
+        // console.error('error response is ', error.response);
+        console.error(
+          'error response is ',
+          JSON.stringify(error.response.data),
+        );
+      }
+    });
+
+    it('should filter based on input kinds', async()=>{
+      try {
+        token = await signInUser(models, api, user02Data);
+        console.log(`user02 token=${token}`);
+        const meResult = await api.me(token);
+
+        const result1 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          kinds: ['Deployment'],
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal(
+          'Deployment',
+        );
+        expect(result1.data.data.resources.count).to.equal(
+          1,
+        );
+        const result2 = await api.resources(token, {
+          org_id: meResult.data.data.me.org_id,
+          kinds: ['StatefulSet'],
+        });
+        console.log(JSON.stringify(result2.data));
+        expect(result2.data.data.resources.resources[0].searchableData.kind).to.equal(
+          'StatefulSet',
+        );
+        expect(result2.data.data.resources.count).to.equal(
+          1,
         );
       } catch (error) {
         // console.error('error response is ', error.response);
