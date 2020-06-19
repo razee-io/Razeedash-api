@@ -19,6 +19,9 @@ const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../model
 const { whoIs, validAuth } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
+const GraphqlFields = require('graphql-fields');
+const _ = require('lodash');
+
 const buildSearchFilter = (ordId, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -63,25 +66,44 @@ const commonClusterSearch = async (
   return results;
 };
 
+const applyQueryFieldsToClusters = async(clusters, queryFields, { resourceLimit }, models)=>{
+  const clusterIds = _.map(clusters, 'cluster_id');
+  resourceLimit = resourceLimit || 500;
+
+  if(queryFields.resources) {
+    if (clusterIds.length > 0) {
+      const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean();
+      const resourcesByClusterId = _.groupBy(resources, 'cluster_id');
+      _.each(clusters, (cluster) => {
+        cluster.resources = resourcesByClusterId[cluster.cluster_id] || [];
+      });
+    }
+  }
+};
+
 const clusterResolvers = {
   Query: {
     clusterByClusterID: async (
       parent,
-      { org_id: orgId, cluster_id: clusterId },
+      { org_id: orgId, cluster_id: clusterId, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterID';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
-      const result = await models.Cluster.findOne({
+      const cluster = await models.Cluster.findOne({
         org_id: orgId,
         cluster_id: clusterId,
       }).lean();
 
-      return result;
+      await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
+
+      return cluster;
     }, // end cluster by _id
 
     // Return a list of clusters based on org_id.
@@ -92,9 +114,11 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgID: async (
       parent,
-      { org_id: orgId, limit, startingAfter },
+      { org_id: orgId, limit, startingAfter, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgID';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
@@ -102,15 +126,21 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
       const searchFilter = { org_id: orgId };
-      return commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
     clusterZombies: async (
       parent,
-      { org_id: orgId, limit },
+      { org_id: orgId, limit, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterZombies';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
@@ -123,14 +153,20 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterSearch(models, searchFilter, limit);
+      const clusters = await commonClusterSearch(models, searchFilter, limit);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterZombies
 
     clusterSearch: async (
       parent,
-      { org_id: orgId, filter, limit },
+      { org_id: orgId, filter, limit, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterSearch';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
@@ -146,7 +182,11 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, filter);
       }
 
-      return commonClusterSearch(models, searchFilter, limit);
+      const clusters = await commonClusterSearch(models, searchFilter, limit);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.
