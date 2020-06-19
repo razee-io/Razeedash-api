@@ -27,7 +27,7 @@ const OrganizationLocalSchema = new mongoose.Schema({
     type: String,
   },
   gheOrgId: {
-    type: String,
+    type: Number,
   },
   orgKeys: [
     {

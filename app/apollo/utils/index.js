@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime) => {
+const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, kinds = []) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
   if (tokens.length > 0) {
@@ -55,6 +55,11 @@ const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime) =
         },
       });
     }
+  }
+  if(kinds.length > 0){
+    ands.push({
+      'searchableData.kind': { $in: kinds },
+    });
   }
 
   if (ands.length < 1) {
