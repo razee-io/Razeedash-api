@@ -17,7 +17,6 @@
 const bunyan = require('bunyan');
 const mongoose = require('mongoose');
 const { ForbiddenError } = require('apollo-server');
-const { AUTH_MODELS, AUTH_MODEL } = require('./const');
 const { getBunyanConfig } = require('../../utils/bunyan');
 
 const _ = require('lodash');
@@ -45,15 +44,6 @@ const UserDefaultSchema = new mongoose.Schema({
       type: String,
     },
   },
-  meta: {
-    orgs: [
-      {
-        _id: {
-          type: String,
-        }
-      },
-    ],
-  },
 });
 
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
@@ -62,90 +52,85 @@ UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   const orgKey = req.get('razee-org-key');
 
   logger.debug({ req_id }, 'default getMeFromRequest');
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    let type = apiKey ? 'userToken': 'cluster';
-    return {apiKey, orgKey, type}; 
+  let type, id;
+  if(apiKey) {
+    type = 'userToken';
+    const user = await this.findOne({ apiKey: apiKey }).lean();
+    if(!user) {
+      logger.error('A user was not found for this apiKey');
+      throw new ForbiddenError('user not found');
+    }
+    id = user._id;
+  } else {
+    type = 'cluster';
   }
-  return null;
+  return {apiKey, orgKey, type, _id: id}; 
 };
 
 UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionParams, context){
   const {req_id, logger} = context;
   logger.debug({ req_id, connectionParams }, 'default getMeFromConnectionParams');
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const orgKey = connectionParams.headers['razee-org-key'];
-    return {orgKey, type: 'cluster'};
-  }
-  return null;
+  const orgKey = connectionParams.headers['razee-org-key'];
+  return {orgKey, type: 'cluster'};
 };
 
 UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, context) {
   const {req_id, models, logger} = context;
   logger.debug({ req_id: req_id }, `default userTokenIsAuthorized ${action} ${type}`);
 
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const user = await this.findOne({ apiKey: me.apiKey }).lean();
-    if(!user) {
-      logger.error('A user was not found for this apiKey');
-      throw new ForbiddenError('user not found');
-    }
-    
-    // make sure that the user is a member of the orgId that was passed in
-    const orgs = user.orgs || [];
-    const orgNames = orgs.map( (org) => org.name );
-    const targetOrg = await this.getOrgById(models, orgId);
-    if(!orgNames.includes(targetOrg.name)) {
-      logger.error('The user is not a member of the supplied org');
-      throw new ForbiddenError('user org not found');
-    }
-
-    return user;
+  const user = await this.findOne({ apiKey: me.apiKey }).lean();
+  if(!user) {
+    logger.error('A user was not found for this apiKey');
+    throw new ForbiddenError('user not found');
   }
-  return false;
+  
+  // make sure that the user is a member of the orgId that was passed in
+  const orgs = user.orgs || [];
+  const orgNames = orgs.map( (org) => org.name );
+  const targetOrg = await this.getOrgById(models, orgId);
+  if(!orgNames.includes(targetOrg.name)) {
+    logger.error('The user is not a member of the supplied org');
+    throw new ForbiddenError('user org not found');
+  }
+
+  return user;
 };
 
 UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
   logger.debug({ req_id: req_id },`default isAuthorized ${action} ${type} ${attributes}`);
 
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const user = await this.findOne({ apiKey: me.apiKey }).lean();
-    if(!user) {
-      logger.error('A user was not found for this apiKey');
-      throw new ForbiddenError('user not found');
-    }
-    logger.debug('user found using apiKey', user);
-    return user;
+  const user = await this.findOne({ apiKey: me.apiKey }).lean();
+  if(!user) {
+    logger.error('A user was not found for this apiKey');
+    throw new ForbiddenError('user not found');
   }
-  return false;
+  logger.debug('user found using apiKey', user);
+  return user;
 };
 
 UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
   logger.debug('default isValidOrgKey');
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-
-    const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
-    if(!org) {
-      logger.error('An org was not found for this razee-org-key');
-      throw new ForbiddenError('org id was not found');
-    }
-    logger.debug('org found using orgKey');
-    return org;
+  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  if(!org) {
+    logger.error('An org was not found for this razee-org-key');
+    throw new ForbiddenError('org id was not found');
   }
-  return false;
+  logger.debug('org found using orgKey');
+  return org;
 };
 
-UserDefaultSchema.statics.getOrgs = async function(models, me) {
+UserDefaultSchema.statics.getOrgs = async function(context) {
   const results = [];
-  if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
-    const meFromDB = await models.User.findOne({ _id: me.userId });
-    if (meFromDB && meFromDB.meta.orgs) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const org of meFromDB.meta.orgs) {
-        // eslint-disable-next-line no-await-in-loop
-        const orgFromDB = await models.Organization.findOne({ _id: org._id }).lean();
-        if (orgFromDB) {
-          results.push({ name: orgFromDB.name, _id: org._id });
-        }
+  const { models, me } = context;
+  const meFromDB = await models.User.findOne({ _id: me._id}).lean();
+  if (meFromDB && meFromDB.orgs) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const org of meFromDB.orgs) {
+      // eslint-disable-next-line no-await-in-loop
+      // of the github|bitbucket orgs a user belongs to, find ones that are registered in razee
+      const orgFromDB = await models.Organization.findOne({ gheOrgId: org.gheOrgId }).lean();
+      if (orgFromDB) {
+        results.push({ name: orgFromDB.name, _id: orgFromDB._id });
       }
     }
   }
