@@ -106,7 +106,7 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
     return new Array(objectArray.length).fill(false);
   }
 
-  if (me.type === 'user') {
+  if (me.type === 'userToken') {
     me = me.user;
   }
 
