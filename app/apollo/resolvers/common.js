@@ -59,37 +59,38 @@ const getUserTags = async (me, org_id, action, field, queryName, context) => {
   return allowedTags;
 };
 
-// the condition will be true if one of tag exists in user permitted tags or no tag at all
-const getUserTagOrConditions = async (me, org_id, action, field, queryName, context) => {
+// the condition will be true if all tags are subset of user permitted tags
+const getUserTagConditions = async (me, org_id, action, field, queryName, context) => {
+  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
+  if (field === 'uuid') {
+    return {
+      'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}},
+    };
+  } 
+  return {
+    'tags': {$not: {$elemMatch: {$nin: userTags}}},
+  };
+};
+
+// the condition will be true if all tags are subset of user permitted tags or not tags at all
+const getUserTagConditionsIncludingEmpty = async (me, org_id, action, field, queryName, context) => {
   const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
   if (field === 'uuid') {
     return {
       $or: [
-        {'tags.uuid': {$in: userTags}}, 
+        {'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}}},
         {'tags.uuid': { $exists: false }}
       ]
     };
   } 
   return {
     $or: [
-      {'tags': {$in: userTags}}, 
+      {'tags': {$not: {$elemMatch: {$nin: userTags}}}},
       {'tags': { $exists: false }}
-    ]    
+    ]
   };
 };
 
-// the condition will be true if all tags are subset of user permitted tags
-const getUserTagAndConditions = async (me, org_id, action, field, queryName, context) => {
-  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
-  if (field === 'uuid') {
-    return {
-      'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}}
-    };
-  } 
-  return {
-    'tags': {$not: {$elemMatch: {$nin: userTags}}}
-  };
-};
 
 
 // Validate is user is authorized for the requested action.
@@ -124,4 +125,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTags, getUserTagOrConditions, getUserTagAndConditions };
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTags, getUserTagConditions, getUserTagConditionsIncludingEmpty };
