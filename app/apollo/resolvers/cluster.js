@@ -52,15 +52,9 @@ const commonClusterSearch = async (
   let results = [];
 
   // If startingAfter specified, we are doing pagination so add another filter
-  console.log(`zzzzzzzzzzzzzz searchfilter = ${JSON.stringify(searchFilter)}.`);
   if (startingAfter) {
     Object.assign(searchFilter, { _id: { $lt: startingAfter } });
   }
-
-  // results = await models.Cluster.aggregate([{$match: searchFilter}]);
-  //  .sort({ _id: -1 })
-  //  .limit(limit)
-  //  .lean();
 
   results = await models.Cluster.find(searchFilter)
     .sort({ _id: -1 })
