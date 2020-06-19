@@ -48,7 +48,6 @@ const pubSub = GraphqlPubSub.getInstance();
 
 let org01Data;
 let org02Data;
-let userRootData;
 let shouldNotMatchAnyData;
 
 let org_01;
