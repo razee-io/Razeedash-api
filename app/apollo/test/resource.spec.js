@@ -48,6 +48,7 @@ const pubSub = GraphqlPubSub.getInstance();
 
 let org01Data;
 let org02Data;
+let userRootData;
 let shouldNotMatchAnyData;
 
 let org_01;
@@ -331,7 +332,7 @@ describe('resource graphql test suite', () => {
     it('should sort based on the users input', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user01 token=${token}`);
+        console.log(`user02 token=${token}`);
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -390,7 +391,7 @@ describe('resource graphql test suite', () => {
           1,
         );
       } catch (error) {
-        // console.error('error response is ', error.response);
+        console.error('error response is ', error.response);
         console.error(
           'error response is ',
           JSON.stringify(error.response.data),

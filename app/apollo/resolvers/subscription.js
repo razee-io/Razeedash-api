@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTagOrConditions, getUserTags } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTagConditions, getUserTags } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -139,7 +139,7 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
-      const conditions = await getUserTagOrConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      const conditions = await getUserTagConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
       logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} user tag conditions are...`);
       try{
         var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}, { lean: 1 });

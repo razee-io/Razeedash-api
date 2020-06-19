@@ -64,7 +64,7 @@ const getUserTagConditions = async (me, org_id, action, field, queryName, contex
   const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
   if (field === 'uuid') {
     return {
-      'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}},
+      tags: {$not: {$elemMatch: {uuid: {$nin: [userTags]}}}},
     };
   } 
   return {
@@ -78,8 +78,8 @@ const getUserTagConditionsIncludingEmpty = async (me, org_id, action, field, que
   if (field === 'uuid') {
     return {
       $or: [
-        {'tags.uuid': {$not: {$elemMatch: {$nin: userTags}}}},
-        {'tags.uuid': { $exists: false }}
+        {'tags.uuid': { $exists: false }},
+        {tags: {$not: {$elemMatch: {uuid: {$nin: [userTags]}}}}}
       ]
     };
   } 
