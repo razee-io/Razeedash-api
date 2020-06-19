@@ -34,7 +34,7 @@ const organizationResolvers = {
       const queryName = 'organizations';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, args, me: whoIs(me) }, `${queryName} enter`);
-      return models.User.getOrgs(models, me);
+      return models.User.getOrgs(context);
     },
 
     organization: async (parent, args, context) => {

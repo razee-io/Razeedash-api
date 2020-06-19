@@ -119,8 +119,9 @@ UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
   return org;
 };
 
-UserDefaultSchema.statics.getOrgs = async function(models, me) {
+UserDefaultSchema.statics.getOrgs = async function(context) {
   const results = [];
+  const { models, me } = context;
   const meFromDB = await models.User.findOne({ _id: me._id}).lean();
   if (meFromDB && meFromDB.orgs) {
     // eslint-disable-next-line no-restricted-syntax
