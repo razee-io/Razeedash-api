@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTagConditions, getUserTags } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -46,6 +46,7 @@ async function validateTags(org_id, tags, context) {
 
 const subscriptionResolvers = {
   Query: {
+    // Cluster-face API
     subscriptionsByTag: async(parent, { tags }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByTag';
@@ -87,6 +88,7 @@ const subscriptionResolvers = {
       }
       return urls;
     },
+    // Cluster-face API
     subscriptionsByCluster: async(parent, { cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByCluster';
@@ -135,10 +137,12 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
 
+      // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+      const conditions = await getUserTagConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} user tag conditions are...`);
       try{
-        var subscriptions = await models.Subscription.find({ org_id }, {}, { lean: 1 });
+        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}, { lean: 1 });
       }catch(err){
         logger.error(err);
         throw err;
@@ -157,8 +161,8 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
 
+      // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       try{
         var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
         var subscription = subscriptions.find((sub)=>{
@@ -266,7 +270,8 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context);
+
+      // await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
@@ -274,6 +279,14 @@ const subscriptionResolvers = {
           throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
         }
 
+        // validate user has enough tag permissions to for this sub
+        // TODO: we should use specific tag action bellow instead of manage, e.g. setSubscription action
+        const userTags = await getUserTags(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
+        if (subscription.tags.some(t => {return userTags.indexOf(t) === -1;})) {
+          // if some tag of the sub does not in user's tag list, throws an error
+          throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.tags} tags. `);
+        }
+        
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
