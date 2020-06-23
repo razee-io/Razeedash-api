@@ -114,7 +114,7 @@ const subscriptionResolvers = {
       logger.debug({user: 'graphql api user', org_id, userTags }, `${query} enter`);
       let urls = [];
       try {
-        // Return subscriptions where userTags pass in from the query must be a subset of $tags stored in mongo 
+        // Return subscriptions that contain any userTags passed in from the query 
         // examples:
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
