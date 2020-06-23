@@ -106,10 +106,6 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
     return new Array(objectArray.length).fill(false);
   }
 
-  if (me.type === 'userToken') {
-    me = me.user;
-  }
-
   const user = await this.findOne({ apiKey: me.apiKey }).lean();
   if(!user) {
     logger.error('A user was not found for this apiKey');
