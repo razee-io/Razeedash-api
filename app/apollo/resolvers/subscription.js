@@ -110,21 +110,17 @@ const subscriptionResolvers = {
       if (cluster.tags) {
         userTags = cluster.tags.map(l => l.name);
       }
+      
       logger.debug({user: 'graphql api user', org_id, userTags }, `${query} enter`);
       let urls = [];
       try {
-        // Return subscriptions where $tags stored in mongo are a subset of the userTags passed in from the query
+        // Return subscriptions where userTags pass in from the query must be a subset of $tags stored in mongo 
         // examples:
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> false
+        //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.aggregate([
-          { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
-          { $match: { 'isSubSet': true } }
-        ]);
-              
+        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, tags: { $in: userTags }}).lean();
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
         }

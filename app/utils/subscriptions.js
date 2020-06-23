@@ -19,14 +19,7 @@ const tagsStrToArr = (str)=>{
   return tags;
 };
 
-const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
-  // get tags.  query subscriptions that match all tags
-  const matchingSubscriptions = _.filter(subsForOrg, (subscription)=>{
-    var groupTags = tagsStrToArr(subscription.tags);
-    return _.every(groupTags, (requiredTag)=>{
-      return _.includes(tags, requiredTag);
-    });
-  });
+const getSubscriptionUrls = async(orgId, tags, matchingSubscriptions) => {
 
   const matchingChannels = await models.Channel.find({
     org_id: orgId,
