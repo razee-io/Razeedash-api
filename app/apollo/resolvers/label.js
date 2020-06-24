@@ -20,6 +20,9 @@ const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { GraphqlPubSub } = require('../subscription');
+
+const pubSub = GraphqlPubSub.getInstance();
 
 const labelResolvers = {
   Query: {
@@ -111,6 +114,9 @@ const labelResolvers = {
           _id: UUID(),
           uuid, org_id: org_id, name, owner: me._id,
         });
+
+        pubSub.channelSubChangedFunc({org_id: org_id});
+
         return {
           uuid,
         };
@@ -144,6 +150,8 @@ const labelResolvers = {
         }      
 
         await models.Label.deleteOne({ org_id: org_id, uuid:label.uuid });
+
+        pubSub.channelSubChangedFunc({org_id: org_id});
   
         return {
           uuid: label.uuid,
@@ -178,6 +186,8 @@ const labelResolvers = {
         }      
 
         await models.Label.deleteOne({ org_id: org_id, uuid:label.uuid });
+
+        pubSub.channelSubChangedFunc({org_id: org_id});
   
         return {
           uuid: label.uuid,
@@ -209,6 +219,7 @@ const labelResolvers = {
           {$push: {tags: {uuid: label.uuid, name: label.name}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
+        pubSub.channelSubChangedFunc({org_id: org_id});
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
   
       } catch(err){
@@ -237,6 +248,7 @@ const labelResolvers = {
           {$pull: {tags: {uuid}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
+        pubSub.channelSubChangedFunc({org_id: org_id});
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
   
       } catch(err){
