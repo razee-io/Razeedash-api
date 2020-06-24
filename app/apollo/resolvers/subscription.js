@@ -29,7 +29,7 @@ const pubSub = GraphqlPubSub.getInstance();
 async function validateTags(org_id, tags, context) {
   const { req_id, me, models, logger } = context;
   // validate tags are all exists in label dbs
-  var labelCount = await models.Label.count({orgId: org_id, name: {$in: tags} });
+  var labelCount = await models.Label.count({org_id: org_id, name: {$in: tags} });
   if (labelCount < tags.length) {
     if (process.env.LABEL_VALIDATION_REQUIRED) {
       throw new ValidationError(`could not find all the tags ${tags} in the label database, please create them first.`);
@@ -37,7 +37,7 @@ async function validateTags(org_id, tags, context) {
       // in migration period, we automatically populate tags into label db
       logger.info({req_id, user: whoIs(me), org_id}, `could not find all the tags ${tags}, migrate them into label database.`);
       await models.Label.findOrCreateList(models, org_id, tags, context);
-      labelCount = await models.Label.count({orgId: org_id, name: {$in: tags} });
+      labelCount = await models.Label.count({org_id: org_id, name: {$in: tags} });
     }
   }
   logger.debug({req_id, user: whoIs(me), tags, org_id, labelCount}, 'validateTags');

@@ -126,21 +126,21 @@ const createLabels = async () => {
   await models.Label.create({
     _id: UUID(),
     uuid: UUID(),
-    orgId: org01._id,
+    org_id: org01._id,
     name: 'label1',
     owner: 'undefined'
   });
   await models.Label.create({
     _id: UUID(),
     uuid: UUID(),
-    orgId: org01._id,
+    org_id: org01._id,
     name: 'label2',
     owner: 'undefined'
   });
   await models.Label.create({
     _id: UUID(),
     uuid: UUID(),
-    orgId: org77._id,
+    org_id: org77._id,
     name: 'label1',
     owner: 'undefined'
   });

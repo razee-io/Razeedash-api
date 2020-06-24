@@ -30,7 +30,7 @@ const labelResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.LABEL, queryName, context);
       var labels;
       try{
-        labels = await models.Label.find({ orgId }).lean();
+        labels = await models.Label.find({ org_id: orgId }).lean();
         var ownerIds = _.map(labels, 'owner');
         var owners = await models.User.getBasicUsersByIds(ownerIds);
   
@@ -51,7 +51,7 @@ const labelResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.LABEL, queryName, context);
   
       try{
-        var label = await models.Label.findOne({ orgId, uuid }).lean();
+        var label = await models.Label.findOne({ org_id: orgId, uuid }).lean();
         if (!label) {
           throw new NotFoundError(`could not find label with uuid ${uuid}.`);
         }
@@ -75,7 +75,7 @@ const labelResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.LABEL, queryName, context);
   
       try{
-        var label = await models.Label.findOne({ orgId, name }).lean();
+        var label = await models.Label.findOne({ org_id: orgId, name }).lean();
         if (!label) {
           throw new NotFoundError(`could not find label with name ${name}.`);
         }
@@ -102,14 +102,14 @@ const labelResolvers = {
     
       try {
         // might not necessary with unique index. Worth to check to return error better.
-        const label = await models.Label.findOne({ orgId, name });
+        const label = await models.Label.findOne({ org_id: orgId, name });
         if(label){
           throw new ValidationError(`The label name ${name} already exists.`);
         }
         const uuid = UUID();
         await models.Label.create({
           _id: UUID(),
-          uuid, orgId, name, owner: me._id,
+          uuid, org_id: orgId, name, owner: me._id,
         });
         return {
           uuid,
@@ -127,7 +127,7 @@ const labelResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.LABEL, queryName, context);
   
       try{
-        const label = await models.Label.findOne({ uuid, orgId }).lean();
+        const label = await models.Label.findOne({ uuid, org_id: orgId }).lean();
         if(!label){
           throw new NotFoundError(`label uuid "${uuid}" not found`);
         }
@@ -143,7 +143,7 @@ const labelResolvers = {
           throw new ValidationError(`${clusterCount} clusters depend on this label. Please update/remove the label from the clusters.`);
         }      
 
-        await models.Label.deleteOne({ orgId, uuid:label.uuid });
+        await models.Label.deleteOne({ org_id: orgId, uuid:label.uuid });
   
         return {
           uuid: label.uuid,
@@ -162,7 +162,7 @@ const labelResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.LABEL, queryName, context);
   
       try{
-        const label = await models.Label.findOne({ name, orgId }).lean();
+        const label = await models.Label.findOne({ name, org_id: orgId }).lean();
         if(!label){
           throw new NotFoundError(`label name "${name}" not found`);
         }
@@ -177,7 +177,7 @@ const labelResolvers = {
           throw new ValidationError(`${clusterCount} clusters depend on this label. Please update/remove the label from the clusters.`);
         }      
 
-        await models.Label.deleteOne({ orgId, uuid:label.uuid });
+        await models.Label.deleteOne({ org_id: orgId, uuid:label.uuid });
   
         return {
           uuid: label.uuid,
@@ -198,7 +198,7 @@ const labelResolvers = {
       try{
 
         // validate the label exits in the db first.
-        const label = await models.Label.findOne({ orgId, uuid });
+        const label = await models.Label.findOne({ org_id: orgId, uuid });
         if(!label){
           throw new NotFoundError(`label uuid "${uuid}" not found`);
         }
@@ -226,7 +226,7 @@ const labelResolvers = {
       try{
 
         // validate the label exits in the db first.
-        const label = await models.Label.findOne({ orgId, uuid });
+        const label = await models.Label.findOne({ org_id: orgId, uuid });
         if(!label){
           throw new NotFoundError(`label uuid "${uuid}" not found`);
         }

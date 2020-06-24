@@ -21,7 +21,7 @@ const LabelSchema = new mongoose.Schema({
   _id: {
     type: String,
   },
-  orgId: {
+  org_id: {
     type: String,
   },
   name: {
@@ -46,8 +46,8 @@ LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
 
   const labels = await Promise.all(tags.map(async tag => {
     return await models.Label.findOneAndUpdate (
-      {orgId, name: tag},
-      {_id: UUID(), uuid: UUID(), orgId, name: tag, owner: me._id ? me._id : 'undefined' }, 
+      {org_id: orgId, name: tag},
+      {_id: UUID(), uuid: UUID(), org_id: orgId, name: tag, owner: me._id ? me._id : 'undefined' }, 
       {new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false}).lean();
   }));
 
@@ -55,6 +55,6 @@ LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
   return labels;
 };
 
-LabelSchema.index({ orgId: 1 }, { });
+LabelSchema.index({ org_id: 1 }, { });
 
 module.exports = LabelSchema;

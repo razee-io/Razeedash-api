@@ -194,14 +194,14 @@ const createChannels = async () => {
 const createLabels = async () => {
   await models.Label.create({
     _id: UUID(),
-    orgId: org01._id,
+    org_id: org01._id,
     uuid: UUID(),
     name: 'dev',
     owner: user01._id,
   });
   await models.Label.create({
     _id: UUID(),
-    orgId: org77._id,
+    org_id: org77._id,
     uuid: UUID(),
     name: 'dev',
     owner: user01._id,
