@@ -280,7 +280,7 @@ describe('label graphql test suite', () => {
           data: { labels },
         },
       } = await labelApi.labels(token, {
-        orgId: org01._id,
+        org_id: org01._id,
       });
 
       console.log(`get all labels by Org ID: labels = ${JSON.stringify(labels)}`);
