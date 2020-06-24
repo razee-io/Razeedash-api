@@ -210,8 +210,8 @@ const channelResolvers = {
       let data = null;
 
       if(conf.s3.endpoint){
-        const resourceName = `${channel.name}-${name}`;
-        const bucketName = `${conf.s3.bucketPrefix}-${org_id.toLowerCase()}`;
+        const resourceName = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
+        const bucketName = `${conf.s3.channelBucket}`;
 
         const s3Client = new S3ClientClass(conf);
 
