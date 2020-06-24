@@ -96,6 +96,39 @@ UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, acti
   return user;
 };
 
+UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArray, context) {
+  const { req_id, models, logger } = context;
+  logger.debug({ req_id, orgId, objectArray, me },'default isAuthorizedBatch enter..');
+
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'default isAuthorizedBatch exit..');
+    return new Array(objectArray.length).fill(false);
+  }
+
+  if (me.type === 'userToken') {
+    me = me.user;
+  }
+
+  const user = await this.findOne({ apiKey: me.apiKey }).lean();
+  if(!user) {
+    logger.error('A user was not found for this apiKey');
+    return new Array(objectArray.length).fill(false);
+  }
+
+  const orgName = user.profile.currentOrgName;
+  if(!orgName) {
+    logger.error('An org has not been set for this user');
+    return new Array(objectArray.length).fill(false);
+  } 
+  const org = await models.Organization.findOne({ name: orgName }).lean();
+  if(!org || org._id !== orgId) {
+    logger.error('User is not authorized for this organization');
+    return new Array(objectArray.length).fill(false);
+  } 
+  return new Array(objectArray.length).fill(true);
+};
+
 UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
   logger.debug({ req_id: req_id },`default isAuthorized ${action} ${type} ${attributes}`);
 

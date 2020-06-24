@@ -15,20 +15,22 @@
  */
 
 const _ = require('lodash');
-const { withFilter } = require('apollo-server');
+const { withFilter, ForbiddenError } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
 
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getUserTags, getUserTagConditionsIncludingEmpty, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
-const commonResourcesSearch = async ({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort={created: -1} }) => {
+// This is service level search function which does not verify user tag permission
+const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500, queryFields, sort={created: -1} }) => {
+  const {  models, req_id, logger } = context;
   try {
     const resources = await models.Resource.find(searchFilter)
       .sort(sort)
@@ -94,18 +96,26 @@ const readS3File = async (readable) => {
   return data;
 };
 
-const commonResourceSearch = async ({ models, org_id, searchFilter, queryFields, req_id, logger }) => {
+const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
+  const { models, me, req_id, logger } = context;
   try {
+    const conditions = await getUserTagConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     let resource = await models.Resource.findOne(searchFilter).lean();
+
+    if (!resource) return resource;
 
     if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
       const yaml = getS3Data(resource.data, logger);
       resource.data = yaml;
     }
 
+    let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions});
+    if (!cluster) {
+      throw new ForbiddenError('you are not allowed to access this resource due to missing cluster tag permission.');
+    }
+
     if(queryFields['cluster']) {
-      let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id});
       cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
       resource.cluster = cluster;
     }
@@ -160,12 +170,13 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
 
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      // use service level read
+      await validAuth(me, org_id, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
       sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'deleted', 'hash']);
 
@@ -176,7 +187,7 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
       }
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
+      return commonResourcesSearch({ org_id, searchFilter, limit, queryFields, sort, context });
     },
 
     resourcesByCluster: async (
@@ -187,12 +198,29 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
-      const { models, me, req_id, logger } = context;
+      const { me, models, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      const cluster = models.Cluster.findOne({cluster_id}).lean();
+      if (!cluster) {
+        // if some tag of the sub does not in user's tag list, throws an error
+        throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);        
+      }
+      const userTags = await getUserTags(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
+      if (cluster.tags) {
+        cluster.tags.some(t => {
+          if(userTags.indexOf(t.uuid) === -1) {
+            // if some tag of the sub does not in user's tag list, throws an error
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on cluster tag ${t.name}.`);          
+          }
+          return false;
+        });
+      }
+      
       let searchFilter = {
         org_id: org_id,
         cluster_id: cluster_id,
@@ -202,7 +230,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger });
+      return commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
     },
 
     resource: async (parent, { org_id, _id, histId }, context, fullQuery) => {
@@ -215,7 +243,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, _id: ObjectId(_id) };
-      var resource = await commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
@@ -235,26 +263,41 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourceByKeys';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
 
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink, queryFields}, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return commonResourceSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      return commonResourceSearch({ context, org_id, searchFilter, queryFields });
     },
+
     resourcesBySubscription: async ( parent, { org_id, subscription_id}, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
-      const { models, me, req_id, logger } = context;
+      const {  me, models, req_id, logger } = context;
   
       logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
   
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-  
+      const subscription = models.Subscription.findOne({uuid: subscription_id}).lean();
+      if (!subscription) {
+        // if some tag of the sub does not in user's tag list, throws an error
+        throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);        
+      }
+      const userTags = await getUserTags(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      if(subscription.tags) {
+        subscription.tags.some(t => {
+          if(userTags.indexOf(t) === -1) {
+            // if some tag of the sub does not in user's tag list, throws an error
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription tag ${t}.`);          
+          }
+          return false;
+        });
+      }
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
-      return commonResourcesSearch({ models, org_id, searchFilter, queryFields, req_id, logger });
+      return commonResourcesSearch({ context, org_id, searchFilter, queryFields });
     },
 
     resourceHistory: async(parent, { org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{

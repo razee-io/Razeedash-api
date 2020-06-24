@@ -33,6 +33,7 @@
 
 const ACTIONS = {
   READ: 'read',
+  SERVICELEVELREAD: 'servicelevelread',
   WRITE: 'write',
   MANAGE: 'manage',
   CREATE: 'create',

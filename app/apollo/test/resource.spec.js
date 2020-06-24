@@ -85,6 +85,76 @@ const createUsers = async () => {
   return {};
 };
 
+const createClusters = async () => {
+  await models.Cluster.create({
+    org_id: shouldNotMatchAny._id,
+    cluster_id: 'any_cluster_01',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+  await models.Cluster.create({
+    org_id:  org_01._id,
+    cluster_id: 'cluster_01',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+  await models.Cluster.create({
+    org_id:  org_01._id,
+    cluster_id: 'cluster_03',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+  await models.Cluster.create({
+    org_id:  org_02._id,
+    cluster_id: 'cluster_04',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+};
 const createResources = async () => {
   await models.Resource.create({
     org_id: shouldNotMatchAny._id,
@@ -207,6 +277,7 @@ describe('resource graphql test suite', () => {
     myApollo = await apollo({ mongo_url, graphql_port: graphqlPort });
     await createOrganizations();
     await createUsers();
+    await createClusters();
     await createResources();
 
     await getPresetOrgs();
@@ -260,7 +331,7 @@ describe('resource graphql test suite', () => {
     it('should sort based on the users input', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user01 token=${token}`);
+        console.log(`user02 token=${token}`);
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -319,7 +390,7 @@ describe('resource graphql test suite', () => {
           1,
         );
       } catch (error) {
-        // console.error('error response is ', error.response);
+        console.error('error response is ', error.response);
         console.error(
           'error response is ',
           JSON.stringify(error.response.data),
