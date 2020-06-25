@@ -38,55 +38,55 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 }; 
 
-// return user permitted tags in an array 
-const getUserTags = async (me, org_id, action, field, queryName, context) => {
+// return user permitted cluster groups in an array 
+const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
   const {req_id, models, logger} = context;
 
-  logger.debug({req_id, user: whoIs(me), org_id, field, action }, `getUserTags enter for ${queryName}`);
-  const labels = await models.Label.find({org_id: org_id}).lean();
-  const objectArray = labels.map(l => {
-    return {type: TYPES.LABEL, action, uuid: l.uuid, name: l.name};
+  logger.debug({req_id, user: whoIs(me), org_id, field, action }, `getAllowedGroups enter for ${queryName}`);
+  const groups = await models.Group.find({org_id: org_id}).lean();
+  const objectArray = groups.map(group => {
+    return {type: TYPES.GROUP, action, uuid: group.uuid, name: group.name};
   });
   const decisions = await models.User.isAuthorizedBatch(me, org_id, objectArray, context);
 
-  const allowedTags = [];
+  const allowedGroups = [];
   decisions.forEach( (d, i) => {
     if (d) {
-      allowedTags.push(objectArray[i][field]);
+      allowedGroups.push(objectArray[i][field]);
     }
   });
-  logger.debug({req_id, user: whoIs(me), org_id, action, allowedTags}, `getUserTags exit for ${queryName}`);
-  return allowedTags;
+  logger.debug({req_id, user: whoIs(me), org_id, action, allowedGroups}, `getAllowedGroups exit for ${queryName}`);
+  return allowedGroups;
 };
 
-// the condition will be true if all tags are subset of user permitted tags
-const getUserTagConditions = async (me, org_id, action, field, queryName, context) => {
-  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
+// the condition will be true if all groups are subset of user permitted groups
+const getGroupConditions = async (me, org_id, action, field, queryName, context) => {
+  const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, field, queryName, context);
   if (field === 'uuid') {
     return {
-      tags: {$not: {$elemMatch: {uuid: {$nin: [userTags]}}}},
+      groups: {$not: {$elemMatch: {uuid: {$nin: allowedGroups}}}},
     };
   } 
   return {
-    'tags': {$not: {$elemMatch: {$nin: userTags}}},
+    'groups': {$not: {$elemMatch: {$nin: allowedGroups}}},
   };
 };
 
-// the condition will be true if all tags are subset of user permitted tags or not tags at all
-const getUserTagConditionsIncludingEmpty = async (me, org_id, action, field, queryName, context) => {
-  const userTags = await getUserTags(me, org_id, ACTIONS.READ, field, queryName, context);
+// the condition will be true if all gropus are subset of user permitted groups or not groups at all
+const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, queryName, context) => {
+  const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, field, queryName, context);
   if (field === 'uuid') {
     return {
       $or: [
-        {'tags.uuid': { $exists: false }},
-        {tags: {$not: {$elemMatch: {uuid: {$nin: [userTags]}}}}}
+        {'groups.uuid': { $exists: false }},
+        {groups: {$not: {$elemMatch: {uuid: {$nin: allowedGroups}}}}}
       ]
     };
   } 
   return {
     $or: [
-      {'tags': {$not: {$elemMatch: {$nin: userTags}}}},
-      {'tags': { $exists: false }}
+      {'groups': {$not: {$elemMatch: {$nin: allowedGroups}}}},
+      {'groups': { $exists: false }}
     ]
   };
 };
@@ -125,4 +125,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTags, getUserTagConditions, getUserTagConditionsIncludingEmpty };
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty };

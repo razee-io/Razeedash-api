@@ -17,13 +17,13 @@
 const axios = require('axios');
 
 const subscriptionsFunc = grahqlUrl => {
-  const subscriptionsByTag = async (token, variables, orgKey) =>
+  const subscriptionsByCluster = async (token, variables, orgKey) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($tags: String) {
-            subscriptionsByTag( tags: $tags) {
+          query($cluster_id: String) {
+            subscriptionsByCluster( cluster_id: $cluster_id) {
               subscription_name
               subscription_channel
               subscription_uuid
@@ -51,7 +51,7 @@ const subscriptionsFunc = grahqlUrl => {
               uuid
               org_id
               name
-              tags
+              groups
               channel_uuid
               channel
               version
@@ -84,7 +84,7 @@ const subscriptionsFunc = grahqlUrl => {
               uuid
               org_id
               name
-              tags
+              groups
               channel_uuid
               channel
               version
@@ -113,8 +113,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
-            addSubscription(org_id: $org_id, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid){
+          mutation($org_id: String!, $name: String!, $groups: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            addSubscription(org_id: $org_id, name: $name, groups: $groups, channel_uuid: $channel_uuid, version_uuid: $version_uuid){
 			        uuid
             }
           }
@@ -133,8 +133,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $uuid: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
-            editSubscription( org_id: $org_id, uuid: $uuid, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid) {
+          mutation($org_id: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            editSubscription( org_id: $org_id, uuid: $uuid, name: $name, groups: $groups, channel_uuid: $channel_uuid, version_uuid: $version_uuid) {
               uuid
               success
             }
@@ -193,7 +193,7 @@ const subscriptionsFunc = grahqlUrl => {
     );
 
   return {
-    subscriptionsByTag,
+    subscriptionsByCluster,
     subscriptions,
     subscription,
     addSubscription,

@@ -15,8 +15,8 @@
  */
 
 const mongoose = require('mongoose');
-const LabelSchema = require('./label.schema');
+const GroupSchema = require('./group.schema');
 
-const Label = mongoose.model('labels', LabelSchema);
+const Group = mongoose.model('groups', GroupSchema);
 
-module.exports = Label;
+module.exports = Group;

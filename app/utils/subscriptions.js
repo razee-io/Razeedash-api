@@ -3,23 +3,7 @@ const { models } = require('../apollo/models');
 
 const _ = require('lodash');
 
-const tagsStrToArr = (str)=>{
-  let tags = [];
-  if(_.isString(str)){
-    tags = str.split(/,/);
-  }
-  else if(_.isArray(str)){
-    tags = str;
-  }
-  else{
-    throw `invalid input type "${typeof str}"`;
-  }
-  tags = _.map(tags, _.trim);
-  tags = _.filter(tags);
-  return tags;
-};
-
-const getSubscriptionUrls = async(orgId, tags, matchingSubscriptions) => {
+const getSubscriptionUrls = async(orgId, matchingSubscriptions) => {
 
   const matchingChannels = await models.Channel.find({
     org_id: orgId,
@@ -51,6 +35,5 @@ const getSubscriptionUrls = async(orgId, tags, matchingSubscriptions) => {
 };
 
 module.exports = {
-  tagsStrToArr,
   getSubscriptionUrls,
 };
