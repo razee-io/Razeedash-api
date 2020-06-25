@@ -24,7 +24,7 @@ const { v4: uuid } = require('uuid');
 const { AuthenticationError, ForbiddenError } = require('apollo-server');
 const _ = require('lodash');
 
-const { ACTIONS, AUTH_MODELS, AUTH_MODEL } = require('./const');
+const { ACTIONS, AUTH_MODEL } = require('./const');
 const { getBunyanConfig } = require('../../utils/bunyan');
 const SECRET = require('./const').SECRET;
 
@@ -185,14 +185,9 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
 
 UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
   logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const user = await models.User.createUser(models, args);
-    return { token: models.User.createToken(user, secret, '240m') };
-  }
-  logger.warn({ req_id: context.req_id }, `Current authorization model ${AUTH_MODEL} does not support this option.`);
-  throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
-  );
+
+  const user = await models.User.createUser(models, args);
+  return { token: models.User.createToken(user, secret, '240m') };
 };
 
 UserPassportLocalSchema.statics.signIn = async (
@@ -202,75 +197,64 @@ UserPassportLocalSchema.statics.signIn = async (
   secret,
   context,
 ) => {
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const email = login;
-    const { user, /* info */ } = await context.authenticate('graphql-local', {
-      email,
-      password,
-    });
-    if (!user) {
-      logger.warn({ req_id: context.req_id }, 'Authentication has failed');
-      throw new AuthenticationError('Authentication has failed');
-    }
-    return { token: models.User.createToken(user, secret, '240m') };
+  const email = login;
+  const { user, /* info */ } = await context.authenticate('graphql-local', {
+    email,
+    password,
+  });
+  if (!user) {
+    logger.warn({ req_id: context.req_id }, 'Authentication has failed');
+    throw new AuthenticationError('Authentication has failed');
   }
-  logger.warn({ req_id: context.req_id },`Current authorization model ${AUTH_MODEL} does not support this option.`);
-  throw new AuthenticationError(
-    `Current authorization model ${AUTH_MODEL} does not support this option.`,
-  );
+  return { token: models.User.createToken(user, secret, '240m') };
 };
 
 UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) {
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const {req_id, logger} = context;
-    const orgKey = req.get('razee-org-key');
-    if (orgKey) {
-      // cluster facing api (e.g. subscriptionsByTag)
-      return {orgKey, type: 'cluster'};  
+  const {req_id, logger} = context;
+  const orgKey = req.get('razee-org-key');
+  if (orgKey) {
+    // cluster facing api (e.g. subscriptionsByTag)
+    return {orgKey, type: 'cluster'};  
+  }
+  // user facing api
+  let token = req.headers['authorization'];
+  if (token) {
+    if (token.startsWith('Bearer ')) {
+      // Remove Bearer from string
+      token = token.slice(7, token.length);
     }
-    // user facing api
-    let token = req.headers['authorization'];
-    if (token) {
-      if (token.startsWith('Bearer ')) {
-        // Remove Bearer from string
-        token = token.slice(7, token.length);
-      }
-      try {
-        return jwt.verify(token, SECRET);
-      } catch (e) {
-        logger.warn({ req_id }, 'getMeFromRequest Session expired');
-        throw new Error('Your session expired. Sign in again.');
-      }
+    try {
+      return jwt.verify(token, SECRET);
+    } catch (e) {
+      logger.warn({ req_id }, 'getMeFromRequest Session expired');
+      throw new Error('Your session expired. Sign in again.');
     }
   }
-  return null;
 };
 
 UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   connectionParams,
   context
 ) {
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const {req_id, logger} = context;
-    if (connectionParams.headers) {
-      const orgKey = connectionParams.headers['razee-org-key'];
-      if (orgKey) {
-        // cluster facing api (e.g. subscriptionsByTag)
-        return {orgKey, type: 'cluster'};
-      }
+  const {req_id, logger} = context;
+  if (connectionParams.headers) {
+    const orgKey = connectionParams.headers['razee-org-key'];
+    if (orgKey) {
+      // cluster facing api (e.g. subscriptionsByTag)
+      return {orgKey, type: 'cluster'};
     }
-    let token = connectionParams['authorization'];
-    if (token) {
-      if (token.startsWith('Bearer ')) {
-        // Remove Bearer from string
-        token = token.slice(7, token.length);
-      }
-      try {
-        return jwt.verify(token, SECRET);
-      } catch (e) {
-        logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
-        throw new Error('Your session expired. Sign in again.');
-      }
+  }
+  let token = connectionParams['authorization'];
+  if (token) {
+    if (token.startsWith('Bearer ')) {
+      // Remove Bearer from string
+      token = token.slice(7, token.length);
+    }
+    try {
+      return jwt.verify(token, SECRET);
+    } catch (e) {
+      logger.warn({ req_id }, 'getMeFromConnectionParams Session expired');
+      throw new Error('Your session expired. Sign in again.');
     }
   }
   return null;
@@ -278,20 +262,48 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
 
 UserPassportLocalSchema.statics.isValidOrgKey = async function(models, me) {
   logger.debug('default isValidOrgKey');
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
 
-    const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
-    if(!org) {
-      logger.error('An org was not found for this razee-org-key');
-      throw new ForbiddenError('org id was not found');
-    }
-    logger.debug('org found using orgKey');
-    return org;
+  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  if(!org) {
+    logger.error('An org was not found for this razee-org-key');
+    throw new ForbiddenError('org id was not found');
   }
-  return false;
+  logger.debug('org found using orgKey');
+  return org;
 };
 
+UserPassportLocalSchema.statics.userTokenIsAuthorizedBatch = async function(me, orgId, objectArray, context) {
+  return this.isAuthorizedBatch(me.user, orgId, objectArray, context);
+};
 
+UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArray, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id, orgId, objectArray, me },'passport.local isAuthorizedBatch enter..');
+
+  if (!me || me === null || me.type === 'cluster') {
+    // say no for if it is cluster facing api
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'passport.local isAuthorizedBatch exit..');
+    return new Array(objectArray.length).fill(false);
+  }
+
+  const orgMeta = me.meta.orgs.find((o)=>{
+    return (o._id == orgId);
+  });
+
+  if (orgMeta) {
+    const results = objectArray.map( o => {
+      if (o.action === ACTIONS.READ) {
+        return !!orgMeta;
+      } else {
+        return orgMeta.role === 'ADMIN';
+      }
+    });
+    logger.debug({ req_id, orgId, results, me },'passport.local isAuthorizedBatch exit..');
+    return results;
+  }
+  logger.debug({ req_id, orgId, me, orgMeta, AUTH_MODEL }, 'passport.local isAuthorizedBatch exit..');
+  return new Array(objectArray.length).fill(false);
+};
 
 UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action, type, attributes, context) {
   return this.isAuthorized(me.user, orgId, action, type, attributes, context);
@@ -306,41 +318,30 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
     return false;
   }
   
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    if (action === ACTIONS.READ) {
-      return me.org_id === orgId;
-    }
-    if (action === ACTIONS.MANAGE || action === ACTIONS.WRITE || action === ACTIONS.CREATE
-      || action === ACTIONS.DELETE || action === ACTIONS.UPDATE || action === ACTIONS.MANAGEVERSION
-      || action === ACTIONS.SETVERSION || action === ACTIONS.ATTACH || action === ACTIONS.DETACH
-      || action === ACTIONS.REGISTER) {
-      return me.org_id === orgId && me.role === 'ADMIN';
-    }
+  if (action === ACTIONS.READ) {
+    return me.org_id === orgId;
+  } else {
+    return me.org_id === orgId && me.role === 'ADMIN';
   }
-  return false;
 };
 
 UserPassportLocalSchema.statics.getOrg = async function(models, me) {
   let org;
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
-  }
+  org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
   return org;
 };
 
 UserPassportLocalSchema.statics.getOrgs = async function(context) {
   const results = [];
   const { models, me } = context;
-  if (AUTH_MODEL === AUTH_MODELS.PASSPORT_LOCAL) {
-    const meFromDB = await models.User.findOne({ _id: me._id });
-    if (meFromDB && meFromDB.meta.orgs) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const org of meFromDB.meta.orgs) {
-        // eslint-disable-next-line no-await-in-loop
-        const orgFromDB = await models.Organization.findOne({ _id: org._id });
-        if (orgFromDB) {
-          results.push({ name: orgFromDB.name, _id: org._id });
-        }
+  const meFromDB = await models.User.findOne({ _id: me._id });
+  if (meFromDB && meFromDB.meta.orgs) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const org of meFromDB.meta.orgs) {
+      // eslint-disable-next-line no-await-in-loop
+      const orgFromDB = await models.Organization.findOne({ _id: org._id });
+      if (orgFromDB) {
+        results.push({ name: orgFromDB.name, _id: org._id });
       }
     }
   }

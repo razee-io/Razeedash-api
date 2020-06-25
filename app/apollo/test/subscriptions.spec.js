@@ -16,6 +16,7 @@
 
 const { expect } = require('chai');
 const fs = require('fs');
+const { v4: UUID } = require('uuid');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
@@ -190,6 +191,23 @@ const createChannels = async () => {
   });
 };
 
+const createLabels = async () => {
+  await models.Label.create({
+    _id: UUID(),
+    orgId: org01._id,
+    uuid: UUID(),
+    name: 'dev',
+    owner: user01._id,
+  });
+  await models.Label.create({
+    _id: UUID(),
+    orgId: org77._id,
+    uuid: UUID(),
+    name: 'dev',
+    owner: user01._id,
+  });
+};
+
 const createSubscriptions = async () => {
   await models.Subscription.create({
     _id: 'fake_id_1',
@@ -245,6 +263,7 @@ describe('subscription graphql test suite', () => {
   
     await createOrganizations();
     await createUsers();
+    await createLabels();
     await createChannels();
     await createSubscriptions();
     
