@@ -19,76 +19,33 @@ const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTagConditions, getUserTags } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
-const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-async function validateTags(org_id, tags, context) {
+async function validateGroups(org_id, groups, context) {
   const { req_id, me, models, logger } = context;
-  // validate tags are all exists in label dbs
-  var labelCount = await models.Label.count({org_id: org_id, name: {$in: tags} });
-  if (labelCount < tags.length) {
+  // validate cluster groups exists in the groups db
+  let groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
+  if (groupCount < groups.length) {
     if (process.env.LABEL_VALIDATION_REQUIRED) {
-      throw new ValidationError(`could not find all the tags ${tags} in the label database, please create them first.`);
+      throw new ValidationError(`could not find all the cluster groups ${groups} in the groups database, please create them first.`);
     } else {
-      // in migration period, we automatically populate tags into label db
-      logger.info({req_id, user: whoIs(me), org_id}, `could not find all the tags ${tags}, migrate them into label database.`);
-      await models.Label.findOrCreateList(models, org_id, tags, context);
-      labelCount = await models.Label.count({org_id: org_id, name: {$in: tags} });
+      // in migration period, we automatically populate groups into label db
+      logger.info({req_id, user: whoIs(me), org_id}, `could not find all the cluster groups ${groups}, migrate them into label database.`);
+      await models.Group.findOrCreateList(models, org_id, groups, context);
+      groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
     }
   }
-  logger.debug({req_id, user: whoIs(me), tags, org_id, labelCount}, 'validateTags');
-  return labelCount;
+  logger.debug({req_id, user: whoIs(me), groups, org_id, groupCount}, 'validateGroups');
+  return groupCount;
 }
 
 const subscriptionResolvers = {
   Query: {
-    // Cluster-face API
-    subscriptionsByTag: async(parent, { tags }, context) => {
-      const { req_id, me, models, logger } = context;
-      const query = 'subscriptionsByTag';
-      logger.debug({req_id, user: whoIs(me), tags}, `${query} enter`);
-      await validClusterAuth(me, query, context);
-
-      const org = await models.User.getOrg(models, me);
-      if(!org) {
-        logger.error('An org was not found for this razee-org-key');
-        throw new ForbiddenError('org id was not found');
-      }
-      const org_id = org._id;
-      const userTags = tagsStrToArr(tags);
-
-      if (process.env.LABEL_VALIDATION_REQUIRED) {
-        throw new ValidationError('subscriptionsByTag is not supported, please migrate to subscriptionsByCluster api.');
-      }
-      await validateTags(org_id, userTags, context);
-
-      let urls = [];
-      try {
-        // Return subscriptions where $tags stored in mongo are a subset of the userTags passed in from the query
-        // examples:
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> false
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
-        //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.aggregate([
-          { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
-          { $match: { 'isSubSet': true } }
-        ]);
-              
-        if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
-        }
-      } catch (error) {
-        logger.error(error, `There was an error getting ${query} from mongo`);
-      }
-      return urls;
-    },
-    // Cluster-face API
+    // Cluster-facing API
     subscriptionsByCluster: async(parent, { cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByCluster';
@@ -106,23 +63,23 @@ const subscriptionResolvers = {
       if (!cluster) {
         throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
       }
-      var userTags = [];
-      if (cluster.tags) {
-        userTags = cluster.tags.map(l => l.name);
+      var clusterGroupNames = [];
+      if (cluster.groups) {
+        clusterGroupNames = cluster.groups.map(l => l.name);
       }
       
-      logger.debug({user: 'graphql api user', org_id, userTags }, `${query} enter`);
+      logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${query} enter`);
       let urls = [];
       try {
-        // Return subscriptions that contain any userTags passed in from the query 
+        // Return subscriptions that contain any clusterGroupNames passed in from the query 
         // examples:
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev'] ==> true
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
-        //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
-        //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, tags: { $in: userTags }}).lean();
+        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
+        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
+        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
+        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
+        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, tags: { $in: clusterGroupNames }}).lean();
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
+          urls = await getSubscriptionUrls(org_id, clusterGroupNames, foundSubscriptions);
         }
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
@@ -135,16 +92,16 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
-      const conditions = await getUserTagConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
-      logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} user tag conditions are...`);
+      const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
       try{
         var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}, { lean: 1 });
       }catch(err){
         logger.error(err);
         throw err;
       }
-      var ownerIds = _.map(subscriptions, 'owner');
-      var owners = await models.User.getBasicUsersByIds(ownerIds);
+      const ownerIds = _.map(subscriptions, 'owner');
+      const owners = await models.User.getBasicUsersByIds(ownerIds);
 
       subscriptions = subscriptions.map((sub)=>{
         sub.owner = owners[sub.owner];
@@ -172,7 +129,7 @@ const subscriptionResolvers = {
     },
   },
   Mutation: {
-    addSubscription: async (parent, { org_id, name, tags, channel_uuid, version_uuid }, context)=>{
+    addSubscription: async (parent, { org_id, name, groups, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -187,8 +144,8 @@ const subscriptionResolvers = {
           throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
        
-        // validate tags are all exists in label dbs
-        await validateTags(org_id, tags, context);
+        // validate groups are all exists in label dbs
+        await validateGroups(org_id, groups, context);
 
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -200,7 +157,7 @@ const subscriptionResolvers = {
 
         await models.Subscription.create({
           _id: UUID(),
-          uuid, org_id, name, tags, owner: me._id,
+          uuid, org_id, name, tags: groups, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
@@ -215,7 +172,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, uuid, name, tags, channel_uuid, version_uuid }, context)=>{
+    editSubscription: async (parent, { org_id, uuid, name, groups, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -233,8 +190,8 @@ const subscriptionResolvers = {
           throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
-        // validate tags are all exists in label dbs
-        await validateTags(org_id, tags, context);
+        // validate groups are all exists in label dbs
+        await validateGroups(org_id, groups, context);
         
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -245,7 +202,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          name, tags,
+          name, tags: groups,
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
@@ -275,12 +232,12 @@ const subscriptionResolvers = {
           throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
         }
 
-        // validate user has enough tag permissions to for this sub
-        // TODO: we should use specific tag action bellow instead of manage, e.g. setSubscription action
-        const userTags = await getUserTags(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
-        if (subscription.tags.some(t => {return userTags.indexOf(t) === -1;})) {
-          // if some tag of the sub does not in user's tag list, throws an error
-          throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.tags} tags. `);
+        // validate user has enough cluster groups permissions to for this sub
+        // TODO: we should use specific groups action below instead of manage, e.g. setSubscription action
+        const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
+        if (subscription.tags.some(t => {return allowedGroups.indexOf(t) === -1;})) {
+          // if some tag of the sub does not in user's cluster group list, throws an error
+          throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.tags} groups. `);
         }
         
         // loads the channel

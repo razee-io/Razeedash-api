@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth, getUserTagConditionsIncludingEmpty } = require ('./common');
+const { whoIs, validAuth, getGroupConditionsIncludingEmpty } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
 const buildSearchFilter = (ordId, condition, searchStr) => {
@@ -75,7 +75,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const result = await models.Cluster.findOne({
         org_id: orgId,
@@ -102,7 +102,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const searchFilter = {org_id: orgId, ...conditions};
       return commonClusterSearch(models, searchFilter, limit, startingAfter);
@@ -138,9 +138,9 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      // first get all users permitted labels, 
+      // first get all users permitted cluster groups, 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       let searchFilter;
       if (!filter) {
@@ -169,7 +169,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const results = await models.Cluster.aggregate([
         {
@@ -282,7 +282,7 @@ const clusterResolvers = {
           error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
         }
 
-        // we do not handle tags here, it is handled by labelCluster Api
+        // we do not handle cluster groups here, it is handled by groupCluster Api
 
         if (!error && await models.Cluster.findOne(
           { $and: [ 

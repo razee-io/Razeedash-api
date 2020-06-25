@@ -17,13 +17,13 @@
 const axios = require('axios');
 
 const subscriptionsFunc = grahqlUrl => {
-  const subscriptionsByTag = async (token, variables, orgKey) =>
+  const subscriptionsByCluster = async (token, variables, orgKey) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($tags: String) {
-            subscriptionsByTag( tags: $tags) {
+          query($cluster_id: String) {
+            subscriptionsByCluster( cluster_id: $cluster_id) {
               subscription_name
               subscription_channel
               subscription_uuid
@@ -193,7 +193,7 @@ const subscriptionsFunc = grahqlUrl => {
     );
 
   return {
-    subscriptionsByTag,
+    subscriptionsByCluster,
     subscriptions,
     subscription,
     addSubscription,

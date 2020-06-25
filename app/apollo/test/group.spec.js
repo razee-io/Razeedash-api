@@ -22,7 +22,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const { models } = require('../models');
 const resourceFunc = require('./api');
 //const clusterFunc = require('./clusterApi');
-const labelFunc = require('./labelApi');
+const groupFunc = require('./groupApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
@@ -36,7 +36,7 @@ const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 //const clusterApi = clusterFunc(graphqlUrl);
-const labelApi = labelFunc(graphqlUrl);
+const groupApi = groupFunc(graphqlUrl);
 let token;
 //let adminToken;
 
@@ -122,26 +122,26 @@ const getPresetClusters = async () => {
   console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
 };
 
-const createLabels = async () => {
-  await models.Label.create({
+const createGroups = async () => {
+  await models.Group.create({
     _id: UUID(),
     uuid: UUID(),
     org_id: org01._id,
-    name: 'label1',
+    name: 'group1',
     owner: 'undefined'
   });
-  await models.Label.create({
+  await models.Group.create({
     _id: UUID(),
     uuid: UUID(),
     org_id: org01._id,
-    name: 'label2',
+    name: 'group2',
     owner: 'undefined'
   });
-  await models.Label.create({
+  await models.Group.create({
     _id: UUID(),
     uuid: UUID(),
     org_id: org77._id,
-    name: 'label1',
+    name: 'group1',
     owner: 'undefined'
   });
 };
@@ -242,7 +242,7 @@ const createClusters = async () => {
   });
 }; // create clusters
 
-describe('label graphql test suite', () => {
+describe('groups graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
     mongoServer = new MongoMemoryServer();
@@ -257,7 +257,7 @@ describe('label graphql test suite', () => {
     await createOrganizations();
     await createUsers();
     await createClusters();
-    await createLabels();
+    await createGroups();
   
     // Can be uncommented if you want to see the test data that was added to the DB
     // await getPresetOrgs();
@@ -273,19 +273,19 @@ describe('label graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get all labels by Org ID', async () => {
+  it('get all groups by Org ID', async () => {
     try {
       const {
         data: {
-          data: { labels },
+          data: { groups },
         },
-      } = await labelApi.labels(token, {
+      } = await groupApi.groups(token, {
         org_id: org01._id,
       });
 
-      console.log(`get all labels by Org ID: labels = ${JSON.stringify(labels)}`);
-      expect(labels).to.be.an('array');
-      expect(labels).to.have.length(2);
+      console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
+      expect(groups).to.be.an('array');
+      expect(groups).to.have.length(2);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

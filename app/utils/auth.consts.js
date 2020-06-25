@@ -51,7 +51,7 @@ const TYPES = {
   CLUSTER: 'cluster',
   ORGANIZATION: 'organization',
   MESSAGE: 'message',
-  LABEL: 'label',
+  GROUP: 'group',
   CHANNEL: 'channel',
   SUBSCRIPTION: 'subscription',
 };

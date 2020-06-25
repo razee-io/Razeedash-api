@@ -74,10 +74,6 @@ const subscriptionSchema = gql`
      """
      subscription(org_id: String!, uuid: String!): ChannelSubscription
      """
-     Gets all subscriptions that match a set of tags for an org
-     """
-     subscriptionsByTag(tags: String): [UpdatedSubscription]
-     """
      Gets all subscriptions for a cluster
      """
      subscriptionsByCluster(cluster_id: String): [UpdatedSubscription]

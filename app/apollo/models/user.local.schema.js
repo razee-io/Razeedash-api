@@ -203,7 +203,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   const {req_id, logger} = context;
   const orgKey = req.get('razee-org-key');
   if (orgKey) {
-    // cluster facing api (e.g. subscriptionsByTag)
+    // cluster facing api (e.g. subscriptionsByCluster)
     return {orgKey, type: 'cluster'};  
   }
   let token = req.headers['authorization'];
@@ -229,7 +229,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   if (connectionParams.headers) {
     const orgKey = connectionParams.headers['razee-org-key'];
     if (orgKey) {
-      // cluster facing api (e.g. subscriptionsByTag)
+      // cluster facing api (e.g. subscriptionsByCluster)
       return {orgKey, type: 'cluster'};
     }
   }

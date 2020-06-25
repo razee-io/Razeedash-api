@@ -45,6 +45,7 @@ const sub_01_uuid = 'fake_sub_01_uuid';
 const sub_01_version = '0.0.1';
 const sub_01_version_uuid = 'fake_sub_01_verison_uuid';
 const sub_01_tags = 'dev';
+const cluster_id = 'cluster_01';
 
 const sub_02_name = 'fake_sub_02';
 const sub_02_uuid = 'fake_sub_02_uuid';
@@ -61,6 +62,34 @@ const createOrganizations = async () => {
   );
   org01 = await prepareOrganization(models, org01Data);
 };
+
+
+const createClusters = async () => {
+  await models.Cluster.create({
+    org_id: org01._id,
+    cluster_id: 'cluster_01',
+    groups: [
+      {
+        'uuid': 'e7ed4820-2c7b-4e11-b53b-7b3551d65b65',
+        'name': 'japan'
+      }
+    ],
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+};
+
   
 const createChannels = async () => {
   await models.Channel.create({
@@ -130,6 +159,7 @@ describe('subscriptions graphql test suite', () => {
   
     await createOrganizations();
     await createChannels();
+    await createClusters();
     await createSubscriptions();
     orgKey = await getOrgKey();
   }); // before
@@ -140,17 +170,17 @@ describe('subscriptions graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get should return a subscription with a matching tag', async () => {
+  it('get should return a subscription for a cluster', async () => {
     try {
       const {
         data: {
-          data: { subscriptionsByTag },
+          data: { subscriptionsByCluster },
         },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        tags: sub_01_tags
+      } = await subscriptionsApi.subscriptionsByCluster(token, {
+        cluster_id: cluster_id
       }, orgKey);
 
-      expect(subscriptionsByTag).to.have.length(1);
+      expect(subscriptionsByCluster).to.have.length(1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -165,12 +195,12 @@ describe('subscriptions graphql test suite', () => {
     try {
       const {
         data: {
-          data: { subscriptionsByTag },
+          data: { subscriptionsByCluster },
         },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        tags: '' 
+      } = await subscriptionsApi.subscriptionsByCluster(token, {
+        cluster_id: 'bad' 
       }, orgKey);
-      expect(subscriptionsByTag).to.have.length(0);
+      expect(subscriptionsByCluster).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

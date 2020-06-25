@@ -191,15 +191,15 @@ const createChannels = async () => {
   });
 };
 
-const createLabels = async () => {
-  await models.Label.create({
+const createGroups = async () => {
+  await models.Group.create({
     _id: UUID(),
     org_id: org01._id,
     uuid: UUID(),
     name: 'dev',
     owner: user01._id,
   });
-  await models.Label.create({
+  await models.Group.create({
     _id: UUID(),
     org_id: org77._id,
     uuid: UUID(),
@@ -263,7 +263,7 @@ describe('subscription graphql test suite', () => {
   
     await createOrganizations();
     await createUsers();
-    await createLabels();
+    await createGroups();
     await createChannels();
     await createSubscriptions();
     
