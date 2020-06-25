@@ -150,7 +150,6 @@ describe('subscriptions graphql test suite', () => {
           data: { subscriptionsByTag },
         },
       } = result;
-      console.log(44444, result.data)
 
       expect(subscriptionsByTag).to.have.length(1);
     } catch (error) {

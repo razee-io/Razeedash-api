@@ -84,17 +84,6 @@ const subscriptionResolvers = {
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
-        console.log(666666, JSON.stringify([
-          { $match: { 'org_id': org_id} },
-          {
-            $project: {
-              name: 1, uuid: 1, tags: 1, version: 1,
-              channel_name: { $ifNull: ['$channel_name', '$channel']},
-              isSubSet: { $setIsSubset: ['$tags', userTags] }
-            }
-          },
-          { $match: { 'isSubSet': true } }
-        ], null, 4))
         const foundSubscriptions = await models.Subscription.aggregate([
           { $match: { 'org_id': org_id} },
           {
@@ -106,14 +95,11 @@ const subscriptionResolvers = {
           },
           { $match: { 'isSubSet': true } }
         ]);
-
-        console.log(4444, foundSubscriptions)
               
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
         }
       } catch (error) {
-        console.log(44444, error)
         logger.error(error, `There was an error getting ${query} from mongo`);
       }
       return urls;

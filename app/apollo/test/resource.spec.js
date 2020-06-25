@@ -308,7 +308,6 @@ describe('resource graphql test suite', () => {
           org_id: meResult.data.data.me.org_id,
           filter: 'mybla',
         });
-        console.log(1111, result1)
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
