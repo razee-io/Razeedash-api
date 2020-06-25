@@ -132,6 +132,48 @@ const buildSortObj = (sortArr, allowedFields)=>{
   return out;
 };
 
+const applyQueryFieldsToResources = async(resources, queryFields, { subscriptionsLimit = 500 }, models)=>{
+  const resourceIds = _.map(resources, '_id');
+
+  console.log(3333, queryFields, resources)
+  if(_.get(queryFields, 'resources.subscription')){
+    var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
+    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean();
+    _.each(subscriptions, (sub)=>{
+      if(_.isUndefined(sub.channel_name)){
+        sub.channel_name = sub.channel;
+      }
+    });
+    var subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');
+    _.each(resources, (resource)=>{
+      var subId = resource.searchableData.subscription_id;
+      if(!subId){
+        return;
+      }
+      resource.subscription = subscriptionsByUuid[subId] || null;
+      delete resource.subscription.channel;
+    });
+
+    //console.log(33333333, _.get(queryFields, 'resources.subscription.channel'), queryFields)
+    if(_.get(queryFields, 'resources.subscription.channel')){
+
+      var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
+      var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean();
+      var channelsByUuid = _.keyBy(channels, 'uuid');
+      _.each(resources, (resource)=>{
+        console.log(1111, resource)
+        if(!resource.subscription){
+          return;
+        }
+        resource.subscription.channel = null;
+        resource.subscription.channel = channelsByUuid[resource.subscription.channel_uuid] || null;
+        console.log(2222, resource.subscription.channel)
+      });
+    }
+  }
+  console.log(4444, resources)
+};
+
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { org_id }, context) => {
@@ -154,7 +196,7 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { org_id, filter, fromDate, toDate, limit, kinds = [], sort },
+      { org_id, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
       context,
       fullQuery
     ) => {
@@ -176,7 +218,11 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
       }
-      return commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
+      const resourcesResult = await commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, req_id, logger, sort });
+
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { subscriptionsLimit }, models);
+
+      return resourcesResult;
     },
 
     resourcesByCluster: async (

@@ -100,6 +100,8 @@ const ClusterSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 ClusterSchema.index({ org_id: 1, cluster_id: 1 }, { unique: true });

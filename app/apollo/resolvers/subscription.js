@@ -75,7 +75,7 @@ const subscriptionResolvers = {
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
         const foundSubscriptions = await models.Subscription.aggregate([
           { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
+          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, channel_name: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
           { $match: { 'isSubSet': true } }
         ]);
               
@@ -119,7 +119,7 @@ const subscriptionResolvers = {
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
         const foundSubscriptions = await models.Subscription.aggregate([
           { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
+          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, channel_name: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
           { $match: { 'isSubSet': true } }
         ]);
               
@@ -147,6 +147,9 @@ const subscriptionResolvers = {
       var owners = await models.User.getBasicUsersByIds(ownerIds);
 
       subscriptions = subscriptions.map((sub)=>{
+        if(_.isUndefined(sub.channel_name)){
+          sub.channel_name = sub.channel;
+        }
         sub.owner = owners[sub.owner];
         return sub;
       });
@@ -164,6 +167,12 @@ const subscriptionResolvers = {
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid);
         });
+        if(!subscription){
+          return null;
+        }
+        if(_.isUndefined(subscription.channel_name)){
+          subscription.channel_name = subscription.channel;
+        }
         return subscription;
       }catch(err){
         logger.error(err);
@@ -197,11 +206,11 @@ const subscriptionResolvers = {
         if(!version){
           throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
-
+console.log(3333, channel)
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, tags, owner: me._id,
-          channel: channel.name, channel_uuid, version: version.name, version_uuid
+          channel_name: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id});
@@ -246,7 +255,7 @@ const subscriptionResolvers = {
 
         var sets = {
           name, tags,
-          channel: channel.name, channel_uuid, version: version.name, version_uuid,
+          channel_name: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
 

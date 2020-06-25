@@ -101,6 +101,10 @@ const clusterResolvers = {
         cluster_id: clusterId,
       }).lean();
 
+      if(!cluster){
+        return null;
+      }
+
       await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
 
       return cluster;

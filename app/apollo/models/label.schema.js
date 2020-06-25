@@ -37,6 +37,8 @@ const LabelSchema = new mongoose.Schema({
   owner: {
     type: String,
   },
+}, {
+  //strict:'throw',
 });
 
 

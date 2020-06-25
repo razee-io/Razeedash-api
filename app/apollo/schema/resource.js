@@ -37,6 +37,7 @@ const resourceSchema = gql`
     updated: Date
     searchableData: JSON!
     searchableDataHash: String
+    subscription: ChannelSubscription
   }
 
   type ResourceUpdated {
@@ -74,7 +75,16 @@ const resourceSchema = gql`
     """
     Search resources against **org_id**, **filter** string, and date ranges.
     """
-    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500, kinds: [String!], sort: [SortObj!]): ResourcesList!
+    resources(
+      org_id: String!
+      filter: String
+      fromDate: Date
+      toDate: Date
+      limit: Int = 500,
+      kinds: [String!],
+      sort: [SortObj!],
+      subscriptionsLimit: Int = 500
+    ): ResourcesList!
 
     """
     Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges.

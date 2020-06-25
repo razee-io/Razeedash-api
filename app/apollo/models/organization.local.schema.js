@@ -42,6 +42,8 @@ const OrganizationLocalSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, context) {

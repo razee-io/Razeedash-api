@@ -27,7 +27,8 @@ const subscriptionSchema = gql`
     name: String!
     tags: [String!]!
     channel_uuid: String!
-    channel: String!
+    channel_name: String!
+    channel: Channel
     version: String!
     version_uuid: String!
     owner: BasicUser!

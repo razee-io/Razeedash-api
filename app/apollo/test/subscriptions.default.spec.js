@@ -94,7 +94,7 @@ const createSubscriptions = async () => {
     uuid: sub_01_uuid,
     tags: sub_01_tags,
     channel_uuid: channel_01_uuid,
-    channel: channel_01_name,
+    channel_name: channel_01_name,
     version: sub_01_version,
     version_uuid: sub_01_version_uuid,
     owner: 'tester'
@@ -107,7 +107,7 @@ const createSubscriptions = async () => {
     uuid: sub_02_uuid,
     tags: sub_02_tags,
     channel_uuid: channel_01_uuid,
-    channel: channel_01_name,
+    channel_name: channel_01_name,
     version: sub_02_version,
     version_uuid: sub_02_version_uuid,
     owner: 'tester'

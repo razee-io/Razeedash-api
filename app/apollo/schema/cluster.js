@@ -75,7 +75,7 @@ const clusterSchema = gql`
       org_id: String!,
       cluster_id: String!
       resourceLimit: Int = 500
-    ): Cluster!
+    ): Cluster
 
     """
     Return clusters based on **org_id**, sorted with newest document first.

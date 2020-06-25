@@ -52,6 +52,8 @@ const ResourceSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 ResourceSchema.statics.getIds = async(ids)=>{

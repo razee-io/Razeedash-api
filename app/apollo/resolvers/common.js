@@ -53,7 +53,6 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
     }
     return;
   }
-
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     throw new ForbiddenError(

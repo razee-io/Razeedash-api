@@ -81,6 +81,8 @@ const UserLocalSchema = new mongoose.Schema({
       },
     ],
   },
+}, {
+  //strict:'throw',
 });
 
 async function getOrCreateOrganization(models, args) {
