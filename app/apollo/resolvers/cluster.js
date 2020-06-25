@@ -132,8 +132,12 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
-      const searchFilter = { org_id: orgId };
-      return commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const searchFilter = { org_id: orgId, ...conditions };
+      const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
@@ -188,7 +192,11 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, conditions, filter);
       }
 
-      return commonClusterSearch(models, searchFilter, limit);
+      const clusters = commonClusterSearch(models, searchFilter, limit);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.

@@ -45,7 +45,7 @@ async function validateTags(org_id, tags, context) {
   return labelCount;
 }
 
-const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{
+const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{ // eslint-disable-line
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channel_name)){
       sub.channel_name = sub.channel;

@@ -143,8 +143,6 @@ const buildSortObj = (sortArr, allowedFields)=>{
 };
 
 const applyQueryFieldsToResources = async(resources, queryFields, { subscriptionsLimit = 500 }, models)=>{
-  const resourceIds = _.map(resources, '_id');
-
   if(_.get(queryFields, 'resources.subscription')){
     var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
     var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean();
