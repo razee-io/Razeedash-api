@@ -73,13 +73,13 @@ const subscriptionResolvers = {
       try {
         // Return subscriptions that contain any clusterGroupNames passed in from the query 
         // examples:
-        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
-        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
-        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
-        //   subscription tags: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, tags: { $in: clusterGroupNames }}).lean();
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
+        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, groups: { $in: clusterGroupNames }}).lean();
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, clusterGroupNames, foundSubscriptions);
+          urls = await getSubscriptionUrls(org_id, foundSubscriptions);
         }
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
@@ -129,7 +129,7 @@ const subscriptionResolvers = {
     },
   },
   Mutation: {
-    addSubscription: async (parent, { org_id, name, tags, channel_uuid, version_uuid }, context)=>{
+    addSubscription: async (parent, { org_id, name, groups, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -145,7 +145,7 @@ const subscriptionResolvers = {
         }
        
         // validate groups are all exists in label dbs
-        await validateGroups(org_id, tags, context);
+        await validateGroups(org_id, groups, context);
 
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -157,7 +157,7 @@ const subscriptionResolvers = {
 
         await models.Subscription.create({
           _id: UUID(),
-          uuid, org_id, name, tags, owner: me._id,
+          uuid, org_id, name, groups, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
@@ -172,7 +172,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, uuid, name, tags, channel_uuid, version_uuid }, context)=>{
+    editSubscription: async (parent, { org_id, uuid, name, groups, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -191,7 +191,7 @@ const subscriptionResolvers = {
         }
 
         // validate groups are all exists in label dbs
-        await validateGroups(org_id, tags, context);
+        await validateGroups(org_id, groups, context);
         
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -202,7 +202,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          name, tags,
+          name, groups,
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
@@ -235,9 +235,9 @@ const subscriptionResolvers = {
         // validate user has enough cluster groups permissions to for this sub
         // TODO: we should use specific groups action below instead of manage, e.g. setSubscription action
         const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
-        if (subscription.tags.some(t => {return allowedGroups.indexOf(t) === -1;})) {
+        if (subscription.groups.some(t => {return allowedGroups.indexOf(t) === -1;})) {
           // if some tag of the sub does not in user's cluster group list, throws an error
-          throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.tags} groups. `);
+          throw new ForbiddenError(`you are not allowed to set subscription for all of ${subscription.groups} groups. `);
         }
         
         // loads the channel

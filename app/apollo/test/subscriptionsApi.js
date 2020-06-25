@@ -51,7 +51,7 @@ const subscriptionsFunc = grahqlUrl => {
               uuid
               org_id
               name
-              tags
+              groups
               channel_uuid
               channel
               version
@@ -84,7 +84,7 @@ const subscriptionsFunc = grahqlUrl => {
               uuid
               org_id
               name
-              tags
+              groups
               channel_uuid
               channel
               version
@@ -113,8 +113,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
-            addSubscription(org_id: $org_id, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid){
+          mutation($org_id: String!, $name: String!, $groups: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            addSubscription(org_id: $org_id, name: $name, groups: $groups, channel_uuid: $channel_uuid, version_uuid: $version_uuid){
 			        uuid
             }
           }
@@ -133,8 +133,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $uuid: String!, $name: String!, $tags: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
-            editSubscription( org_id: $org_id, uuid: $uuid, name: $name, tags: $tags, channel_uuid: $channel_uuid, version_uuid: $version_uuid) {
+          mutation($org_id: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channel_uuid: String!, $version_uuid: String!) {
+            editSubscription( org_id: $org_id, uuid: $uuid, name: $name, groups: $groups, channel_uuid: $channel_uuid, version_uuid: $version_uuid) {
               uuid
               success
             }

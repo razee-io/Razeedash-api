@@ -29,7 +29,7 @@ const SubscriptionSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
-  tags: [
+  groups: [
     {
       type: String,
     }

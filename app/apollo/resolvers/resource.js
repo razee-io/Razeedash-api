@@ -287,11 +287,11 @@ const resourceResolvers = {
         throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);        
       }
       const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
-      if(subscription.tags) {
-        subscription.tags.some(t => {
-          if(allowedGroups.indexOf(t) === -1) {
+      if(subscription.groups) {
+        subscription.groups.some(group => {
+          if(allowedGroups.indexOf(group) === -1) {
             // if some tag of the sub does not in user's tag list, throws an error
-            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription tag ${t}.`);          
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription group ${group}.`);          
           }
           return false;
         });

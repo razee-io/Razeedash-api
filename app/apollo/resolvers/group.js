@@ -59,7 +59,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
-        const subscriptionCount = await models.Subscription.count({ org_id: org_id, tags: group.name });
+        const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
 
         group.owner = owners[group.owner];
@@ -81,7 +81,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
-        const subscriptionCount = await models.Subscription.count({ org_id: org_id, tags: group.name });
+        const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
 
         group.owner = owners[group.owner];
@@ -134,7 +134,7 @@ const groupResolvers = {
           throw new NotFoundError(`group uuid "${uuid}" not found`);
         }
   
-        const subCount = await models.Subscription.count({ org_id: org_id, tags: group.name });
+        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
   
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
@@ -171,7 +171,7 @@ const groupResolvers = {
           throw new NotFoundError(`group name "${name}" not found`);
         }
   
-        const subCount = await models.Subscription.count({ org_id: org_id, tags: group.name });
+        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
         }

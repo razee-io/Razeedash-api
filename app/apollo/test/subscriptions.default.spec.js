@@ -44,7 +44,7 @@ const sub_01_name = 'fake_sub_01';
 const sub_01_uuid = 'fake_sub_01_uuid';
 const sub_01_version = '0.0.1';
 const sub_01_version_uuid = 'fake_sub_01_verison_uuid';
-const sub_01_tags = 'dev';
+const sub_01_groups = 'dev';
 const cluster_id = 'cluster_01';
 const cluster_id_2 = 'cluster_02';
 
@@ -52,7 +52,7 @@ const sub_02_name = 'fake_sub_02';
 const sub_02_uuid = 'fake_sub_02_uuid';
 const sub_02_version = '0.0.1';
 const sub_02_version_uuid = 'fake_sub_02_verison_uuid';
-const sub_02_tags = 'prod';
+const sub_02_groups = 'prod';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -145,7 +145,7 @@ const createSubscriptions = async () => {
     org_id: org01._id,
     name: sub_01_name,
     uuid: sub_01_uuid,
-    tags: sub_01_tags,
+    groups: sub_01_groups,
     channel_uuid: channel_01_uuid,
     channel: channel_01_name,
     version: sub_01_version,
@@ -158,7 +158,7 @@ const createSubscriptions = async () => {
     org_id: org01._id,
     name: sub_02_name,
     uuid: sub_02_uuid,
-    tags: sub_02_tags,
+    groups: sub_02_groups,
     channel_uuid: channel_01_uuid,
     channel: channel_01_name,
     version: sub_02_version,
@@ -215,7 +215,7 @@ describe('subscriptions graphql test suite', () => {
     }
   });
 
-  it('get should return an empty array when there are no matching tags', async () => {
+  it('get should return an empty array when there are no matching groups', async () => {
     try {
       const {
         data: {
