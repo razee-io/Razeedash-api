@@ -142,13 +142,15 @@ describe('subscriptions graphql test suite', () => {
 
   it('get should return a subscription with a matching tag', async () => {
     try {
+      const result = await subscriptionsApi.subscriptionsByTag(token, {
+        tags: sub_01_tags
+      }, orgKey);
       const {
         data: {
           data: { subscriptionsByTag },
         },
-      } = await subscriptionsApi.subscriptionsByTag(token, {
-        tags: sub_01_tags
-      }, orgKey);
+      } = result;
+      console.log(44444, result.data)
 
       expect(subscriptionsByTag).to.have.length(1);
     } catch (error) {

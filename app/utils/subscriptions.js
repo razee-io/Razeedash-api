@@ -30,24 +30,24 @@ const getSubscriptionUrls = async(orgId, tags, subsForOrg) => {
 
   const matchingChannels = await models.Channel.find({
     org_id: orgId,
-    name: { $in: _.map(matchingSubscriptions, 'channel') },
+    name: { $in: _.map(matchingSubscriptions, 'channel_name') },
   });
   
   const matchingChannelsByName = _.keyBy(matchingChannels, 'name');
 
   let urls = _.map(matchingSubscriptions, (subscription)=>{
-    const deployable = matchingChannelsByName[subscription.channel];
+    const deployable = matchingChannelsByName[subscription.channel_name];
     const foundVersion = deployable.versions.filter( (ver) => {
       return (ver.name === subscription.version);
     });
     
     let url;
     if(foundVersion.length > 0) {
-      url = `api/v1/channels/${subscription.channel}/${foundVersion[0].uuid}`;
+      url = `api/v1/channels/${subscription.channel_name}/${foundVersion[0].uuid}`;
     } 
     return {
       subscription_name: subscription.name, 
-      subscription_channel: subscription.channel, 
+      subscription_channel: subscription.channel_name,
       subscription_version: subscription.version, 
       subscription_uuid: subscription.uuid, 
       url: url

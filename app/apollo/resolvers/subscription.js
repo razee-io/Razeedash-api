@@ -23,6 +23,7 @@ const { whoIs, validAuth, NotFoundError, validClusterAuth, getUserTagConditions,
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const tagsStrToArr = require('../../utils/subscriptions.js').tagsStrToArr;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
+const GraphqlFields = require('graphql-fields');
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -43,6 +44,15 @@ async function validateTags(org_id, tags, context) {
   logger.debug({req_id, user: whoIs(me), tags, org_id, labelCount}, 'validateTags');
   return labelCount;
 }
+
+const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{
+  _.each(subs, (sub)=>{
+    if(_.isUndefined(sub.channel_name)){
+      sub.channel_name = sub.channel;
+    }
+    delete sub.channel;
+  });
+};
 
 const subscriptionResolvers = {
   Query: {
@@ -74,16 +84,36 @@ const subscriptionResolvers = {
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['dev', 'prod', 'stage'] ==> true
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
+        console.log(666666, JSON.stringify([
+          { $match: { 'org_id': org_id} },
+          {
+            $project: {
+              name: 1, uuid: 1, tags: 1, version: 1,
+              channel_name: { $ifNull: ['$channel_name', '$channel']},
+              isSubSet: { $setIsSubset: ['$tags', userTags] }
+            }
+          },
+          { $match: { 'isSubSet': true } }
+        ], null, 4))
         const foundSubscriptions = await models.Subscription.aggregate([
           { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, channel_name: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
+          {
+            $project: {
+              name: 1, uuid: 1, tags: 1, version: 1,
+              channel_name: { $ifNull: ['$channel_name', '$channel']},
+              isSubSet: { $setIsSubset: ['$tags', userTags] }
+            }
+          },
           { $match: { 'isSubSet': true } }
         ]);
+
+        console.log(4444, foundSubscriptions)
               
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, userTags, foundSubscriptions);
         }
       } catch (error) {
+        console.log(44444, error)
         logger.error(error, `There was an error getting ${query} from mongo`);
       }
       return urls;
@@ -121,7 +151,13 @@ const subscriptionResolvers = {
         //   mongo tags: ['dev', 'prod'] , userTags: ['stage'] ==> false
         const foundSubscriptions = await models.Subscription.aggregate([
           { $match: { 'org_id': org_id} },
-          { $project: { name: 1, uuid: 1, tags: 1, version: 1, channel: 1, channel_name: 1, isSubSet: { $setIsSubset: ['$tags', userTags] } } },
+          {
+            $project: {
+              name: 1, uuid: 1, tags: 1, version: 1,
+              channel_name: { $ifNull: ['$channel_name', '$channel']},
+              isSubSet: { $setIsSubset: ['$tags', userTags] }
+            }
+          },
           { $match: { 'isSubSet': true } }
         ]);
               
@@ -133,7 +169,8 @@ const subscriptionResolvers = {
       }
       return urls;
     },
-    subscriptions: async(parent, { org_id }, context) => {
+    subscriptions: async(parent, { org_id }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -158,25 +195,29 @@ const subscriptionResolvers = {
         return sub;
       });
 
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { }, models);
+
       return subscriptions;
     },
-    subscription: async(parent, { org_id, uuid }, context) => {
+    subscription: async(parent, { org_id, uuid }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       try{
-        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
+        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger }, fullQuery);
+
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid);
         });
         if(!subscription){
           return null;
         }
-        if(_.isUndefined(subscription.channel_name)){
-          subscription.channel_name = subscription.channel;
-        }
+
+        await applyQueryFieldsToSubscriptions([subscription], queryFields, { }, models);
+
         return subscription;
       }catch(err){
         logger.error(err);
@@ -210,7 +251,7 @@ const subscriptionResolvers = {
         if(!version){
           throw  new NotFoundError(`version uuid "${version_uuid}" not found`);
         }
-console.log(3333, channel)
+
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, tags, owner: me._id,

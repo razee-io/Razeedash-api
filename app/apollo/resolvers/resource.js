@@ -212,7 +212,7 @@ const resourceResolvers = {
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
-      const { me, req_id, logger } = context;
+      const { me, req_id, logger, models } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
@@ -229,7 +229,7 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
       }
-      const resourcesResult = await commonResourcesSearch({ org_id, searchFilter, limit, queryFields, sort, context });
+      const resourcesResult = await commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, sort, context });
 
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { subscriptionsLimit }, models);
 

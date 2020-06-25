@@ -40,6 +40,9 @@ const SubscriptionSchema = new mongoose.Schema({
   channel_name: {
     type: String,
   },
+  channel: {
+    type: String, // remove this later
+  },
   version: {
     type: String,
   },
