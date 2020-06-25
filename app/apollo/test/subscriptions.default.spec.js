@@ -46,6 +46,7 @@ const sub_01_version = '0.0.1';
 const sub_01_version_uuid = 'fake_sub_01_verison_uuid';
 const sub_01_tags = 'dev';
 const cluster_id = 'cluster_01';
+const cluster_id_2 = 'cluster_02';
 
 const sub_02_name = 'fake_sub_02';
 const sub_02_uuid = 'fake_sub_02_uuid';
@@ -71,7 +72,30 @@ const createClusters = async () => {
     groups: [
       {
         'uuid': 'e7ed4820-2c7b-4e11-b53b-7b3551d65b65',
-        'name': 'japan'
+        'name': 'dev'
+      }
+    ],
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        complier: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
+  await models.Cluster.create({
+    org_id: org01._id,
+    cluster_id: 'cluster_02',
+    groups: [
+      {
+        'uuid': 'aaaaa-aaaa-aaaa-aaaa-aaaa',
+        'name': 'blah'
       }
     ],
     metadata: {
@@ -198,7 +222,7 @@ describe('subscriptions graphql test suite', () => {
           data: { subscriptionsByCluster },
         },
       } = await subscriptionsApi.subscriptionsByCluster(token, {
-        cluster_id: 'bad' 
+        cluster_id: cluster_id_2
       }, orgKey);
       expect(subscriptionsByCluster).to.have.length(0);
     } catch (error) {

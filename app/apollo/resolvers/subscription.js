@@ -129,7 +129,7 @@ const subscriptionResolvers = {
     },
   },
   Mutation: {
-    addSubscription: async (parent, { org_id, name, groups, channel_uuid, version_uuid }, context)=>{
+    addSubscription: async (parent, { org_id, name, tags, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -145,7 +145,7 @@ const subscriptionResolvers = {
         }
        
         // validate groups are all exists in label dbs
-        await validateGroups(org_id, groups, context);
+        await validateGroups(org_id, tags, context);
 
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -157,7 +157,7 @@ const subscriptionResolvers = {
 
         await models.Subscription.create({
           _id: UUID(),
-          uuid, org_id, name, tags: groups, owner: me._id,
+          uuid, org_id, name, tags, owner: me._id,
           channel: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
@@ -172,7 +172,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, uuid, name, groups, channel_uuid, version_uuid }, context)=>{
+    editSubscription: async (parent, { org_id, uuid, name, tags, channel_uuid, version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -191,7 +191,7 @@ const subscriptionResolvers = {
         }
 
         // validate groups are all exists in label dbs
-        await validateGroups(org_id, groups, context);
+        await validateGroups(org_id, tags, context);
         
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -202,7 +202,7 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          name, tags: groups,
+          name, tags,
           channel: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
