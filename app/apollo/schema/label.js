@@ -4,7 +4,7 @@ const labelSchema = gql`
   
   type Label {
     uuid: String!
-    orgId: String!
+    org_id: String!
     name: String!
     owner: BasicUser!
     created: Date!
@@ -12,7 +12,7 @@ const labelSchema = gql`
 
   type LabelDetail {
     uuid: String!
-    orgId: String!
+    org_id: String!
     name: String!
     owner: BasicUser!
     created: Date!
@@ -39,46 +39,46 @@ const labelSchema = gql`
 
   extend type Query {
     """
-    list all labels for orgId
+    list all labels for org_id
     """
-    labels(orgId: String!): [Label]
+    labels(org_id: String!): [Label]
 
     """
-    Gets a label detail for orgId and uuid
+    Gets a label detail for org_id and uuid
     """
-    label(orgId: String! uuid: String!): LabelDetail
+    label(org_id: String! uuid: String!): LabelDetail
 
     """
-    Gets a label detail for orgId and name
+    Gets a label detail for org_id and name
     """
-    labelByName(orgId: String! name: String!): LabelDetail
+    labelByName(org_id: String! name: String!): LabelDetail
   }
 
   extend type Mutation {
     """
     Adds a label
     """
-    addLabel(orgId: String! name: String!): AddLabelReply!
+    addLabel(org_id: String! name: String!): AddLabelReply!
 
     """
     Removes a label 
     """
-    removeLabel(orgId: String! uuid: String!): RemoveLabelReply!
+    removeLabel(org_id: String! uuid: String!): RemoveLabelReply!
 
     """
     Removes a label by name 
     """
-    removeLabelByName(orgId: String! name: String!): RemoveLabelReply!
+    removeLabelByName(org_id: String! name: String!): RemoveLabelReply!
 
     """
     label a list of clusters
     """
-    labelClusters(orgId: String! uuid: String! clusters: [String]!): LabelClustersReply!
+    labelClusters(org_id: String! uuid: String! clusters: [String]!): LabelClustersReply!
 
     """
     unlabel a list of clusters
     """
-    unlabelClusters(orgId: String! uuid: String! clusters: [String]!): UnlabelClustersReply!
+    unlabelClusters(org_id: String! uuid: String! clusters: [String]!): UnlabelClustersReply!
 
   }
 `;

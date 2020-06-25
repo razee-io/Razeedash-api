@@ -22,10 +22,10 @@ const labelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!) {
-            labels( orgId: $orgId ) {
+          query($org_id: String!) {
+            labels( org_id: $org_id ) {
                 uuid
-                orgId
+                org_id
                 name
                 owner {
                   _id
@@ -50,4 +50,3 @@ const labelFunc = grahqlUrl => {
 };
         
 module.exports = labelFunc;
-

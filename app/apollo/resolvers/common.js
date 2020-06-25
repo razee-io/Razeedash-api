@@ -43,7 +43,7 @@ const getUserTags = async (me, org_id, action, field, queryName, context) => {
   const {req_id, models, logger} = context;
 
   logger.debug({req_id, user: whoIs(me), org_id, field, action }, `getUserTags enter for ${queryName}`);
-  const labels = await models.Label.find({orgId: org_id}).lean();
+  const labels = await models.Label.find({org_id: org_id}).lean();
   const objectArray = labels.map(l => {
     return {type: TYPES.LABEL, action, uuid: l.uuid, name: l.name};
   });

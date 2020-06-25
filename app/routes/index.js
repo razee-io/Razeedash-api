@@ -148,7 +148,7 @@ async function initialize(){
       ],
       labels: [
         {
-          keys: { orgId: 1, name: 1 },
+          keys: { org_id: 1, name: 1 },
           options: { name: 'orgId.name', unique: true }
         }
       ],
