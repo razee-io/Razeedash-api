@@ -201,7 +201,7 @@ describe('subscriptions graphql test suite', () => {
           data: { subscriptionsByCluster },
         },
       } = await subscriptionsApi.subscriptionsByCluster(token, {
-        cluster_id: cluster_id
+        clusterId: cluster_id
       }, orgKey);
 
       expect(subscriptionsByCluster).to.have.length(1);
@@ -222,7 +222,7 @@ describe('subscriptions graphql test suite', () => {
           data: { subscriptionsByCluster },
         },
       } = await subscriptionsApi.subscriptionsByCluster(token, {
-        cluster_id: cluster_id_2
+        clusterId: cluster_id_2
       }, orgKey);
       expect(subscriptionsByCluster).to.have.length(0);
     } catch (error) {

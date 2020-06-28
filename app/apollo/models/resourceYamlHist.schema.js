@@ -19,6 +19,7 @@ const mongoose = require('mongoose');
 const ResourceYamlHistSchema = new mongoose.Schema({
   _id:{
     type: String,
+    alias: 'id',
   },
   org_id: {
     type: String,

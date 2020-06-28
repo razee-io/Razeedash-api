@@ -59,7 +59,7 @@ const commonClusterSearch = async (
   results = await models.Cluster.find(searchFilter)
     .sort({ _id: -1 })
     .limit(limit)
-    .lean();
+    .lean({ virtuals: true });
   return results;
 };
 
@@ -67,7 +67,7 @@ const clusterResolvers = {
   Query: {
     clusterByClusterID: async (
       parent,
-      { org_id: orgId, cluster_id: clusterId },
+      { orgId: orgId, clusterId: clusterId },
       context,
     ) => {
       const queryName = 'clusterByClusterID';
@@ -81,7 +81,8 @@ const clusterResolvers = {
         org_id: orgId,
         cluster_id: clusterId,
         ...conditions
-      }).lean();
+      }).lean({ virtuals: true });
+      for (const item of result){ item.id = item._id }
 
       return result;
     }, // end cluster by _id
@@ -94,7 +95,7 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgID: async (
       parent,
-      { org_id: orgId, limit, startingAfter },
+      { orgId: orgId, limit, startingAfter },
       context,
     ) => {
       const queryName = 'clustersByOrgID';
@@ -105,13 +106,16 @@ const clusterResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const searchFilter = {org_id: orgId, ...conditions};
-      return commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const result = commonClusterSearch(models, searchFilter, limit, startingAfter);
+      for (const item of result){ item.id = item._id }
+
+      return result;
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
     clusterZombies: async (
       parent,
-      { org_id: orgId, limit },
+      { orgId: orgId, limit },
       context,
     ) => {
       const queryName = 'clusterZombies';
@@ -126,19 +130,22 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterSearch(models, searchFilter, limit);
+      const result =  commonClusterSearch(models, searchFilter, limit);
+      for (const item of result){ item.id = item._id }
+
+      return result;
     }, // end clusterZombies
 
     clusterSearch: async (
       parent,
-      { org_id: orgId, filter, limit },
+      { orgId: orgId, filter, limit },
       context,
     ) => {
       const queryName = 'clusterSearch';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      // first get all users permitted cluster groups, 
+      // first get all users permitted cluster groups,
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
@@ -153,15 +160,17 @@ const clusterResolvers = {
       }
 
       logger.debug({req_id, user: whoIs(me), orgId, searchFilter}, `${queryName} search filer is.. `);
+      const result = commonClusterSearch(models, searchFilter, limit);
+      for (const item of result){ item.id = item._id }
       
-      return commonClusterSearch(models, searchFilter, limit);
+      return result;
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.
     // Active means the cluster information has been updated in the last day
     clusterCountByKubeVersion: async (
       parent,
-      { org_id: orgId },
+      { orgId: orgId },
       context,
     ) => {
       const queryName = 'clusterCountByKubeVersion';
@@ -191,6 +200,7 @@ const clusterResolvers = {
         { $sort: { _id: 1 } },
       ]);
 
+      for (const item of results){ item.id = item._id }
       return results;
     }, // end clusterCountByKubeVersion
   }, // end query
@@ -198,7 +208,7 @@ const clusterResolvers = {
   Mutation: {
     deleteClusterByClusterID: async (
       parent,
-      { org_id, cluster_id },
+      { orgId: org_id, clusterId: cluster_id },
       context,
     ) => {
       const queryName = 'deleteClusterByClusterID';
@@ -213,7 +223,7 @@ const clusterResolvers = {
 
         //TODO: soft delete the resources for now. We need to have a background process to
         // clean up S3 contents based on deleted flag. 
-        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, 
+        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id },
           {$set: { deleted: true }}, { upsert: false });
 
         logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
@@ -229,7 +239,7 @@ const clusterResolvers = {
 
     deleteClusters: async (
       parent,
-      { org_id },
+      { orgId: org_id },
       context,
     ) => {
       const queryName = 'deleteClusters';
@@ -257,7 +267,7 @@ const clusterResolvers = {
       }
     }, // end delete cluster by org_id 
 
-    registerCluster: async (parent, { org_id, registration }, context) => {
+    registerCluster: async (parent, { orgId: org_id, registration }, context) => {
       const queryName = 'registerCluster';
       const { models, me, req_id, logger } = context;
       logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
@@ -303,7 +313,7 @@ const clusterResolvers = {
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
-        return { url, org_id: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
+        return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
         throw error;

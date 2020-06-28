@@ -280,7 +280,7 @@ describe('groups graphql test suite', () => {
           data: { groups },
         },
       } = await groupApi.groups(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);

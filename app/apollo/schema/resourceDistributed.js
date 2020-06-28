@@ -19,29 +19,29 @@ const { gql } = require('apollo-server-express');
 const resourceDistributedSchema = gql`
   extend type Query {
     """
-    Return total resource count for given **org_id** from multiple DBs if configured.
+    Return total resource count for given **orgId** from multiple DBs if configured.
     """
-    resourcesDistributedCount(org_id: String!): Int
+    resourcesDistributedCount(orgId: String!): Int
 
     """
-    Search resources against **org_id**, **filter** string, and date ranges from multiple DBs if configured.
+    Search resources against **orgId**, **filter** string, and date ranges from multiple DBs if configured.
     """
-    resourcesDistributed (org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 50): [Resource!]
+    resourcesDistributed (orgId: String! filter: String fromDate: Date toDate: Date limit: Int = 50): [Resource!]
 
     """
-    Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges from multiple DBs if configured.
+    Search resources against **orgId**, **clusterId**, **filter** string, and date ranges from multiple DBs if configured.
     """
-    resourcesDistributedByCluster(org_id: String! cluster_id: String! filter: String limit: Int = 50): [Resource!]
+    resourcesDistributedByCluster(orgId: String! clusterId: String! filter: String limit: Int = 50): [Resource!]
 
     """
-    Return the resource by given resource **_id** from multiple DBs if configured.
+    Return the resource by given resource **id** from multiple DBs if configured.
     """
-    resourceDistributed (_id: ID!): Resource
+    resourceDistributed (id: ID!): Resource
 
     """
-    return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource from multiple DBs if configured.
+    return the resource by given **orgId**, **clusterId** and **selfLink** of the resource from multiple DBs if configured.
     """   
-    resourceDistributedByKeys(org_id: String! cluster_id: String! selfLink: String!): Resource
+    resourceDistributedByKeys(orgId: String! clusterId: String! selfLink: String!): Resource
   }
 `;
 

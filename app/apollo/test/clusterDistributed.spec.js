@@ -246,17 +246,16 @@ describe('clusterDistrubuted  graphql test suite', () => {
   it('get cluster by clusterID from distributed DBs', async () => {
     try {
       const clusterId1 = 'cluster_01';
-
       const {
         data: {
           data: { clusterDistributedByClusterID },
         },
       } = await clusterApi.byClusterIDDistributed(token, {
-        org_id: org01._id,
-        cluster_id: clusterId1,
+        orgId: org01._id,
+        clusterId: clusterId1,
       });
 
-      expect(clusterDistributedByClusterID.cluster_id).to.equal(clusterId1);
+      expect(clusterDistributedByClusterID.clusterId).to.equal(clusterId1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -274,7 +273,7 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clustersDistributedByOrgID },
         },
       } = await clusterApi.byOrgIDDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       expect(clustersDistributedByOrgID).to.be.an('array');
@@ -296,7 +295,7 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedSearch },
         },
       } = await clusterApi.searchDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         filter: 'cluster',
         limit: 50,
       });
@@ -320,14 +319,14 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedSearch },
         },
       } = await clusterApi.searchDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         filter: 'cluster',
         limit: 1,
       });
 
       expect(clusterDistributedSearch).to.be.an('array');
       expect(clusterDistributedSearch).to.have.length(2);
-      expect(clusterDistributedSearch[0].cluster_id).to.equal('cluster_03');
+      expect(clusterDistributedSearch[0].clusterId).to.equal('cluster_03');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -345,7 +344,7 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedSearch },
         },
       } = await clusterApi.searchDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       expect(clusterDistributedSearch).to.be.an('array');
@@ -367,13 +366,13 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedSearch },
         },
       } = await clusterApi.searchDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         limit: 1,
       });
 
       expect(clusterDistributedSearch).to.be.an('array');
       expect(clusterDistributedSearch).to.have.length(2);
-      expect(clusterDistributedSearch[0].cluster_id).to.equal('cluster_03');
+      expect(clusterDistributedSearch[0].clusterId).to.equal('cluster_03');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -393,13 +392,12 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedCountByKubeVersion },
         },
       } = await clusterApi.kubeVersionCountDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
-
       expect(clusterDistributedCountByKubeVersion).to.be.an('array');
       expect(clusterDistributedCountByKubeVersion).to.have.length(2);
-      expect(clusterDistributedCountByKubeVersion[0]._id.minor).to.equal('16');
-      expect(clusterDistributedCountByKubeVersion[1]._id.minor).to.equal('17');
+      expect(clusterDistributedCountByKubeVersion[0].id.minor).to.equal('16');
+      expect(clusterDistributedCountByKubeVersion[1].id.minor).to.equal('17');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -409,7 +407,7 @@ describe('clusterDistrubuted  graphql test suite', () => {
       throw error;
     }
   });
-
+  
   it('get all zombie clusters who have not been updated in last day from distributed DBs', async () => {
     try {
       const {
@@ -417,12 +415,12 @@ describe('clusterDistrubuted  graphql test suite', () => {
           data: { clusterDistributedZombies },
         },
       } = await clusterApi.zombiesDistributed(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       expect(clusterDistributedZombies).to.be.an('array');
       expect(clusterDistributedZombies).to.have.length(1);
-      expect(clusterDistributedZombies[0].cluster_id).to.equal('cluster_04');
+      expect(clusterDistributedZombies[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

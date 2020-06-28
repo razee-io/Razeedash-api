@@ -64,7 +64,7 @@ const commonClusterDistributedSearch = async (
     );
     resultsArray.map(resultSet => {
       return resultSet.map(result => {
-        return results.push(result.toJSON());
+        return results.push(result.toJSON({ virtuals: true }));
       });
     });
   } catch (error) {
@@ -81,7 +81,7 @@ const clusterDistributedResolvers = {
   Query: {
     clusterDistributedByClusterID: async (
       parent,
-      { org_id: orgId, cluster_id: clusterId },
+      { orgId: orgId, clusterId: clusterId },
       context,
     ) => {
       const queryName = 'clusterDistributedByClusterID';
@@ -101,7 +101,9 @@ const clusterDistributedResolvers = {
         });
 
         if (result != null) {
-          return result.toJSON();
+          result = result.toJSON({ virtuals: true });
+          for (const item of result){ item.id = item._id }
+          return result;
         }
       }
       return null;
@@ -109,7 +111,7 @@ const clusterDistributedResolvers = {
 
     clustersDistributedByOrgID: async (
       parent,
-      { org_id: orgId, limit },
+      { orgId: orgId, limit },
       context,
     ) => {
       const queryName = 'clustersDistributedByOrgID';
@@ -119,19 +121,22 @@ const clusterDistributedResolvers = {
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
-      return commonClusterDistributedSearch(
+      const result = commonClusterDistributedSearch(
         models,
         { org_id: orgId },
         limit,
         logger,
         queryName,
       );
+
+      for (const item of result){ item.id = item._id }
+      return result;
     }, // end clustersDistributedByOrgID
 
     // Find all the clusters that have not been updated in the last day
     clusterDistributedZombies: async (
       parent,
-      { org_id: orgId, limit },
+      { orgId: orgId, limit },
       context,
     ) => {
       const queryName = 'clusterDistributedZombies';
@@ -147,18 +152,21 @@ const clusterDistributedResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterDistributedSearch(
+      const result = commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
+
+      for (const item of result){ item.id = item._id }
+      return result;
     }, // end clusterDistributedZombiess
 
     clusterDistributedSearch: async (
       parent,
-      { org_id: orgId, filter, limit = 50 },
+      { orgId: orgId, filter, limit = 50 },
       context,
     ) => {
       const queryName = 'clusterDistributedSearch';
@@ -170,31 +178,37 @@ const clusterDistributedResolvers = {
 
       // If no filter provide, just query based on orig id
       if (!filter) {
-        return commonClusterDistributedSearch(
+        const result =  commonClusterDistributedSearch(
           models,
           { org_id: orgId },
           limit,
           logger,
           queryName,
         );
+
+        for (const item of result){ item.id = item._id }
+        return result;
       }
 
       // Filter provided, build the search filter and query
       const searchFilter = buildSearchForClusterName(orgId, filter);
-      return commonClusterDistributedSearch(
+      const result = commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
+
+      for (const item of result){ item.id = item._id }
+      return result;
     }, // end clusterDistributedSearch
 
     // Summarize the number clusters by version for active clusters.
     // Active means the cluster information has been updated in the last day
     clusterDistributedCountByKubeVersion: async (
       parent,
-      { org_id: orgId },
+      { orgId: orgId },
       context,
     ) => {
       const queryName = 'clusterDistributedCountByKubeVersion';
@@ -259,6 +273,7 @@ const clusterDistributedResolvers = {
         }
       }
       logger.debug(`${queryName} totalResults: ${JSON.stringify(totalResults, null, 4)} for req_id ${req_id}`);
+      for (const item of totalResults){ item.id = item._id }
       return totalResults;
     }, // end clusterDistributedCountByKubeVersion
   }, // end query

@@ -26,14 +26,14 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const groupResolvers = {
   Query: {
-    groups: async(parent, { org_id }, context) => {
+    groups: async(parent, { orgId: org_id }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'groups';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
       let groups;
       try{
-        groups = await models.Group.find({ org_id: org_id }).lean();
+        groups = await models.Group.find({ org_id: org_id }).lean({ virtuals: true });
         const ownerIds = _.map(groups, 'owner');
         const owners = await models.User.getBasicUsersByIds(ownerIds);
   
@@ -47,14 +47,14 @@ const groupResolvers = {
       }
       return groups;
     },
-    group: async(parent, { org_id: org_id, uuid }, context) => {
+    group: async(parent, { orgId: org_id, uuid }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'group';
       logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
-        let group = await models.Group.findOne({ org_id: org_id, uuid }).lean();
+        let group = await models.Group.findOne({ org_id: org_id, uuid }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
@@ -69,14 +69,14 @@ const groupResolvers = {
         throw err;
       }
     },
-    groupByName: async(parent, { org_id, name }, context) => {
+    groupByName: async(parent, { orgId: org_id, name }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'groupByName';
       logger.debug({req_id, user: whoIs(me), org_id, name}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
-        let group = await models.Group.findOne({ org_id: org_id, name }).lean();
+        let group = await models.Group.findOne({ org_id: org_id, name }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
@@ -93,7 +93,7 @@ const groupResolvers = {
     },    
   },
   Mutation: {
-    addGroup: async (parent, { org_id, name }, context)=>{
+    addGroup: async (parent, { orgId: org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -122,7 +122,7 @@ const groupResolvers = {
       }
     },
 
-    removeGroup: async (parent, { org_id, uuid }, context)=>{
+    removeGroup: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
@@ -159,7 +159,7 @@ const groupResolvers = {
       }
     },
 
-    removeGroupByName: async (parent, { org_id, name }, context)=>{
+    removeGroupByName: async (parent, { orgId: org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroupByName';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -195,7 +195,7 @@ const groupResolvers = {
       }
     },
 
-    groupClusters: async (parent, { org_id, uuid, clusters }, context)=>{
+    groupClusters: async (parent, { orgId: org_id, uuid, clusters }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'groupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
@@ -224,7 +224,7 @@ const groupResolvers = {
       }
     },
 
-    unGroupClusters: async (parent, { org_id, uuid, clusters }, context)=>{
+    unGroupClusters: async (parent, { orgId: org_id, uuid, clusters }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'unGroupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);

@@ -32,7 +32,7 @@ const userSchema = gql`
       username: String!
       email: String!
       password: String!
-      org_name: String
+      orgName: String
       role: String
     ): Token!
 
@@ -52,7 +52,7 @@ const userSchema = gql`
   type User {
     id: ID!
     type: String!
-    org_id: String!
+    orgId: String!
     identifier: String
     email: String
     role: String

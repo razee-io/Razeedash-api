@@ -20,14 +20,14 @@ const resourceSchema = gql`
   scalar JSON
   
   type ClusterInfo {
-    cluster_id: String!
+    clusterId: String!
     name: String!
   }
 
   type Resource {
-    _id: ID!
-    org_id: String!
-    cluster_id: String!
+    id: ID!
+    orgId: String!
+    clusterId: String!
     cluster: ClusterInfo!
     selfLink: String!
     hash: String
@@ -50,7 +50,7 @@ const resourceSchema = gql`
   }
   
   type ResourceHistObj{
-    _id: String!
+    id: String!
     updated: Date!
   }
   type ResourceHistList{
@@ -58,7 +58,7 @@ const resourceSchema = gql`
     items: [ResourceHistObj!]!
   }
   type ResourceContentObj{
-    _id: String!
+    id: String!
     content: String!
     updated: Date!
   }
@@ -67,48 +67,47 @@ const resourceSchema = gql`
 
   extend type Query {
     """
-    Return total resource count for given **org_id**.
+    Return total resource count for given **orgId**.
     """
-    resourcesCount(org_id: String!): Int
+    resourcesCount(orgId: String!): Int
 
     """
-    Search resources against **org_id**, **filter** string, and date ranges.
+    Search resources against **orgId**, **filter** string, and date ranges.
     """
-    resources(org_id: String! filter: String fromDate: Date toDate: Date limit: Int = 500, kinds: [String!], sort: [SortObj!]): ResourcesList!
+    resources(orgId: String! filter: String fromDate: Date toDate: Date limit: Int = 500, kinds: [String!], sort: [SortObj!]): ResourcesList!
 
     """
-    Search resources against **org_id**, **cluster_id**, **filter** string, and date ranges.
+    Search resources against **orgId**, **clusterId**, **filter** string, and date ranges.
     """
-    resourcesByCluster(org_id: String! cluster_id: String! filter: String limit: Int = 500): ResourcesList!
+    resourcesByCluster(orgId: String! clusterId: String! filter: String limit: Int = 500): ResourcesList!
 
     """
-    Return the resource by given resource **_id**.
+    Return the resource by given resource **id**.
     """
-    resource(org_id: String!, _id: String!, histId: String): Resource
+    resource(orgId: String!, id: String!, histId: String): Resource
 
     """
-    return the resource by given **org_id**, **cluster_id** and **selfLink** of the resource.
+    return the resource by given **orgId**, **clusterId** and **selfLink** of the resource.
     """
-    resourceByKeys(org_id: String! cluster_id: String! selfLink: String!): Resource
+    resourceByKeys(orgId: String! clusterId: String! selfLink: String!): Resource
 
     """
-    Search resources against **org_id** and **subscription_id**.
+    Search resources against **orgId** and **subscriptionId**.
     """
-    resourcesBySubscription(org_id: String! subscription_id: String!): ResourcesList!
-    
+    resourcesBySubscription(orgId: String! subscriptionId: String!): ResourcesList!
     """
     Gets the yaml history for a resource
     """
-    resourceHistory(org_id: String!, cluster_id: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
+    resourceHistory(orgId: String!, clusterId: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
     
     """
     Gets the content for a yaml hist item
     """
-    resourceContent(org_id: String!, cluster_id: String!, resourceSelfLink: String!, histId: String): ResourceContentObj
+    resourceContent(orgId: String!, clusterId: String!, resourceSelfLink: String!, histId: String): ResourceContentObj
   }
 
   extend type Subscription {
-    resourceUpdated(org_id: String!, filter: String): ResourceUpdated!
+    resourceUpdated(orgId: String!, filter: String): ResourceUpdated!
   }
 `;
 

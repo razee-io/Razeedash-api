@@ -22,13 +22,13 @@ const groupFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!) {
-            groups( org_id: $org_id ) {
+          query($orgId: String!) {
+            groups(orgId: $orgId ) {
                 uuid
-                org_id
+                orgId
                 name
                 owner {
-                  _id
+                  id
                   name
                 }
                 created

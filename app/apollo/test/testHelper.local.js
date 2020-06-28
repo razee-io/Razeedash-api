@@ -50,7 +50,7 @@ async function signUpUser (models, api, userData) {
       username: userData.username,
       email: userData.email,
       password: userData.password,
-      org_name: userData.orgName,
+      orgName: userData.orgName,
       role: userData.role,
     });
     return result0.data.data.signUp.token;

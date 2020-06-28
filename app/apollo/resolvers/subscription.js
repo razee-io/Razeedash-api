@@ -46,7 +46,7 @@ async function validateGroups(org_id, groups, context) {
 const subscriptionResolvers = {
   Query: {
     // Cluster-facing API
-    subscriptionsByCluster: async(parent, { cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
+    subscriptionsByCluster: async(parent, { clusterId: cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByCluster';
       logger.debug({req_id, user: whoIs(me), cluster_id}, `${query} enter`);
@@ -86,7 +86,7 @@ const subscriptionResolvers = {
       }
       return urls;
     },
-    subscriptions: async(parent, { org_id }, context) => {
+    subscriptions: async(parent, { orgId: org_id }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -95,7 +95,7 @@ const subscriptionResolvers = {
       const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
       logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
       try{
-        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}, { lean: 1 });
+        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
       }catch(err){
         logger.error(err);
         throw err;
@@ -110,14 +110,14 @@ const subscriptionResolvers = {
 
       return subscriptions;
     },
-    subscription: async(parent, { org_id, uuid }, context) => {
+    subscription: async(parent, { orgId: org_id, uuid }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       try{
-        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { org_id }, { models, me, req_id, logger });
+        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, { models, me, req_id, logger });
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid);
         });
@@ -129,7 +129,7 @@ const subscriptionResolvers = {
     },
   },
   Mutation: {
-    addSubscription: async (parent, { org_id, name, groups, channel_uuid, version_uuid }, context)=>{
+    addSubscription: async (parent, { orgId: org_id, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -172,7 +172,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { org_id, uuid, name, groups, channel_uuid, version_uuid }, context)=>{
+    editSubscription: async (parent, { orgId: org_id, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -219,7 +219,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    setSubscription: async (parent, { org_id, uuid, version_uuid }, context)=>{
+    setSubscription: async (parent, { orgId: org_id, uuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -272,7 +272,7 @@ const subscriptionResolvers = {
       }
     },
 
-    removeSubscription: async (parent, { org_id, uuid }, context)=>{
+    removeSubscription: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -307,7 +307,7 @@ const subscriptionResolvers = {
         // Sends a message back to a subscribed client
         // 'parent' is the object representing the subscription that was updated
         // 
-        return { 'has_updates': true };
+        return { 'hasUpdates': true };
       },
 
       subscribe: withFilter(
@@ -343,7 +343,7 @@ const subscriptionResolvers = {
           const { logger } = context;
           let found = true;
 
-          logger.info('Verify client is authenticated and org_id matches the updated subscription org_id');
+          logger.info('Verify client is authenticated and orgId matches the updated subscription orgId');
           const { subscriptionUpdated } = parent;
 
           const orgKey = context.apiKey || '';
@@ -358,7 +358,7 @@ const subscriptionResolvers = {
             return Boolean(false);
           }
 
-          if(subscriptionUpdated.data.org_id !== orgId) {
+          if(subscriptionUpdated.data.orgId !== orgId) {
             logger.error('wrong org id for this subscription.  returning false');
             found = false;
           }

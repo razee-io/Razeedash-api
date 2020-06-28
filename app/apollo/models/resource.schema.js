@@ -19,9 +19,11 @@ const mongoose = require('mongoose');
 const ResourceSchema = new mongoose.Schema({
   org_id: {
     type: String,
+    alias: 'orgId',
   },
   cluster_id: {
     type: String,
+    alias: 'clusterId',
   },
   selfLink: {
     type: String,

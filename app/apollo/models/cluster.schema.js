@@ -19,9 +19,11 @@ const { CLUSTER_REG_STATES } = require('./const');
 const ClusterSchema = new mongoose.Schema({
   org_id: {
     type: String,
+    alias: 'orgId',
   },
   cluster_id: {
     type: String,
+    alias: 'clusterId',
   },
   groups: [
     {
@@ -68,6 +70,7 @@ const ClusterSchema = new mongoose.Schema({
     {
       user_id: {
         type: String,
+        alias: "userId",
       },
       content: {
         type: String,
@@ -85,7 +88,8 @@ const ClusterSchema = new mongoose.Schema({
   reg_state: {
     type: String,
     enum: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING, CLUSTER_REG_STATES.REGISTERED], 
-    default: CLUSTER_REG_STATES.REGISTERING, 
+    default: CLUSTER_REG_STATES.REGISTERING,
+    alias: "regState",
   },
 
   dirty: {

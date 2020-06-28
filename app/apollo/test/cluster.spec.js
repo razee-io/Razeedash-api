@@ -232,9 +232,9 @@ describe('cluster graphql test suite', () => {
     await createClusters();
 
     // Can be uncommented if you want to see the test data that was added to the DB
-    // await getPresetOrgs();
-    // await getPresetUsers();
-    // await getPresetClusters();
+    //await getPresetOrgs();
+    //await getPresetUsers();
+    //await getPresetClusters();
 
     token = await signInUser(models, resourceApi, user01Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
@@ -253,11 +253,11 @@ describe('cluster graphql test suite', () => {
           data: { clusterByClusterID },
         },
       } = await clusterApi.byClusterID(token, {
-        org_id: org01._id,
-        cluster_id: clusterId1,
+        orgId: org01._id,
+        clusterId: clusterId1,
       });
 
-      expect(clusterByClusterID.cluster_id).to.equal(clusterId1);
+      expect(clusterByClusterID.clusterId).to.equal(clusterId1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -275,7 +275,7 @@ describe('cluster graphql test suite', () => {
           data: { clustersByOrgID },
         },
       } = await clusterApi.byOrgID(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       expect(clustersByOrgID).to.be.an('array');
@@ -299,16 +299,16 @@ describe('cluster graphql test suite', () => {
           data: { clustersByOrgID },
         },
       } = await clusterApi.byOrgID(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         limit: 2,
       });
-
+      
       expect(clustersByOrgID).to.be.an('array');
       expect(clustersByOrgID).to.have.length(2);
-      expect(clustersByOrgID[0].cluster_id).to.equal('cluster_04');
-      expect(clustersByOrgID[1].cluster_id).to.equal('cluster_03');
+      expect(clustersByOrgID[0].clusterId).to.equal('cluster_04');
+      expect(clustersByOrgID[1].clusterId).to.equal('cluster_03');
 
-      next = clustersByOrgID[1]._id;
+      next = clustersByOrgID[1].id;
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -317,22 +317,22 @@ describe('cluster graphql test suite', () => {
       }
       throw error;
     }
-
+    
     try {
       const {
         data: {
           data: { clustersByOrgID },
         },
       } = await clusterApi.byOrgID(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         limit: 2,
         startingAfter: next,
       });
 
       expect(clustersByOrgID).to.be.an('array');
       expect(clustersByOrgID).to.have.length(2);
-      expect(clustersByOrgID[0].cluster_id).to.equal('cluster_02');
-      expect(clustersByOrgID[1].cluster_id).to.equal('cluster_01');
+      expect(clustersByOrgID[0].clusterId).to.equal('cluster_02');
+      expect(clustersByOrgID[1].clusterId).to.equal('cluster_01');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -350,7 +350,7 @@ describe('cluster graphql test suite', () => {
           data: { clusterSearch },
         },
       } = await clusterApi.search(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         filter: 'cluster',
         limit: 45,
       });
@@ -374,14 +374,14 @@ describe('cluster graphql test suite', () => {
           data: { clusterSearch },
         },
       } = await clusterApi.search(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         filter: 'cluster',
         limit: 1,
       });
 
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(1);
-      expect(clusterSearch[0].cluster_id).to.equal('cluster_04');
+      expect(clusterSearch[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -399,7 +399,7 @@ describe('cluster graphql test suite', () => {
           data: { clusterSearch },
         },
       } = await clusterApi.search(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
 
       expect(clusterSearch).to.be.an('array');
@@ -421,13 +421,13 @@ describe('cluster graphql test suite', () => {
           data: { clusterSearch },
         },
       } = await clusterApi.search(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         limit: 1,
       });
 
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(1);
-      expect(clusterSearch[0].cluster_id).to.equal('cluster_04');
+      expect(clusterSearch[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -444,11 +444,11 @@ describe('cluster graphql test suite', () => {
         data: {
           data: { clusterCountByKubeVersion },
         },
-      } = await clusterApi.kubeVersionCount(token, { org_id: org01._id });
+      } = await clusterApi.kubeVersionCount(token, { orgId: org01._id });
       expect(clusterCountByKubeVersion).to.be.an('array');
       expect(clusterCountByKubeVersion).to.have.length(2);
-      expect(clusterCountByKubeVersion[0]._id.minor).to.equal('16');
-      expect(clusterCountByKubeVersion[1]._id.minor).to.equal('17');
+      expect(clusterCountByKubeVersion[0].id.minor).to.equal('16');
+      expect(clusterCountByKubeVersion[1].id.minor).to.equal('17');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -465,11 +465,11 @@ describe('cluster graphql test suite', () => {
         data: {
           data: { clusterZombies },
         },
-      } = await clusterApi.zombies(token, { org_id: org01._id });
+      } = await clusterApi.zombies(token, { orgId: org01._id });
 
       expect(clusterZombies).to.be.an('array');
       expect(clusterZombies).to.have.length(1);
-      expect(clusterZombies[0].cluster_id).to.equal('cluster_04');
+      expect(clusterZombies[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -502,8 +502,8 @@ describe('cluster graphql test suite', () => {
       });
 
       const data = await clusterApi.deleteClusterByClusterID(token, {
-        org_id: org01._id,
-        cluster_id: clusterIdToBeDeleted,
+        orgId: org01._id,
+        clusterId: clusterIdToBeDeleted,
       });
       expect(data.data.data).to.equal(null);
       expect(data.data.errors[0].message).to.be.a('string');
@@ -516,7 +516,6 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
-
 
   it('delete cluster by clusterID by an admin user', async () => {
     try {
@@ -555,8 +554,8 @@ describe('cluster graphql test suite', () => {
           data: { deleteClusterByClusterID },
         },
       } = await clusterApi.deleteClusterByClusterID(adminToken, {
-        org_id: org01._id,
-        cluster_id: clusterIdToBeDeleted,
+        orgId: org01._id,
+        clusterId: clusterIdToBeDeleted,
       });
 
       expect(deleteClusterByClusterID.deletedClusterCount).to.equal(1);
@@ -570,7 +569,6 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
-
 
   it('delete clusters by an admin user', async () => {
     try {
@@ -609,8 +607,8 @@ describe('cluster graphql test suite', () => {
           data: { deleteClusters },
         },
       } = await clusterApi.deleteClusters(adminToken, {
-        org_id: org01._id,
-        cluster_id: clusterIdToBeDeleted,
+        orgId: org01._id,
+        clusterId: clusterIdToBeDeleted,
       });
 
       expect(deleteClusters.deletedClusterCount).to.be.above(0);
@@ -632,7 +630,7 @@ describe('cluster graphql test suite', () => {
           data: { registerCluster },
         },
       } = await clusterApi.registerCluster(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         registration: { name: 'my-cluster' },
       });
       expect(registerCluster.url).to.be.an('string');

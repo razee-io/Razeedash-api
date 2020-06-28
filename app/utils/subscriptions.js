@@ -23,10 +23,10 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions) => {
       url = `api/v1/channels/${subscription.channel}/${foundVersion[0].uuid}`;
     } 
     return {
-      subscription_name: subscription.name, 
-      subscription_channel: subscription.channel, 
-      subscription_version: subscription.version, 
-      subscription_uuid: subscription.uuid, 
+      subscriptionName: subscription.name,
+      subscriptionChannel: subscription.channel,
+      subscriptionVersion: subscription.version,
+      subscriptionUuid: subscription.uuid,
       url: url
     };
   });
