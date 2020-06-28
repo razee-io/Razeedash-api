@@ -101,9 +101,7 @@ const clusterDistributedResolvers = {
         });
 
         if (result != null) {
-          result = result.toJSON({ virtuals: true });
-          for (const item of result){ item.id = item._id }
-          return result;
+          return result.toJSON({ virtuals: true });
         }
       }
       return null;
@@ -121,16 +119,13 @@ const clusterDistributedResolvers = {
       // Validate user, throw error if not valid
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
-      const result = commonClusterDistributedSearch(
+      return commonClusterDistributedSearch(
         models,
         { org_id: orgId },
         limit,
         logger,
         queryName,
       );
-
-      for (const item of result){ item.id = item._id }
-      return result;
     }, // end clustersDistributedByOrgID
 
     // Find all the clusters that have not been updated in the last day
@@ -152,16 +147,13 @@ const clusterDistributedResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      const result = commonClusterDistributedSearch(
+      return commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
-
-      for (const item of result){ item.id = item._id }
-      return result;
     }, // end clusterDistributedZombiess
 
     clusterDistributedSearch: async (
@@ -178,30 +170,24 @@ const clusterDistributedResolvers = {
 
       // If no filter provide, just query based on orig id
       if (!filter) {
-        const result =  commonClusterDistributedSearch(
+        return commonClusterDistributedSearch(
           models,
           { org_id: orgId },
           limit,
           logger,
           queryName,
         );
-
-        for (const item of result){ item.id = item._id }
-        return result;
       }
 
       // Filter provided, build the search filter and query
       const searchFilter = buildSearchForClusterName(orgId, filter);
-      const result = commonClusterDistributedSearch(
+      return commonClusterDistributedSearch(
         models,
         searchFilter,
         limit,
         logger,
         queryName,
       );
-
-      for (const item of result){ item.id = item._id }
-      return result;
     }, // end clusterDistributedSearch
 
     // Summarize the number clusters by version for active clusters.

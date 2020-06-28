@@ -82,7 +82,6 @@ const clusterResolvers = {
         cluster_id: clusterId,
         ...conditions
       }).lean({ virtuals: true });
-      for (const item of result){ item.id = item._id }
 
       return result;
     }, // end cluster by _id
@@ -106,10 +105,7 @@ const clusterResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const searchFilter = {org_id: orgId, ...conditions};
-      const result = commonClusterSearch(models, searchFilter, limit, startingAfter);
-      for (const item of result){ item.id = item._id }
-
-      return result;
+      return commonClusterSearch(models, searchFilter, limit, startingAfter);
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
@@ -130,10 +126,7 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      const result =  commonClusterSearch(models, searchFilter, limit);
-      for (const item of result){ item.id = item._id }
-
-      return result;
+      return commonClusterSearch(models, searchFilter, limit);
     }, // end clusterZombies
 
     clusterSearch: async (
@@ -160,10 +153,8 @@ const clusterResolvers = {
       }
 
       logger.debug({req_id, user: whoIs(me), orgId, searchFilter}, `${queryName} search filer is.. `);
-      const result = commonClusterSearch(models, searchFilter, limit);
-      for (const item of result){ item.id = item._id }
       
-      return result;
+      return commonClusterSearch(models, searchFilter, limit);
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.
