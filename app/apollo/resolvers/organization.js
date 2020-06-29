@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { ACTIONS, TYPES } = require('../models/const');
+const { RDD_STATIC_ARGS, ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 
 const organizationResolvers = {
@@ -26,7 +26,12 @@ const organizationResolvers = {
       logger.debug({req_id, org_id}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
 
-      const url = await models.Organization.getRegistrationUrl(org_id, context);
+      let url = await models.Organization.getRegistrationUrl(org_id, context);
+      if (RDD_STATIC_ARGS.length > 0) {
+        RDD_STATIC_ARGS.forEach(arg => {
+          url += `&args=${arg}`;
+        });
+      }
       return url;
     },
 
