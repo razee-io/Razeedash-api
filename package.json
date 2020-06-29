@@ -28,7 +28,7 @@
   "contributors": [],
   "dependencies": {
     "apollo-metrics": "^1.0.1",
-    "apollo-server": "^2.14.5",
+    "apollo-server": "^2.15.0",
     "apollo-server-express": "^2.14.5",
     "aws-sdk": "^2.698.0",
     "bcrypt": "^5.0.0",
