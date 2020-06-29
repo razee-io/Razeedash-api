@@ -33,13 +33,13 @@ const clusterDistributedSchema = gql`
     ): [Cluster]!
 
     """
-    Return clusters based on **orgId** and **filter** on **cluster_id** from multiple DBs if configured.
+    Return clusters based on **orgId** and **filter** on **clusterId** from multiple DBs if configured.
     """
     clusterDistributedSearch(
       orgId: String!
       """
-      **filter**: applies to **cluster_id** field.
-      If no **filter** is provided, this returns clusters based on just **orig_id**.
+      **filter**: applies to **clusterId** field.
+      If no **filter** is provided, this returns clusters based on just **orgId**.
       """
       filter: String
       "**limit**: Number of docs to return. default 50, 0 means return all"

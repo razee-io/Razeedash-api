@@ -165,6 +165,10 @@ UserPassportLocalSchema.statics.createToken = async (
 
 UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
+  let data = me.meta.orgs[0];
+  data.id = data._id;
+  delete(data._id);
+
   if (result != null) {
     result = {
       type: me.type,

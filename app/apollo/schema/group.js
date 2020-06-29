@@ -49,7 +49,7 @@ const groupSchema = gql`
     group(orgId: String! uuid: String!): GroupDetail
 
     """
-    Gets a group detail for org_id and name
+    Gets a group detail for orgId and name
     """
     groupByName(orgId: String! name: String!): GroupDetail
   }
