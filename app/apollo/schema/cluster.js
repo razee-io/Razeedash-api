@@ -70,27 +70,27 @@ const clusterSchema = gql`
     """
     Return a cluster based on **orgId** and **clusterId**.
     """
-    clusterByClusterID(orgId: String!, clusterId: String!): Cluster!
+    clusterByClusterId(orgId: String!, clusterId: String!): Cluster!
 
     """
     Return clusters based on **orgId**, sorted with newest document first.
     """
-    clustersByOrgID(
+    clustersByOrgId(
       orgId: String!
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
-      "**startingAfter**: For pagination. Specify the **_id** of the document you want results older than."
+      "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String
     ): [Cluster]!
 
     """
-    Return clusters based on **orgId** and **filter** on **cluster_id**. Sorted with newest document first.
+    Return clusters based on **orgId** and **filter** on **clusterId**. Sorted with newest document first.
     """
     clusterSearch(
       orgId: String!
       """
-      **filter**: applies to **cluster_id** field.
-      If no **filter** is provided, this returns clusters based on just **orig_id**.
+      **filter**: applies to **clusterId** field.
+      If no **filter** is provided, this returns clusters based on just **origId**.
       """
       filter: String
       "**limit**: Number of docs to return. default 50, 0 means return all"
@@ -108,7 +108,7 @@ const clusterSchema = gql`
     ): [Cluster]
 
     """
-    Return counts of different kubernetes versions deployed in **org_id**. Only active
+    Return counts of different kubernetes versions deployed in **orgId**. Only active
     clusters are counted (**updated** field updated in last day).
     """
     clusterCountByKubeVersion(orgId: String!): [ClusterCountByKubeVersion]!
@@ -118,7 +118,7 @@ const clusterSchema = gql`
     """
     Delete a cluster and all resources under the cluster
     """
-    deleteClusterByClusterID(orgId: String!, clusterId: String!): DeleteClustersResponse!
+    deleteClusterByClusterId(orgId: String!, clusterId: String!): DeleteClustersResponse!
 
     """
     Delete all clusters under an organization and all resources under the deleted clusters

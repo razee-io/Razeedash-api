@@ -79,12 +79,12 @@ const commonClusterDistributedSearch = async (
 
 const clusterDistributedResolvers = {
   Query: {
-    clusterDistributedByClusterID: async (
+    clusterDistributedByClusterId: async (
       parent,
       { orgId: orgId, clusterId: clusterId },
       context,
     ) => {
-      const queryName = 'clusterDistributedByClusterID';
+      const queryName = 'clusterDistributedByClusterId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
@@ -105,14 +105,14 @@ const clusterDistributedResolvers = {
         }
       }
       return null;
-    }, // end clusterDistributedByClusterID
+    }, // end clusterDistributedByClusterId
 
-    clustersDistributedByOrgID: async (
+    clustersDistributedByOrgId: async (
       parent,
       { orgId: orgId, limit },
       context,
     ) => {
-      const queryName = 'clustersDistributedByOrgID';
+      const queryName = 'clustersDistributedByOrgId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
@@ -126,7 +126,7 @@ const clusterDistributedResolvers = {
         logger,
         queryName,
       );
-    }, // end clustersDistributedByOrgID
+    }, // end clustersDistributedByOrgId
 
     // Find all the clusters that have not been updated in the last day
     clusterDistributedZombies: async (

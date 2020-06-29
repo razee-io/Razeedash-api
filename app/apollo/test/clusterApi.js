@@ -23,7 +23,7 @@ const clusterFunc = grahqlUrl => {
       {
         query: `
           query($orgId: String! $clusterId: String!) {
-            clusterByClusterID(orgId: $orgId clusterId: $clusterId) {
+            clusterByClusterId(orgId: $orgId clusterId: $clusterId) {
               id
               orgId
               clusterId
@@ -45,7 +45,7 @@ const clusterFunc = grahqlUrl => {
       {
         query: `
           query($orgId: String! $clusterId: String!) {
-            clusterDistributedByClusterID(orgId: $orgId clusterId: $clusterId) {
+            clusterDistributedByClusterId(orgId: $orgId clusterId: $clusterId) {
               id
               orgId
               clusterId
@@ -67,7 +67,7 @@ const clusterFunc = grahqlUrl => {
       {
         query: `
           query($orgId: String!  $limit: Int, $startingAfter: String) {
-            clustersByOrgID(orgId: $orgId limit: $limit startingAfter: $startingAfter) {
+            clustersByOrgId(orgId: $orgId limit: $limit startingAfter: $startingAfter) {
               id
               orgId
               clusterId
@@ -89,7 +89,7 @@ const clusterFunc = grahqlUrl => {
       {
         query: `
           query($orgId: String $limit: Int) {
-            clustersDistributedByOrgID(orgId: $orgId limit: $limit) {
+            clustersDistributedByOrgId(orgId: $orgId limit: $limit) {
               id
               orgId
               clusterId
@@ -243,13 +243,13 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
-  const deleteClusterByClusterID = async (token, variables) =>
+  const deleteClusterByClusterId = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
           mutation($orgId: String! $clusterId: String!) {
-            deleteClusterByClusterID(orgId: $orgId clusterId: $clusterId) {
+            deleteClusterByClusterId(orgId: $orgId clusterId: $clusterId) {
               deletedClusterCount
               deletedResourceCount
           }
@@ -315,7 +315,7 @@ const clusterFunc = grahqlUrl => {
     kubeVersionCountDistributed,
     zombies,
     zombiesDistributed,
-    deleteClusterByClusterID,
+    deleteClusterByClusterId,
     deleteClusters,
     registerCluster,
   };

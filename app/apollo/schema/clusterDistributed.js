@@ -21,12 +21,12 @@ const clusterDistributedSchema = gql`
     """
     Return a cluster based on **orgId** and **clusterId**. Multiple DBs will be searched if configured.
     """
-    clusterDistributedByClusterID(orgId: String!, clusterId: String!): Cluster
+    clusterDistributedByClusterId(orgId: String!, clusterId: String!): Cluster
 
     """
     Return clusters based on **orgId** from multiple DBs if configured.
     """
-    clustersDistributedByOrgID(
+    clustersDistributedByOrgId(
       orgId: String
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50

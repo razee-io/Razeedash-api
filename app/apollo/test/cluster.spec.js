@@ -250,14 +250,14 @@ describe('cluster graphql test suite', () => {
       const clusterId1 = 'cluster_01';
       const {
         data: {
-          data: { clusterByClusterID },
+          data: { clusterByClusterId },
         },
       } = await clusterApi.byClusterID(token, {
         orgId: org01._id,
         clusterId: clusterId1,
       });
 
-      expect(clusterByClusterID.clusterId).to.equal(clusterId1);
+      expect(clusterByClusterId.clusterId).to.equal(clusterId1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -272,14 +272,14 @@ describe('cluster graphql test suite', () => {
     try {
       const {
         data: {
-          data: { clustersByOrgID },
+          data: { clustersByOrgId },
         },
       } = await clusterApi.byOrgID(token, {
         orgId: org01._id,
       });
 
-      expect(clustersByOrgID).to.be.an('array');
-      expect(clustersByOrgID).to.have.length(4);
+      expect(clustersByOrgId).to.be.an('array');
+      expect(clustersByOrgId).to.have.length(4);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -296,19 +296,19 @@ describe('cluster graphql test suite', () => {
     try {
       const {
         data: {
-          data: { clustersByOrgID },
+          data: { clustersByOrgId },
         },
       } = await clusterApi.byOrgID(token, {
         orgId: org01._id,
         limit: 2,
       });
       
-      expect(clustersByOrgID).to.be.an('array');
-      expect(clustersByOrgID).to.have.length(2);
-      expect(clustersByOrgID[0].clusterId).to.equal('cluster_04');
-      expect(clustersByOrgID[1].clusterId).to.equal('cluster_03');
+      expect(clustersByOrgId).to.be.an('array');
+      expect(clustersByOrgId).to.have.length(2);
+      expect(clustersByOrgId[0].clusterId).to.equal('cluster_04');
+      expect(clustersByOrgId[1].clusterId).to.equal('cluster_03');
 
-      next = clustersByOrgID[1].id;
+      next = clustersByOrgId[1].id;
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -321,7 +321,7 @@ describe('cluster graphql test suite', () => {
     try {
       const {
         data: {
-          data: { clustersByOrgID },
+          data: { clustersByOrgId },
         },
       } = await clusterApi.byOrgID(token, {
         orgId: org01._id,
@@ -329,10 +329,10 @@ describe('cluster graphql test suite', () => {
         startingAfter: next,
       });
 
-      expect(clustersByOrgID).to.be.an('array');
-      expect(clustersByOrgID).to.have.length(2);
-      expect(clustersByOrgID[0].clusterId).to.equal('cluster_02');
-      expect(clustersByOrgID[1].clusterId).to.equal('cluster_01');
+      expect(clustersByOrgId).to.be.an('array');
+      expect(clustersByOrgId).to.have.length(2);
+      expect(clustersByOrgId[0].clusterId).to.equal('cluster_02');
+      expect(clustersByOrgId[1].clusterId).to.equal('cluster_01');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -501,7 +501,7 @@ describe('cluster graphql test suite', () => {
         },
       });
 
-      const data = await clusterApi.deleteClusterByClusterID(token, {
+      const data = await clusterApi.deleteClusterByClusterId(token, {
         orgId: org01._id,
         clusterId: clusterIdToBeDeleted,
       });
@@ -551,15 +551,15 @@ describe('cluster graphql test suite', () => {
 
       const {
         data: {
-          data: { deleteClusterByClusterID },
+          data: { deleteClusterByClusterId },
         },
-      } = await clusterApi.deleteClusterByClusterID(adminToken, {
+      } = await clusterApi.deleteClusterByClusterId(adminToken, {
         orgId: org01._id,
         clusterId: clusterIdToBeDeleted,
       });
 
-      expect(deleteClusterByClusterID.deletedClusterCount).to.equal(1);
-      expect(deleteClusterByClusterID.deletedClusterCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

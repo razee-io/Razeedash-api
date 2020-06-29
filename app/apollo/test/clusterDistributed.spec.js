@@ -248,14 +248,14 @@ describe('clusterDistrubuted  graphql test suite', () => {
       const clusterId1 = 'cluster_01';
       const {
         data: {
-          data: { clusterDistributedByClusterID },
+          data: { clusterDistributedByClusterId },
         },
       } = await clusterApi.byClusterIDDistributed(token, {
         orgId: org01._id,
         clusterId: clusterId1,
       });
 
-      expect(clusterDistributedByClusterID.clusterId).to.equal(clusterId1);
+      expect(clusterDistributedByClusterId.clusterId).to.equal(clusterId1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -270,14 +270,14 @@ describe('clusterDistrubuted  graphql test suite', () => {
     try {
       const {
         data: {
-          data: { clustersDistributedByOrgID },
+          data: { clustersDistributedByOrgId },
         },
       } = await clusterApi.byOrgIDDistributed(token, {
         orgId: org01._id,
       });
 
-      expect(clustersDistributedByOrgID).to.be.an('array');
-      expect(clustersDistributedByOrgID).to.have.length(4);
+      expect(clustersDistributedByOrgId).to.be.an('array');
+      expect(clustersDistributedByOrgId).to.have.length(4);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

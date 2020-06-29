@@ -65,12 +65,12 @@ const commonClusterSearch = async (
 
 const clusterResolvers = {
   Query: {
-    clusterByClusterID: async (
+    clusterByClusterId: async (
       parent,
       { orgId: orgId, clusterId: clusterId },
       context,
     ) => {
-      const queryName = 'clusterByClusterID';
+      const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
@@ -92,12 +92,12 @@ const clusterResolvers = {
     // - limit: number of docs to return. default 50, 0 means return all
     // - startingAfter: for pagination. Specify the _id of the document you want results
     //   older than.
-    clustersByOrgID: async (
+    clustersByOrgId: async (
       parent,
       { orgId: orgId, limit, startingAfter },
       context,
     ) => {
-      const queryName = 'clustersByOrgID';
+      const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
@@ -197,12 +197,12 @@ const clusterResolvers = {
   }, // end query
 
   Mutation: {
-    deleteClusterByClusterID: async (
+    deleteClusterByClusterId: async (
       parent,
       { orgId: org_id, clusterId: cluster_id },
       context,
     ) => {
-      const queryName = 'deleteClusterByClusterID';
+      const queryName = 'deleteClusterByClusterId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id, cluster_id}, `${queryName} enter`);
 
