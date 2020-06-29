@@ -22,15 +22,15 @@ const DeployableVersionSchema = new mongoose.Schema({
   },
   org_id: {
     type: String,
-    alias: "orgId"
+    alias: 'orgId',
   },
   channel_id: {
     type: String,
-    alias: "channelId"
+    alias: 'channelId',
   },
   channel_name: {
     type: String,
-    alias: "channelName"
+    alias: 'channelName',
   },
   name: {
     type: String,

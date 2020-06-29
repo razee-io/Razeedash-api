@@ -22,7 +22,7 @@ const ChannelSchema = new mongoose.Schema({
   },
   org_id: {
     type: String,
-    alias: "orgId",
+    alias: 'orgId',
   },
   name: {
     type: String,

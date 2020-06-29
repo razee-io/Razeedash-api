@@ -259,7 +259,7 @@ const clusterDistributedResolvers = {
         }
       }
       logger.debug(`${queryName} totalResults: ${JSON.stringify(totalResults, null, 4)} for req_id ${req_id}`);
-      for (const item of totalResults){ item.id = item._id }
+      for (const item of totalResults){ item.id = item._id; }
       return totalResults;
     }, // end clusterDistributedCountByKubeVersion
   }, // end query

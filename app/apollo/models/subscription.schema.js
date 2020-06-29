@@ -22,7 +22,7 @@ const SubscriptionSchema = new mongoose.Schema({
   },
   org_id: {
     type: String,
-    alias: "orgId",
+    alias: 'orgId',
   },
   name: {
     type: String,
@@ -37,7 +37,7 @@ const SubscriptionSchema = new mongoose.Schema({
   ],
   channel_uuid: {
     type: String,
-    alias: "channelUuid",
+    alias: 'channelUuid',
   },
   channel: {
     type: String,
@@ -47,7 +47,7 @@ const SubscriptionSchema = new mongoose.Schema({
   },
   version_uuid: {
     type: String,
-    alias: "versionUuid",
+    alias: 'versionUuid',
   },
   owner: {
     type: String,

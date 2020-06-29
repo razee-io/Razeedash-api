@@ -70,7 +70,7 @@ const ClusterSchema = new mongoose.Schema({
     {
       user_id: {
         type: String,
-        alias: "userId",
+        alias: 'userId',
       },
       content: {
         type: String,
@@ -89,7 +89,7 @@ const ClusterSchema = new mongoose.Schema({
     type: String,
     enum: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING, CLUSTER_REG_STATES.REGISTERED], 
     default: CLUSTER_REG_STATES.REGISTERING,
-    alias: "regState",
+    alias: 'regState',
   },
 
   dirty: {

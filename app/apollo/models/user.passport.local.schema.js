@@ -353,7 +353,7 @@ UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
     var id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || _id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || id;
     return {
       id,
       name,

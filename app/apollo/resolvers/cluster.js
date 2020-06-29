@@ -191,7 +191,7 @@ const clusterResolvers = {
         { $sort: { _id: 1 } },
       ]);
 
-      for (const item of results){ item.id = item._id }
+      for (const item of results){ item.id = item._id; }
       return results;
     }, // end clusterCountByKubeVersion
   }, // end query
