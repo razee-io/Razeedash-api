@@ -36,7 +36,7 @@ const groupResolvers = {
         groups = await models.Group.find({ org_id: org_id }).lean();
         const ownerIds = _.map(groups, 'owner');
         const owners = await models.User.getBasicUsersByIds(ownerIds);
-  
+
         groups = groups.map((group)=>{
           group.owner = owners[group.owner];
           return group;
@@ -52,7 +52,7 @@ const groupResolvers = {
       const queryName = 'group';
       logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
-  
+
       try{
         let group = await models.Group.findOne({ org_id: org_id, uuid }).lean();
         if (!group) {
@@ -60,10 +60,31 @@ const groupResolvers = {
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
         const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+
+        const subscriptions = await models.Subscription.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              groups: group.name,
+            },
+          },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+        ]);
+
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
 
+        const clusters = await models.Cluster.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              'groups.uuid': group.uuid,
+            },
+          },
+          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+        ]);
+
         group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, ...group};
+        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -74,7 +95,7 @@ const groupResolvers = {
       const queryName = 'groupByName';
       logger.debug({req_id, user: whoIs(me), org_id, name}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
-  
+
       try{
         let group = await models.Group.findOne({ org_id: org_id, name }).lean();
         if (!group) {
@@ -82,15 +103,36 @@ const groupResolvers = {
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
         const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+
+        const subscriptions = await models.Subscription.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              groups: group.name,
+            },
+          },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+        ]);
+
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
 
+        const clusters = await models.Cluster.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              'groups.uuid': group.uuid,
+            },
+          },
+          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+        ]);
+
         group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, ...group};
+        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
-    },    
+    },
   },
   Mutation: {
     addGroup: async (parent, { org_id, name }, context)=>{
@@ -98,7 +140,7 @@ const groupResolvers = {
       const queryName = 'addGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-    
+
       try {
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
@@ -127,28 +169,28 @@ const groupResolvers = {
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-  
+
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
         if(!group){
           throw new NotFoundError(`group uuid "${uuid}" not found`);
         }
-  
+
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
-  
+
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
         }
-        
+
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this cluster group. Please update/remove the group from the clusters.`);
-        }      
+        }
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id});
-  
+
         return {
           uuid: group.uuid,
           success: true,
@@ -164,27 +206,27 @@ const groupResolvers = {
       const queryName = 'removeGroupByName';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-  
+
       try{
         const group = await models.Group.findOne({ name, org_id: org_id }).lean();
         if(!group){
           throw new NotFoundError(`group name "${name}" not found`);
         }
-  
+
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
         }
-        
+
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this group. Please update/remove the group from the clusters.`);
-        }      
+        }
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id});
-  
+
         return {
           uuid: group.uuid,
           success: true,
@@ -211,13 +253,13 @@ const groupResolvers = {
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
-          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$nin: [uuid]}}, 
+          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$nin: [uuid]}},
           {$push: {groups: {uuid: group.uuid, name: group.name}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id});
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
-  
+
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -228,7 +270,7 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'unGroupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+      //await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
       try{
 
@@ -240,13 +282,13 @@ const groupResolvers = {
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
-          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$in: [uuid]}}, 
+          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$in: [uuid]}},
           {$pull: {groups: {uuid}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id});
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
-  
+
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
