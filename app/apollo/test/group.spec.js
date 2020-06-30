@@ -388,7 +388,7 @@ const groupClusters = async () => {
       name: 'group1'
     }
   }});
-}
+};
 
 describe('groups graphql test suite', () => {
   before(async () => {
