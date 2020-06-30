@@ -262,6 +262,9 @@ const updateClusterResources = async (req, res, next) => {
             };
             options = { upsert: true };
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
+
+            // adds the yaml hist item too
+            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
           }
 
           const result = await Resources.updateOne(key, changes, options);
