@@ -179,7 +179,7 @@ const groupResolvers = {
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this cluster group. Please update/remove the group from the clusters.`);
-        }     
+        }      
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
@@ -215,7 +215,7 @@ const groupResolvers = {
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
           throw new ValidationError(`${clusterCount} clusters depend on this group. Please update/remove the group from the clusters.`);
-        }     
+        }      
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
@@ -282,7 +282,7 @@ const groupResolvers = {
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id});
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
-
+  
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
