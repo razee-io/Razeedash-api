@@ -67,7 +67,7 @@ const groupResolvers = {
               groups: group.name,
             },
           },
-          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , orgId: '$org_id', channelUuid: '$channel_uuid', versionUuid: '$version_uuid', owner: 1, created: 1, updated: 1 } },
         ]);
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         const clusters = await models.Cluster.aggregate([
@@ -77,7 +77,7 @@ const groupResolvers = {
               'groups.uuid': group.uuid,
             },
           },
-          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+          { $project: { clusterId: '$cluster_id', groups: 1, registration: 1, regState: '$reg_state', orgId: '$org_id', created: 1, updated: 1 } },
         ]);
         
         group.owner = owners[group.owner];
@@ -107,7 +107,7 @@ const groupResolvers = {
               groups: group.name,
             },
           },
-          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , orgId: '$org_id', channelUuid: '$channel_uuid', versionUuid: '$version_uuid', owner: 1, created: 1, updated: 1 } },
         ]);
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         const clusters = await models.Cluster.aggregate([
@@ -117,7 +117,7 @@ const groupResolvers = {
               'groups.uuid': group.uuid,
             },
           },
-          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+          { $project: { clusterId: '$cluster_id', groups: 1, registration: 1, regState: '$reg_state', orgId: '$org_id', created: 1, updated: 1 } },
         ]);
         
         group.owner = owners[group.owner];

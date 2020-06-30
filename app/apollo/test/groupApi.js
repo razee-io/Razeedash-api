@@ -49,8 +49,8 @@ const groupFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!, $uuid: String!) {
-            group( org_id: $org_id, uuid: $uuid ) {
+          query($orgId: String!, $uuid: String!) {
+            group( orgId: $orgId, uuid: $uuid ) {
               uuid
               clusterCount
               subscriptionCount
@@ -73,8 +73,8 @@ const groupFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!, $name: String!) {
-            groupByName( org_id: $org_id, name: $name ) {
+          query($orgId: String!, $name: String!) {
+            groupByName( orgId: $orgId, name: $name ) {
               uuid
               clusterCount
               subscriptionCount
