@@ -18,6 +18,8 @@ const groupSchema = gql`
     created: Date!
     clusterCount: Int!
     subscriptionCount: Int!
+    subscriptions: JSON!
+    clusters: JSON!
   }
 
   type AddGroupReply {

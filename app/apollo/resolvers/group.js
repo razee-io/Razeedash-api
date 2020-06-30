@@ -60,10 +60,28 @@ const groupResolvers = {
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
         const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+        const subscriptions = await models.Subscription.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              groups: group.name,
+            },
+          },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+        ]);
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-
+        const clusters = await models.Cluster.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              'groups.uuid': group.uuid,
+            },
+          },
+          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+        ]);
+        
         group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, ...group};
+        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -82,10 +100,28 @@ const groupResolvers = {
         }
         const owners = await models.User.getBasicUsersByIds([group.owner]);
         const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+        const subscriptions = await models.Subscription.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              groups: group.name,
+            },
+          },
+          { $project: { name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , org_id: 1, channel_uuid: 1, version_uuid: 1, owner: 1, created: 1, updated: 1 } },
+        ]);
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-
+        const clusters = await models.Cluster.aggregate([
+          {
+            $match: {
+              org_id: org_id,
+              'groups.uuid': group.uuid,
+            },
+          },
+          { $project: { cluster_id: 1, groups: 1, registration: 1, reg_state: 1, org_id: 1, created: 1, updated: 1 } },
+        ]);
+        
         group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, ...group};
+        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -211,7 +247,7 @@ const groupResolvers = {
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
-          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$nin: [uuid]}}, 
+          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$nin: [uuid]}},
           {$push: {groups: {uuid: group.uuid, name: group.name}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);

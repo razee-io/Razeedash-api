@@ -15,7 +15,7 @@
  */
 
 const Moment = require('moment');
-const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
+const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
 const { whoIs, validAuth, getGroupConditionsIncludingEmpty } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
@@ -304,6 +304,11 @@ const clusterResolvers = {
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
+        if (RDD_STATIC_ARGS.length > 0) {
+          RDD_STATIC_ARGS.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+        }
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
