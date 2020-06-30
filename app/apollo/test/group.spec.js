@@ -409,16 +409,13 @@ describe('groups graphql test suite', () => {
     await createChannels();
     await createSubscriptions();
     await groupClusters();
-
     
-  
     // Can be uncommented if you want to see the test data that was added to the DB
     // await getPresetOrgs();
     // await getPresetUsers();
     // await getPresetClusters();
   
     token = await signInUser(models, resourceApi, user01Data);
-    
     // adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
   
@@ -436,7 +433,6 @@ describe('groups graphql test suite', () => {
       } = await groupApi.groups(token, {
         org_id: org01._id,
       });
-
       console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
       expect(groups).to.be.an('array');
       expect(groups).to.have.length(2);
@@ -460,7 +456,6 @@ describe('groups graphql test suite', () => {
         org_id: org01._id,
         name: 'group1'
       });
-
       console.log(`get group by name: groupByName = ${JSON.stringify(groupByName)}`);
       expect(groupByName).to.be.an('Object');
       expect(groupByName.subscriptionCount).to.equal(2);
@@ -474,6 +469,7 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
+  
   it('get group by id', async () => {
     try {
       const {
@@ -484,7 +480,6 @@ describe('groups graphql test suite', () => {
         org_id: org01._id,
         uuid: group_02_uuid
       });
-
       console.log(`get group by id: group = ${JSON.stringify(group)}`);
       expect(group).to.be.an('Object');
       expect(group.subscriptionCount).to.equal(1);
