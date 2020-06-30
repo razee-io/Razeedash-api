@@ -17,11 +17,11 @@
 const { v4: UUID } = require('uuid');
 const mongoose = require('mongoose');
 
-const LabelSchema = new mongoose.Schema({
+const GroupSchema = new mongoose.Schema({
   _id: {
     type: String,
   },
-  orgId: {
+  org_id: {
     type: String,
   },
   name: {
@@ -42,21 +42,21 @@ const LabelSchema = new mongoose.Schema({
 });
 
 
-LabelSchema.statics.findOrCreateList = async (models, orgId, tags, context) => {
+GroupSchema.statics.findOrCreateList = async (models, orgId, groups, context) => {
   const {me, logger} = context;
-  logger.debug({tags, orgId, req_id: context.req_id}, 'findOrCreateList enter');
+  logger.debug({groups, orgId, req_id: context.req_id}, 'findOrCreateList enter');
 
-  const labels = await Promise.all(tags.map(async tag => {
-    return await models.Label.findOneAndUpdate (
-      {orgId, name: tag},
-      {_id: UUID(), uuid: UUID(), orgId, name: tag, owner: me._id ? me._id : 'undefined' }, 
+  const groupList = await Promise.all(groups.map(async group => {
+    return await models.Group.findOneAndUpdate (
+      {org_id: orgId, name: group},
+      {_id: UUID(), uuid: UUID(), org_id: orgId, name: group, owner: me._id ? me._id : 'undefined' }, 
       {new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false}).lean();
   }));
 
-  logger.debug({tags, orgId, req_id: context.req_id, labels}, 'findOrCreateList exit');
-  return labels;
+  logger.debug({groups, orgId, req_id: context.req_id, groupList}, 'findOrCreateList exit');
+  return groupList;
 };
 
-LabelSchema.index({ orgId: 1 }, { });
+GroupSchema.index({ org_id: 1 }, { });
 
-module.exports = LabelSchema;
+module.exports = GroupSchema;

@@ -15,8 +15,8 @@
  */
 
 const Moment = require('moment');
-const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth, getUserTagConditionsIncludingEmpty } = require ('./common');
+const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
+const { whoIs, validAuth, getGroupConditionsIncludingEmpty } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
@@ -95,7 +95,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const cluster = await models.Cluster.findOne({
         org_id: orgId,
@@ -130,7 +130,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const searchFilter = { org_id: orgId, ...conditions };
       const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
@@ -178,9 +178,9 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
 
-      // first get all users permitted labels,
+      // first get all users permitted cluster groups,
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       let searchFilter;
       if (!filter) {
@@ -211,7 +211,7 @@ const clusterResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-      const conditions = await getUserTagConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const results = await models.Cluster.aggregate([
         {
@@ -324,7 +324,7 @@ const clusterResolvers = {
           error = new ValidationError(`Too many concurrent pending clusters under ${org_id}.`);          
         }
 
-        // we do not handle tags here, it is handled by labelCluster Api
+        // we do not handle cluster groups here, it is handled by groupCluster Api
 
         if (!error && await models.Cluster.findOne(
           { $and: [ 
@@ -345,7 +345,12 @@ const clusterResolvers = {
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
-        return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
+        if (RDD_STATIC_ARGS.length > 0) {
+          RDD_STATIC_ARGS.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+        }
+        return { url, org_id: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
         throw error;

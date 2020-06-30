@@ -16,16 +16,16 @@
 
 const axios = require('axios');
 
-const labelFunc = grahqlUrl => {
-  const labels = async (token, variables) =>
+const groupFunc = grahqlUrl => {
+  const groups = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String!) {
-            labels( orgId: $orgId ) {
+          query($org_id: String!) {
+            groups( org_id: $org_id ) {
                 uuid
-                orgId
+                org_id
                 name
                 owner {
                   _id
@@ -45,9 +45,8 @@ const labelFunc = grahqlUrl => {
     );
 
   return {
-    labels,
+    groups,
   };
 };
         
-module.exports = labelFunc;
-
+module.exports = groupFunc;

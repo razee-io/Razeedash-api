@@ -24,15 +24,14 @@ Razeedash-API is the interface used by
 | S3_ACCESS_KEY_ID        | if S3_ENDPOINT defined | n/a |
 | S3_SECRET_ACCESS_KEY    | if S3_ENDPOINT defined | n/a |
 | S3_LOCATION_CONSTRAINT  | no                     | 'us-standard'|
-| S3_BUCKET_PREFIX        | no                     | 'razee'|
+| S3_CHANNEL_BUCKET       | no                     | 'razee'|
+| S3_RESOURCE_BUCKET      | no                     | S3_CHANNEL_BUCKET or 'razee'|
 | ORG_ADMIN_KEY           | no                     | n/a |
 | ADD_CLUSTER_WEBHOOK_URL | no                     | n/a |
 | AUTH_MODEL              | no                     | 'default' [default, local, passport.local] are supported |
 
 If S3_ENDPOINT is defined then encrypted cluster YAML is stored in S3 otherwise
 it will be stored in the mongoDB.
-
-If S3_BUCKET_PREFIX is not defined then the s3 bucket will be named `razee-<your_razee_org_id>`
 
 ORG_ADMIN_KEY is required if you plan on adding organizations using the api/v2/orgs endpoint
 

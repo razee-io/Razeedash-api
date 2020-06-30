@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const buildSearchForResources = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getUserTags, getUserTagConditionsIncludingEmpty, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
@@ -99,7 +99,7 @@ const readS3File = async (readable) => {
 const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
   const { models, me, req_id, logger } = context;
   try {
-    const conditions = await getUserTagConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
+    const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     let resource = await models.Resource.findOne(searchFilter).lean();
 
@@ -250,12 +250,12 @@ const resourceResolvers = {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);
       }
-      const userTags = await getUserTags(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
-      if (cluster.tags) {
-        cluster.tags.some(t => {
-          if(userTags.indexOf(t.uuid) === -1) {
-            // if some tag of the sub does not in user's tag list, throws an error
-            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on cluster tag ${t.name}.`);
+      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
+      if (cluster.groups) {
+        cluster.groups.some(group => {
+          if(allowedGroups.indexOf(group.uuid) === -1) {
+            // if some group of the sub does not in user's group list, throws an error
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on cluster group ${group.name}.`);
           }
           return false;
         });
@@ -326,12 +326,12 @@ const resourceResolvers = {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);
       }
-      const userTags = await getUserTags(me, org_id, ACTIONS.READ, 'name', queryName, context);
-      if(subscription.tags) {
-        subscription.tags.some(t => {
-          if(userTags.indexOf(t) === -1) {
+      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      if(subscription.groups) {
+        subscription.groups.some(group => {
+          if(allowedGroups.indexOf(group) === -1) {
             // if some tag of the sub does not in user's tag list, throws an error
-            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription tag ${t}.`);
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription group ${group}.`);
           }
           return false;
         });

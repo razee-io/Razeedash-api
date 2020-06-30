@@ -37,7 +37,7 @@ describe('s3', () => {
           accessKeyId: 'accessKey',
           secretAccessKey: 'secretKey',
           locationConstraint: 'us-standard',
-          bucketPrefix: 'razee',
+          channelBucket: 'razee',
           s3ForcePathStyle: true,
           signatureVersion: 'v4',
           sslEnabled: false,

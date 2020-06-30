@@ -25,7 +25,7 @@ const subscriptionSchema = gql`
     uuid: String!
     org_id: String!
     name: String!
-    tags: [String!]!
+    groups: [String!]
     channel_uuid: String!
     channel_name: String!
     channel: Channel
@@ -75,10 +75,6 @@ const subscriptionSchema = gql`
      """
      subscription(org_id: String!, uuid: String!): ChannelSubscription
      """
-     Gets all subscriptions that match a set of tags for an org
-     """
-     subscriptionsByTag(tags: String): [UpdatedSubscription]
-     """
      Gets all subscriptions for a cluster
      """
      subscriptionsByCluster(cluster_id: String): [UpdatedSubscription]
@@ -87,12 +83,12 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(org_id: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): AddChannelSubscriptionReply!
+     addSubscription(org_id: String!, name: String!, groups: [String!]!, channel_uuid: String!, version_uuid: String!): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(org_id: String!, uuid: String!, name: String!, tags: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
+     editSubscription(org_id: String!, uuid: String!, name: String!, groups: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion

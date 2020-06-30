@@ -23,7 +23,7 @@ const ClusterSchema = new mongoose.Schema({
   cluster_id: {
     type: String,
   },
-  tags: [
+  groups: [
     {
       uuid: {
         type: String,

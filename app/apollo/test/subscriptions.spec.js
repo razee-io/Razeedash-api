@@ -191,17 +191,17 @@ const createChannels = async () => {
   });
 };
 
-const createLabels = async () => {
-  await models.Label.create({
+const createGroups = async () => {
+  await models.Group.create({
     _id: UUID(),
-    orgId: org01._id,
+    org_id: org01._id,
     uuid: UUID(),
     name: 'dev',
     owner: user01._id,
   });
-  await models.Label.create({
+  await models.Group.create({
     _id: UUID(),
-    orgId: org77._id,
+    org_id: org77._id,
     uuid: UUID(),
     name: 'dev',
     owner: user01._id,
@@ -215,7 +215,7 @@ const createSubscriptions = async () => {
     uuid: subscription_01_uuid,
     name: subscription_01_name,
     owner: user01._id,
-    tags: ['dev'],
+    groups: ['dev'],
     channel_uuid: channel_01_uuid,
     channel: channel_01_name,
     version: channelVersion_01_name,
@@ -228,7 +228,7 @@ const createSubscriptions = async () => {
     uuid: subscription_02_uuid,
     name: subscription_02_name,
     owner: user01._id,
-    tags: ['dev'],
+    groups: ['dev'],
     channel_uuid: channel_01_uuid,
     channel: channel_01_name,
     version: channelVersion_02_name,
@@ -241,7 +241,7 @@ const createSubscriptions = async () => {
     uuid: subscription_03_uuid,
     name: subscription_03_name,
     owner: user01._id,
-    tags: ['dev'],
+    groups: ['dev'],
     channel_uuid: channel_02_uuid,
     channel: channel_02_name,
     version: channelVersion_03_name,
@@ -263,7 +263,7 @@ describe('subscription graphql test suite', () => {
   
     await createOrganizations();
     await createUsers();
-    await createLabels();
+    await createGroups();
     await createChannels();
     await createSubscriptions();
     
@@ -334,7 +334,7 @@ describe('subscription graphql test suite', () => {
       } = await subscriptionApi.addSubscription(adminToken, {
         org_id: org01._id,
         name: 'a_random_name',
-        tags:['dev'],
+        groups:['dev'],
         channel_uuid: channel_01_uuid,
         version_uuid: channelVersion_01_uuid,
       });
@@ -360,7 +360,7 @@ describe('subscription graphql test suite', () => {
         org_id: org01._id,
         uuid: subscription_01_uuid,
         name: 'new-name',
-        tags:['new-tag'],
+        groups:['new-tag'],
         channel_uuid: channel_02_uuid,
         version_uuid: channelVersion_03_uuid,
       });

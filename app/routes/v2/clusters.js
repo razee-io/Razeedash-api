@@ -38,8 +38,8 @@ const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
 const { CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { GraphqlPubSub } = require('../../apollo/subscription');
-
 const pubSub = GraphqlPubSub.getInstance();
+const conf = require('../../conf.js').conf;
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -127,8 +127,7 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
 
 const pushToS3 = async (req, key, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
-  const orgId = key.org_id.toLowerCase(); 
-  const bucket = `razee-${orgId}`;
+  const bucket = conf.s3.resourceBucket;
   const hash = crypto.createHash('sha256');
   const hashKey = hash.update(JSON.stringify(key)).digest('hex');
   await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
