@@ -83,6 +83,15 @@ const clusterResolvers = {
         ...conditions
       }).lean();
 
+      var { url } = await models.Organization.getRegistrationUrl(orgId, context);
+      url = url + `&clusterId=${clusterId}`;
+      if (RDD_STATIC_ARGS.length > 0) {
+        RDD_STATIC_ARGS.forEach(arg => {
+          url += `&args=${arg}`;
+        });
+      }
+      if (!result.registration) result.registration = {};
+      result.registration.url = url;
       return result;
     }, // end cluster by _id
 
