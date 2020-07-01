@@ -21,7 +21,6 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
-//const clusterFunc = require('./clusterApi');
 const groupFunc = require('./groupApi');
 
 const apollo = require('../index');
@@ -35,7 +34,6 @@ let myApollo;
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
-//const clusterApi = clusterFunc(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 let token;
 //let adminToken;
@@ -52,6 +50,37 @@ let userRootData;
 let presetOrgs;
 let presetUsers;
 let presetClusters;
+
+const channel_01_name = 'fake_channel_01';
+const channel_01_uuid = 'fake_ch_01_uuid';
+
+const channel_02_name = 'fake_channel_02';
+const channel_02_uuid = 'fake_ch_02_uuid';
+
+const channel_03_name = 'fake_channel_03';
+const channel_03_uuid = 'fake_ch_03_uuid';
+
+const channelVersion_01_name = 'fake_channelVersion_01';
+const channelVersion_01_uuid = 'fake_cv_01_uuid';
+
+const channelVersion_02_name = 'fake_channelVersion_02';
+const channelVersion_02_uuid = 'fake_cv_02_uuid';
+
+const channelVersion_03_name = 'fake_channelVersion_03';
+const channelVersion_03_uuid = 'fake_cv_03_uuid';
+
+const subscription_01_name = 'fake_subscription_01';
+const subscription_01_uuid = 'fake_sub_01_uuid';
+
+const subscription_02_name = 'fake_subscription_02';
+const subscription_02_uuid = 'fake_sub_02_uuid';
+
+const subscription_03_name = 'fake_subscription_03';
+const subscription_03_uuid = 'fake_sub_03_uuid';
+
+const group_01_uuid = 'fake_group_01_uuid;';
+const group_02_uuid = 'fake_group_02_uuid;';
+const group_01_77_uuid = 'fake_group_01_77_uuid;';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -125,21 +154,21 @@ const getPresetClusters = async () => {
 const createGroups = async () => {
   await models.Group.create({
     _id: UUID(),
-    uuid: UUID(),
+    uuid: group_01_uuid,
     org_id: org01._id,
     name: 'group1',
     owner: 'undefined'
   });
   await models.Group.create({
     _id: UUID(),
-    uuid: UUID(),
+    uuid: group_02_uuid,
     org_id: org01._id,
     name: 'group2',
     owner: 'undefined'
   });
   await models.Group.create({
     _id: UUID(),
-    uuid: UUID(),
+    uuid: group_01_77_uuid,
     org_id: org77._id,
     name: 'group1',
     owner: 'undefined'
@@ -242,6 +271,125 @@ const createClusters = async () => {
   });
 }; // create clusters
 
+const createChannels = async () => {
+  await models.Channel.create({
+    _id: 'fake_ch_id_1',
+    org_id: org01._id,
+    uuid: channel_01_uuid,
+    name: channel_01_name,
+    versions: [
+      {
+        uuid: channelVersion_01_uuid,
+        name: channelVersion_01_name
+      },
+      {
+        uuid: channelVersion_02_uuid,
+        name: channelVersion_02_name
+      }
+    ]
+  });
+
+  await models.Channel.create({
+    _id: 'fake_id_2',
+    org_id: org01._id,
+    uuid: channel_02_uuid,
+    name: channel_02_name,
+    versions: [
+      {
+        uuid: channelVersion_03_uuid,
+        name: channelVersion_03_name
+      }
+    ]
+  });
+
+  await models.Channel.create({
+    _id: 'fake_id_3',
+    org_id: org77._id,
+    uuid: channel_03_uuid,
+    name: channel_03_name,
+    versions: []
+  });
+};
+
+const createSubscriptions = async () => {
+  await models.Subscription.create({
+    _id: 'fake_id_1',
+    org_id: org01._id,
+    uuid: subscription_01_uuid,
+    name: subscription_01_name,
+    owner: user01Data._id,
+    groups: ['group1'],
+    channel_uuid: channel_01_uuid,
+    channel: channel_01_name,
+    version: channelVersion_01_name,
+    version_uuid: channelVersion_01_uuid,
+  });
+
+  await models.Subscription.create({
+    _id: 'fake_id_2',
+    org_id: org01._id,
+    uuid: subscription_02_uuid,
+    name: subscription_02_name,
+    owner: user01Data._id,
+    groups: ['group1', 'group2'],
+    channel_uuid: channel_01_uuid,
+    channel: channel_01_name,
+    version: channelVersion_02_name,
+    version_uuid: channelVersion_02_uuid,
+  });
+
+  await models.Subscription.create({
+    _id: 'fake_id_3',
+    org_id: org77._id,
+    uuid: subscription_03_uuid,
+    name: subscription_03_name,
+    owner: user01Data._id,
+    groups: ['group1'],
+    channel_uuid: channel_02_uuid,
+    channel: channel_02_name,
+    version: channelVersion_03_name,
+    version_uuid: channelVersion_03_uuid,
+  });
+};
+
+const groupClusters = async () => {
+  await models.Cluster.updateMany({
+    org_id: org01._id, 
+    cluster_id: {$in: 'cluster_01'}, 
+    'groups.uuid': {$nin: [group_01_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_01_uuid, 
+      name: 'group1'
+    }
+  }});
+
+  await models.Cluster.updateMany({
+    org_id: org01._id, 
+    cluster_id: {$in: ['cluster_02','cluster_03']}, 
+    'groups.uuid': {$nin: [group_02_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_02_uuid,
+      name: 'group2'
+    }
+  }});
+
+  await models.Cluster.updateMany({
+    org_id: org77._id, 
+    cluster_id: {$in: 'cluster_a'}, 
+    'groups.uuid': {$nin: [group_01_77_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_01_77_uuid, 
+      name: 'group1'
+    }
+  }});
+};
+
 describe('groups graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
@@ -258,7 +406,10 @@ describe('groups graphql test suite', () => {
     await createUsers();
     await createClusters();
     await createGroups();
-  
+    await createChannels();
+    await createSubscriptions();
+    await groupClusters();
+    
     // Can be uncommented if you want to see the test data that was added to the DB
     // await getPresetOrgs();
     // await getPresetUsers();
@@ -282,10 +433,57 @@ describe('groups graphql test suite', () => {
       } = await groupApi.groups(token, {
         org_id: org01._id,
       });
-
       console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
       expect(groups).to.be.an('array');
       expect(groups).to.have.length(2);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get groups by name', async () => {
+    try {
+      const {
+        data: {
+          data: { groupByName },
+        },
+      } = await groupApi.groupByName(token, {
+        org_id: org01._id,
+        name: 'group1'
+      });
+      console.log(`get group by name: groupByName = ${JSON.stringify(groupByName)}`);
+      expect(groupByName).to.be.an('Object');
+      expect(groupByName.subscriptionCount).to.equal(2);
+      expect(groupByName.clusterCount).to.equal(1);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+  
+  it('get group by id', async () => {
+    try {
+      const {
+        data: {
+          data: { group },
+        },
+      } = await groupApi.group(token, {
+        org_id: org01._id,
+        uuid: group_02_uuid
+      });
+      console.log(`get group by id: group = ${JSON.stringify(group)}`);
+      expect(group).to.be.an('Object');
+      expect(group.subscriptionCount).to.equal(1);
+      expect(group.clusterCount).to.equal(2);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -61,7 +61,10 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   args_array = JSON.stringify(args_array);
 
   try {
-    const rdd_job = await request.get('https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml');
+    // allow custom job, agents versions and image location to be provided
+    const rddJobUrl = process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml';
+
+    const rdd_job = await request.get(rddJobUrl);
     const view = {
       NAMESPACE: req.query.namespace || 'razeedeploy',
       COMMAND: req.query.command || 'install',
