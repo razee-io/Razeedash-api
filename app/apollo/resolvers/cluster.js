@@ -67,7 +67,7 @@ const clusterResolvers = {
   Query: {
     clusterByClusterId: async (
       parent,
-      { orgId: orgId, clusterId: clusterId },
+      { orgId, clusterId },
       context,
     ) => {
       const queryName = 'clusterByClusterId';
@@ -103,7 +103,7 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgId: async (
       parent,
-      { orgId: orgId, limit, startingAfter },
+      { orgId, limit, startingAfter },
       context,
     ) => {
       const queryName = 'clustersByOrgId';
@@ -120,7 +120,7 @@ const clusterResolvers = {
     // Find all the clusters that have not been updated in the last day
     clusterZombies: async (
       parent,
-      { orgId: orgId, limit },
+      { orgId, limit },
       context,
     ) => {
       const queryName = 'clusterZombies';
@@ -140,7 +140,7 @@ const clusterResolvers = {
 
     clusterSearch: async (
       parent,
-      { orgId: orgId, filter, limit },
+      { orgId, filter, limit },
       context,
     ) => {
       const queryName = 'clusterSearch';
@@ -170,7 +170,7 @@ const clusterResolvers = {
     // Active means the cluster information has been updated in the last day
     clusterCountByKubeVersion: async (
       parent,
-      { orgId: orgId },
+      { orgId },
       context,
     ) => {
       const queryName = 'clusterCountByKubeVersion';
