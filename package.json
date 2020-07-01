@@ -30,7 +30,7 @@
     "apollo-metrics": "^1.0.1",
     "apollo-server": "^2.14.5",
     "apollo-server-express": "^2.14.5",
-    "aws-sdk": "^2.698.0",
+    "aws-sdk": "^2.708.0",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "bunyan": "^1.8.14",
