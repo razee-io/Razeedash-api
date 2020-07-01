@@ -45,11 +45,16 @@ async function validateGroups(org_id, groups, context) {
 
 const subscriptionResolvers = {
   Query: {
-    // Cluster-facing API
-    subscriptionsByCluster: async(parent, { clusterId: cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
+    // Cluster-facing API, deprecated, 
+    subscriptionsByCluster: async(parent, { cluster_id }, context) => {
+      return await subscriptionResolvers.Query.subscriptionsByClusterId(parent, {clusterId: cluster_id, deprecated: true}, context);
+    },
+
+    // Cluster-facing API,
+    subscriptionsByClusterId: async(parent, { clusterId: cluster_id, deprecated /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
-      const query = 'subscriptionsByCluster';
-      logger.debug({req_id, user: whoIs(me), cluster_id}, `${query} enter`);
+      const query = 'subscriptionsByClusterId';
+      logger.debug({req_id, user: whoIs(me), cluster_id, deprecated}, `${query} enter`);
       await validClusterAuth(me, query, context);
 
       const org = await models.User.getOrg(models, me);
@@ -79,7 +84,7 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
         const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, groups: { $in: clusterGroupNames }}).lean();
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, foundSubscriptions);
+          urls = await getSubscriptionUrls(org_id, foundSubscriptions, deprecated);
         }
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
@@ -307,7 +312,7 @@ const subscriptionResolvers = {
         // Sends a message back to a subscribed client
         // 'parent' is the object representing the subscription that was updated
         // 
-        return { 'hasUpdates': true };
+        return { has_updates: true,  hasUpdates: true };
       },
 
       subscribe: withFilter(
@@ -358,8 +363,9 @@ const subscriptionResolvers = {
             return Boolean(false);
           }
 
-          if(subscriptionUpdated.data.orgId !== orgId) {
-            logger.error('wrong org id for this subscription.  returning false');
+          const orgIdInUpdated = subscriptionUpdated.data.org_id || subscriptionUpdated.data.orgId;
+          if(orgIdInUpdated !== orgId) {
+            logger.error('wrong org id for this subscription. returning false');
             found = false;
           }
 

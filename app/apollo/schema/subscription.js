@@ -49,6 +49,13 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
+  type UpdatedSubscriptionDeprecated {
+    subscription_name: String!,
+    subscription_channel: String!,
+    subscription_version: String!,
+    subscription_uuid: String!,
+    url: String!
+  }
   type UpdatedSubscription {
     subscriptionName: String!,
     subscriptionChannel: String!,
@@ -56,11 +63,9 @@ const subscriptionSchema = gql`
     subscriptionUuid: String!,
     url: String!
   }
-  type ChannelsWithLinks {
-    channel: ChannelSubscription,
-    links: UpdatedSubscription
-  }
   type SubscriptionUpdated {
+    "**has_updates**: deprecated, use hasUpdates"
+    has_updates: Boolean
     hasUpdates: Boolean
   }
   
@@ -74,9 +79,13 @@ const subscriptionSchema = gql`
      """
      subscription(orgId: String!, uuid: String!): ChannelSubscription
      """
-     Gets all subscriptions for a cluster
+     Gets all subscriptions for a cluster, invoked from cluster-subscription agent, deprecated, please use subscriptionsByClusterId
      """
-     subscriptionsByCluster(clusterId: String): [UpdatedSubscription]
+     subscriptionsByCluster(cluster_id: String): [UpdatedSubscriptionDeprecated]
+     """
+     Gets all subscriptions for a cluster, invoked from cluster-subscription agent
+     """
+     subscriptionsByClusterId(clusterId: String!): [UpdatedSubscription]
   }
   extend type Mutation {
      """

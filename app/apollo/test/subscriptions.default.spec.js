@@ -194,17 +194,60 @@ describe('subscriptions graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get should return a subscription for a cluster', async () => {
+  it('get should return a subscription for a cluster by calling deprecated subscriptionsByCluster', async () => {
     try {
       const {
         data: {
           data: { subscriptionsByCluster },
         },
       } = await subscriptionsApi.subscriptionsByCluster(token, {
-        clusterId: cluster_id
+        cluster_id
       }, orgKey);
 
       expect(subscriptionsByCluster).to.have.length(1);
+      expect(subscriptionsByCluster[0].subscription_name).to.equal('fake_sub_01');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get should return a subscription for a cluster', async () => {
+    try {
+      const {
+        data: {
+          data: { subscriptionsByClusterId },
+        },
+      } = await subscriptionsApi.subscriptionsByClusterId(token, {
+        clusterId: cluster_id
+      }, orgKey);
+
+      expect(subscriptionsByClusterId).to.have.length(1);
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get should return an empty array when there are no matching groups by calling deprecated subscriptionsByCluster', async () => {
+    try {
+      const {
+        data: {
+          data: { subscriptionsByCluster },
+        },
+      } = await subscriptionsApi.subscriptionsByCluster(token, {
+        cluster_id: cluster_id_2
+      }, orgKey);
+      expect(subscriptionsByCluster).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -219,12 +262,12 @@ describe('subscriptions graphql test suite', () => {
     try {
       const {
         data: {
-          data: { subscriptionsByCluster },
+          data: { subscriptionsByClusterId },
         },
-      } = await subscriptionsApi.subscriptionsByCluster(token, {
+      } = await subscriptionsApi.subscriptionsByClusterId(token, {
         clusterId: cluster_id_2
       }, orgKey);
-      expect(subscriptionsByCluster).to.have.length(0);
+      expect(subscriptionsByClusterId).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

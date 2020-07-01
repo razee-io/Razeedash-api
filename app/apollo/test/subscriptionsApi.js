@@ -22,8 +22,32 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($clusterId: String) {
-            subscriptionsByCluster(clusterId: $clusterId) {
+          query($cluster_id: String) {
+            subscriptionsByCluster( cluster_id: $cluster_id) {
+              subscription_name
+              subscription_channel
+              subscription_uuid
+              subscription_version
+              url
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'razee-org-key': orgKey
+        },
+      },
+    );
+  const subscriptionsByClusterId = async (token, variables, orgKey) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($clusterId: String!) {
+            subscriptionsByClusterId(clusterId: $clusterId) {
               subscriptionName
               subscriptionChannel
               subscriptionUuid
@@ -193,7 +217,8 @@ const subscriptionsFunc = grahqlUrl => {
     );
 
   return {
-    subscriptionsByCluster,
+    subscriptionsByCluster, /* deprecated */
+    subscriptionsByClusterId,
     subscriptions,
     subscription,
     addSubscription,
