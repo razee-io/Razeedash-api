@@ -34,7 +34,7 @@ const commonResourcesDistributedSearch = async (
           .find(searchFilter)
           .sort({ created: -1 })
           .limit(limit)
-          .lean();
+          .lean({ virtuals: true });
       }),
     );
     resultsArray.map(rs => {
@@ -53,7 +53,7 @@ const resourceDistributedResolvers = {
   Query: {
     resourcesDistributedCount: async (
       parent,
-      { org_id },
+      { orgId: org_id },
       context,
     ) => {
       const queryName = 'resourcesDistributedCount';
@@ -84,7 +84,7 @@ const resourceDistributedResolvers = {
 
     resourcesDistributed: async (
       parent,
-      { org_id, filter, fromDate, toDate, limit },
+      { orgId: org_id, filter, fromDate, toDate, limit },
       context,
     ) => {
       const queryName = 'resourcesDistributed';
@@ -115,7 +115,7 @@ const resourceDistributedResolvers = {
 
     resourcesDistributedByCluster: async (
       parent,
-      { org_id, cluster_id, filter, limit },
+      { orgId: org_id, clusterId: cluster_id, filter, limit },
       context,
     ) => {
       const queryName = 'resourcesDistributedByCluster';
@@ -143,14 +143,14 @@ const resourceDistributedResolvers = {
       );
     },
 
-    resourceDistributed: async (parent, { _id }, context) => {
+    resourceDistributed: async (parent, { id: _id }, context) => {
       const queryName = 'resourceDistributed';
       const { models, me, req_id, logger } = context;
       logger.debug( {req_id, user: whoIs(me), _id }, `${queryName} enter`);
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
         // eslint-disable-next-line no-await-in-loop
-        let result = await rd.findById(_id).lean();
+        let result = await rd.findById(_id).lean({ virtuals: true });
         if (result !== null) {
           // eslint-disable-next-line no-await-in-loop
           await validAuth(me, result.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
@@ -162,7 +162,7 @@ const resourceDistributedResolvers = {
 
     resourceDistributedByKeys: async (
       parent,
-      { org_id, cluster_id, selfLink },
+      { orgId: org_id, clusterId: cluster_id, selfLink },
       context,
     ) => {
       const queryName = 'resourceDistributedByKeys';
@@ -172,7 +172,7 @@ const resourceDistributedResolvers = {
       // eslint-disable-next-line no-restricted-syntax
       for (const rd of models.ResourceDistributed) {
         // eslint-disable-next-line no-await-in-loop
-        let result = await rd.findOne({ org_id, cluster_id, selfLink }).lean();
+        let result = await rd.findOne({ org_id, cluster_id, selfLink }).lean({ virtuals: true });
         if (result !== null) {
           return result;
         }

@@ -4,7 +4,7 @@ const groupSchema = gql`
   
   type Group {
     uuid: String!
-    org_id: String!
+    orgId: String!
     name: String!
     owner: BasicUser!
     created: Date!
@@ -12,7 +12,7 @@ const groupSchema = gql`
 
   type GroupDetail {
     uuid: String!
-    org_id: String!
+    orgId: String!
     name: String!
     owner: BasicUser!
     created: Date!
@@ -41,46 +41,46 @@ const groupSchema = gql`
 
   extend type Query {
     """
-    list all groups for org_id
+    list all groups for orgId
     """
-    groups(org_id: String!): [Group]
+    groups(orgId: String!): [Group]
 
     """
-    Gets a group detail for org_id and uuid
+    Gets a group detail for orgId and uuid
     """
-    group(org_id: String! uuid: String!): GroupDetail
+    group(orgId: String! uuid: String!): GroupDetail
 
     """
-    Gets a group detail for org_id and name
+    Gets a group detail for orgId and name
     """
-    groupByName(org_id: String! name: String!): GroupDetail
+    groupByName(orgId: String! name: String!): GroupDetail
   }
 
   extend type Mutation {
     """
     Adds a group
     """
-    addGroup(org_id: String! name: String!): AddGroupReply!
+    addGroup(orgId: String! name: String!): AddGroupReply!
 
     """
     Removes a group 
     """
-    removeGroup(org_id: String! uuid: String!): RemoveGroupReply!
+    removeGroup(orgId: String! uuid: String!): RemoveGroupReply!
 
     """
     Removes a group by name 
     """
-    removeGroupByName(org_id: String! name: String!): RemoveGroupReply!
+    removeGroupByName(orgId: String! name: String!): RemoveGroupReply!
 
     """
     group a list of clusters
     """
-    groupClusters(org_id: String! uuid: String! clusters: [String]!): GroupClustersReply!
+    groupClusters(orgId: String! uuid: String! clusters: [String]!): GroupClustersReply!
 
     """
     unGroup a list of clusters
     """
-    unGroupClusters(org_id: String! uuid: String! clusters: [String]!): UnGroupClustersReply!
+    unGroupClusters(orgId: String! uuid: String! clusters: [String]!): UnGroupClustersReply!
 
   }
 `;

@@ -22,8 +22,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-        query ($org_id: String!) {
-          registrationUrl(org_id: $org_id) {
+        query($orgId: String!) {
+          registrationUrl(orgId: $orgId) {
             url
           }
         }
@@ -44,7 +44,7 @@ const apiFunc = grahqlUrl => {
         query: `
         query {
           organizations {
-            _id
+            id
             name
           }
         }
@@ -66,7 +66,7 @@ const apiFunc = grahqlUrl => {
             me {
               id
               email
-              org_id
+              orgId
               meta
             }
           }
@@ -82,12 +82,12 @@ const apiFunc = grahqlUrl => {
   const signUp = async variables =>
     axios.post(grahqlUrl, {
       query: `
-        mutation ($username: String! $email: String! $password: String! $org_name: String $role: String) {
+        mutation($username: String! $email: String! $password: String! $orgName: String $role: String) {
           signUp(
             username: $username
             email: $email
             password: $password
-            org_name: $org_name
+            orgName: $orgName
             role: $role
           ) {
             token
@@ -100,7 +100,7 @@ const apiFunc = grahqlUrl => {
   const signIn = async variables =>
     axios.post(grahqlUrl, {
       query: `
-        mutation ($login: String! $password: String!) {
+        mutation($login: String! $password: String!) {
           signIn(
             login: $login
             password: $password
@@ -136,11 +136,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String!, $_id: String!) {
-            resource(org_id: $org_id, _id: $_id) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String!, $id: String!) {
+            resource(orgId: $orgId, id: $id) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -161,11 +161,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String!, $_id: String!, $histId: String) {
-            resource(org_id: $org_id, _id: $_id, histId: $histId) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String!, $id: String!, $histId: String) {
+            resource(orgId: $orgId, id: $id, histId: $histId) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -188,11 +188,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String!, $cluster_id: String!, $resourceSelfLink: String!, $beforeDate: Date, $afterDate: Date, $limit: Int = 20) {
-            resourceHistory(org_id: $org_id, cluster_id: $cluster_id, resourceSelfLink: $resourceSelfLink, beforeDate: $beforeDate, afterDate: $afterDate, limit: $limit) {
+          query($orgId: String!, $clusterId: String!, $resourceSelfLink: String!, $beforeDate: Date, $afterDate: Date, $limit: Int = 20) {
+            resourceHistory(orgId: $orgId, clusterId: $clusterId, resourceSelfLink: $resourceSelfLink, beforeDate: $beforeDate, afterDate: $afterDate, limit: $limit) {
               count,
               items{
-                _id
+                id
                 updated
               }
             }
@@ -213,11 +213,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $cluster_id: String! $selfLink: String!){
-            resourceByKeys(org_id: $org_id cluster_id: $cluster_id selfLink: $selfLink) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $clusterId: String! $selfLink: String!){
+            resourceByKeys(orgId: $orgId clusterId: $clusterId selfLink: $selfLink) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -238,8 +238,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String!){
-            resourcesCount (org_id: $org_id)
+          query($orgId: String!){
+            resourcesCount(orgId: $orgId)
           }
         `,
         variables,
@@ -256,13 +256,13 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date, $kinds: [String!], $sort: [SortObj!]){
-            resources (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate, kinds: $kinds, sort: $sort) {
+          query($orgId: String! $filter: String $fromDate: Date $toDate: Date, $kinds: [String!], $sort: [SortObj!]){
+            resources(orgId: $orgId filter: $filter fromDate: $fromDate toDate: $toDate, kinds: $kinds, sort: $sort) {
               count
               resources{
-                _id
-                org_id
-                cluster_id
+                id
+                orgId
+                clusterId
                 selfLink
                 searchableData
                 created
@@ -285,13 +285,13 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $cluster_id: String! $filter: String){
-            resourcesByCluster (org_id: $org_id cluster_id: $cluster_id filter: $filter) {
+          query($orgId: String! $clusterId: String! $filter: String){
+            resourcesByCluster(orgId: $orgId clusterId: $clusterId filter: $filter) {
               count
               resources{
-                _id
-                org_id
-                cluster_id
+                id
+                orgId
+                clusterId
                 selfLink
                 searchableData
                 created
@@ -313,13 +313,13 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $subscription_id: String!){
-            resourcesBySubscription(org_id: $org_id subscription_id: $subscription_id ) {
+          query($orgId: String! $subscriptionId: String!){
+            resourcesBySubscription(orgId: $orgId subscriptionId: $subscriptionId ) {
               count
               resources{
-                _id
-                org_id
-                cluster_id
+                id
+                orgId
+                clusterId
                 selfLink
                 searchableData
                 created
@@ -341,11 +341,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($_id: ID!) {
-            resourceDistributed(_id: $_id) {
-              _id
-              org_id
-              cluster_id
+          query($id: ID!) {
+            resourceDistributed(id: $id) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -366,11 +366,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $cluster_id: String! $selfLink: String!){
-            resourceDistributedByKeys(org_id: $org_id cluster_id: $cluster_id selfLink: $selfLink) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $clusterId: String! $selfLink: String!){
+            resourceDistributedByKeys(orgId: $orgId clusterId: $clusterId selfLink: $selfLink) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -391,8 +391,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-        query ($org_id: String!){
-          resourcesDistributedCount (org_id: $org_id)
+        query($orgId: String!){
+          resourcesDistributedCount(orgId: $orgId)
           }
         `,
         variables,
@@ -409,11 +409,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $filter: String $fromDate: Date $toDate: Date){
-            resourcesDistributed (org_id: $org_id filter: $filter fromDate: $fromDate toDate: $toDate) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $filter: String $fromDate: Date $toDate: Date){
+            resourcesDistributed(orgId: $orgId filter: $filter fromDate: $fromDate toDate: $toDate) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -434,11 +434,11 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String! $cluster_id: String! $filter: String){
-            resourcesDistributedByCluster (org_id: $org_id cluster_id: $cluster_id filter: $filter) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $clusterId: String! $filter: String){
+            resourcesDistributedByCluster(orgId: $orgId clusterId: $clusterId filter: $filter) {
+              id
+              orgId
+              clusterId
               selfLink
               searchableData
               created
@@ -457,11 +457,11 @@ const apiFunc = grahqlUrl => {
   const resourceChanged = async variables =>
     axios.post(grahqlUrl, {
       query: `
-        mutation ($r: JSON!) {
+        mutation($r: JSON!) {
           resourceChanged(resource: $r) {
-            _id
-            org_id
-            cluster_id
+            id
+            orgId
+            clusterId
             selfLink
             searchableData
             created

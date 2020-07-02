@@ -16,7 +16,9 @@
 
 const mongoose = require('mongoose');
 const GroupSchema = require('./group.schema');
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
+GroupSchema.plugin(mongooseLeanVirtuals);
 const Group = mongoose.model('groups', GroupSchema);
 
 module.exports = Group;

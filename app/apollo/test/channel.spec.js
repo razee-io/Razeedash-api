@@ -170,9 +170,9 @@ describe('channel graphql test suite', () => {
     await createChannels();
   
     // Can be uncommented if you want to see the test data that was added to the DB
-    // await getPresetOrgs();
-    // await getPresetUsers();
-    // await getPresetClusters();
+    //await getPresetOrgs();
+    //await getPresetUsers();
+    //await getPresetClusters();
   
     token = await signInUser(models, resourceApi, user01Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
@@ -190,7 +190,7 @@ describe('channel graphql test suite', () => {
           data: { channels },
         },
       } = await channelApi.channels(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_01_uuid,
       });
     
@@ -212,7 +212,7 @@ describe('channel graphql test suite', () => {
           data: { channel },
         },
       } = await channelApi.channel(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_01_uuid,
       });
     
@@ -234,7 +234,7 @@ describe('channel graphql test suite', () => {
           data: { addChannel },
         },
       } = await channelApi.addChannel(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         name: 'a_random_name',
       });
     
@@ -257,8 +257,8 @@ describe('channel graphql test suite', () => {
           data: { addChannelVersion },
         },
       } = await channelApi.addChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.1`,
         type: 'json',
         content: '{"n0": 123.45}',
@@ -266,7 +266,7 @@ describe('channel graphql test suite', () => {
       });
       
       expect(addChannelVersion.success).to.equal(true);
-      expect(addChannelVersion.version_uuid).to.be.an('string');
+      expect(addChannelVersion.versionUuid).to.be.an('string');
 
       // step 2: add another channel version by admin token
       const {
@@ -274,8 +274,8 @@ describe('channel graphql test suite', () => {
           data: { addChannelVersion : addChannelVersion2 },
         },
       } = await channelApi.addChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.2`,
         type: 'json',
         content: '{"n0": 456.78}',
@@ -283,7 +283,7 @@ describe('channel graphql test suite', () => {
       });
     
       expect(addChannelVersion2.success).to.equal(true);
-      expect(addChannelVersion2.version_uuid).to.be.an('string');
+      expect(addChannelVersion2.versionUuid).to.be.an('string');
 
       // step 3: get a channel version by user1 token
       const {
@@ -291,12 +291,12 @@ describe('channel graphql test suite', () => {
           data: { getChannelVersion },
         },
       } = await channelApi.getChannelVersion(token, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
-        version_uuid: addChannelVersion.version_uuid,
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        versionUuid: addChannelVersion.versionUuid,
       });      
 
-      expect(getChannelVersion.channel_name).to.equal(channel_01_name);
+      expect(getChannelVersion.channelName).to.equal(channel_01_name);
       expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
       expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
       expect(getChannelVersion.created).to.be.an('string');
@@ -319,7 +319,7 @@ describe('channel graphql test suite', () => {
           data: { editChannel },
         },
       } = await channelApi.editChannel(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_02_uuid,
         name: `${channel_02_name}_new`
       });
@@ -333,33 +333,31 @@ describe('channel graphql test suite', () => {
           data
         },
       } = await channelApi.editChannel(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: 'not_exit_uuid',
         name: `${channel_02_name}_new`
       });
     
       expect(data).to.equal(null);
-
       // step 2 remove the channel
       const {
         data: {
           data: { removeChannel },
         },
       } = await channelApi.removeChannel(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_02_uuid,
       });
 
       expect(removeChannel.success).to.equal(true);
       expect(removeChannel.uuid).to.equal(channel_02_uuid);
-
       // step 3 validate the channel 02 is not there
       const {
         data: {
           data: { channel },
         },
       } = await channelApi.channel(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_02_uuid,
       });
 
@@ -382,15 +380,15 @@ describe('channel graphql test suite', () => {
           data: { addChannelVersion },
         },
       } = await channelApi.addChannelVersion(adminToken, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.4`,
         type: 'json',
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.4`
       });
       expect(addChannelVersion.success).to.equal(true);
-      expect(addChannelVersion.version_uuid).to.be.an('string');
+      expect(addChannelVersion.versionUuid).to.be.an('string');
       // step 2: remove the channel version by an adminToken
       // console.log('here step 2 in remove channel version');
       const {
@@ -398,9 +396,9 @@ describe('channel graphql test suite', () => {
           data: { getChannelVersion },
         },
       } = await channelApi.getChannelVersion(token, {
-        org_id: org01._id,
-        channel_uuid: channel_01_uuid,
-        version_uuid: addChannelVersion.version_uuid,
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        versionUuid: addChannelVersion.versionUuid,
       }); 
       expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
       expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
@@ -410,7 +408,7 @@ describe('channel graphql test suite', () => {
           data: { removeChannelVersion },
         },
       } = await channelApi.removeChannelVersion(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: getChannelVersion.uuid,
       });
       expect(removeChannelVersion.success).to.equal(true);
@@ -422,7 +420,7 @@ describe('channel graphql test suite', () => {
           data: { channel },
         },
       } = await channelApi.channel(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: channel_01_uuid,
       });  
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);

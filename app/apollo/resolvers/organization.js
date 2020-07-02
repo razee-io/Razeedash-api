@@ -20,7 +20,7 @@ const { whoIs, validAuth } = require ('./common');
 const organizationResolvers = {
   Query: {
 
-    registrationUrl: async (parent, { org_id }, context) => {
+    registrationUrl: async (parent, { orgId: org_id }, context) => {
       const queryName = 'registrationUrl';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, org_id}, `${queryName} enter`);

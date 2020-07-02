@@ -22,11 +22,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $cluster_id: String!) {
-            clusterByClusterID( org_id: $org_id cluster_id: $cluster_id) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $clusterId: String!) {
+            clusterByClusterId(orgId: $orgId clusterId: $clusterId) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -44,11 +44,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $cluster_id: String!) {
-            clusterDistributedByClusterID( org_id: $org_id cluster_id: $cluster_id) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $clusterId: String!) {
+            clusterDistributedByClusterId(orgId: $orgId clusterId: $clusterId) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -66,11 +66,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String!  $limit: Int, $startingAfter: String) {
-            clustersByOrgID ( org_id: $org_id limit: $limit startingAfter: $startingAfter) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String!  $limit: Int, $startingAfter: String) {
+            clustersByOrgId(orgId: $orgId limit: $limit startingAfter: $startingAfter) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -88,11 +88,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query ($org_id: String $limit: Int) {
-            clustersDistributedByOrgID ( org_id: $org_id limit: $limit) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String $limit: Int) {
+            clustersDistributedByOrgId(orgId: $orgId limit: $limit) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -110,11 +110,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $filter: String $limit: Int) {
-            clusterSearch( org_id: $org_id filter: $filter limit: $limit) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $filter: String $limit: Int) {
+            clusterSearch(orgId: $orgId filter: $filter limit: $limit) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -132,11 +132,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $filter: String $limit: Int) {
-            clusterDistributedSearch( org_id: $org_id filter: $filter limit: $limit) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $filter: String $limit: Int) {
+            clusterDistributedSearch(orgId: $orgId filter: $filter limit: $limit) {
+              id
+              orgId
+              clusterId
           }
         }
     `,
@@ -154,9 +154,9 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!) {
-            clusterCountByKubeVersion( org_id: $org_id)  {
-              _id {
+          query($orgId: String!) {
+            clusterCountByKubeVersion(orgId: $orgId)  {
+              id {
                 major
                 minor
               }
@@ -178,9 +178,9 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!) {
-            clusterDistributedCountByKubeVersion( org_id: $org_id)  {
-              _id {
+          query($orgId: String!) {
+            clusterDistributedCountByKubeVersion(orgId: $orgId)  {
+              id {
                 major
                 minor
               }
@@ -202,11 +202,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $limit: Int) {
-            clusterZombies( org_id: $org_id limit: $limit) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $limit: Int) {
+            clusterZombies(orgId: $orgId limit: $limit) {
+              id
+              orgId
+              clusterId
               updated
           }
         }
@@ -225,11 +225,11 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $limit: Int) {
-            clusterDistributedZombies( org_id: $org_id limit: $limit) {
-              _id
-              org_id
-              cluster_id
+          query($orgId: String! $limit: Int) {
+            clusterDistributedZombies(orgId: $orgId limit: $limit) {
+              id
+              orgId
+              clusterId
               updated
           }
         }
@@ -243,13 +243,13 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
-  const deleteClusterByClusterID = async (token, variables) =>
+  const deleteClusterByClusterId = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String! $cluster_id: String!) {
-            deleteClusterByClusterID( org_id: $org_id cluster_id: $cluster_id) {
+          mutation($orgId: String! $clusterId: String!) {
+            deleteClusterByClusterId(orgId: $orgId clusterId: $clusterId) {
               deletedClusterCount
               deletedResourceCount
           }
@@ -269,8 +269,8 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!) {
-            deleteClusters( org_id: $org_id ) {
+          mutation($orgId: String!) {
+            deleteClusters(orgId: $orgId) {
               deletedClusterCount
               deletedResourceCount
           }
@@ -289,8 +289,8 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!,$registration: JSON!) {
-            registerCluster( org_id: $org_id registration: $registration) {
+          mutation($orgId: String!,$registration: JSON!) {
+            registerCluster(orgId: $orgId registration: $registration) {
               url
           }
         }
@@ -315,7 +315,7 @@ const clusterFunc = grahqlUrl => {
     kubeVersionCountDistributed,
     zombies,
     zombiesDistributed,
-    deleteClusterByClusterID,
+    deleteClusterByClusterId,
     deleteClusters,
     registerCluster,
   };

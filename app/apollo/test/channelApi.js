@@ -22,10 +22,10 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!) {
-            channels( org_id: $org_id) {
+          query($orgId: String!) {
+            channels(orgId: $orgId) {
               uuid
-              org_id
+              orgId
               name
               created
               versions {
@@ -51,10 +51,10 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $uuid: String! ) {
-            channel( org_id: $org_id uuid: $uuid ) {
+          query($orgId: String! $uuid: String!) {
+            channel(orgId: $orgId uuid: $uuid) {
               uuid
-              org_id
+              orgId
               name
               created
               versions {
@@ -80,12 +80,12 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String! $channel_uuid: String!, $version_uuid: String! ) {
-            getChannelVersion( org_id: $org_id channel_uuid: $channel_uuid version_uuid: $version_uuid) {
-              org_id
+          query($orgId: String! $channelUuid: String!, $versionUuid: String!) {
+            getChannelVersion(orgId: $orgId channelUuid: $channelUuid versionUuid: $versionUuid) {
+              orgId
               uuid
-              channel_id
-              channel_name
+              channelId
+              channelName
               name
               type
               description
@@ -108,9 +108,9 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $channel_uuid: String!, $name: String!, $type: String!, $content: String!, $description: String) {
-            addChannelVersion( org_id: $org_id channel_uuid: $channel_uuid name: $name type: $type content: $content description: $description ) {
-              version_uuid
+          mutation($orgId: String!, $channelUuid: String!, $name: String!, $type: String!, $content: String!, $description: String) {
+            addChannelVersion(orgId: $orgId channelUuid: $channelUuid name: $name type: $type content: $content description: $description) {
+              versionUuid
               success
           }
         }
@@ -129,8 +129,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $uuid: String!) {
-            removeChannelVersion( org_id: $org_id uuid: $uuid) {
+          mutation($orgId: String!, $uuid: String!) {
+            removeChannelVersion(orgId: $orgId uuid: $uuid) {
               uuid
               success
           }
@@ -150,8 +150,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!,$name: String!) {
-            addChannel( org_id: $org_id name: $name) {
+          mutation($orgId: String!,$name: String!) {
+            addChannel(orgId: $orgId name: $name) {
               uuid
           }
         }
@@ -170,8 +170,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $uuid: String!, $name: String!) {
-            editChannel( org_id: $org_id uuid: $uuid name: $name) {
+          mutation($orgId: String!, $uuid: String!, $name: String!) {
+            editChannel(orgId: $orgId uuid: $uuid name: $name) {
               uuid
               success
               name
@@ -192,8 +192,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($org_id: String!, $uuid: String!) {
-            removeChannel( org_id: $org_id uuid: $uuid) {
+          mutation($orgId: String!, $uuid: String!) {
+            removeChannel(orgId: $orgId uuid: $uuid) {
               uuid
               success
           }

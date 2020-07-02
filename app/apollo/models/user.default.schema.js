@@ -159,7 +159,7 @@ UserDefaultSchema.statics.getOrgs = async function(context) {
       // of the github|bitbucket orgs a user belongs to, find ones that are registered in razee
       const orgFromDB = await models.Organization.findOne({ gheOrgId: org.gheOrgId }).lean();
       if (orgFromDB) {
-        results.push({ name: orgFromDB.name, _id: orgFromDB._id });
+        results.push({ name: orgFromDB.name, id: orgFromDB._id });
       }
     }
   }
@@ -171,7 +171,7 @@ UserDefaultSchema.statics.getOrgById = async function(models, orgId) {
 };
 
 UserDefaultSchema.statics.getOrg = async function(models, me) {
-  return await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  return await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
 };
 
 UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){
@@ -180,15 +180,15 @@ UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
-    var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'service.default.username') || _id;
+    var id = user._id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'service.default.username') || id;
     return {
-      _id,
+      id,
       name,
     };
   });
-  users = _.keyBy(users, '_id');
-  users['undefined'] = {_id: 'undefined', name: 'undefined'};
+  users = _.keyBy(users, 'id');
+  users['undefined'] = {id: 'undefined', name: 'undefined'};
   return users;
 };
 

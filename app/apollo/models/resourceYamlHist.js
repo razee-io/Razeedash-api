@@ -16,7 +16,9 @@
 
 const mongoose = require('mongoose');
 const ResourceYamlHistSchema = require('./resourceYamlHist.schema');
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
+ResourceYamlHistSchema.plugin(mongooseLeanVirtuals);
 const ResourceYamlHist = mongoose.model('resourceYamlHist', ResourceYamlHistSchema, 'resourceYamlHist');
 
 module.exports = ResourceYamlHist;

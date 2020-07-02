@@ -2,6 +2,6 @@
     "username": "user02",
     "email": "user02@us.ibm.com",
     "password": "passwordabc",
-    "org_name": "org_77",
+    "orgName": "org_77",
     "role": "ADMIN"
 }

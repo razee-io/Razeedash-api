@@ -172,7 +172,7 @@ describe('resourceDistributed graphql test suite', () => {
 
         const meResult = await api.me(token);
         const result1 = await api.resourcesDistributed(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
         });
         console.log(JSON.stringify(result1.data));
@@ -180,16 +180,16 @@ describe('resourceDistributed graphql test suite', () => {
           '/mybla/selfLink',
         );
 
-        const { _id } = result1.data.data.resourcesDistributed[0];
-        const result2 = await api.resourceDistributed(token, { _id });
+        const { id } = result1.data.data.resourcesDistributed[0];
+        const result2 = await api.resourceDistributed(token, { id: id });
         console.log(JSON.stringify(result2.data));
-        expect(result2.data.data.resourceDistributed._id).to.equal(_id);
+        expect(result2.data.data.resourceDistributed.id).to.equal(id);
         expect(result2.data.data.resourceDistributed.selfLink).to.equal(
           '/mybla/selfLink',
         );
 
         const result3 = await api.resourceDistributed(token, {
-          _id: '5deea2b9e7de2a430badbeef',
+          id: '5deea2b9e7de2a430badbeef',
         });
         console.log(JSON.stringify(result3.data));
         expect(result3.data.data.resourceDistributed).to.equal(null);
@@ -212,12 +212,12 @@ describe('resourceDistributed graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourceDistributedByKeys(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01_in_us',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01_in_us',
           selfLink: 'any_selfLink',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourceDistributedByKeys.cluster_id).to.equal(
+        expect(result1.data.data.resourceDistributedByKeys.clusterId).to.equal(
           'cluster_01_in_us',
         );
         expect(result1.data.data.resourceDistributedByKeys.selfLink).to.equal(
@@ -225,8 +225,8 @@ describe('resourceDistributed graphql test suite', () => {
         );
 
         const result2 = await api.resourceDistributedByKeys(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01_in_us',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01_in_us',
           selfLink: 'should_not_match_selfLink',
         });
         console.log(JSON.stringify(result2.data));
@@ -250,7 +250,7 @@ describe('resourceDistributed graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourcesDistributedCount(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resourcesDistributedCount).to.equal(2);
@@ -273,7 +273,7 @@ describe('resourceDistributed graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourcesDistributed(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'selfLink',
         });
         console.log(JSON.stringify(result1.data));
@@ -297,26 +297,26 @@ describe('resourceDistributed graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourcesDistributedByCluster(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01_in_us',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01_in_us',
           filter: 'selfLink',
         });
         console.log(JSON.stringify(result1.data));
         expect(
-          result1.data.data.resourcesDistributedByCluster[0].cluster_id,
+          result1.data.data.resourcesDistributedByCluster[0].clusterId,
         ).to.equal('cluster_01_in_us');
         expect(
           result1.data.data.resourcesDistributedByCluster[0].selfLink,
         ).to.equal('any_selfLink');
 
         const result2 = await api.resourcesDistributedByCluster(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_02_in_eu',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_02_in_eu',
           filter: 'selfLink',
         });
         console.log(JSON.stringify(result2.data));
         expect(
-          result2.data.data.resourcesDistributedByCluster[0].cluster_id,
+          result2.data.data.resourcesDistributedByCluster[0].clusterId,
         ).to.equal('cluster_02_in_eu');
         expect(
           result2.data.data.resourcesDistributedByCluster[0].selfLink,

@@ -292,7 +292,7 @@ describe('subscription graphql test suite', () => {
           data: { subscriptions },
         },
       } = await subscriptionApi.subscriptions(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
       expect(subscriptions).to.have.length(2);
     } catch (error) {
@@ -312,7 +312,7 @@ describe('subscription graphql test suite', () => {
           data: { subscription },
         },
       } = await subscriptionApi.subscription(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_01_uuid,
       });
       expect(subscription.name).to.equal(subscription_01_name);
@@ -333,11 +333,11 @@ describe('subscription graphql test suite', () => {
           data: { addSubscription },
         },
       } = await subscriptionApi.addSubscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         name: 'a_random_name',
         groups:['dev'],
-        channel_uuid: channel_01_uuid,
-        version_uuid: channelVersion_01_uuid,
+        channelUuid: channel_01_uuid,
+        versionUuid: channelVersion_01_uuid,
       });
       expect(addSubscription.uuid).to.be.an('string');
     } catch (error) {
@@ -358,12 +358,12 @@ describe('subscription graphql test suite', () => {
           data: { editSubscription },
         },
       } = await subscriptionApi.editSubscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_01_uuid,
         name: 'new-name',
         groups:['new-tag'],
-        channel_uuid: channel_02_uuid,
-        version_uuid: channelVersion_03_uuid,
+        channelUuid: channel_02_uuid,
+        versionUuid: channelVersion_03_uuid,
       });
       expect(editSubscription.uuid).to.be.an('string');
       expect(editSubscription.success).to.equal(true);
@@ -373,12 +373,12 @@ describe('subscription graphql test suite', () => {
           data: { subscription },
         },
       } = await subscriptionApi.subscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_01_uuid,
       });
       expect(subscription.name).to.equal('new-name');
-      expect(subscription.channel_uuid).to.equal(channel_02_uuid);
-      expect(subscription.version_uuid).to.equal(channelVersion_03_uuid);
+      expect(subscription.channelUuid).to.equal(channel_02_uuid);
+      expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
 
     } catch (error) {
       if (error.response) {
@@ -398,9 +398,9 @@ describe('subscription graphql test suite', () => {
           data: { setSubscription },
         },
       } = await subscriptionApi.setSubscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_02_uuid,
-        version_uuid: channelVersion_01_uuid,
+        versionUuid: channelVersion_01_uuid,
       });
       expect(setSubscription.uuid).to.be.an('string');
       expect(setSubscription.success).to.equal(true);
@@ -410,10 +410,10 @@ describe('subscription graphql test suite', () => {
           data: { subscription },
         },
       } = await subscriptionApi.subscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_02_uuid,
       });
-      expect(subscription.version_uuid).to.equal(channelVersion_01_uuid);
+      expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
       
     } catch (error) {
       if (error.response) {
@@ -433,7 +433,7 @@ describe('subscription graphql test suite', () => {
           data: { removeSubscription },
         },
       } = await subscriptionApi.removeSubscriptions(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_01_uuid,
       });
       expect(removeSubscription.uuid).to.be.an('string');
@@ -444,7 +444,7 @@ describe('subscription graphql test suite', () => {
           data: { subscription },
         },
       } = await subscriptionApi.subscription(adminToken, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: subscription_01_uuid,
       });
       expect(subscription).to.equal(null);

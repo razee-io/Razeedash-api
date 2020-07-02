@@ -110,10 +110,9 @@ describe('organization graphql test suite', () => {
       try {
         token = await signInUser(models, api, rootData);
         console.log(`root token=${token}`);
-
         const meResult = await api.me(token);
-        const { org_id } = meResult.data.data.me;
-        const urlResult = await api.registrationUrl(token, { org_id });
+        const { orgId } = meResult.data.data.me;
+        const urlResult = await api.registrationUrl(token, { orgId });
         console.log(JSON.stringify(urlResult.data));
         expect(urlResult.data.data.registrationUrl.url).to.be.a('string');
       } catch (error) {
@@ -138,16 +137,16 @@ describe('organization graphql test suite', () => {
         throw error;
       }
     });
-
+    
     it('a non-admin user should NOT be able to get registration url', async () => {
       try {
         token = await signInUser(models, api, user01Data);
         console.log(`user01 token=${token}`);
 
         const meResult = await api.me(token);
-        const { org_id } = meResult.data.data.me;
+        const { orgId } = meResult.data.data.me;
 
-        const urlResult = await api.registrationUrl(token, {org_id});
+        const urlResult = await api.registrationUrl(token, {orgId});
         
         console.log(JSON.stringify(urlResult.data));
         expect(urlResult.data.errors[0].message).to.be.a('string');

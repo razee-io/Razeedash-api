@@ -431,7 +431,7 @@ describe('groups graphql test suite', () => {
           data: { groups },
         },
       } = await groupApi.groups(token, {
-        org_id: org01._id,
+        orgId: org01._id,
       });
       console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
       expect(groups).to.be.an('array');
@@ -453,7 +453,7 @@ describe('groups graphql test suite', () => {
           data: { groupByName },
         },
       } = await groupApi.groupByName(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         name: 'group1'
       });
       console.log(`get group by name: groupByName = ${JSON.stringify(groupByName)}`);
@@ -477,7 +477,7 @@ describe('groups graphql test suite', () => {
           data: { group },
         },
       } = await groupApi.group(token, {
-        org_id: org01._id,
+        orgId: org01._id,
         uuid: group_02_uuid
       });
       console.log(`get group by id: group = ${JSON.stringify(group)}`);

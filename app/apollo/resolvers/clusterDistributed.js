@@ -64,7 +64,7 @@ const commonClusterDistributedSearch = async (
     );
     resultsArray.map(resultSet => {
       return resultSet.map(result => {
-        return results.push(result.toJSON());
+        return results.push(result.toJSON({ virtuals: true }));
       });
     });
   } catch (error) {
@@ -79,12 +79,12 @@ const commonClusterDistributedSearch = async (
 
 const clusterDistributedResolvers = {
   Query: {
-    clusterDistributedByClusterID: async (
+    clusterDistributedByClusterId: async (
       parent,
-      { org_id: orgId, cluster_id: clusterId },
+      { orgId: orgId, clusterId: clusterId },
       context,
     ) => {
-      const queryName = 'clusterDistributedByClusterID';
+      const queryName = 'clusterDistributedByClusterId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
@@ -101,18 +101,18 @@ const clusterDistributedResolvers = {
         });
 
         if (result != null) {
-          return result.toJSON();
+          return result.toJSON({ virtuals: true });
         }
       }
       return null;
-    }, // end clusterDistributedByClusterID
+    }, // end clusterDistributedByClusterId
 
-    clustersDistributedByOrgID: async (
+    clustersDistributedByOrgId: async (
       parent,
-      { org_id: orgId, limit },
+      { orgId: orgId, limit },
       context,
     ) => {
-      const queryName = 'clustersDistributedByOrgID';
+      const queryName = 'clustersDistributedByOrgId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
@@ -126,12 +126,12 @@ const clusterDistributedResolvers = {
         logger,
         queryName,
       );
-    }, // end clustersDistributedByOrgID
+    }, // end clustersDistributedByOrgId
 
     // Find all the clusters that have not been updated in the last day
     clusterDistributedZombies: async (
       parent,
-      { org_id: orgId, limit },
+      { orgId: orgId, limit },
       context,
     ) => {
       const queryName = 'clusterDistributedZombies';
@@ -158,7 +158,7 @@ const clusterDistributedResolvers = {
 
     clusterDistributedSearch: async (
       parent,
-      { org_id: orgId, filter, limit = 50 },
+      { orgId: orgId, filter, limit = 50 },
       context,
     ) => {
       const queryName = 'clusterDistributedSearch';
@@ -194,7 +194,7 @@ const clusterDistributedResolvers = {
     // Active means the cluster information has been updated in the last day
     clusterDistributedCountByKubeVersion: async (
       parent,
-      { org_id: orgId },
+      { orgId: orgId },
       context,
     ) => {
       const queryName = 'clusterDistributedCountByKubeVersion';
@@ -259,6 +259,7 @@ const clusterDistributedResolvers = {
         }
       }
       logger.debug(`${queryName} totalResults: ${JSON.stringify(totalResults, null, 4)} for req_id ${req_id}`);
+      for (const item of totalResults){ item.id = item._id; }
       return totalResults;
     }, // end clusterDistributedCountByKubeVersion
   }, // end query
