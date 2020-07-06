@@ -22,15 +22,15 @@ const organizationSchema = gql`
   }
 
   type Organization {
-    _id: ID!
+    id: ID!
     name: String!
   }
 
   extend type Query {
     """
-    Return the cluster registration Url for a given **org_id**.
+    Return the cluster registration Url for a given **orgId**.
     """
-    registrationUrl(org_id: String!): URL!   
+    registrationUrl(orgId: String!): URL!
 
     """
     Return Organizations the current user belongs to.

@@ -19,7 +19,7 @@ const { gql } = require('apollo-server-express');
 const userSchema = gql`
   extend type Query {
     """
-    Returns the current user information based on user's bearer token.
+    Returns the current user information based on user's bearer token.f
     """
     me: User
   }
@@ -32,7 +32,7 @@ const userSchema = gql`
       username: String!
       email: String!
       password: String!
-      org_name: String
+      orgName: String
       role: String
     ): Token!
 
@@ -47,12 +47,12 @@ const userSchema = gql`
   }
 
   # used by ui to get basic user information after Sign-in
-  # including id, type of the user, email, default org_id
+  # including id, type of the user, email, default orgId
   # and other meta data about this user.
   type User {
     id: ID!
     type: String!
-    org_id: String!
+    orgId: String!
     identifier: String
     email: String
     role: String

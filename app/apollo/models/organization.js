@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 const mongoose = require('mongoose');
-
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const { AUTH_MODEL } = require('./const');
 
 const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
 
+OrganizationSchema.plugin(mongooseLeanVirtuals);
 const Organization = mongoose.model('orgs', OrganizationSchema);
 
 module.exports = Organization;

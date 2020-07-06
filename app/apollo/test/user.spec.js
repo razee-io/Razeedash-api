@@ -150,7 +150,7 @@ describe('user graphql', () => {
        
         expect(me.id).to.be.a('string');
         expect(me.email).to.be.a('string');
-        expect(me.org_id).to.be.a('string');
+        expect(me.orgId).to.be.a('string');
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);

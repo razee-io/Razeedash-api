@@ -35,7 +35,7 @@ const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500,
     const resources = await models.Resource.find(searchFilter)
       .sort(sort)
       .limit(limit)
-      .lean()
+      .lean({ virtuals: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
@@ -101,7 +101,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
-    let resource = await models.Resource.findOne(searchFilter).lean();
+    let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
 
     if (!resource) return resource;
 
@@ -182,7 +182,7 @@ const applyQueryFieldsToResources = async(resources, queryFields, { subscription
 
 const resourceResolvers = {
   Query: {
-    resourcesCount: async (parent, { org_id }, context) => {
+    resourcesCount: async (parent, { orgId: org_id }, context) => {
       const queryName = 'resourcesCount';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
@@ -202,7 +202,7 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { org_id, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
+      { orgId: org_id, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
       context,
       fullQuery
     ) => {
@@ -234,7 +234,7 @@ const resourceResolvers = {
 
     resourcesByCluster: async (
       parent,
-      { org_id, cluster_id, filter, limit },
+      { orgId: org_id, clusterId: cluster_id, filter, limit },
       context,
       fullQuery
     ) => {
@@ -275,7 +275,7 @@ const resourceResolvers = {
       return commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
     },
 
-    resource: async (parent, { org_id, _id, histId }, context, fullQuery) => {
+    resource: async (parent, { orgId: org_id, id: _id, histId }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resource';
       const { models, me, req_id, logger } = context;
@@ -299,7 +299,7 @@ const resourceResolvers = {
 
     resourceByKeys: async (
       parent,
-      { org_id, cluster_id, selfLink },
+      { orgId: org_id, clusterId: cluster_id, selfLink },
       context,
       fullQuery
     ) => {
@@ -315,7 +315,7 @@ const resourceResolvers = {
       return commonResourceSearch({ context, org_id, searchFilter, queryFields });
     },
 
-    resourcesBySubscription: async ( parent, { org_id, subscription_id}, context, fullQuery) => {
+    resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
       const {  me, models, req_id, logger } = context;
@@ -342,7 +342,7 @@ const resourceResolvers = {
       return commonResourcesSearch({ context, org_id, searchFilter, queryFields });
     },
 
-    resourceHistory: async(parent, { org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
+    resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
       const { models, me, req_id, logger } = context;
 
       limit = _.clamp(limit, 1, 1000);
@@ -365,7 +365,7 @@ const resourceResolvers = {
         searchObj.updated = updatedSearchObj;
       }
 
-      const histObjs = await models.ResourceYamlHist.find(searchObj, { _id:1, updated:1 }, { limit, lean: true });
+      const histObjs = await models.ResourceYamlHist.find(searchObj, { _id:1, updated:1 }, { limit }).lean({ virtuals: true });
       const count = await models.ResourceYamlHist.find(searchObj).count();
 
       return {
@@ -374,7 +374,7 @@ const resourceResolvers = {
       };
     },
 
-    resourceContent: async(parent, { org_id, cluster_id, resourceSelfLink, histId=null }, context)=>{
+    resourceContent: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, histId=null }, context)=>{
       const { models, me, req_id, logger } = context;
 
       const queryName = 'resourceContent';
@@ -389,7 +389,7 @@ const resourceResolvers = {
       if(!histId || histId == resource._id.toString()){
         let content = await getContent(resource);
         return {
-          _id: resource._id,
+          id: resource._id,
           content,
           updated: resource.updated,
         };
@@ -403,7 +403,7 @@ const resourceResolvers = {
       const content = await getContent(obj);
 
       return {
-        _id: obj._id,
+        id: obj._id,
         content,
         updated: obj.updated,
       };
@@ -411,7 +411,7 @@ const resourceResolvers = {
   },
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { org_id, filter }, { models, me, req_id, logger }) => {
+      resolve: (parent, { orgID: org_id, filter }, { models, me, req_id, logger }) => {
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, me, req_id },
           'Subscription.resourceUpdated.resolve',
@@ -423,7 +423,7 @@ const resourceResolvers = {
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
-          const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.org_id);
+          const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.orgId);
           context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
           // TODO: in future probably we should valid authorization here
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
@@ -434,10 +434,10 @@ const resourceResolvers = {
           logger.debug( {req_id, user: whoIs(me), args }, 
             `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
-          await validAuth(me, args.org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);  
+          await validAuth(me, args.orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
           let found = true;
           const { resource } = parent.resourceUpdated;
-          if (args.org_id !== resource.org_id) {
+          if (args.orgId !== resource.orgId) {
             return false;
           }
           if (args.filter && args.filter !== '') {
@@ -445,7 +445,7 @@ const resourceResolvers = {
             // eslint-disable-next-line no-restricted-syntax
             for (const token of tokens) {
               if (
-                resource.cluster_id.match(token) ||
+                resource.clusterId.match(token) ||
                 resource.selfLink.match(token) ||
                 (resource.searchableData.kind &&
                   resource.searchableData.kind.match(token)) ||

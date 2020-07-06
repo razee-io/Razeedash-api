@@ -231,7 +231,7 @@ const createResources = async () => {
 const getPresetOrgs = async () => {
   presetOrgs = await models.Organization.find();
   presetOrgs = presetOrgs.map(user => {
-    return user.toJSON();
+    return user.toJSON({ virtuals: true });
   });
   console.log(`presetOrgs=${JSON.stringify(presetOrgs)}`);
 };
@@ -247,7 +247,7 @@ const getPresetUsers = async () => {
 const getPresetResources = async () => {
   presetResources = await models.Resource.find();
   presetResources = presetResources.map(resource => {
-    return resource.toJSON();
+    return resource.toJSON({ virtuals: true });
   });
   console.log(`presetResources=${JSON.stringify(presetResources)}`);
 };
@@ -295,17 +295,17 @@ describe('resource graphql test suite', () => {
     await mongoServer.stop();
   });
 
-  describe('resource(org_id: String!, _id: String!): Resource', () => {
+  describe('resource(orgId: String!, id: String!): Resource', () => {
     let token;
 
-    it('a user should see a resource by given _id', async () => {
+    it('a user should see a resource by given id', async () => {
       try {
         token = await signInUser(models, api, user01Data);
         console.log(`user01 token=${token}`);
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
         });
         console.log(JSON.stringify(result1.data));
@@ -313,10 +313,10 @@ describe('resource graphql test suite', () => {
           '/mybla/selfLink',
         );
 
-        const { _id } = result1.data.data.resources.resources[0];
-        const result2 = await api.resource(token, { org_id: meResult.data.data.me.org_id, _id: _id.toString() });
+        const { id } = result1.data.data.resources.resources[0];
+        const result2 = await api.resource(token, { orgId: meResult.data.data.me.orgId, id: id.toString() });
         console.log(JSON.stringify(result2.data));
-        expect(result2.data.data.resource._id).to.equal(_id);
+        expect(result2.data.data.resource.id).to.equal(id);
         expect(result2.data.data.resource.selfLink).to.equal('/mybla/selfLink');
       } catch (error) {
         // console.error('error response is ', error.response);
@@ -335,7 +335,7 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
           sort: [{ field: 'selfLink', desc: true }],
         });
@@ -344,7 +344,7 @@ describe('resource graphql test suite', () => {
           '/mybla/cluster04/selfLink2',
         );
         const result2 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
           sort: [{ field: 'selfLink' }],
         });
@@ -368,7 +368,7 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           kinds: ['Deployment'],
         });
         console.log(JSON.stringify(result1.data));
@@ -379,7 +379,7 @@ describe('resource graphql test suite', () => {
           1,
         );
         const result2 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           kinds: ['StatefulSet'],
         });
         console.log(JSON.stringify(result2.data));
@@ -406,8 +406,8 @@ describe('resource graphql test suite', () => {
 
 
         const result1 = await api.resourceHistId(token, {
-          _id: resourceObjId,
-          org_id: meResult.data.data.me.org_id,
+          id: resourceObjId,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
           histId: 'resourceYamlHist_01',
         });
@@ -425,7 +425,7 @@ describe('resource graphql test suite', () => {
     });
   });
 
-  describe('resourceHistory(org_id: String!, cluster_id: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20)', ()=>{
+  describe('resourceHistory(orgId: String!, clusterId: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20)', ()=>{
     it('should view history list for a resource', async()=>{
       let token;
       try {
@@ -435,8 +435,8 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourceHistory(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01',
           resourceSelfLink: '/mybla/selfLink',
           beforeDate: null,
           afterDate: null,
@@ -446,7 +446,7 @@ describe('resource graphql test suite', () => {
         expect(result1.data.data.resourceHistory.count).to.equal(
           2
         );
-        var ids = _.map(result1.data.data.resourceHistory.items, '_id');
+        var ids = _.map(result1.data.data.resourceHistory.items, 'id');
         expect(ids.length).to.equal(
           2
         );
@@ -458,10 +458,10 @@ describe('resource graphql test suite', () => {
     });
   });
 
-  describe('resourceByKeys(org_id: String! cluster_id: String! selfLink: String!): Resource', () => {
+  describe('resourceByKeys(orgId: String! clusterId: String! selfLink: String!): Resource', () => {
     let token;
 
-    it('a user should see a resource by given org_id, cluster_id, and selfLink', async () => {
+    it('a user should see a resource by given orgId, clusterId, and selfLink', async () => {
       try {
 
         token = await signInUser(models, api, user01Data);
@@ -470,12 +470,12 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourceByKeys(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01',
           selfLink: '/mybla/selfLink',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourceByKeys.cluster_id).to.equal(
+        expect(result1.data.data.resourceByKeys.clusterId).to.equal(
           'cluster_01',
         );
         expect(result1.data.data.resourceByKeys.selfLink).to.equal(
@@ -499,7 +499,7 @@ describe('resource graphql test suite', () => {
 
         const meResult = await api.me(token);
         const result1 = await api.resourcesCount(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resourcesCount).to.equal(1);
@@ -525,7 +525,7 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
-          org_id: meResult.data.data.me.org_id,
+          orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
         });
         console.log(JSON.stringify(result1.data));
@@ -540,10 +540,10 @@ describe('resource graphql test suite', () => {
     });
   });
 
-  describe('resourcesByCluster(cluster_id: String! filter: String): [Resource!]', () => {
+  describe('resourcesByCluster(clusterId: String! filter: String): [Resource!]', () => {
     let token;
 
-    it('a user should only see resources for given cluster_id with optional filter', async () => {
+    it('a user should only see resources for given clusterId with optional filter', async () => {
       try {
         token = await signInUser(models, api, user01Data);
         console.log(`user01 token=${token}`);
@@ -551,12 +551,12 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourcesByCluster(token, {
-          org_id: meResult.data.data.me.org_id,
-          cluster_id: 'cluster_01',
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01',
           filter: 'selfLink',
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesByCluster.resources[0].cluster_id).to.equal(
+        expect(result1.data.data.resourcesByCluster.resources[0].clusterId).to.equal(
           'cluster_01',
         );
         expect(result1.data.data.resourcesByCluster.resources[0].selfLink).to.equal(
@@ -570,8 +570,7 @@ describe('resource graphql test suite', () => {
     });
   });
 
-
-  describe('resourcesBySubscription(org_id: String! filter: String): ResourcesList!', () => {
+  describe('resourcesBySubscription(orgId: String! filter: String): ResourcesList!', () => {
     let token;
 
     it('a user should only see resources for given subscription id', async () => {
@@ -582,11 +581,11 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourcesBySubscription(token, {
-          org_id: meResult.data.data.me.org_id,
-          subscription_id: 'abc-123'
+          orgId: meResult.data.data.me.orgId,
+          subscriptionId: 'abc-123'
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesBySubscription.resources[0].cluster_id).to.equal(
+        expect(result1.data.data.resourcesBySubscription.resources[0].clusterId).to.equal(
           'cluster_01',
         );
         expect(result1.data.data.resourcesBySubscription.resources[0].searchableData.subscription_id).to.equal(
@@ -600,7 +599,7 @@ describe('resource graphql test suite', () => {
     });
   });
 
-  describe('resourceUpdated (org_id: String!, filter: String): ResourceUpdated!', () => {
+  describe('resourceUpdated (orgId: String!, filter: String): ResourceUpdated!', () => {
     before(function() {
       if (pubSub.enabled === false) {
         // this.skip();
@@ -610,17 +609,17 @@ describe('resource graphql test suite', () => {
     let token;
 
     const aResource = {
-      _id: 'some_fake_id',
-      org_id: 'org_01',
-      cluster_id: 'cluster_01',
+      id: 'some_fake_id',
+      orgId: 'org_01',
+      clusterId: 'cluster_01',
       selfLink: '/ff/bla2',
       searchableData: { ttt: 'tt tt t1' },
     };
 
     const anotherResource = {
-      _id: 'anther_fake_id',
-      org_id: 'org_02',
-      cluster_id: 'cluster_01',
+      id: 'anther_fake_id',
+      orgId: 'org_02',
+      clusterId: 'cluster_01',
       selfLink: '/ff/bla2',
       searchableData: { ttt: 'tt tt t1' },
     };
@@ -636,12 +635,12 @@ describe('resource graphql test suite', () => {
           wsUrl: subscriptionUrl,
           token,
         });
-        const query = `subscription ($org_id: String!, $filter: String) {
-          resourceUpdated (org_id: $org_id, filter: $filter) {
+        const query = `subscription ($orgId: String!, $filter: String) {
+          resourceUpdated (orgId: $orgId, filter: $filter) {
             resource {
-              _id
-              org_id
-              cluster_id
+              id
+              orgId
+              clusterId
               selfLink
               hash
               searchableData
@@ -655,12 +654,11 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
         const unsub = subClient
           .request(query, {
-            org_id: meResult.data.data.me.org_id,
+            orgId: meResult.data.data.me.orgId,
             filter: 'bla2',
           })
           .subscribe({
             next: data => {
-              console.log(`sub handler receives:${JSON.stringify(data)}`);
               dataReceivedFromSub = data.data.resourceUpdated.resource;
             },
             error: error => {
@@ -671,14 +669,14 @@ describe('resource graphql test suite', () => {
 
         // sleep 0.1 second and send a resourceChanged event
         await sleep(200);
-        aResource.org_id = org_02._id;
+        aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource);
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
         await sleep(800);
-        expect(dataReceivedFromSub._id).to.equal('some_fake_id');
+        expect(dataReceivedFromSub.id).to.equal('some_fake_id');
 
         // sleep 0.1 second and send a resourceChanged event
         await sleep(100);

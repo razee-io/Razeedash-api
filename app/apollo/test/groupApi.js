@@ -22,19 +22,67 @@ const groupFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($org_id: String!) {
-            groups( org_id: $org_id ) {
+          query($orgId: String!) {
+            groups(orgId: $orgId ) {
                 uuid
-                org_id
+                orgId
                 name
                 owner {
-                  _id
+                  id
                   name
                 }
                 created
+            }
           }
-        }
-    `,
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  
+  const group = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String!, $uuid: String!) {
+            group( orgId: $orgId, uuid: $uuid ) {
+              uuid
+              clusterCount
+              subscriptionCount
+              subscriptions
+              clusters
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const groupByName = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String!, $name: String!) {
+            groupByName( orgId: $orgId, name: $name ) {
+              uuid
+              clusterCount
+              subscriptionCount
+              subscriptions
+              clusters
+            }
+          }
+        `,
         variables,
       },
       {
@@ -46,6 +94,8 @@ const groupFunc = grahqlUrl => {
 
   return {
     groups,
+    group,
+    groupByName
   };
 };
         

@@ -16,7 +16,9 @@
 
 const mongoose = require('mongoose');
 const ResourceSchema = require('./resource.schema');
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
+ResourceSchema.plugin(mongooseLeanVirtuals);
 const Resource = mongoose.model('resources', ResourceSchema);
 
 module.exports = Resource;

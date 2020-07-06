@@ -107,7 +107,7 @@ class PubSubImpl {
         op = 'delete';
       }
       try {
-        const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.org_id);
+        const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.orgId);
         logger.debug({ op, resource, topic }, 'Publishing resource updates');
         await this.pubSub.publish(topic, {
           resourceUpdated: { resource, op },

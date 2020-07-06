@@ -19,6 +19,7 @@ const { v4: uuid } = require('uuid');
 const OrganizationDefaultSchema = new mongoose.Schema({
   _id: {
     type: String,
+    alias: 'id',
   },
   name: {
     type: String,

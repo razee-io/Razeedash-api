@@ -30,7 +30,7 @@ const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
 const channelResolvers = {
   Query: {
-    channels: async(parent, { org_id }, context) => {
+    channels: async(parent, { orgId: org_id }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -44,7 +44,7 @@ const channelResolvers = {
       }
       return channels;
     },
-    channel: async(parent, { org_id, uuid }, context) => {
+    channel: async(parent, { orgId: org_id, uuid }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
       logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
@@ -58,7 +58,7 @@ const channelResolvers = {
       }
       return channel;
     },
-    getChannelVersion: async(parent, { org_id, channel_uuid, version_uuid }, context) => {
+    getChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, versionUuid: version_uuid }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'getChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, version_uuid }, `${queryName} enter`);
@@ -108,7 +108,7 @@ const channelResolvers = {
     }
   },
   Mutation: {
-    addChannel: async (parent, { org_id, name }, context)=>{
+    addChannel: async (parent, { orgId: org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -133,7 +133,7 @@ const channelResolvers = {
         throw err;
       }
     },
-    editChannel: async (parent, { org_id, uuid, name }, context)=>{
+    editChannel: async (parent, { orgId: org_id, uuid, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
@@ -157,7 +157,7 @@ const channelResolvers = {
         throw err;
       }
     },
-    addChannelVersion: async(parent, { org_id, channel_uuid, name, type, content, file, description }, context)=>{
+    addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
       const { models, me, req_id, logger } = context;
 
       const queryName = 'addChannelVersion';
@@ -268,10 +268,10 @@ const channelResolvers = {
       );
       return {
         success: true,
-        version_uuid: versionObj.uuid,
+        versionUuid: versionObj.uuid,
       };
     },
-    removeChannel: async (parent, { org_id, uuid }, context)=>{
+    removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
@@ -301,7 +301,7 @@ const channelResolvers = {
         throw err;
       }
     },
-    removeChannelVersion: async (parent, { org_id, uuid }, context)=>{
+    removeChannelVersion: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);

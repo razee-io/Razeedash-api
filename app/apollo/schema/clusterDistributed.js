@@ -19,27 +19,27 @@ const { gql } = require('apollo-server-express');
 const clusterDistributedSchema = gql`
   extend type Query {
     """
-    Return a cluster based on **org_id** and **cluster_id**. Multiple DBs will be searched if configured.
+    Return a cluster based on **orgId** and **clusterId**. Multiple DBs will be searched if configured.
     """
-    clusterDistributedByClusterID(org_id: String!, cluster_id: String!): Cluster
+    clusterDistributedByClusterId(orgId: String!, clusterId: String!): Cluster
 
     """
-    Return clusters based on **org_id** from multiple DBs if configured.
+    Return clusters based on **orgId** from multiple DBs if configured.
     """
-    clustersDistributedByOrgID(
-      org_id: String
+    clustersDistributedByOrgId(
+      orgId: String
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
     ): [Cluster]!
 
     """
-    Return clusters based on **org_id** and **filter** on **cluster_id** from multiple DBs if configured.
+    Return clusters based on **orgId** and **filter** on **clusterId** from multiple DBs if configured.
     """
     clusterDistributedSearch(
-      org_id: String!
+      orgId: String!
       """
-      **filter**: applies to **cluster_id** field.
-      If no **filter** is provided, this returns clusters based on just **orig_id**.
+      **filter**: applies to **clusterId** field.
+      If no **filter** is provided, this returns clusters based on just **orgId**.
       """
       filter: String
       "**limit**: Number of docs to return. default 50, 0 means return all"
@@ -47,21 +47,21 @@ const clusterDistributedSchema = gql`
     ): [Cluster]!
 
     """
-    Return clusters based on **org_id** whose *updated* field has not been updated in the past day.
+    Return clusters based on **orgId** whose *updated* field has not been updated in the past day.
     Mulitple DBs will be searched if configured.
     """
     clusterDistributedZombies(
-      org_id: String!
+      orgId: String!
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
     ): [Cluster]
 
     """
-    Return counts of different kubernetes versions deployed in **org_id**. Only active
+    Return counts of different kubernetes versions deployed in **orgId**. Only active
     clusters are counted (**updated** field updated in last day). Mulitple DBs will be searched if configured.
     """
     clusterDistributedCountByKubeVersion(
-      org_id: String!
+      orgId: String!
     ): [ClusterCountByKubeVersion]!
   }
 `;

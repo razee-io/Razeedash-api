@@ -18,19 +18,19 @@ const { gql } = require('apollo-server-express');
 
 const subscriptionSchema = gql`
   type BasicUser {
-    _id: String!
+    id: String!
     name: String!
   }
   type ChannelSubscription {
     uuid: String!
-    org_id: String!
+    orgId: String!
     name: String!
     groups: [String!]
-    channel_uuid: String!
-    channel_name: String!
+    channelUuid: String!
+    channelName: String!
     channel: Channel
     version: String!
-    version_uuid: String!
+    versionUuid: String!
     owner: BasicUser!
     created: Date!
     updated: Date!
@@ -50,55 +50,64 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
-  type UpdatedSubscription {
+  type UpdatedSubscriptionDeprecated {
     subscription_name: String!,
     subscription_channel: String!,
     subscription_version: String!,
     subscription_uuid: String!,
     url: String!
   }
-  type ChannelsWithLinks {
-    channel: ChannelSubscription,
-    links: UpdatedSubscription
+  type UpdatedSubscription {
+    subscriptionName: String!,
+    subscriptionChannel: String!,
+    subscriptionVersion: String!,
+    subscriptionUuid: String!,
+    url: String!
   }
   type SubscriptionUpdated {
+    "**has_updates**: deprecated, use hasUpdates"
     has_updates: Boolean
+    hasUpdates: Boolean
   }
   
   extend type Query {
      """
-     Gets all subscriptions for org_id
+     Gets all subscriptions for orgId
      """
-     subscriptions(org_id: String!): [ChannelSubscription]
+     subscriptions(orgId: String!): [ChannelSubscription]
      """
      Get a single subscriptions
      """
-     subscription(org_id: String!, uuid: String!): ChannelSubscription
+     subscription(orgId: String!, uuid: String!): ChannelSubscription
      """
-     Gets all subscriptions for a cluster
+     Gets all subscriptions for a cluster, invoked from cluster-subscription agent, deprecated, please use subscriptionsByClusterId
      """
-     subscriptionsByCluster(cluster_id: String): [UpdatedSubscription]
+     subscriptionsByCluster(cluster_id: String): [UpdatedSubscriptionDeprecated]
+     """
+     Gets all subscriptions for a cluster, invoked from cluster-subscription agent
+     """
+     subscriptionsByClusterId(clusterId: String!): [UpdatedSubscription]
   }
   extend type Mutation {
      """
      Adds a subscription
      """
-     addSubscription(org_id: String!, name: String!, groups: [String!]!, channel_uuid: String!, version_uuid: String!): AddChannelSubscriptionReply!
+     addSubscription(orgId: String!, name: String!, groups: [String!]!, channelUuid: String!, versionUuid: String!): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(org_id: String!, uuid: String!, name: String!, groups: [String!]!, channel_uuid: String!, version_uuid: String!): EditChannelSubscriptionReply!
+     editSubscription(orgId: String!, uuid: String!, name: String!, groups: [String!]!, channelUuid: String!, versionUuid: String!): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion
      """
-     setSubscription(org_id: String!, uuid: String!, version_uuid: String! ): SetSubscriptionReply!
+     setSubscription(orgId: String!, uuid: String!, versionUuid: String! ): SetSubscriptionReply!
      
      """
      Removes a subscription
      """
-     removeSubscription(org_id: String!, uuid: String!): RemoveChannelSubscriptionReply
+     removeSubscription(orgId: String!, uuid: String!): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
     subscriptionUpdated: SubscriptionUpdated!

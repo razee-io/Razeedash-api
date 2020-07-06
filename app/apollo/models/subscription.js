@@ -16,7 +16,9 @@
 
 const mongoose = require('mongoose');
 const SubscriptionSchema = require('./subscription.schema');
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
+SubscriptionSchema.plugin(mongooseLeanVirtuals);
 const Subscription = mongoose.model('subscriptions', SubscriptionSchema);
 
 module.exports = Subscription;

@@ -87,7 +87,7 @@ const UserPassportLocalSchema = new mongoose.Schema({
 });
 
 async function getOrCreateOrganization(models, args) {
-  const orgName = args.org_name || 'default_local_org';
+  const orgName = args.orgName || 'default_local_org';
   const org = await models.Organization.findOne({ name: orgName });
   if (org) return org;
   if (models.OrganizationDistributed) {
@@ -167,13 +167,17 @@ UserPassportLocalSchema.statics.createToken = async (
 
 UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
+  let data = me.meta.orgs[0];
+  data.id = data._id;
+  delete(data._id);
+
   if (result != null) {
     result = {
       type: me.type,
       id: me._id,
       email: me.email,
       identifier: me.identifier, 
-      org_id: me.org_id,
+      orgId: me.org_id,
       role: me.role,
       meta: me.meta,
     };
@@ -327,7 +331,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
 
 UserPassportLocalSchema.statics.getOrg = async function(models, me) {
   let org;
-  org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
   return org;
 };
 
@@ -341,7 +345,7 @@ UserPassportLocalSchema.statics.getOrgs = async function(context) {
       // eslint-disable-next-line no-await-in-loop
       const orgFromDB = await models.Organization.findOne({ _id: org._id });
       if (orgFromDB) {
-        results.push({ name: orgFromDB.name, _id: org._id });
+        results.push({ name: orgFromDB.name, id: org._id });
       }
     }
   }
@@ -354,15 +358,15 @@ UserPassportLocalSchema.statics.getBasicUsersByIds = async function(ids){
   }
   var users = await this.find({ _id: { $in: ids } }, { }, { lean: 1 });
   users = users.map((user)=>{
-    var _id = user._id;
-    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || _id;
+    var id = user._id;
+    var name = _.get(user, 'profile.name') || _.get(user, 'services.passportlocal.username') || id;
     return {
-      _id,
+      id,
       name,
     };
   });
-  users = _.keyBy(users, '_id');
-  users['undefined'] = {_id: 'undefined', name: 'undefined'};
+  users = _.keyBy(users, 'id');
+  users['undefined'] = {id: 'undefined', name: 'undefined'};
   return users;
 };
 
