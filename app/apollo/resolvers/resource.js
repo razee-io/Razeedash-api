@@ -158,7 +158,9 @@ const applyQueryFieldsToResources = async(resources, queryFields, { subscription
         return;
       }
       resource.subscription = subscriptionsByUuid[subId] || null;
-      delete resource.subscription.channel;
+      if(resource.subscription) {
+        delete resource.subscription.channel;
+      }
     });
 
     //console.log(33333333, _.get(queryFields, 'resources.subscription.channel'), queryFields)

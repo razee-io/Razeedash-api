@@ -87,7 +87,15 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, groups: { $in: clusterGroupNames }}).lean();
+        const foundSubscriptions = await models.Subscription.find({
+          'org_id': org_id,
+          groups: { $in: clusterGroupNames },
+        }).lean();
+        _.each(foundSubscriptions, (sub)=>{
+          if(_.isUndefined(sub.channel_name)){
+            sub.channel_name = sub.channel;
+          }
+        });
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, foundSubscriptions);
         }
