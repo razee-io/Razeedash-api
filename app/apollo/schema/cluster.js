@@ -70,7 +70,7 @@ const clusterSchema = gql`
     """
     Return a cluster based on **orgId** and **clusterId**.
     """
-    clusterByClusterId(orgId: String!, clusterId: String!): Cluster!
+    clusterByClusterId(orgId: String!, clusterId: String!): Cluster
 
     """
     Return clusters based on **orgId**, sorted with newest document first.
