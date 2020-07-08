@@ -147,8 +147,8 @@ const applyQueryFieldsToResources = async(resources, queryFields, { subscription
     var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
     var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean();
     _.each(subscriptions, (sub)=>{
-      if(_.isUndefined(sub.channel_name)){
-        sub.channel_name = sub.channel;
+      if(_.isUndefined(sub.channelName)){
+        sub.channelName = sub.channel;
       }
     });
     var subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');

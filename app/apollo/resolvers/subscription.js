@@ -46,8 +46,8 @@ async function validateGroups(org_id, groups, context) {
 
 const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{ // eslint-disable-line
   _.each(subs, (sub)=>{
-    if(_.isUndefined(sub.channel_name)){
-      sub.channel_name = sub.channel;
+    if(_.isUndefined(sub.channelName)){
+      sub.channelName = sub.channel;
     }
     delete sub.channel;
   });
@@ -97,8 +97,8 @@ const subscriptionResolvers = {
           groups: { $in: clusterGroupNames },
         }).lean();
         _.each(foundSubscriptions, (sub)=>{
-          if(_.isUndefined(sub.channel_name)){
-            sub.channel_name = sub.channel;
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
           }
         });
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
@@ -128,8 +128,8 @@ const subscriptionResolvers = {
       const owners = await models.User.getBasicUsersByIds(ownerIds);
 
       subscriptions = subscriptions.map((sub)=>{
-        if(_.isUndefined(sub.channel_name)){
-          sub.channel_name = sub.channel;
+        if(_.isUndefined(sub.channelName)){
+          sub.channelName = sub.channel;
         }
         sub.owner = owners[sub.owner];
         return sub;
@@ -195,7 +195,7 @@ const subscriptionResolvers = {
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
-          channel_name: channel.name, channel_uuid, version: version.name, version_uuid
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id});
@@ -240,7 +240,7 @@ const subscriptionResolvers = {
 
         var sets = {
           name, groups,
-          channel_name: channel.name, channel_uuid, version: version.name, version_uuid,
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
 

@@ -39,7 +39,7 @@ const SubscriptionSchema = new mongoose.Schema({
     type: String,
     alias: 'channelUuid',
   },
-  channel_name: {
+  channelName: {
     type: String,
   },
   channel: {

@@ -147,7 +147,7 @@ const createSubscriptions = async () => {
     uuid: sub_01_uuid,
     groups: sub_01_groups,
     channel_uuid: channel_01_uuid,
-    channel_name: channel_01_name,
+    channelName: channel_01_name,
     version: sub_01_version,
     version_uuid: sub_01_version_uuid,
     owner: 'tester'
@@ -160,7 +160,7 @@ const createSubscriptions = async () => {
     uuid: sub_02_uuid,
     groups: sub_02_groups,
     channel_uuid: channel_01_uuid,
-    channel_name: channel_01_name,
+    channelName: channel_01_name,
     version: sub_02_version,
     version_uuid: sub_02_version_uuid,
     owner: 'tester'
@@ -196,17 +196,12 @@ describe('subscriptions graphql test suite', () => {
 
   it('get should return a subscription for a cluster by calling deprecated subscriptionsByCluster', async () => {
     try {
-      const result = await subscriptionsApi.subscriptionsByCluster(token, {
-        cluster_id: sub_01_tags
+      const result = await subscriptionsApi.subscriptionsByClusterId(token, {
+        clusterId: cluster_id,
       }, orgKey);
-      const {
-        data: {
-          data: { subscriptionsByCluster },
-        },
-      } = result;
-
-      expect(subscriptionsByCluster).to.have.length(1);
-      expect(subscriptionsByCluster[0].subscription_name).to.equal('fake_sub_01');
+      const subscriptionsByClusterId = result.data.data.subscriptionsByClusterId;
+      expect(subscriptionsByClusterId).to.have.length(1);
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

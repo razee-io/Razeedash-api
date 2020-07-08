@@ -85,7 +85,7 @@ const clusterResolvers = {
   Query: {
     clusterByClusterId: async (
       parent,
-      { orgId, clusterId },
+      { orgId, clusterId, resourceLimit },
       context,
       fullQuery
     ) => {
