@@ -163,7 +163,6 @@ const applyQueryFieldsToResources = async(resources, queryFields, { subscription
       }
     });
 
-    //console.log(33333333, _.get(queryFields, 'resources.subscription.channel'), queryFields)
     if(_.get(queryFields, 'resources.subscription.channel')){
 
       var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
