@@ -107,15 +107,17 @@ const clusterResolvers = {
         return null;
       }
 
-      var { url } = await models.Organization.getRegistrationUrl(orgId, context);
-      url = url + `&clusterId=${clusterId}`;
-      if (RDD_STATIC_ARGS.length > 0) {
-        RDD_STATIC_ARGS.forEach(arg => {
-          url += `&args=${arg}`;
-        });
+      if(cluster){
+        var { url } = await models.Organization.getRegistrationUrl(orgId, context);
+        url = url + `&clusterId=${clusterId}`;
+        if (RDD_STATIC_ARGS.length > 0) {
+          RDD_STATIC_ARGS.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+        }
+        if (!cluster.registration) cluster.registration = {};
+        cluster.registration.url = url;
       }
-      if (!cluster.registration) cluster.registration = {};
-      cluster.registration.url = url;
 
       await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
 
