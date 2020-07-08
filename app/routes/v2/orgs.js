@@ -126,7 +126,7 @@ const deleteOrg = async(req, res) => {
       return res.status(200).send( 'success' );
     } else {
       req.log.error(removedOrg);
-      return res.status(500).send( 'The org could not be deleted' );
+      return res.status(404).send( 'The org could not be deleted' );
     }
   } catch (error) {
     req.log.error(error);
