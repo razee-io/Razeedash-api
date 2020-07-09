@@ -54,6 +54,8 @@ const ChannelSchema = new mongoose.Schema({
       }
     }
   ],
+}, {
+  //strict:'throw',
 });
 
 ChannelSchema.index({ org_id: 1 }, { });

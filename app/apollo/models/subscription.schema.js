@@ -39,8 +39,11 @@ const SubscriptionSchema = new mongoose.Schema({
     type: String,
     alias: 'channelUuid',
   },
-  channel: {
+  channelName: {
     type: String,
+  },
+  channel: {
+    type: String, // remove this later
   },
   version: {
     type: String,
@@ -60,6 +63,8 @@ const SubscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 SubscriptionSchema.index({ org_id: 1 }, { });

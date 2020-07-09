@@ -22,8 +22,8 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $clusterId: String!) {
-            clusterByClusterId(orgId: $orgId clusterId: $clusterId) {
+          query($orgId: String! $clusterId: String! $resourceLimit: Int = 500) {
+            clusterByClusterId(orgId: $orgId clusterId: $clusterId, resourceLimit: $resourceLimit) {
               id
               orgId
               clusterId
@@ -71,6 +71,9 @@ const clusterFunc = grahqlUrl => {
               id
               orgId
               clusterId
+              resources{
+                selfLink
+              }
           }
         }
     `,

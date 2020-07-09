@@ -38,6 +38,8 @@ const GroupSchema = new mongoose.Schema({
   owner: {
     type: String,
   },
+}, {
+  //strict:'throw',
 });
 
 

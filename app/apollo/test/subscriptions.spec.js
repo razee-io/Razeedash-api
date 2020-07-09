@@ -287,13 +287,14 @@ describe('subscription graphql test suite', () => {
 
   it('get subscriptions', async () => {
     try {
+      const result = await subscriptionApi.subscriptions(token, {
+        orgId: org01._id,
+      });
       const {
         data: {
           data: { subscriptions },
         },
-      } = await subscriptionApi.subscriptions(token, {
-        orgId: org01._id,
-      });
+      } = result;
       expect(subscriptions).to.have.length(2);
     } catch (error) {
       if (error.response) {
@@ -307,14 +308,12 @@ describe('subscription graphql test suite', () => {
 
   it('get subscription by subscription uuid', async () => {
     try {
-      const {
-        data: {
-          data: { subscription },
-        },
-      } = await subscriptionApi.subscription(token, {
+      const result = await subscriptionApi.subscription(token, {
         orgId: org01._id,
         uuid: subscription_01_uuid,
       });
+      expect(result.data.errors).to.be.undefined;
+      const subscription = result.data.data.subscription;
       expect(subscription.name).to.equal(subscription_01_name);
     } catch (error) {
       if (error.response) {

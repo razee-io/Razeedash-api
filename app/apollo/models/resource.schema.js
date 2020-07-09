@@ -54,7 +54,16 @@ const ResourceSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
+
+ResourceSchema.statics.getIds = async(ids)=>{
+  return await this.find({ _id: { $in: ids } });
+};
+ResourceSchema.statics.getByClusterIds = async(clusterIds)=>{
+  return await this.find({ cluster_id: { $in: clusterIds } });
+};
 
 module.exports = ResourceSchema;
 

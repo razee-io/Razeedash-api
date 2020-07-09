@@ -267,6 +267,10 @@ const apiFunc = grahqlUrl => {
                 searchableData
                 created
                 updated
+                cluster{
+                  clusterId
+                  name
+                }
               }
             }
           }

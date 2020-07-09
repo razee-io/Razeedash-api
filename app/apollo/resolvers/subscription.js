@@ -22,6 +22,7 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
+const GraphqlFields = require('graphql-fields');
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -43,9 +44,18 @@ async function validateGroups(org_id, groups, context) {
   return groupCount;
 }
 
+const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{ // eslint-disable-line
+  _.each(subs, (sub)=>{
+    if(_.isUndefined(sub.channelName)){
+      sub.channelName = sub.channel;
+    }
+    delete sub.channel;
+  });
+};
+
 const subscriptionResolvers = {
   Query: {
-    // Cluster-facing API, deprecated, 
+    // Cluster-facing API, deprecated,
     subscriptionsByCluster: async(parent, { cluster_id }, context) => {
       return await subscriptionResolvers.Query.subscriptionsByClusterId(parent, {clusterId: cluster_id, deprecated: true}, context);
     },
@@ -72,17 +82,25 @@ const subscriptionResolvers = {
       if (cluster.groups) {
         clusterGroupNames = cluster.groups.map(l => l.name);
       }
-      
+
       logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${query} enter`);
       let urls = [];
       try {
-        // Return subscriptions that contain any clusterGroupNames passed in from the query 
+        // Return subscriptions that contain any clusterGroupNames passed in from the query
         // examples:
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.find({ 'org_id': org_id, groups: { $in: clusterGroupNames }}).lean();
+        const foundSubscriptions = await models.Subscription.find({
+          'org_id': org_id,
+          groups: { $in: clusterGroupNames },
+        }).lean(/* skip virtuals: true for now since it is class facing api. */);
+        _.each(foundSubscriptions, (sub)=>{
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
+          }
+        });
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, foundSubscriptions, deprecated);
         }
@@ -91,7 +109,8 @@ const subscriptionResolvers = {
       }
       return urls;
     },
-    subscriptions: async(parent, { orgId: org_id }, context) => {
+    subscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -109,23 +128,36 @@ const subscriptionResolvers = {
       const owners = await models.User.getBasicUsersByIds(ownerIds);
 
       subscriptions = subscriptions.map((sub)=>{
+        if(_.isUndefined(sub.channelName)){
+          sub.channelName = sub.channel;
+        }
         sub.owner = owners[sub.owner];
         return sub;
       });
 
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { }, models);
+
       return subscriptions;
     },
-    subscription: async(parent, { orgId: org_id, uuid }, context) => {
+    subscription: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       try{
-        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, { models, me, req_id, logger });
+        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, { models, me, req_id, logger }, fullQuery);
+
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid);
         });
+        if(!subscription){
+          return null;
+        }
+
+        await applyQueryFieldsToSubscriptions([subscription], queryFields, { }, models);
+
         return subscription;
       }catch(err){
         logger.error(err);
@@ -163,7 +195,7 @@ const subscriptionResolvers = {
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
-          channel: channel.name, channel_uuid, version: version.name, version_uuid
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id});
@@ -208,7 +240,7 @@ const subscriptionResolvers = {
 
         var sets = {
           name, groups,
-          channel: channel.name, channel_uuid, version: version.name, version_uuid,
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
 

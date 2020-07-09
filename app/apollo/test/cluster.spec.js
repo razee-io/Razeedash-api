@@ -248,14 +248,11 @@ describe('cluster graphql test suite', () => {
   it('get cluster by clusterID', async () => {
     try {
       const clusterId1 = 'cluster_01';
-      const {
-        data: {
-          data: { clusterByClusterId },
-        },
-      } = await clusterApi.byClusterID(token, {
+      const result = await clusterApi.byClusterID(token, {
         orgId: org01._id,
         clusterId: clusterId1,
       });
+      const clusterByClusterId = result.data.data.clusterByClusterId;
 
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
     } catch (error) {
@@ -280,6 +277,7 @@ describe('cluster graphql test suite', () => {
 
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(4);
+      expect(clustersByOrgId[0].resources).to.be.an('array');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

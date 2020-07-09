@@ -37,6 +37,8 @@ const ResourceYamlHistSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 module.exports = ResourceYamlHistSchema;

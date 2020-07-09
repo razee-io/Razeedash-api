@@ -57,7 +57,10 @@ const DeployableVersionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-}, { collection: 'deployableVersions' });
+}, {
+  collection: 'deployableVersions',
+  //strict: 'throw',
+});
 
 DeployableVersionSchema.index({ org_id: 1 }, { });
 

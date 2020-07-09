@@ -142,6 +142,43 @@ const buildSortObj = (sortArr, allowedFields)=>{
   return out;
 };
 
+const applyQueryFieldsToResources = async(resources, queryFields, { subscriptionsLimit = 500 }, models)=>{
+  if(_.get(queryFields, 'resources.subscription')){
+    var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
+    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
+    _.each(subscriptions, (sub)=>{
+      if(_.isUndefined(sub.channelName)){
+        sub.channelName = sub.channel;
+      }
+    });
+    var subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');
+    _.each(resources, (resource)=>{
+      var subId = resource.searchableData.subscription_id;
+      if(!subId){
+        return;
+      }
+      resource.subscription = subscriptionsByUuid[subId] || null;
+      if(resource.subscription) {
+        delete resource.subscription.channel;
+      }
+    });
+
+    if(_.get(queryFields, 'resources.subscription.channel')){
+
+      var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
+      var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
+      var channelsByUuid = _.keyBy(channels, 'uuid');
+      _.each(resources, (resource)=>{
+        if(!resource.subscription){
+          return;
+        }
+        resource.subscription.channel = null;
+        resource.subscription.channel = channelsByUuid[resource.subscription.channel_uuid] || null;
+      });
+    }
+  }
+};
+
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { orgId: org_id }, context) => {
@@ -164,13 +201,13 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { orgId: org_id, filter, fromDate, toDate, limit, kinds = [], sort },
+      { orgId: org_id, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
       context,
       fullQuery
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
-      const { me, req_id, logger } = context;
+      const { me, req_id, logger, models } = context;
       logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
@@ -187,7 +224,11 @@ const resourceResolvers = {
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
         searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
       }
-      return commonResourcesSearch({ org_id, searchFilter, limit, queryFields, sort, context });
+      const resourcesResult = await commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, sort, context });
+
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { subscriptionsLimit }, models);
+
+      return resourcesResult;
     },
 
     resourcesByCluster: async (
@@ -208,14 +249,14 @@ const resourceResolvers = {
       const cluster = models.Cluster.findOne({cluster_id}).lean();
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
-        throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);        
+        throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);
       }
       const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
       if (cluster.groups) {
         cluster.groups.some(group => {
           if(allowedGroups.indexOf(group.uuid) === -1) {
             // if some group of the sub does not in user's group list, throws an error
-            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on cluster group ${group.name}.`);          
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on cluster group ${group.name}.`);
           }
           return false;
         });
@@ -284,14 +325,14 @@ const resourceResolvers = {
       const subscription = models.Subscription.findOne({uuid: subscription_id}).lean();
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
-        throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);        
+        throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);
       }
       const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
       if(subscription.groups) {
         subscription.groups.some(group => {
           if(allowedGroups.indexOf(group) === -1) {
             // if some tag of the sub does not in user's tag list, throws an error
-            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription group ${group}.`);          
+            throw new ForbiddenError(`you are not allowed to read resources due to missing permissions on subscription group ${group}.`);
           }
           return false;
         });

@@ -246,7 +246,7 @@ const channelResolvers = {
         org_id,
         uuid: UUID(),
         channel_id: channel.uuid,
-        channel_name: channel.name,
+        channelName: channel.name,
         name,
         description,
         location,

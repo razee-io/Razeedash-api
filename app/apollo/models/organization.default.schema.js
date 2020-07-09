@@ -43,6 +43,8 @@ const OrganizationDefaultSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  //strict:'throw',
 });
 
 OrganizationDefaultSchema.statics.getRegistrationUrl = async function(org_id, context) {

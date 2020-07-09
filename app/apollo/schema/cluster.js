@@ -40,6 +40,7 @@ const clusterSchema = gql`
     created: Date
     updated: Date
     dirty: Boolean
+    resources: [Resource!]
   }
 
   type KubeCountVersion {
@@ -70,7 +71,11 @@ const clusterSchema = gql`
     """
     Return a cluster based on **orgId** and **clusterId**.
     """
-    clusterByClusterId(orgId: String!, clusterId: String!): Cluster
+    clusterByClusterId(
+      orgId: String!,
+      clusterId: String!
+      resourceLimit: Int = 500
+    ): Cluster
 
     """
     Return clusters based on **orgId**, sorted with newest document first.
@@ -81,6 +86,7 @@ const clusterSchema = gql`
       limit: Int = 50
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String
+      resourceLimit: Int = 500
     ): [Cluster]!
 
     """
@@ -95,6 +101,7 @@ const clusterSchema = gql`
       filter: String
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      resourceLimit: Int = 500
     ): [Cluster]!
 
     """
@@ -105,6 +112,7 @@ const clusterSchema = gql`
       orgId: String!
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      resourceLimit: Int = 500
     ): [Cluster]
 
     """

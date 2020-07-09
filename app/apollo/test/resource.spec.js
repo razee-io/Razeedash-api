@@ -312,6 +312,8 @@ describe('resource graphql test suite', () => {
         expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
         );
+        expect(result1.data.data.resources.resources[0].cluster.clusterId).to.equal('cluster_01');
+        expect(result1.data.data.resources.resources[0].cluster.name).to.equal('cluster_01');
 
         const { id } = result1.data.data.resources.resources[0];
         const result2 = await api.resource(token, { orgId: meResult.data.data.me.orgId, id: id.toString() });

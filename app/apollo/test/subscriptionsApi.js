@@ -77,7 +77,7 @@ const subscriptionsFunc = grahqlUrl => {
               name
               groups
               channelUuid
-              channel
+              channelName
               version
               versionUuid
               created
@@ -110,7 +110,7 @@ const subscriptionsFunc = grahqlUrl => {
               name
               groups
               channelUuid
-              channel
+              channelName
               version
               versionUuid
               created

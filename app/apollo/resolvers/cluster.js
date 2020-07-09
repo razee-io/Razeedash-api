@@ -19,6 +19,9 @@ const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = 
 const { whoIs, validAuth, getGroupConditionsIncludingEmpty } = require ('./common');
 const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
+const GraphqlFields = require('graphql-fields');
+const _ = require('lodash');
+
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -63,13 +66,30 @@ const commonClusterSearch = async (
   return results;
 };
 
+const applyQueryFieldsToClusters = async(clusters, queryFields, { resourceLimit }, models)=>{
+  const clusterIds = _.map(clusters, 'cluster_id');
+  resourceLimit = resourceLimit || 500;
+
+  if(queryFields.resources) {
+    if (clusterIds.length > 0) {
+      const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean({virtuals: true});
+      const resourcesByClusterId = _.groupBy(resources, 'cluster_id');
+      _.each(clusters, (cluster) => {
+        cluster.resources = resourcesByClusterId[cluster.cluster_id] || [];
+      });
+    }
+  }
+};
+
 const clusterResolvers = {
   Query: {
     clusterByClusterId: async (
       parent,
-      { orgId, clusterId },
+      { orgId, clusterId, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
@@ -77,13 +97,17 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
-      const result = await models.Cluster.findOne({
+      const cluster = await models.Cluster.findOne({
         org_id: orgId,
         cluster_id: clusterId,
         ...conditions
       }).lean({ virtuals: true });
-      
-      if(result){
+
+      if(!cluster){
+        return null;
+      }
+
+      if(cluster){
         var { url } = await models.Organization.getRegistrationUrl(orgId, context);
         url = url + `&clusterId=${clusterId}`;
         if (RDD_STATIC_ARGS.length > 0) {
@@ -91,10 +115,13 @@ const clusterResolvers = {
             url += `&args=${arg}`;
           });
         }
-        if (!result.registration) result.registration = {};
-        result.registration.url = url;
+        if (!cluster.registration) cluster.registration = {};
+        cluster.registration.url = url;
       }
-      return result;
+
+      await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
+
+      return cluster;
     }, // end cluster by _id
 
     // Return a list of clusters based on org_id.
@@ -105,9 +132,11 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgId: async (
       parent,
-      { orgId, limit, startingAfter },
+      { orgId, limit, startingAfter, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit, startingAfter}, `${queryName} enter`);
@@ -115,16 +144,22 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
-      const searchFilter = {org_id: orgId, ...conditions};
-      return commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const searchFilter = { org_id: orgId, ...conditions };
+      const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
     clusterZombies: async (
       parent,
-      { orgId, limit },
+      { orgId, limit, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterZombies';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
@@ -137,14 +172,20 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      return commonClusterSearch(models, searchFilter, limit);
+      const clusters = await commonClusterSearch(models, searchFilter, limit);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterZombies
 
     clusterSearch: async (
       parent,
-      { orgId, filter, limit },
+      { orgId, filter, limit, resourceLimit },
       context,
+      fullQuery
     ) => {
+      const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterSearch';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, filter, limit}, `${queryName} enter`);
@@ -163,9 +204,11 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, conditions, filter);
       }
 
-      logger.debug({req_id, user: whoIs(me), orgId, searchFilter}, `${queryName} search filer is.. `);
-      
-      return commonClusterSearch(models, searchFilter, limit);
+      const clusters = commonClusterSearch(models, searchFilter, limit);
+
+      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+
+      return clusters;
     }, // end clusterSearch
 
     // Summarize the number clusters by version for active clusters.
