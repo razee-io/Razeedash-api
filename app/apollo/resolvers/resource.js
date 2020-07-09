@@ -145,7 +145,7 @@ const buildSortObj = (sortArr, allowedFields)=>{
 const applyQueryFieldsToResources = async(resources, queryFields, { subscriptionsLimit = 500 }, models)=>{
   if(_.get(queryFields, 'resources.subscription')){
     var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
-    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean();
+    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
     _.each(subscriptions, (sub)=>{
       if(_.isUndefined(sub.channelName)){
         sub.channelName = sub.channel;
@@ -166,7 +166,7 @@ const applyQueryFieldsToResources = async(resources, queryFields, { subscription
     if(_.get(queryFields, 'resources.subscription.channel')){
 
       var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
-      var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean();
+      var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
       var channelsByUuid = _.keyBy(channels, 'uuid');
       _.each(resources, (resource)=>{
         if(!resource.subscription){

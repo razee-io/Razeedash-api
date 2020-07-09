@@ -95,7 +95,7 @@ const subscriptionResolvers = {
         const foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           groups: { $in: clusterGroupNames },
-        }).lean();
+        }).lean({ virtuals: true });
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
