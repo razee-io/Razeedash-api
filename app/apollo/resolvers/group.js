@@ -176,10 +176,10 @@ const groupResolvers = {
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
         }
         
-        const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-        if(clusterCount > 0){
-          throw new ValidationError(`${clusterCount} clusters depend on this cluster group. Please update/remove the group from the clusters.`);
-        }      
+        const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
+        if(clusterIds && clusterIds.length > 0) {
+          await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
+        }
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
@@ -210,6 +210,12 @@ const groupResolvers = {
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
+        }
+
+        const uuid = group.uuid;
+        const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
+        if(clusterIds && clusterIds.length > 0) {
+          await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
         }
         
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
