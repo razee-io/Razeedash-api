@@ -76,10 +76,26 @@ const channelSchema = gql`
      channel(orgId: String!, uuid: String! ): Channel
 
      """
-     Gets a yaml version from this channel
+     Gets a channel from the given orgId and channel name
+     """
+     channelByName(orgId: String!, name: String! ): Channel
+
+     """
+     deprecated, please use channelVersion api. Gets a channel version info from this channel uuid and version uuid
      """
      getChannelVersion(orgId: String!, channelUuid: String!, versionUuid: String!): DeployableVersion!
+
+     """
+     Gets a channel version info from this channel uuid and version uuid 
+     """
+     channelVersion(orgId: String!, channelUuid: String!, versionUuid: String!): DeployableVersion!
+
+     """
+     Gets a channel version info from this channel name and version name 
+     """
+     channelVersionByName(orgId: String!, channelName: String!, versionName: String!): DeployableVersion!
   }
+
   extend type Mutation {
      """
      Adds a channel

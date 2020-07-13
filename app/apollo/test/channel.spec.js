@@ -260,6 +260,28 @@ describe('channel graphql test suite', () => {
     }
   });
 
+  it('get channel by channel name', async () => {
+    try {
+      const {
+        data: {
+          data: { channelByName },
+        },
+      } = await channelApi.channelByName(token, {
+        orgId: org01._id,
+        name: channel_01_name,
+      });
+    
+      expect(channelByName.uuid).to.equal(channel_01_uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('add a channel', async () => {
     try {
       const {
@@ -321,18 +343,35 @@ describe('channel graphql test suite', () => {
       // step 3: get a channel version by user1 token
       const {
         data: {
-          data: { getChannelVersion },
+          data: { channelVersion },
         },
-      } = await channelApi.getChannelVersion(token, {
+      } = await channelApi.channelVersion(token, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
       });      
 
-      expect(getChannelVersion.channelName).to.equal(channel_01_name);
-      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
-      expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
-      expect(getChannelVersion.created).to.be.an('string');
+      expect(channelVersion.channelName).to.equal(channel_01_name);
+      expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
+      expect(channelVersion.content).to.equal('{"n0": 123.45}');
+      expect(channelVersion.created).to.be.an('string');
+
+      // step 4: get a channel version by name by user1 token
+      const {
+        data: {
+          data: { channelVersionByName },
+        },
+      } = await channelApi.channelVersionByName(token, {
+        orgId: org01._id,
+        channelName: channel_01_name,
+        versionName: `${channel_01_name}:v.0.2`,
+      });      
+
+      expect(channelVersionByName.channelName).to.equal(channel_01_name);
+      expect(channelVersionByName.name).to.equal(`${channel_01_name}:v.0.2`);
+      expect(channelVersionByName.content).to.equal('{"n0": 456.78}');
+      expect(channelVersionByName.created).to.be.an('string');
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -58,25 +58,59 @@ const channelResolvers = {
       }
       return channel;
     },
-    getChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, versionUuid: version_uuid }, context) => {
+    channelByName: async(parent, { orgId: org_id, name }, context) => {
       const { models, me, req_id, logger } = context;
+      const queryName = 'channelByName';
+      logger.debug({req_id, user: whoIs(me), org_id, name}, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+
+      try{
+        var channel = await models.Channel.findOne({ org_id, name });
+      }catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+      return channel;
+    },
+    channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context) => {
+      const { me, req_id, logger } = context;
+      const queryName = 'channelVersionByName';
+      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
+      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
+    },
+
+    // deprecated, please use channelVersion
+    getChannelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid }, context) => {
+      const { me, req_id, logger } = context;
       const queryName = 'getChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, version_uuid }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid }, `${queryName} enter`);
+      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelUuid, versionUuid, _queryName: queryName }, context);
+    },
+    
+    channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
+      const { models, me, req_id, logger } = context;
+      const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
+      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
       try{
 
         const org = await models.Organization.findOne({ _id: org_id });
         const orgKey = _.first(org.orgKeys);
 
-        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        // search channel by channel uuid or channel name
+        const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
+        const channel = await models.Channel.findOne(channelFilter);
         if(!channel){
-          throw new NotFoundError(`Could not find the channel with uuid ${channel_uuid}.`);
-        }
+          throw new NotFoundError(`Could not find the channel with uuid/name ${channel_uuid}/channelName.`);
+        } 
+        const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
-        const versionObj = channel.versions.find(v => v.uuid === version_uuid);
+        // search version by version uuid or version name
+        const versionObj = channel.versions.find(v => (v.uuid === versionUuid || v.name === versionName));
         if (!versionObj) {
-          throw new NotFoundError(`versionObj "${version_uuid}" is not found for ${channel.name}:${channel.uuid}`);
+          throw new NotFoundError(`versionObj "${versionUuid}" is not found for ${channel.name}:${channel.uuid}`);
         }
+        const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
 
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
         if (!deployableVersionObj) {
