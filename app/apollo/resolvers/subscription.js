@@ -51,6 +51,16 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{
     }
     delete sub.channel;
   });
+  if(queryFields.channel && subs.length > 0){
+    var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
+    var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    var channelsByUuid = _.keyBy(channels, 'uuid');
+    _.each(subs, (sub)=>{
+      var channelUuid = sub.channelUuid;
+      var channel = channelsByUuid[channelUuid];
+      sub.channel = channel;
+    });
+  }
 };
 
 const subscriptionResolvers = {
