@@ -45,7 +45,7 @@ const UserDefaultSchema = new mongoose.Schema({
     },
   },
 }, {
-  //strict:'throw',
+  strict:'throw',
 });
 
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {

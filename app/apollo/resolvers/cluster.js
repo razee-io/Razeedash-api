@@ -72,7 +72,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields, { resourceLimit 
 
   if(queryFields.resources) {
     if (clusterIds.length > 0) {
-      const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean();
+      const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean({ virtuals: true });
       const resourcesByClusterId = _.groupBy(resources, 'cluster_id');
       _.each(clusters, (cluster) => {
         cluster.resources = resourcesByClusterId[cluster.cluster_id] || [];

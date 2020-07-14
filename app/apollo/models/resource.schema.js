@@ -17,6 +17,10 @@
 const mongoose = require('mongoose');
 
 const ResourceSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    alias: 'id',
+  },
   org_id: {
     type: String,
     alias: 'orgId',
@@ -55,7 +59,7 @@ const ResourceSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  //strict:'throw',
+  strict:'throw',
 });
 
 ResourceSchema.statics.getIds = async(ids)=>{

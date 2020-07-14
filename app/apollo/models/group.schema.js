@@ -39,7 +39,7 @@ const GroupSchema = new mongoose.Schema({
     type: String,
   },
 }, {
-  //strict:'throw',
+  strict:'throw',
 });
 
 

@@ -64,7 +64,7 @@ const SubscriptionSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  //strict:'throw',
+  strict:'throw',
 });
 
 SubscriptionSchema.index({ org_id: 1 }, { });

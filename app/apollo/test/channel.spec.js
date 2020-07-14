@@ -164,7 +164,6 @@ describe('channel graphql test suite', () => {
       mongo_url: mongoUrl,
       graphql_port: graphqlPort,
     });
-  
     await createOrganizations();
     await createUsers();
     await createChannels();

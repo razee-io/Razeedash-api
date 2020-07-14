@@ -51,6 +51,16 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{
     }
     delete sub.channel;
   });
+  if(queryFields.channel && subs.length > 0){
+    var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
+    var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    var channelsByUuid = _.keyBy(channels, 'uuid');
+    _.each(subs, (sub)=>{
+      var channelUuid = sub.channelUuid;
+      var channel = channelsByUuid[channelUuid];
+      sub.channel = channel;
+    });
+  }
 };
 
 const subscriptionResolvers = {
@@ -74,7 +84,7 @@ const subscriptionResolvers = {
       }
       const org_id = org._id;
 
-      const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean();
+      const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
       }
@@ -95,7 +105,7 @@ const subscriptionResolvers = {
         const foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           groups: { $in: clusterGroupNames },
-        }).lean();
+        }).lean({ virtuals: true });
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
@@ -209,26 +219,26 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { orgId: org_id, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
+      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
-        var subscription = await models.Subscription.findOne({ org_id, uuid });
+        var subscription = await models.Subscription.findOne({ org_id: orgId, uuid });
         if(!subscription){
-          throw  new NotFoundError(`subscription { uuid: "${uuid}", org_id:${org_id} } not found`);
+          throw  new NotFoundError(`subscription { uuid: "${uuid}", orgId:${orgId} } not found`);
         }
 
         // loads the channel
-        var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
+        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid });
         if(!channel){
-          throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
+          throw  new NotFoundError(`channel uuid "${channelUuid}" not found`);
         }
 
         // validate groups are all exists in label dbs
-        await validateGroups(org_id, groups, context);
+        await validateGroups(orgId, groups, context);
         
         // loads the version
         var version = channel.versions.find((version)=>{
@@ -240,11 +250,11 @@ const subscriptionResolvers = {
 
         var sets = {
           name, groups,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
+          channelName: channel.name, channelUuid, version: version.name, version_uuid,
         };
-        await models.Subscription.updateOne({ uuid, org_id, }, { $set: sets });
+        await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({ orgId });
 
         return {
           uuid,

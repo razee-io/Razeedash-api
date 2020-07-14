@@ -285,6 +285,9 @@ const resourceResolvers = {
 
       const searchFilter = { org_id, _id: ObjectId(_id) };
       var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      if(!resource){
+        return null;
+      }
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
