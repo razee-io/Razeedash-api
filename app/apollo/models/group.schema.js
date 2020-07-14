@@ -50,7 +50,9 @@ GroupSchema.statics.findOrCreateList = async (models, orgId, groups, context) =>
   const groupList = await Promise.all(groups.map(async group => {
     return await models.Group.findOneAndUpdate (
       {org_id: orgId, name: group},
-      {_id: UUID(), uuid: UUID(), org_id: orgId, name: group, owner: me._id ? me._id : 'undefined' }, 
+      {
+        $setOnInsert: {_id: UUID(), uuid: UUID(), org_id: orgId, name: group, owner: me._id ? me._id : 'undefined' }
+      }, 
       {new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false}).lean();
   }));
 

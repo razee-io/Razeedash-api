@@ -6,9 +6,7 @@ services:
   - docker
 
 script:
-  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  # see https://www.npmjs.com/advisories/1523 and https://github.com/lodash/lodash/pull/4759 discussion
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a 1523; else npx audit-ci --low -a 1523 || true; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low; else npx audit-ci --low || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:default
