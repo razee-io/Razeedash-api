@@ -224,7 +224,7 @@ const subscriptionResolvers = {
         throw err;
       }
     },
-    editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid, versionUuid: version_uuid }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -237,9 +237,9 @@ const subscriptionResolvers = {
         }
 
         // loads the channel
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid });
+        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
         if(!channel){
-          throw  new NotFoundError(`channel uuid "${channelUuid}" not found`);
+          throw  new NotFoundError(`channel uuid "${channel_uuid}" not found`);
         }
 
         // validate groups are all exists in label dbs
@@ -255,7 +255,7 @@ const subscriptionResolvers = {
 
         var sets = {
           name, groups,
-          channelName: channel.name, channelUuid, version: version.name, version_uuid,
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 

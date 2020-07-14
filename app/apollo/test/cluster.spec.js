@@ -26,6 +26,7 @@ const clusterFunc = require('./clusterApi');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+const ObjectId = require('mongoose').Types.ObjectId;
 
 let mongoServer;
 let myApollo;
@@ -519,6 +520,7 @@ describe('cluster graphql test suite', () => {
     try {
       const clusterIdToBeDeleted = 'cluster_to_be_deleted';
       await models.Cluster.create({
+        _id: new ObjectId('aaaabbbbcccc'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         metadata: {
@@ -537,6 +539,7 @@ describe('cluster graphql test suite', () => {
       });
 
       await models.Resource.create({
+        _id: new ObjectId('ddddeeeeffff'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         selfLink: '/mybla/selfLink',
@@ -572,6 +575,7 @@ describe('cluster graphql test suite', () => {
     try {
       const clusterIdToBeDeleted = 'cluster_to_be_deleted';
       await models.Cluster.create({
+        _id: new ObjectId('aaaabbbbcccc'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         metadata: {
@@ -590,6 +594,7 @@ describe('cluster graphql test suite', () => {
       });
 
       await models.Resource.create({
+        _id: new ObjectId('aaaabbbbccc2'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         selfLink: '/mybla/selfLink',

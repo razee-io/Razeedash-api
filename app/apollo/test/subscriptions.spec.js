@@ -372,11 +372,7 @@ describe('subscription graphql test suite', () => {
   it('edit a subscription', async () => {
     try {
       //step1, edit the subscription
-      const {
-        data: {
-          data: { editSubscription },
-        },
-      } = await subscriptionApi.editSubscription(adminToken, {
+      const result = await subscriptionApi.editSubscription(adminToken, {
         orgId: org01._id,
         uuid: subscription_01_uuid,
         name: 'new-name',
@@ -384,17 +380,23 @@ describe('subscription graphql test suite', () => {
         channelUuid: channel_02_uuid,
         versionUuid: channelVersion_03_uuid,
       });
+      const {
+        data: {
+          data: { editSubscription },
+        },
+      } = result;
       expect(editSubscription.uuid).to.be.an('string');
       expect(editSubscription.success).to.equal(true);
       //step2, get the updated subscription
+      const result2 = await subscriptionApi.subscription(adminToken, {
+        orgId: org01._id,
+        uuid: subscription_01_uuid,
+      });
       const {
         data: {
           data: { subscription },
         },
-      } = await subscriptionApi.subscription(adminToken, {
-        orgId: org01._id,
-        uuid: subscription_01_uuid,
-      });
+      } = result2;
       expect(subscription.name).to.equal('new-name');
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
