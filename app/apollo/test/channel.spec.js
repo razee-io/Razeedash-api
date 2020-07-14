@@ -58,6 +58,15 @@ const channel_02_uuid = 'fake_ch_02_uuid';
 const channel_03_name = 'fake_channel_03';
 const channel_03_uuid = 'fake_ch_03_uuid';
 
+const channel_04_name = 'fake_channel_04';
+const channel_04_uuid = 'fake_ch_04_uuid';
+
+const channelVersion_01_name = 'fake_channelVersion_01';
+const channelVersion_01_uuid = 'fake_cv_01_uuid';
+
+const subscription_01_name = 'fake_subscription_01';
+const subscription_01_uuid = 'fake_sub_01_uuid';
+
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
@@ -151,6 +160,29 @@ const createChannels = async () => {
     name: channel_03_name,
     versions: []
   });
+  await models.Channel.create({
+    _id: 'fake_id_4',
+    org_id: org01._id,
+    uuid: channel_04_uuid,
+    name: channel_04_name,
+    versions: []
+  });
+};
+
+
+const createSubscriptions = async () => {
+  await models.Subscription.create({
+    _id: 'fake_id_1',
+    org_id: org01._id,
+    uuid: subscription_01_uuid,
+    name: subscription_01_name,
+    owner: 'abc',
+    groups: ['dev'],
+    channel_uuid: channel_04_uuid,
+    channel: channel_04_name,
+    version: channelVersion_01_name,
+    version_uuid: channelVersion_01_uuid,
+  });
 };
 
 describe('channel graphql test suite', () => {
@@ -167,6 +199,7 @@ describe('channel graphql test suite', () => {
     await createOrganizations();
     await createUsers();
     await createChannels();
+    await createSubscriptions();
   
     // Can be uncommented if you want to see the test data that was added to the DB
     //await getPresetOrgs();
@@ -193,7 +226,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });
     
-      expect(channels).to.have.length(2);
+      expect(channels).to.have.length(3);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -216,6 +249,28 @@ describe('channel graphql test suite', () => {
       });
     
       expect(channel.name).to.equal(channel_01_name);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get channel by channel name', async () => {
+    try {
+      const {
+        data: {
+          data: { channelByName },
+        },
+      } = await channelApi.channelByName(token, {
+        orgId: org01._id,
+        name: channel_01_name,
+      });
+    
+      expect(channelByName.uuid).to.equal(channel_01_uuid);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -287,18 +342,35 @@ describe('channel graphql test suite', () => {
       // step 3: get a channel version by user1 token
       const {
         data: {
-          data: { getChannelVersion },
+          data: { channelVersion },
         },
-      } = await channelApi.getChannelVersion(token, {
+      } = await channelApi.channelVersion(token, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
       });      
 
-      expect(getChannelVersion.channelName).to.equal(channel_01_name);
-      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
-      expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
-      expect(getChannelVersion.created).to.be.an('string');
+      expect(channelVersion.channelName).to.equal(channel_01_name);
+      expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
+      expect(channelVersion.content).to.equal('{"n0": 123.45}');
+      expect(channelVersion.created).to.be.an('string');
+
+      // step 4: get a channel version by name by user1 token
+      const {
+        data: {
+          data: { channelVersionByName },
+        },
+      } = await channelApi.channelVersionByName(token, {
+        orgId: org01._id,
+        channelName: channel_01_name,
+        versionName: `${channel_01_name}:v.0.2`,
+      });      
+
+      expect(channelVersionByName.channelName).to.equal(channel_01_name);
+      expect(channelVersionByName.name).to.equal(`${channel_01_name}:v.0.2`);
+      expect(channelVersionByName.content).to.equal('{"n0": 456.78}');
+      expect(channelVersionByName.created).to.be.an('string');
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -369,6 +441,35 @@ describe('channel graphql test suite', () => {
       }
       throw error;
     }
+  });
+  it('edit channel and update subscription channel name', async () => {
+    try {
+
+      const {
+        data: {
+          data: { editChannel },
+        },
+      } = await channelApi.editChannel(adminToken, {
+        orgId: org01._id,
+        uuid: channel_04_uuid,
+        name: `${channel_04_name}_new`
+      });
+    
+      expect(editChannel.success).to.equal(true);
+      expect(editChannel.name).to.equal(`${channel_04_name}_new`);
+      const result = await models.Subscription.findOne({ org_id: org01._id, channel_uuid: channel_04_uuid, });
+      expect(result.channelName).to.equal(`${channel_04_name}_new`);
+
+    } catch(error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+
+    }
+
   });
   it('remove configuration version, channel has multiple versions ', async () => {
     try {

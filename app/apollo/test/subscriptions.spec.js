@@ -325,6 +325,26 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  it('get subscription by subscription name', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionByName(token, {
+        orgId: org01._id,
+        name: subscription_01_name,
+      });
+      expect(result.data.errors).to.be.undefined;
+      const subscriptionByName = result.data.data.subscriptionByName;
+      expect(subscriptionByName.uuid).to.equal(subscription_01_uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+
   it('add a subscription', async () => {
     try {
       const {

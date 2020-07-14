@@ -105,7 +105,7 @@ const subscriptionResolvers = {
         const foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           groups: { $in: clusterGroupNames },
-        }).lean({ virtuals: true });
+        }).lean(/* skip virtuals: true for now since it is class facing api. */);
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
@@ -149,18 +149,17 @@ const subscriptionResolvers = {
 
       return subscriptions;
     },
-    subscription: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
+    subscription: async(parent, { orgId, uuid , name, _queryName }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
-      const queryName = 'subscription';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      const queryName = _queryName ? `${_queryName}/subscription` : 'subscription';
+      logger.debug({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} enter`);
 
-      // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       try{
-        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, { models, me, req_id, logger }, fullQuery);
+        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
 
         var subscription = subscriptions.find((sub)=>{
-          return (sub.uuid == uuid);
+          return (sub.uuid == uuid || sub.name == name);
         });
         if(!subscription){
           return null;
@@ -173,6 +172,12 @@ const subscriptionResolvers = {
         logger.error(err);
         throw err;
       }
+    },
+    subscriptionByName: async(parent, { orgId, name }, context, fullQuery) => {
+      const { me, req_id, logger } = context;
+      const queryName = 'subscriptionByName';
+      logger.debug({req_id, user: whoIs(me), org_id: orgId , name }, `${queryName} enter`);
+      return await subscriptionResolvers.Query.subscription(parent, { orgId , name, _queryName: queryName }, context, fullQuery);
     },
   },
   Mutation: {
