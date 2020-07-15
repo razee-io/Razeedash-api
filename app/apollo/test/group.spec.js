@@ -416,7 +416,7 @@ describe('groups graphql test suite', () => {
     // await getPresetClusters();
   
     token = await signInUser(models, resourceApi, user01Data);
-    // adminToken = await signInUser(models, resourceApi, userRootData);
+    adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
   
   after(async () => {
@@ -484,6 +484,133 @@ describe('groups graphql test suite', () => {
       expect(group).to.be.an('Object');
       expect(group.subscriptionCount).to.equal(1);
       expect(group.clusterCount).to.equal(2);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add group', async () => {
+    try {
+      const {
+        data: {
+          data: { addGroup },
+        },
+      } = await groupApi.addGroup(adminToken, {
+        orgId: org01._id,
+        name: 'group3'
+      });
+      expect(addGroup.uuid).to.be.an('string');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('remove a group by uuid', async () => {
+    try {
+      const {
+        data: {
+          data: { addGroup },
+        },
+      } = await groupApi.addGroup(adminToken, {
+        orgId: org01._id,
+        name: 'group4'
+      });
+      const uuid = addGroup.uuid;
+      const {
+        data: {
+          data: { removeGroup },
+        },
+      } = await groupApi.removeGroup(adminToken, {
+        orgId: org01._id,
+        uuid: uuid
+      });
+      expect(removeGroup.uuid).to.be.an('string');
+      expect(removeGroup.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('remove a group by name', async () => {
+    try {
+      const {
+        data: {
+          data: { removeGroupByName },
+        },
+      } = await groupApi.removeGroupByName(adminToken, {
+        orgId: org01._id,
+        name: 'group3'
+      });
+      expect(removeGroupByName.uuid).to.be.an('string');
+      expect(removeGroupByName.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('group clusters', async () => {
+    try {
+      const {
+        data: {
+          data: { groupClusters },
+        },
+      } = await groupApi.groupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: ['cluster_01', 'cluster_04']
+      });
+      expect(groupClusters.modified).to.equal(2);
+      const cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_01'}).exec();
+      expect(cluster1.groups).to.have.length(2);
+      const cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
+      expect(cluster4.groups).to.have.length(1);
+      
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+  it('ungroup clusters', async () => {
+    try {
+      const {
+        data: {
+          data: { unGroupClusters },
+        },
+      } = await groupApi.unGroupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: ['cluster_01', 'cluster_04']
+      });
+      expect(unGroupClusters.modified).to.equal(2);
+      const cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_01'}).exec();
+      expect(cluster1.groups).to.have.length(1);
+      const cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
+      expect(cluster4.groups).to.have.length(0);
+      
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
