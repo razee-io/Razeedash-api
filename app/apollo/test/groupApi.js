@@ -91,11 +91,114 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
+    const addGroup = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $name: String!) {
+            addGroup(orgId: $orgId, name: $name){
+			        uuid
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    const removeGroup = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $uuid: String!) {
+            removeGroup(orgId: $orgId, uuid: $uuid){
+			        uuid
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    const removeGroupByName = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $name: String!) {
+            removeGroupByName(orgId: $orgId, name: $name){
+			        uuid
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
+    const groupClusters = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $uuid: String!, $clusters: [String]!) {
+            groupClusters(orgId: $orgId, uuid: $uuid, clusters: $clusters){
+			        modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const unGroupClusters = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $uuid: String!, $clusters: [String]!) {
+            unGroupClusters(orgId: $orgId, uuid: $uuid, clusters: $clusters){
+			        modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
   return {
     groups,
     group,
-    groupByName
+    groupByName,
+    addGroup,
+    removeGroup,
+    removeGroupByName,
+    groupClusters,
+    unGroupClusters
   };
 };
         
