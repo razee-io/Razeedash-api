@@ -90,11 +90,11 @@ const subscriptionSchema = gql`
      """
      Get a single subscription
      """
-     subscription(orgId: String! uuid: String!): ChannelSubscription
+     subscription(orgId: String!, uuid: String!): ChannelSubscription
      """
      Get a single subscription by name
      """
-     subscriptionByName(orgId: String! name: String!): ChannelSubscription
+     subscriptionByName(orgId: String!, name: String!): ChannelSubscription
      """
      Agent-facing API, deprecated. Gets all subscriptions for a cluster
      """
