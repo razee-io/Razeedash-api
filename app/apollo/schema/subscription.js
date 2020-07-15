@@ -21,6 +21,18 @@ const subscriptionSchema = gql`
     id: String!
     name: String!
   }
+  type BasicChannelSubscription {
+    uuid: String!
+    orgId: String!
+    name: String!
+    groups: [String!]
+    channelUuid: String!
+    channelName: String!
+    version: String!
+    versionUuid: String!
+    created: Date!
+    updated: Date!
+  }
   type ChannelSubscription {
     uuid: String!
     orgId: String!
@@ -78,17 +90,17 @@ const subscriptionSchema = gql`
      """
      Get a single subscription
      """
-     subscription(orgId: String!, uuid: String!): ChannelSubscription
+     subscription(orgId: String! uuid: String!): ChannelSubscription
      """
      Get a single subscription by name
      """
-     subscriptionByName(orgId: String!, name: String!): ChannelSubscription
+     subscriptionByName(orgId: String! name: String!): ChannelSubscription
      """
-     Gets all subscriptions for a cluster, invoked from cluster-subscription agent, deprecated, please use subscriptionsByClusterId
+     Agent-facing API, deprecated. Gets all subscriptions for a cluster
      """
      subscriptionsByCluster(cluster_id: String): [UpdatedSubscriptionDeprecated]
      """
-     Gets all subscriptions for a cluster, invoked from cluster-subscription agent
+     Agent-facing API. Gets all subscriptions for a cluster.
      """
      subscriptionsByClusterId(clusterId: String!): [UpdatedSubscription]
   }

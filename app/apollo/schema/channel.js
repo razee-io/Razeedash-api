@@ -31,6 +31,7 @@ const channelSchema = gql`
     name: String!
     created: Date!
     versions: [ChannelVersion]
+    subscriptions: [BasicChannelSubscription]
   }
   type AddChannelReply {
     uuid: String!
