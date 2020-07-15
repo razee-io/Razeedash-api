@@ -36,7 +36,7 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 let token;
-//let adminToken;
+let adminToken;
 
 let org01Data;
 let org77Data;
