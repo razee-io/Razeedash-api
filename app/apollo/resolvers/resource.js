@@ -392,6 +392,7 @@ const resourceResolvers = {
         let content = await getContent(resource);
         return {
           id: resource._id,
+          histId: resource._id,
           content,
           updated: resource.updated,
         };
@@ -405,7 +406,8 @@ const resourceResolvers = {
       const content = await getContent(obj);
 
       return {
-        id: obj._id,
+        id: resource._id,
+        histId: obj._id,
         content,
         updated: obj.updated,
       };

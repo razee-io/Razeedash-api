@@ -60,6 +60,7 @@ const resourceSchema = gql`
   }
   type ResourceContentObj{
     id: String!
+    histId: String!
     content: String!
     updated: Date!
   }
