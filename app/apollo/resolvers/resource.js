@@ -42,9 +42,9 @@ const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500,
     if((queryFields.resources||{}).cluster){
       const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
       if(clusterIds.length > 0){
-        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }});
+        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
         clusters = _.map(clusters, (cluster)=>{
-          cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
+          cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
           return cluster;
         });
         clusters = _.keyBy(clusters, 'cluster_id');
@@ -110,13 +110,13 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
       resource.data = yaml;
     }
 
-    let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions});
+    let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
     if (!cluster) {
       throw new ForbiddenError('you are not allowed to access this resource due to missing cluster tag permission.');
     }
 
     if(queryFields['cluster']) {
-      cluster.name = cluster.name || (cluster.metadata||{}).name || cluster.cluster_id;
+      cluster.name = cluster.name || (cluster.metadata||{}).name ||  (cluster.registration||{}).name  || cluster.cluster_id;
       resource.cluster = cluster;
     }
 
