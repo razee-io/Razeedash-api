@@ -262,7 +262,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({ orgId });
+        pubSub.channelSubChangedFunc({ org_id: orgId });
 
         return {
           uuid,
