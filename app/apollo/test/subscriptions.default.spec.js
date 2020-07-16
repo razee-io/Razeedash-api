@@ -180,7 +180,7 @@ describe('subscriptions graphql test suite', () => {
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
   
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
-  
+
     await createOrganizations();
     await createChannels();
     await createClusters();

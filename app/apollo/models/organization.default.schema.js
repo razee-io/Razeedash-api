@@ -35,6 +35,10 @@ const OrganizationDefaultSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  type: {
+    type: String,
+    required: false,
+  },
   created: {
     type: Date,
     default: Date.now,
