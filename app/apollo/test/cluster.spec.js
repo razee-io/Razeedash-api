@@ -136,6 +136,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'my-cluster1' }
   });
 
   await models.Cluster.create({
@@ -255,6 +256,27 @@ describe('cluster graphql test suite', () => {
       const clusterByClusterId = result.data.data.clusterByClusterId;
 
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get cluster by cluster name', async () => {
+    try {
+      const clusterId1 = 'cluster_01';
+      const clusterName1 = 'my-cluster1';
+      const result = await clusterApi.byClusterName(token, {
+        orgId: org01._id,
+        clusterName: clusterName1,
+      });
+      const clusterByClusterName = result.data.data.clusterByClusterName;
+
+      expect(clusterByClusterName.clusterId).to.equal(clusterId1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
