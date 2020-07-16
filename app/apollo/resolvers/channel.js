@@ -17,6 +17,7 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const crypto = require('crypto');
+const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const { UserInputError, ValidationError } = require('apollo-server');
@@ -24,9 +25,26 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError} = require ('./common');
+const { whoIs, validAuth, getGroupConditions, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
+
+const applySubscriptionsToChannel = async ({org_id, channel, queryFields, context, queryName}) => {
+  if(channel && queryFields.subscriptions) {
+    const { models, me, req_id, logger } = context;
+    //piggyback basic-info of subscriptions associated with this channel that user allowed to see
+    const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
+    logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName}/applySubscriptionsToChannel group conditions are...`);
+    try{
+      var subscriptions = await models.Subscription.find({ org_id, channel_uuid: channel.uuid, ...conditions }, {}).lean({ virtuals: true });
+      // eslint-disable-next-line require-atomic-updates
+      channel.subscriptions = subscriptions ? subscriptions : [];
+    }catch(err){
+      logger.error(err);
+      throw err;
+    }
+  }
+};
 
 const channelResolvers = {
   Query: {
@@ -44,7 +62,8 @@ const channelResolvers = {
       }
       return channels;
     },
-    channel: async(parent, { orgId: org_id, uuid }, context) => {
+    channel: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
       logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
@@ -52,13 +71,15 @@ const channelResolvers = {
 
       try{
         var channel = await models.Channel.findOne({ org_id, uuid });
+        await applySubscriptionsToChannel({org_id, channel, queryFields, context, queryName});
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
       return channel;
     },
-    channelByName: async(parent, { orgId: org_id, name }, context) => {
+    channelByName: async(parent, { orgId: org_id, name }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelByName';
       logger.debug({req_id, user: whoIs(me), org_id, name}, `${queryName} enter`);
@@ -66,6 +87,7 @@ const channelResolvers = {
 
       try{
         var channel = await models.Channel.findOne({ org_id, name });
+        await applySubscriptionsToChannel({org_id, channel, queryFields, context, queryName});
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
