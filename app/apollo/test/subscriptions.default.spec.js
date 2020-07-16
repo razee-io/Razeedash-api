@@ -84,7 +84,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -107,7 +107,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -180,7 +180,7 @@ describe('subscriptions graphql test suite', () => {
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
   
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
-  
+
     await createOrganizations();
     await createChannels();
     await createClusters();

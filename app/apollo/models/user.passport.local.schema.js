@@ -83,7 +83,7 @@ const UserPassportLocalSchema = new mongoose.Schema({
     ],
   },
 }, {
-  //strict:'throw',
+  //strict:'throw', //dont do this since user objects are different based on auth model
 });
 
 async function getOrCreateOrganization(models, args) {

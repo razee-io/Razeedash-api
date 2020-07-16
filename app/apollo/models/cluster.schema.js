@@ -60,6 +60,7 @@ const ClusterSchema = new mongoose.Schema({
       },
       compiler: {
         type: String,
+        required: false,
       },
       platform: {
         type: String,
@@ -105,7 +106,7 @@ const ClusterSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  //strict:'throw',
+  strict:'throw',
 });
 
 ClusterSchema.index({ org_id: 1, cluster_id: 1 }, { unique: true });

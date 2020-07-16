@@ -98,7 +98,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -115,7 +115,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -132,7 +132,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -149,7 +149,7 @@ const createClusters = async () => {
         gitTreeState: 'def',
         buildDate: 'a_date',
         goVersion: '1.88',
-        complier: 'some compiler',
+        compiler: 'some compiler',
         platform: 'linux/amd64',
       },
     },
@@ -157,6 +157,7 @@ const createClusters = async () => {
 };
 const createResources = async () => {
   await models.Resource.create({
+    _id: new ObjectId('aaaabbbbcccc'),
     org_id: shouldNotMatchAny._id,
     cluster_id: 'any_cluster_01',
     selfLink: 'any_selfLink',
@@ -179,6 +180,7 @@ const createResources = async () => {
   });
 
   await models.Resource.create({
+    _id: new ObjectId('aaaabbbbccc2'),
     org_id: org_02._id,
     cluster_id: 'cluster_04',
     selfLink: '/mybla/cluster04/selfLink1',
@@ -190,6 +192,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
+    _id: new ObjectId('aaaabbbbccc3'),
     org_id: org_02._id,
     cluster_id: 'cluster_04',
     selfLink: '/mybla/cluster04/selfLink2',
@@ -201,6 +204,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
+    _id: new ObjectId('aaaabbbbccc4'),
     org_id: org_01._id,
     cluster_id: 'cluster_03',
     selfLink: '/mybla/selfLink/deleted',
