@@ -448,14 +448,15 @@ describe('groups graphql test suite', () => {
 
   it('get groups by name', async () => {
     try {
+      const result = await groupApi.groupByName(token, {
+        orgId: org01._id,
+        name: 'group1'
+      });
       const {
         data: {
           data: { groupByName },
         },
-      } = await groupApi.groupByName(token, {
-        orgId: org01._id,
-        name: 'group1'
-      });
+      } = result;
       console.log(`get group by name: groupByName = ${JSON.stringify(groupByName)}`);
       expect(groupByName).to.be.an('Object');
       expect(groupByName.subscriptionCount).to.equal(2);
