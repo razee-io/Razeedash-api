@@ -24,14 +24,20 @@ const groupFunc = grahqlUrl => {
         query: `
           query($orgId: String!) {
             groups(orgId: $orgId ) {
-                uuid
-                orgId
+              uuid
+              orgId
+              name
+              owner {
+                id
                 name
-                owner {
-                  id
-                  name
-                }
-                created
+              }
+              created
+              subscriptions{
+                uuid
+              }
+              clusters {
+                id
+              }
             }
           }
         `,
@@ -54,8 +60,12 @@ const groupFunc = grahqlUrl => {
               uuid
               clusterCount
               subscriptionCount
-              subscriptions
-              clusters
+              subscriptions{
+                uuid
+              }
+              clusters {
+                id
+              }
             }
           }
         `,
@@ -78,8 +88,12 @@ const groupFunc = grahqlUrl => {
               uuid
               clusterCount
               subscriptionCount
-              subscriptions
-              clusters
+              subscriptions{
+                uuid
+              }
+              clusters {
+                id
+              }
             }
           }
         `,

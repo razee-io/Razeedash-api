@@ -21,107 +21,107 @@ const {  ValidationError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, NotFoundError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
+const GraphqlFields = require('graphql-fields');
 
 const pubSub = GraphqlPubSub.getInstance();
 
+const applyQueryFieldsToGroups = async(groups, queryFields, { orgId }, models)=>{
+  if(queryFields.owner){
+    const owners = await models.User.getBasicUsersByIds(_.uniq(_.map(groups, 'owner')));
+    var ownersById = _.groupBy(owners, 'id');
+    _.each(groups, (group)=>{
+      group.owner = ownersById[group.owner];
+    });
+  }
+  if(queryFields.subscriptions || queryFields.subscriptionCount){
+    var groupNames = _.uniq(_.map(groups, 'name'));
+    const subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+    const subscriptionsByGroupName = {};
+    _.each(subscriptions, (sub)=>{
+      _.each(sub.groups, (groupName)=>{
+        subscriptionsByGroupName[groupName] = subscriptionsByGroupName[groupName] || [];
+        subscriptionsByGroupName[groupName].push(sub);
+      });
+    });
+    _.each(groups, (group)=>{
+      group.subscriptions = subscriptionsByGroupName[group.name] || [];
+      group.subscriptionCount = group.subscriptions.length;
+    });
+  }
+  if(queryFields.clusters || queryFields.clusterCount){
+    var groupUuids = _.uniq(_.map(groups, 'uuid'));
+    const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: groupUuids } }).lean({ virtuals: true });
+    const clustersByGroupUuid = {};
+    _.each(clusters, (cluster)=>{
+      _.each(cluster.groups || [], (groupObj)=>{
+        clustersByGroupUuid[groupObj.uuid] = clustersByGroupUuid[groupObj.uuid] || [];
+        clustersByGroupUuid[groupObj.uuid].push(cluster);
+      });
+    });
+    _.each(groups, (group)=>{
+      group.clusters = clustersByGroupUuid[group.uuid] || [];
+      group.clusterCount = group.clusters.length;
+    });
+  }
+};
+
 const groupResolvers = {
   Query: {
-    groups: async(parent, { orgId: org_id }, context) => {
+    groups: async(parent, { orgId }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'groups';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
       let groups;
       try{
-        groups = await models.Group.find({ org_id: org_id }).lean({ virtuals: true });
-        const ownerIds = _.map(groups, 'owner');
-        const owners = await models.User.getBasicUsersByIds(ownerIds);
-  
-        groups = groups.map((group)=>{
-          group.owner = owners[group.owner];
-          return group;
-        });
+        groups = await models.Group.find({ org_id: orgId }).lean({ virtuals: true });
+
+        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, models);
+
+        return groups;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
-      return groups;
     },
-    group: async(parent, { orgId: org_id, uuid }, context) => {
+    group: async(parent, { orgId, uuid }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'group';
-      logger.debug({req_id, user: whoIs(me), org_id, uuid}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+      logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
-        let group = await models.Group.findOne({ org_id: org_id, uuid }).lean({ virtuals: true });
+        let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
-        const owners = await models.User.getBasicUsersByIds([group.owner]);
-        const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
-        const subscriptions = await models.Subscription.aggregate([
-          {
-            $match: {
-              org_id: org_id,
-              groups: group.name,
-            },
-          },
-          { $project: { _id: 0, name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , orgId: '$org_id', channelUuid: '$channel_uuid', versionUuid: '$version_uuid', owner: 1, created: 1, updated: 1 } },
-        ]);
-        const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-        const clusters = await models.Cluster.aggregate([
-          {
-            $match: {
-              org_id: org_id,
-              'groups.uuid': group.uuid,
-            },
-          },
-          { $project: { _id: 0, clusterId: '$cluster_id', 'groups.uuid': 1, 'groups.name': 1, registration: 1, regState: '$reg_state', orgId: '$org_id', created: 1, updated: 1 } },
-        ]);
-        
-        group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
+
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+
+        return group;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
     },
-    groupByName: async(parent, { orgId: org_id, name }, context) => {
+    groupByName: async(parent, { orgId, name }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'groupByName';
-      logger.debug({req_id, user: whoIs(me), org_id, name}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+      logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
-        let group = await models.Group.findOne({ org_id: org_id, name }).lean({ virtuals: true });
+        let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
-        const owners = await models.User.getBasicUsersByIds([group.owner]);
-        const subscriptionCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
-        const subscriptions = await models.Subscription.aggregate([
-          {
-            $match: {
-              org_id: org_id,
-              groups: group.name,
-            },
-          },
-          { $project: { _id: 0, name: 1, uuid: 1, groups: 1, version: 1, channel: 1 , orgId: '$org_id', channelUuid: '$channel_uuid', versionUuid: '$version_uuid', owner: 1, created: 1, updated: 1 } },
-        ]);
-        const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-        const clusters = await models.Cluster.aggregate([
-          {
-            $match: {
-              org_id: org_id,
-              'groups.uuid': group.uuid,
-            },
-          },
-          { $project: { _id: 0, clusterId: '$cluster_id', 'groups.uuid': 1, 'groups.name': 1, registration: 1, regState: '$reg_state', orgId: '$org_id', created: 1, updated: 1 } },
-        ]);
-        
-        group.owner = owners[group.owner];
-        return {clusterCount, subscriptionCount, subscriptions, clusters, ...group};
+
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+
+        return group;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
