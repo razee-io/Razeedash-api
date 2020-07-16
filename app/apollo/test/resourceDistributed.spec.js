@@ -24,6 +24,7 @@ const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+const ObjectId = require('mongoose').Types.ObjectId;
 
 let mongoServer;
 let mongoServerEUDE;
@@ -67,6 +68,7 @@ const createResources = async () => {
   );
 
   await models.ResourceDistributed[0].create({
+    _id: new ObjectId('aaaabbbbcccc'),
     org_id: org_01._id,
     cluster_id: 'cluster_01_in_us',
     selfLink: 'any_selfLink',
@@ -77,6 +79,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.ResourceDistributed[0].create({
+    _id: new ObjectId('aaaabbbbccc2'),
     org_id: org_01._id,
     cluster_id: 'cluster_02_in_us',
     selfLink: 'any_selfLink_deleted',
@@ -87,6 +90,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.ResourceDistributed[1].create({
+    _id: new ObjectId('aaaabbbbccc3'),
     org_id: org_01._id,
     cluster_id: 'cluster_02_in_eu',
     selfLink: '/mybla/selfLink',

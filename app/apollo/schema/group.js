@@ -18,8 +18,8 @@ const groupSchema = gql`
     created: Date!
     clusterCount: Int!
     subscriptionCount: Int!
-    subscriptions: JSON!
-    clusters: JSON!
+    subscriptions: [ChannelSubscription!]!
+    clusters: [Cluster!]!
   }
 
   type AddGroupReply {
@@ -43,7 +43,7 @@ const groupSchema = gql`
     """
     list all groups for orgId
     """
-    groups(orgId: String!): [Group]
+    groups(orgId: String!): [GroupDetail]
 
     """
     Gets a group detail for orgId and uuid
