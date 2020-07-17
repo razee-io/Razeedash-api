@@ -271,7 +271,9 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
+      const resourcesResult = commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      return resourcesResult;
     },
 
     resource: async (parent, { orgId: org_id, id: _id, histId }, context, fullQuery) => {
@@ -341,7 +343,9 @@ const resourceResolvers = {
         });
       }
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
-      return commonResourcesSearch({ context, org_id, searchFilter, queryFields });
+      const resourcesResult = commonResourcesSearch({ context, org_id, searchFilter, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      return resourcesResult;
     },
 
     resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
