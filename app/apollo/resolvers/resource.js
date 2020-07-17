@@ -271,7 +271,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      const resourcesResult = commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
       return resourcesResult;
     },
@@ -316,7 +316,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      return await commonResourceSearch({ context, org_id, searchFilter, queryFields });
     },
 
     resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
@@ -343,7 +343,7 @@ const resourceResolvers = {
         });
       }
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
-      const resourcesResult = commonResourcesSearch({ context, org_id, searchFilter, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
       return resourcesResult;
     },
