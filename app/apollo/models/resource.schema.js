@@ -15,10 +15,11 @@
  */
 
 const mongoose = require('mongoose');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 const ResourceSchema = new mongoose.Schema({
   _id: {
-    type: String,
+    type: ObjectId,
     alias: 'id',
   },
   org_id: {
