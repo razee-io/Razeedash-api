@@ -246,7 +246,7 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      const cluster = models.Cluster.findOne({cluster_id}).lean();
+      const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);
@@ -325,7 +325,7 @@ const resourceResolvers = {
       logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
   
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-      const subscription = models.Subscription.findOne({uuid: subscription_id}).lean();
+      const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);
