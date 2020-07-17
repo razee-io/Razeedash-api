@@ -119,6 +119,10 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
       cluster.name = cluster.name || (cluster.metadata||{}).name ||  (cluster.registration||{}).name  || cluster.cluster_id;
       resource.cluster = cluster;
     }
+    if(queryFields['subscription'] && resource.searchableData && resource.searchableData.subscription_id) {
+      var subscriptions = await models.Subscription.findOne({ uuid: resource.searchableData.subscription_id}).lean({ virtuals: true });
+      resource.subscription = subscriptions;
+    }
 
     return resource;
   } catch (error) {
