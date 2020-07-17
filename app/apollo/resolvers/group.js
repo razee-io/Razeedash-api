@@ -35,7 +35,7 @@ const applyQueryFieldsToGroups = async(groups, queryFields, { orgId }, models)=>
   if(queryFields.subscriptions || queryFields.subscriptionCount){
     var groupNames = _.uniq(_.map(groups, 'name'));
     var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
-    if(queryFields.subscriptions.owner && subscriptions) {
+    if(queryFields.subscriptions && queryFields.subscriptions.owner && subscriptions) {
       const ownerIds = _.map(subscriptions, 'owner');
       const subOwners = await models.User.getBasicUsersByIds(ownerIds);
       subscriptions = subscriptions.map((sub)=>{
