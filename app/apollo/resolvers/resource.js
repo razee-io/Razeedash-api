@@ -102,6 +102,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
+
     if (!resource) return resource;
 
     if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
