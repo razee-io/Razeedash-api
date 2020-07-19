@@ -103,6 +103,10 @@ const subscriptionSchema = gql`
      Agent-facing API. Gets all subscriptions for a cluster.
      """
      subscriptionsByClusterId(clusterId: String!): [UpdatedSubscription]
+     """
+     Ge subscriptions by clusterId
+     """
+     subscriptionsForCluster(orgId: String!, clusterId: String!): [ChannelSubscription]
   }
   extend type Mutation {
      """

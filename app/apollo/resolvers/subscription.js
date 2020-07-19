@@ -182,6 +182,55 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id: orgId , name }, `${queryName} enter`);
       return await subscriptionResolvers.Query.subscription(parent, { orgId , name, _queryName: queryName }, context, fullQuery);
     },
+
+    subscriptionsForCluster: async(parent, {  orgId: org_id , clusterId: cluster_id  }, context, fullQuery) => {
+      
+      const queryFields = GraphqlFields(fullQuery);
+      const { models, me, req_id, logger } = context;
+      const queryName = 'subscriptionsForCluster';
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      
+
+      // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+      let conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      
+      const allowedGroups = conditions['groups']['$not']['$elemMatch']['$nin'];
+      logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
+      try{
+        //find groups in cluster
+        const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
+        if (!cluster) {
+          throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
+        }
+        let clusterGroupNames = [];
+        if (cluster.groups) {
+          clusterGroupNames = cluster.groups.map(l => l.name);
+        }
+        const intersection = allowedGroups.filter(allowedGroups => clusterGroupNames.includes(allowedGroups));
+        conditions['groups']['$not']['$elemMatch']['$nin'] = intersection;
+        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+      }catch(err){
+        logger.error(err);
+        throw err;
+      }
+      // render owner information if users ask for
+      if(queryFields.owner && subscriptions) {
+        const ownerIds = _.map(subscriptions, 'owner');
+        const owners = await models.User.getBasicUsersByIds(ownerIds);
+
+        subscriptions = subscriptions.map((sub)=>{
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
+          }
+          sub.owner = owners[sub.owner];
+          return sub;
+        });
+      }
+
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { }, models);
+
+      return subscriptions;
+    }
   },
   Mutation: {
     addSubscription: async (parent, { orgId: org_id, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
