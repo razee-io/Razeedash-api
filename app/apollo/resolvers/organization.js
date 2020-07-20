@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-const { RDD_STATIC_ARGS, ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs } = require ('./common');
 
 const organizationResolvers = {
   Query: {
