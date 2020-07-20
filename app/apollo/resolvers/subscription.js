@@ -190,25 +190,33 @@ const subscriptionResolvers = {
       const queryName = 'subscriptionsForCluster';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       
-
-      // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
-      let conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
-      
-      const allowedGroups = conditions['groups']['$not']['$elemMatch']['$nin'];
-      logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
-      try{
-        //find groups in cluster
-        const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
-        if (!cluster) {
+      //find groups in cluster
+      const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
+      if (!cluster) {
           throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
-        }
-        let clusterGroupNames = [];
-        if (cluster.groups) {
-          clusterGroupNames = cluster.groups.map(l => l.name);
-        }
-        const intersection = allowedGroups.filter(allowedGroups => clusterGroupNames.includes(allowedGroups));
-        conditions['groups']['$not']['$elemMatch']['$nin'] = intersection;
-        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+      }
+      var clusterGroupNames = [];
+      if (cluster.groups) {
+        clusterGroupNames = cluster.groups.map(l => l.name);
+      }
+      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      if (clusterGroupNames) {
+        clusterGroupNames.some(group => {
+          if(allowedGroups.indexOf(group) === -1) {
+            // if some group of the sub is not in user's group list, throws an error
+            throw new ForbiddenError(`you are not allowed to read subscriptions due to missing permissions on cluster group ${group.name}.`);
+          }
+          return false;
+        });
+      }
+      try{
+        // Return subscriptions that contain any clusterGroupNames passed in from the query
+        // examples:
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
+        var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
       }catch(err){
         logger.error(err);
         throw err;
