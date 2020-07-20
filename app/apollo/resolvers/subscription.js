@@ -193,7 +193,7 @@ const subscriptionResolvers = {
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
       if (!cluster) {
-          throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
+        throw new ValidationError(`could not locate the cluster with cluster_id ${cluster_id}`);
       }
       var clusterGroupNames = [];
       if (cluster.groups) {
