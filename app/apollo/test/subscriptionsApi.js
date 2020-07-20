@@ -181,10 +181,6 @@ const subscriptionsFunc = grahqlUrl => {
               versionUuid
               created
               updated
-              owner {
-                id
-                name
-              }
           }
         }
       `,

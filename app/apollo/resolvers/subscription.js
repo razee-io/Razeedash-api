@@ -221,16 +221,11 @@ const subscriptionResolvers = {
         logger.error(err);
         throw err;
       }
-      // render owner information if users ask for
-      if(queryFields.owner && subscriptions) {
-        const ownerIds = _.map(subscriptions, 'owner');
-        const owners = await models.User.getBasicUsersByIds(ownerIds);
-
+      if(subscriptions) {
         subscriptions = subscriptions.map((sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
           }
-          sub.owner = owners[sub.owner];
           return sub;
         });
       }
