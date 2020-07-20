@@ -201,6 +201,13 @@ const createGroups = async () => {
   });
   await models.Group.create({
     _id: UUID(),
+    org_id: org01._id,
+    uuid: UUID(),
+    name: 'stage',
+    owner: user01._id,
+  });
+  await models.Group.create({
+    _id: UUID(),
     org_id: org77._id,
     uuid: UUID(),
     name: 'dev',
@@ -249,6 +256,40 @@ const createSubscriptions = async () => {
   });
 };
 
+const createClusters = async () => {
+  await models.Cluster.create({
+    org_id: org01._id,
+    cluster_id: 'cluster_01',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+    registration: { name: 'my-cluster1' }
+  });
+};
+
+const groupClusters = async () => {
+  await models.Cluster.updateMany({
+    org_id: org01._id, 
+    cluster_id: {$in: 'cluster_01'}
+  },
+  {$push: {
+    groups: {
+      uuid: 'uuid', 
+      name: 'dev'
+    },
+  }});
+};
+
 describe('subscription graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
@@ -266,7 +307,8 @@ describe('subscription graphql test suite', () => {
     await createGroups();
     await createChannels();
     await createSubscriptions();
-    
+    await createClusters();
+    await groupClusters();
     // Can be uncommented if you want to see the test data that was added to the DB
     // await getPresetOrgs();
     // await getPresetUsers();
@@ -344,6 +386,23 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  it('get subscriptions by clusterId', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionsForCluster(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+      });
+      const subscriptionsForCluster = result.data.data.subscriptionsForCluster;
+      expect(subscriptionsForCluster[0].uuid).to.equal(subscription_01_uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 
   it('add a subscription', async () => {
     try {
