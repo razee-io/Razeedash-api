@@ -66,7 +66,7 @@ const commonClusterSearch = async (
   return results;
 };
 
-const applyQueryFieldsToClusters = async(clusters, queryFields, { resourceLimit }, models)=>{
+const applyQueryFieldsToClusters = async(clusters, queryFields, { orgId, resourceLimit, groupLimit }, models)=>{
   const clusterIds = _.map(clusters, 'cluster_id');
   resourceLimit = resourceLimit || 500;
 
@@ -79,13 +79,41 @@ const applyQueryFieldsToClusters = async(clusters, queryFields, { resourceLimit 
       });
     }
   }
+  if(queryFields.groupObjs){
+    if(clusterIds.length > 0){
+      // [
+      //   {groups: [{name: 'tag1'}]},
+      //   {groups: [{name: 'tag2'}]},
+      // ]
+      var groupNames = _.filter(_.uniq(_.map(_.flatten(_.map(clusters, 'groups')), 'name')));
+      var groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).limit(groupLimit).lean({ virtuals: true });
+      var groupsByUuid = _.keyBy(groups, 'uuid');
+      _.each(clusters, (cluster)=>{
+        var clusterGroupUuids = _.map(cluster.groups, 'uuid');
+        cluster.groupObjs = _.filter(_.pick(groupsByUuid, clusterGroupUuids));
+      });
+      if(queryFields.groupObjs.subscriptions){
+        var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+        var subscriptionsByGroupName = {};//_.groupBy(subscriptions, 'group');
+        _.each(subscriptions, (subscription)=>{
+          _.each(subscription.groups, (groupName)=>{
+            subscriptionsByGroupName[groupName] = subscriptionsByGroupName[groupName] || [];
+            subscriptionsByGroupName[groupName].push(subscription);
+          });
+        });
+        _.each(groups, (group)=>{
+          group.subscriptions = subscriptionsByGroupName[group.name] || [];
+        });
+      }
+    }
+  }
 };
 
 const clusterResolvers = {
   Query: {
     clusterByClusterId: async (
       parent,
-      { orgId, clusterId, resourceLimit },
+      { orgId, clusterId, resourceLimit, groupLimit },
       context,
       fullQuery
     ) => {
@@ -119,7 +147,7 @@ const clusterResolvers = {
         cluster.registration.url = url;
       }
 
-      await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
+      await applyQueryFieldsToClusters([cluster], queryFields, { orgId, resourceLimit, groupLimit }, models);
 
       return cluster;
     }, // end cluster by _id
@@ -173,7 +201,7 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgId: async (
       parent,
-      { orgId, limit, startingAfter, resourceLimit },
+      { orgId, limit, startingAfter, resourceLimit, groupLimit },
       context,
       fullQuery
     ) => {
@@ -188,7 +216,7 @@ const clusterResolvers = {
       const searchFilter = { org_id: orgId, ...conditions };
       const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, models);
 
       return clusters;
     }, // end clusterByOrgId
@@ -196,7 +224,7 @@ const clusterResolvers = {
     // Find all the clusters that have not been updated in the last day
     clusterZombies: async (
       parent,
-      { orgId, limit, resourceLimit },
+      { orgId, limit, resourceLimit, groupLimit },
       context,
       fullQuery
     ) => {
@@ -215,14 +243,14 @@ const clusterResolvers = {
       };
       const clusters = await commonClusterSearch(models, searchFilter, limit);
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, models);
 
       return clusters;
     }, // end clusterZombies
 
     clusterSearch: async (
       parent,
-      { orgId, filter, limit, resourceLimit },
+      { orgId, filter, limit, resourceLimit, groupLimit },
       context,
       fullQuery
     ) => {
@@ -247,7 +275,7 @@ const clusterResolvers = {
 
       const clusters = commonClusterSearch(models, searchFilter, limit);
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { resourceLimit }, models);
+      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, models);
 
       return clusters;
     }, // end clusterSearch
