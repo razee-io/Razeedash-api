@@ -124,6 +124,47 @@ const clusterResolvers = {
       return cluster;
     }, // end cluster by _id
 
+    clusterByClusterName: async (
+      parent,
+      { orgId, clusterName, resourceLimit },
+      context,
+      fullQuery
+    ) => {
+      const queryFields = GraphqlFields(fullQuery);
+      const queryName = 'clusterByClusterName';
+      const { models, me, req_id, logger } = context;
+      logger.debug({req_id, user: whoIs(me), orgId, clusterName}, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
+
+      const cluster = await models.Cluster.findOne({
+        org_id: orgId,
+        'registration.name': clusterName,
+        ...conditions
+      }).lean({ virtuals: true });
+
+      if(!cluster){
+        return null;
+      }
+
+      if(cluster){
+        var { url } = await models.Organization.getRegistrationUrl(orgId, context);
+        url = url + `&clusterId=${cluster.id}`;
+        if (RDD_STATIC_ARGS.length > 0) {
+          RDD_STATIC_ARGS.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+        }
+        if (!cluster.registration) cluster.registration = {};
+        cluster.registration.url = url;
+      }
+
+      await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, models);
+
+      return cluster;
+    }, // end clusterByClusterName
+
     // Return a list of clusters based on org_id.
     // sorted with newest document first
     // optional args:

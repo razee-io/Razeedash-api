@@ -39,6 +39,28 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
+  const byClusterName = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String! $clusterName: String! $resourceLimit: Int = 500) {
+            clusterByClusterName(orgId: $orgId clusterName: $clusterName, resourceLimit: $resourceLimit) {
+              id
+              orgId
+              clusterId
+          }
+        }
+    `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   const byClusterIDDistributed = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -309,6 +331,7 @@ const clusterFunc = grahqlUrl => {
 
   return {
     byClusterID,
+    byClusterName,
     byClusterIDDistributed,
     byOrgID,
     byOrgIDDistributed,

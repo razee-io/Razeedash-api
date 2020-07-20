@@ -119,6 +119,10 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
       cluster.name = cluster.name || (cluster.metadata||{}).name ||  (cluster.registration||{}).name  || cluster.cluster_id;
       resource.cluster = cluster;
     }
+    if(queryFields['subscription'] && resource.searchableData && resource.searchableData.subscription_id) {
+      var subscriptions = await models.Subscription.findOne({ uuid: resource.searchableData.subscription_id}).lean({ virtuals: true });
+      resource.subscription = subscriptions;
+    }
 
     return resource;
   } catch (error) {
@@ -246,7 +250,7 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      const cluster = models.Cluster.findOne({cluster_id}).lean();
+      const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);
@@ -271,7 +275,9 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      return commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      return resourcesResult;
     },
 
     resource: async (parent, { orgId: org_id, id: _id, histId }, context, fullQuery) => {
@@ -314,7 +320,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      return await commonResourceSearch({ context, org_id, searchFilter, queryFields });
     },
 
     resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
@@ -325,7 +331,7 @@ const resourceResolvers = {
       logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
   
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-      const subscription = models.Subscription.findOne({uuid: subscription_id}).lean();
+      const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);
@@ -341,7 +347,9 @@ const resourceResolvers = {
         });
       }
       const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
-      return commonResourcesSearch({ context, org_id, searchFilter, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      return resourcesResult;
     },
 
     resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{

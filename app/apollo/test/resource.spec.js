@@ -155,6 +155,29 @@ const createClusters = async () => {
     },
   });
 };
+const createSubscriptions = async () => {
+  await models.Group.create({
+    _id: 'fake_g1_id',
+    org_id: org_01._id,
+    name: 'g1',
+    uuid: 'g1-uuid',
+  });
+  await models.Group.create({
+    _id: 'fake_g2_id',
+    org_id: org_01._id,
+    name: 'g2',
+    uuid: 'g2-uuid',
+  });
+  await models.Subscription.create({
+    _id: 'fake_sub_id',
+    org_id: org_01._id,
+    name: 'fake_abc-123-name',
+    uuid: 'abc-123',
+    groups: ['g1','g2'],
+    channel_uuid: 'fake-channel-uuid-123',
+    version_uuid: 'fake-version-uuid-123',
+  });
+};
 const createResources = async () => {
   await models.Resource.create({
     _id: new ObjectId('aaaabbbbcccc'),
@@ -282,6 +305,7 @@ describe('resource graphql test suite', () => {
     await createOrganizations();
     await createUsers();
     await createClusters();
+    await createSubscriptions();
     await createResources();
 
     await getPresetOrgs();

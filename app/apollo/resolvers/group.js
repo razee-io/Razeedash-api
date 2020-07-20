@@ -28,16 +28,27 @@ const pubSub = GraphqlPubSub.getInstance();
 const applyQueryFieldsToGroups = async(groups, queryFields, { orgId }, models)=>{
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.uniq(_.map(groups, 'owner')));
-    var ownersById = _.groupBy(owners, 'id');
     _.each(groups, (group)=>{
-      group.owner = ownersById[group.owner];
+      group.owner = owners[group.owner];
     });
   }
   if(queryFields.subscriptions || queryFields.subscriptionCount){
     var groupNames = _.uniq(_.map(groups, 'name'));
-    const subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+    var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+    if(queryFields.subscriptions && queryFields.subscriptions.owner && subscriptions) {
+      const ownerIds = _.map(subscriptions, 'owner');
+      const subOwners = await models.User.getBasicUsersByIds(ownerIds);
+      subscriptions = subscriptions.map((sub)=>{
+        sub.owner = subOwners[sub.owner];
+        return sub;
+      });
+    }
     const subscriptionsByGroupName = {};
     _.each(subscriptions, (sub)=>{
+      if(_.isUndefined(sub.channelName)){
+        sub.channelName = sub.channel;
+      }
+      delete sub.channel; // can not render channel, too deep
       _.each(sub.groups, (groupName)=>{
         subscriptionsByGroupName[groupName] = subscriptionsByGroupName[groupName] || [];
         subscriptionsByGroupName[groupName].push(sub);

@@ -78,6 +78,15 @@ const clusterSchema = gql`
     ): Cluster
 
     """
+    Return a cluster based on **orgId** and **clusterName**.
+    """
+    clusterByClusterName(
+      orgId: String!,
+      clusterName: String!
+      resourceLimit: Int = 500
+    ): Cluster
+
+    """
     Return clusters based on **orgId**, sorted with newest document first.
     """
     clustersByOrgId(
