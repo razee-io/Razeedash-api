@@ -103,24 +103,8 @@ describe('organization graphql test suite', () => {
     await mongoServer.stop();
   });
 
-  describe('registrationUrl(org_id: String!): URL!', () => {
+  describe('organisations(org_id: String!): URL!', () => {
     let token;
-    
-    it('an admin user should be able to get registration url', async () => {
-      try {
-        token = await signInUser(models, api, rootData);
-        console.log(`root token=${token}`);
-        const meResult = await api.me(token);
-        const { orgId } = meResult.data.data.me;
-        const urlResult = await api.registrationUrl(token, { orgId });
-        console.log(JSON.stringify(urlResult.data));
-        expect(urlResult.data.data.registrationUrl.url).to.be.a('string');
-      } catch (error) {
-        console.error('error response is ', error.response);
-        // console.error('error response is ', JSON.stringify(error.response.data));
-        throw error;
-      }
-    });
 
     it('a user should be able to get organizations associated with him.', async () => {
       try {
@@ -137,24 +121,6 @@ describe('organization graphql test suite', () => {
         throw error;
       }
     });
-    
-    it('a non-admin user should NOT be able to get registration url', async () => {
-      try {
-        token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
 
-        const meResult = await api.me(token);
-        const { orgId } = meResult.data.data.me;
-
-        const urlResult = await api.registrationUrl(token, {orgId});
-        
-        console.log(JSON.stringify(urlResult.data));
-        expect(urlResult.data.errors[0].message).to.be.a('string');
-      } catch (error) {
-        console.error('error response is ', error.response);
-        // console.error('error response is ', JSON.stringify(error.response.data));
-        throw error;
-      }
-    });
   });
 });
