@@ -302,6 +302,11 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
+        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
+          const yaml = getS3Data(resource.data, logger);
+          resource.data = yaml;
+        }
+
         resource.updated = resourceYamlHistObj.updated;
       }
       return resource;
@@ -418,7 +423,11 @@ const resourceResolvers = {
         return null;
       }
 
-      const content = await getContent(obj);
+      var content = await getContent(obj);
+      if ( content && isLink(content) && s3IsDefined()) {
+        const yaml = getS3Data(content, logger);
+        content = yaml;
+      }
 
       return {
         id: resource._id,
