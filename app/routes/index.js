@@ -172,7 +172,7 @@ async function initialize(){
           options: { name: 'cluster_id', }
         },
         {
-          keys: { cluster_id: "text", selfLink: "text" },
+          keys: { cluster_id: 'text', selfLink: 'text' },
           options: { name: 'cluster_id.selfLink' }
         }
       ],
