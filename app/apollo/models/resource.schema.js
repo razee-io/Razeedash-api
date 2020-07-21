@@ -69,6 +69,7 @@ ResourceSchema.statics.getIds = async(ids)=>{
 ResourceSchema.statics.getByClusterIds = async(clusterIds)=>{
   return await this.find({ cluster_id: { $in: clusterIds } });
 };
+ResourceSchema.index({ cluster_id: 'text', selfLink: 'text' });
 
 module.exports = ResourceSchema;
 
