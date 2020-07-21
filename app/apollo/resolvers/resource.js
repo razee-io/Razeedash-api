@@ -294,11 +294,13 @@ const resourceResolvers = {
       if(!resource){
         return null;
       }
+      resource.histId = resource._id;
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
           throw new NotFoundError(`hist _id "${histId}" not found`);
         }
+        resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
         resource.updated = resourceYamlHistObj.updated;
       }
@@ -320,7 +322,12 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      const resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      if(!resource){
+        return null;
+      }
+      resource.histId = resource._id;
+      return resource;
     },
 
     resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
@@ -400,6 +407,7 @@ const resourceResolvers = {
         let content = await getContent(resource);
         return {
           id: resource._id,
+          histId: resource._id,
           content,
           updated: resource.updated,
         };
@@ -413,7 +421,8 @@ const resourceResolvers = {
       const content = await getContent(obj);
 
       return {
-        id: obj._id,
+        id: resource._id,
+        histId: obj._id,
         content,
         updated: obj.updated,
       };
