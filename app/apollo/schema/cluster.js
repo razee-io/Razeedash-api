@@ -37,6 +37,7 @@ const clusterSchema = gql`
     registration: JSON
     regState: String
     groups: [ClusterGroup]
+    groupObjs: [GroupDetail!]
     created: Date
     updated: Date
     dirty: Boolean
