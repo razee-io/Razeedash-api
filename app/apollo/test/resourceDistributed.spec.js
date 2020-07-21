@@ -148,6 +148,9 @@ describe('resourceDistributed graphql test suite', () => {
       `resourceDistributed.spec.js in memory test mongodb urls is ${mongo_urls}`,
     );
     myApollo = await apollo({ mongo_url, mongo_urls, graphql_port: graphqlPort });
+
+    await models.ResourceDistributed[0].createIndexes();
+    await models.ResourceDistributed[1].createIndexes();
     await createOrganizations();
     await createUsers();
     await createResources();

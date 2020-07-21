@@ -16,12 +16,12 @@
 
 const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, kinds = []) => {
   let ands = [];
-  const tokens = searchStr.split(/\s+/);
-  if (tokens.length > 0) {
-    ands = tokens.map(token => {
-      return { '$text': { '$search': token, '$caseSensitive': false } };
-    });
+
+  if (searchStr !== ''){
+    const searchExp = { '$text': { '$search': searchStr, '$caseSensitive': false } };
+    ands.push(searchExp);
   }
+
   if (fromTime && toTime) {
     ands.push({
       created: {
