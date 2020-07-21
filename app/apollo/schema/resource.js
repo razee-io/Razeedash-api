@@ -29,6 +29,7 @@ const resourceSchema = gql`
     orgId: String!
     clusterId: String!
     cluster: ClusterInfo!
+    histId: String!
     selfLink: String!
     hash: String
     data: String
@@ -60,6 +61,7 @@ const resourceSchema = gql`
   }
   type ResourceContentObj{
     id: String!
+    histId: String!
     content: String!
     updated: Date!
   }
