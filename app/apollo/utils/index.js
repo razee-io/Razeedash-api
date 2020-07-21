@@ -19,18 +19,7 @@ const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, k
   const tokens = searchStr.split(/\s+/);
   if (tokens.length > 0) {
     ands = tokens.map(token => {
-      let searchRegex = {$regex: token, $options: 'i',};
-      let ors = [
-        {cluster_id: searchRegex,},
-        {selfLink: searchRegex},
-        {'searchableData.kind': searchRegex,},
-        {'searchableData.name': searchRegex,},
-        {'searchableData.namespace': searchRegex,},
-      ];
-      let out = {
-        $or: ors,
-      };
-      return out;
+      return { '$text': { '$search': token, '$caseSensitive': false } };
     });
   }
   if (fromTime && toTime) {
