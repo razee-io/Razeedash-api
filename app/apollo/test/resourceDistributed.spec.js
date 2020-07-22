@@ -71,7 +71,7 @@ const createResources = async () => {
     _id: new ObjectId('aaaabbbbcccc'),
     org_id: org_01._id,
     cluster_id: 'cluster_01_in_us',
-    selfLink: 'any_selfLink',
+    selfLink: '/any/selfLink',
     hash: 'any_hash',
     deleted: false,
     data: 'any_data',
@@ -221,14 +221,14 @@ describe('resourceDistributed graphql test suite', () => {
         const result1 = await api.resourceDistributedByKeys(token, {
           orgId: meResult.data.data.me.orgId,
           clusterId: 'cluster_01_in_us',
-          selfLink: 'any_selfLink',
+          selfLink: '/any/selfLink',
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resourceDistributedByKeys.clusterId).to.equal(
           'cluster_01_in_us',
         );
         expect(result1.data.data.resourceDistributedByKeys.selfLink).to.equal(
-          'any_selfLink',
+          '/any/selfLink',
         );
 
         const result2 = await api.resourceDistributedByKeys(token, {
@@ -314,7 +314,7 @@ describe('resourceDistributed graphql test suite', () => {
         ).to.equal('cluster_01_in_us');
         expect(
           result1.data.data.resourcesDistributedByCluster[0].selfLink,
-        ).to.equal('any_selfLink');
+        ).to.equal('/any/selfLink');
 
         const result2 = await api.resourcesDistributedByCluster(token, {
           orgId: meResult.data.data.me.orgId,

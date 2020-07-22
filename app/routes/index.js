@@ -173,7 +173,7 @@ async function initialize(){
         },
         {
           keys: { cluster_id: 'text', selfLink: 'text' },
-          options: { name: 'cluster_id.selfLink' }
+          options: { name: 'cluster_id.selfLink', default_language: 'none' }
         }
       ],
       messages:[ 
