@@ -101,6 +101,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
+    searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
 
     if (!resource) return resource;
@@ -302,6 +303,11 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
+        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
+          const yaml = getS3Data(resource.data, logger);
+          resource.data = yaml;
+        }
+
         resource.updated = resourceYamlHistObj.updated;
       }
       return resource;
@@ -353,7 +359,7 @@ const resourceResolvers = {
           return false;
         });
       }
-      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
+      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id, deleted: false, };
       const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
       return resourcesResult;
@@ -418,7 +424,11 @@ const resourceResolvers = {
         return null;
       }
 
-      const content = await getContent(obj);
+      var content = await getContent(obj);
+      if ( content && isLink(content) && s3IsDefined()) {
+        const yaml = getS3Data(content, logger);
+        content = yaml;
+      }
 
       return {
         id: resource._id,
