@@ -77,7 +77,9 @@ const getS3Data = async (s3Link, logger) => {
     const link = url.parse(s3Link); 
     const paths = link.path.split('/');
     const bucket = paths[1];
-    const resourceName = decodeURI(paths[2]);
+    // we do not need to decode URL here because path[2] and path[3] are hash code
+    // path[2] stores keyHash , path[3] stores searchableDataHash 
+    const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
     const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
     const yaml = await readS3File(s3stream);
     return yaml;
