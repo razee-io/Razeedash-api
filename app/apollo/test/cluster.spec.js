@@ -275,7 +275,7 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         clusterName: clusterName1,
       });
-      const clusterByClusterName = result.data.data.clusterByClusterName;
+      const clusterByClusterName = result.data.data.clusterByName;
 
       expect(clusterByClusterName.clusterId).to.equal(clusterId1);
     } catch (error) {

@@ -79,9 +79,9 @@ const clusterSchema = gql`
     ): Cluster
 
     """
-    Return a cluster based on **orgId** and **clusterName**.
+    Return a cluster based on **orgId** and **cluster name**.
     """
-    clusterByClusterName(
+    clusterByName(
       orgId: String!,
       clusterName: String!
       resourceLimit: Int = 500
