@@ -45,7 +45,7 @@ const clusterFunc = grahqlUrl => {
       {
         query: `
           query($orgId: String! $clusterName: String! $resourceLimit: Int = 500) {
-            clusterByClusterName(orgId: $orgId clusterName: $clusterName, resourceLimit: $resourceLimit) {
+            clusterByName(orgId: $orgId clusterName: $clusterName, resourceLimit: $resourceLimit) {
               id
               orgId
               clusterId

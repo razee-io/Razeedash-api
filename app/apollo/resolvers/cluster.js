@@ -152,14 +152,14 @@ const clusterResolvers = {
       return cluster;
     }, // end cluster by _id
 
-    clusterByClusterName: async (
+    clusterByName: async (
       parent,
       { orgId, clusterName, resourceLimit },
       context,
       fullQuery
     ) => {
       const queryFields = GraphqlFields(fullQuery);
-      const queryName = 'clusterByClusterName';
+      const queryName = 'clusterByName';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterName}, `${queryName} enter`);
 
