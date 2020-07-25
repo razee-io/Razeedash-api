@@ -44,6 +44,7 @@ const subscriptionSchema = gql`
     version: String!
     versionUuid: String!
     owner: BasicUser!
+    resources: [Resource!]
     created: Date!
     updated: Date!
   }

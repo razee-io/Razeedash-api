@@ -44,7 +44,7 @@ async function validateGroups(org_id, groups, context) {
   return groupCount;
 }
 
-const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{ // eslint-disable-line
+const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, models)=>{ // eslint-disable-line
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channelName)){
       sub.channelName = sub.channel;
@@ -59,6 +59,14 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { }, models)=>{
       var channelUuid = sub.channelUuid;
       var channel = channelsByUuid[channelUuid];
       sub.channel = channel;
+    });
+  }
+  if(queryFields.resources && subs.length > 0){
+    var subUuids = _.uniq(_.map(subs, 'uuid'));
+    var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
+    var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
+    _.each(subs, (sub)=>{
+      sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
   }
 };
@@ -148,7 +156,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
 
       return subscriptions;
     },
@@ -168,7 +176,7 @@ const subscriptionResolvers = {
           return null;
         }
 
-        await applyQueryFieldsToSubscriptions([subscription], queryFields, { }, models);
+        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, models);
 
         return subscription;
       }catch(err){
@@ -230,7 +238,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
 
       return subscriptions;
     }

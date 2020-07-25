@@ -77,7 +77,9 @@ const getS3Data = async (s3Link, logger) => {
     const link = url.parse(s3Link); 
     const paths = link.path.split('/');
     const bucket = paths[1];
-    const resourceName = decodeURI(paths[2]);
+    // we do not need to decode URL here because path[2] and path[3] are hash code
+    // path[2] stores keyHash , path[3] stores searchableDataHash 
+    const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
     const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
     const yaml = await readS3File(s3stream);
     return yaml;
@@ -101,6 +103,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
+    searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
 
     if (!resource) return resource;
@@ -294,12 +297,19 @@ const resourceResolvers = {
       if(!resource){
         return null;
       }
+      resource.histId = resource._id;
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
           throw new NotFoundError(`hist _id "${histId}" not found`);
         }
+        resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
+        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
+          const yaml = getS3Data(resource.data, logger);
+          resource.data = yaml;
+        }
+
         resource.updated = resourceYamlHistObj.updated;
       }
       return resource;
@@ -320,7 +330,12 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
-      return await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      const resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      if(!resource){
+        return null;
+      }
+      resource.histId = resource._id;
+      return resource;
     },
 
     resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
@@ -346,7 +361,7 @@ const resourceResolvers = {
           return false;
         });
       }
-      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id };
+      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id, deleted: false, };
       const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
       return resourcesResult;
@@ -400,6 +415,7 @@ const resourceResolvers = {
         let content = await getContent(resource);
         return {
           id: resource._id,
+          histId: resource._id,
           content,
           updated: resource.updated,
         };
@@ -410,10 +426,15 @@ const resourceResolvers = {
         return null;
       }
 
-      const content = await getContent(obj);
+      var content = await getContent(obj);
+      if ( content && isLink(content) && s3IsDefined()) {
+        const yaml = getS3Data(content, logger);
+        content = yaml;
+      }
 
       return {
-        id: obj._id,
+        id: resource._id,
+        histId: obj._id,
         content,
         updated: obj.updated,
       };

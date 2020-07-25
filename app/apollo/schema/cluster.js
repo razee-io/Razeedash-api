@@ -37,6 +37,7 @@ const clusterSchema = gql`
     registration: JSON
     regState: String
     groups: [ClusterGroup]
+    groupObjs: [GroupDetail!]
     created: Date
     updated: Date
     dirty: Boolean
@@ -78,9 +79,9 @@ const clusterSchema = gql`
     ): Cluster
 
     """
-    Return a cluster based on **orgId** and **clusterName**.
+    Return a cluster based on **orgId** and **cluster name**.
     """
-    clusterByClusterName(
+    clusterByName(
       orgId: String!,
       clusterName: String!
       resourceLimit: Int = 500

@@ -58,6 +58,18 @@ const applyQueryFieldsToGroups = async(groups, queryFields, { orgId }, models)=>
       group.subscriptions = subscriptionsByGroupName[group.name] || [];
       group.subscriptionCount = group.subscriptions.length;
     });
+    if(_.get(queryFields, 'subscriptions.resources')){
+      var subUuids = _.uniq(_.map(subscriptions, 'uuid'));
+      var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id': { $in: subUuids }});
+      var resourcesBySubUuid = _.groupBy(resources, (resource)=>{
+        return resource.searchableData.get('subscription_id');
+      });
+      _.each(groups, (group)=>{
+        _.each(group.subscriptions, (sub)=>{
+          sub.resources = resourcesBySubUuid[sub.uuid] || [];
+        });
+      });
+    }
   }
   if(queryFields.clusters || queryFields.clusterCount){
     var groupUuids = _.uniq(_.map(groups, 'uuid'));
