@@ -15,6 +15,11 @@
 */
 
 const responseCodeMapper = (status, err, meta) => {
+  if (process.env.NODE_ENV === 'production') {
+    if (meta['req-headers'] && meta['req-headers']['authorization']) {
+      meta['req-headers']['authorization'] = 'Bearer [HIDDEN]';
+    } 
+  }
   if (meta.method === 'OPTIONS' && status === 204) {
     // skip OPTION request 204 response
     return 'trace';
