@@ -224,6 +224,7 @@ const updateClusterResources = async (req, res, next) => {
           const remoteResource = await Resources.findOne(rrSearchKey);
           if(remoteResource) {
             searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
+            searchableDataObj['searchableExpression'] = searchableDataObj['searchableExpression'] + ':' + searchableDataObj['subscription_id'];
           } 
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
 
