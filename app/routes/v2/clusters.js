@@ -125,13 +125,13 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-const pushToS3 = async (req, key, dataStr) => {
+const pushToS3 = async (req, key, searchableDataHash, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
   const bucket = conf.s3.resourceBucket;
   const hash = crypto.createHash('sha256');
-  const hashKey = hash.update(JSON.stringify(key)).digest('hex');
-  await req.s3.createBucketAndObject(bucket, hashKey, dataStr);
-  return `https://${req.s3.endpoint}/${bucket}/${hashKey}`;
+  const keyHash = hash.update(JSON.stringify(key)).digest('hex');
+  await req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
+  return `https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
 };
 
 var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
@@ -231,7 +231,7 @@ const updateClusterResources = async (req, res, next) => {
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
-            dataStr = await pushToS3(req, key, dataStr);
+            dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
           }
           var changes = null;
           var options = {};
@@ -305,7 +305,7 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3) {
-            dataStr = await pushToS3(req, key, dataStr);
+            dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
           }
           if (currentResource) {
             await Resources.updateOne(
