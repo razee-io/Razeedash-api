@@ -207,6 +207,44 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
+  const assignClusterGroups = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation assignClusterGroups($orgId:String!, $groupUuids: [String!]!, $clusterIds: [String!]!) {
+            assignClusterGroups(orgId:$orgId, groupUuids:$groupUuids, clusterIds:$clusterIds){
+              modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  const unassignClusterGroups = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation unassignClusterGroups($orgId:String!, $groupUuids: [String!]!, $clusterIds: [String!]!) {
+            unassignClusterGroups(orgId:$orgId, groupUuids:$groupUuids, clusterIds:$clusterIds){
+              modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
   return {
     groups,
     group,
@@ -215,7 +253,9 @@ const groupFunc = grahqlUrl => {
     removeGroup,
     removeGroupByName,
     groupClusters,
-    unGroupClusters
+    unGroupClusters,
+    assignClusterGroups,
+    unassignClusterGroups,
   };
 };
         

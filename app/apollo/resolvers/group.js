@@ -260,6 +260,108 @@ const groupResolvers = {
       }
     },
 
+    assignClusterGroups: async(
+      parent,
+      { orgId, groupUuids, clusterIds },
+      context,
+      fullQuery
+    )=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'assignClusterGroups';
+      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      try {
+        var groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
+        if (groups.length < 1) {
+          throw new NotFoundError(`None of the passed group uuids were found`);
+        }
+        var groupUuids = _.map(groups, 'uuid');
+        var groupObjsToAdd = _.map(groups, (group)=>{
+          return {
+            uuid: group.uuid,
+            name: group.name,
+          };
+        });
+        // because we cant do $addToSet with objs as inputs, we'll need to split into two queries
+        // first we pull out all groups with matching uuids
+        // then we insert the group objs
+        // the end result is we have all the input groups inserted while also not having any duplicates
+        // overall its bad to do this in two queries due to the second query potentially failing after the first one removes items, but i cant think of a better way
+        // if we ever change the schema for this to just be a list of group ids, we can swap over to $addToSet and only need one query
+        var ops = [
+          {
+            updateMany: {
+              filter: {
+                org_id: orgId,
+                cluster_id: { $in: clusterIds },
+              },
+              update: {
+                $pull: { groups: { uuid: { $in: groupUuids } } },
+              },
+            }
+          },
+          {
+            updateMany: {
+              filter: {
+                org_id: orgId,
+                cluster_id: { $in: clusterIds },
+              },
+              update: {
+                $push: { groups: { $each: groupObjsToAdd } },
+              },
+            }
+          }
+        ];
+        var res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
+
+        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
+        pubSub.channelSubChangedFunc({org_id: orgId});
+        return {
+          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+        };
+      }
+      catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+    },
+
+    unassignClusterGroups: async(
+      parent,
+      { orgId, groupUuids, clusterIds },
+      context,
+      fullQuery
+    )=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'assignClusterGroups';
+      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      try {
+        // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
+        var res = await models.Cluster.updateMany(
+          {
+            org_id: orgId,
+            cluster_id: { $in: clusterIds },
+          },
+          {
+            $pull: { groups: { uuid: { $in: groupUuids } } },
+          }
+        );
+
+        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
+        pubSub.channelSubChangedFunc({org_id: orgId});
+        return {
+          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+        };
+      }
+      catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+    },
+
     groupClusters: async (parent, { orgId: org_id, uuid, clusters }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'groupClusters';
