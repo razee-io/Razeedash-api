@@ -647,5 +647,5 @@ describe('groups graphql test suite', () => {
     expect(cluster1.groups).to.have.length(1);
     cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
     expect(cluster4.groups).to.have.length(0);
-  })
+  });
 });

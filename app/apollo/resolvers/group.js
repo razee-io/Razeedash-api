@@ -264,7 +264,7 @@ const groupResolvers = {
       parent,
       { orgId, groupUuids, clusterIds },
       context,
-      fullQuery
+      fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'assignClusterGroups';
@@ -274,9 +274,9 @@ const groupResolvers = {
       try {
         var groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
-          throw new NotFoundError(`None of the passed group uuids were found`);
+          throw new NotFoundError('None of the passed group uuids were found');
         }
-        var groupUuids = _.map(groups, 'uuid');
+        groupUuids = _.map(groups, 'uuid');
         var groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
@@ -331,7 +331,7 @@ const groupResolvers = {
       parent,
       { orgId, groupUuids, clusterIds },
       context,
-      fullQuery
+      fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'assignClusterGroups';
