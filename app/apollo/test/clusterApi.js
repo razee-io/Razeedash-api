@@ -330,25 +330,25 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
-    const enableRegistrationUrl = async (token, variables) =>
-      axios.post(
-        grahqlUrl,
-        {
-          query: `
-            mutation($orgId: String!,$clusterId: String!) {
-              enableRegistrationUrl(orgId: $orgId clusterId: $clusterId) {
-                url
-            }
+  const enableRegistrationUrl = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!,$clusterId: String!) {
+            enableRegistrationUrl(orgId: $orgId clusterId: $clusterId) {
+              url
           }
+        }
       `,
-          variables,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      },
+    );
 
   return {
     byClusterID,

@@ -668,7 +668,7 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
-  
+
   it('enable registration url for Cluster by an admin user', async () => {
     try {
       const clusterIdEnableRegUrl = 'cluster_enable_reg_url';
@@ -708,7 +708,7 @@ describe('cluster graphql test suite', () => {
       const clusterByClusterId = result.data.data.clusterByClusterId;
 
       expect(enableRegistrationUrl.url).to.be.an('string');
-      expect(clusterByClusterId.regState).to.equal('registering')
+      expect(clusterByClusterId.regState).to.equal('registering');
 
     } catch (error) {
       if (error.response) {

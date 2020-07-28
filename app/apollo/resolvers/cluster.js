@@ -461,7 +461,7 @@ const clusterResolvers = {
           }
           return { url };
         } else {
-          return null
+          return null;
         }
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);

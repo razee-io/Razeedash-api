@@ -47,7 +47,7 @@ const addUpdateCluster = async (req, res, next) => {
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
-    const reg_state = CLUSTER_REG_STATES.REGISTERED;
+    var reg_state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
       // new cluster flow requires a cluster to be registered first.
       if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
