@@ -668,4 +668,55 @@ describe('cluster graphql test suite', () => {
       throw error;
     }
   });
+  
+  it('enable registration url for Cluster by an admin user', async () => {
+    try {
+      const clusterIdEnableRegUrl = 'cluster_enable_reg_url';
+      await models.Cluster.create({
+        _id: new ObjectId('enableRegUrl'),
+        org_id: org01._id,
+        cluster_id: clusterIdEnableRegUrl,
+        reg_state: 'registered',
+        metadata: {
+          kube_version: {
+            major: '1',
+            minor: '17',
+            gitVersion: '1.99',
+            gitCommit: 'abc',
+            gitTreeState: 'def',
+            buildDate: 'a_date',
+            goVersion: '1.88',
+            compiler: 'some compiler',
+            platform: 'linux/amd64',
+          },
+        },
+      });
+
+      const {
+        data: {
+          data: { enableRegistrationUrl },
+        },
+      } = await clusterApi.enableRegistrationUrl(adminToken, {
+        orgId: org01._id,
+        clusterId: clusterIdEnableRegUrl,
+      });
+
+      const result = await clusterApi.byClusterID(token, {
+        orgId: org01._id,
+        clusterId: clusterIdEnableRegUrl,
+      });
+      const clusterByClusterId = result.data.data.clusterByClusterId;
+
+      expect(enableRegistrationUrl.url).to.be.an('string');
+      expect(clusterByClusterId.regState).to.equal('registering')
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });
