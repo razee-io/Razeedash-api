@@ -216,10 +216,28 @@ const updateClusterResources = async (req, res, next) => {
           };
           let searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
 
+          if (searchableDataObj.kind == 'RemoteResource' && searchableDataObj.children && searchableDataObj.children.length > 0) {
+            // if children arrives earlier than this RR without subscription_id, update children's subscription_id
+            const childSearchKey = {
+              org_id: req.org._id,
+              cluster_id: req.params.cluster_id,
+              selfLink: {$in: searchableDataObj.children},
+              'searchableData.subscription_id': {$exists: false},
+              deleted: false
+            };
+            const childResource = await Resources.findOne(childSearchKey);
+            if (childResource) {
+              const subscription_id = searchableDataObj['annotations["deploy_razee_io_clustersubscription"]'];
+              req.log.debug({key, subscription_id}, `Updating children's subscription_id to ${subscription_id} for parent key.`);
+              Resources.updateMany( childSearchKey,
+                {$set: {'searchableData.subscription_id': subscription_id},$currentDate: { updated: true }}, {});
+            }
+          }
           const rrSearchKey =  { 
             org_id: req.org._id, 
             'searchableData.kind': 'RemoteResource', 
-            'searchableData.children': selfLink 
+            'searchableData.children': selfLink,
+            deleted: false
           };
           const remoteResource = await Resources.findOne(rrSearchKey);
           if(remoteResource) {
