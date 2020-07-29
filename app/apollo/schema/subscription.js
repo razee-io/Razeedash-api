@@ -22,7 +22,7 @@ const subscriptionSchema = gql`
     name: String!
   }
   type RolloutStatus {
-    successfulCount: Int
+    successCount: Int
     errorCount: Int
   }
   type BasicChannelSubscription {

@@ -84,20 +84,20 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
 
       // loops through each resource. if there are errors, increments the errorCount. if no errors, increments successfulCount
       var errorCount = 0;
-      var successfulCount = 0;
+      var successCount = 0;
       _.each(rrs, (rr)=>{
         var errors = _.toArray(rr.searchableData.get('errors')||[]);
         if(errors.length > 0){
           errorCount += 1;
         }
         else{
-          successfulCount += 1;
+          successCount += 1;
         }
       });
 
       sub.remoteResources = rrs;
       sub.rolloutStatus = {
-        successfulCount,
+        successCount,
         errorCount,
       };
     });
