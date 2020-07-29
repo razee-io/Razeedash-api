@@ -39,6 +39,14 @@ const groupSchema = gql`
     modified: Int!
   }
 
+  type AssignClusterGroupsReply{
+    modified: Int!
+  }
+
+  type UnassignClusterGroupsReply{
+    modified: Int!
+  }
+
   extend type Query {
     """
     list all groups for orgId
@@ -82,6 +90,15 @@ const groupSchema = gql`
     """
     unGroupClusters(orgId: String! uuid: String! clusters: [String]!): UnGroupClustersReply!
 
+    """
+    Adds a list of groups to a list of clusterIds
+    """
+    assignClusterGroups(orgId: String!, groupUuids: [String!]!, clusterIds: [String!]!): AssignClusterGroupsReply!
+
+    """
+    Removes a list of groups from a list of clusterIds
+    """
+    unassignClusterGroups(orgId: String!, groupUuids: [String!]!, clusterIds: [String!]!): UnassignClusterGroupsReply!
   }
 `;
 
