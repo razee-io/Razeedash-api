@@ -51,6 +51,8 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
     }
     delete sub.channel;
   });
+  var subUuids = _.uniq(_.map(subs, 'uuid'));
+
   if(queryFields.channel && subs.length > 0){
     var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
     var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
@@ -62,11 +64,42 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
     });
   }
   if(queryFields.resources && subs.length > 0){
-    var subUuids = _.uniq(_.map(subs, 'uuid'));
     var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
     var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
+    });
+  }
+  if(queryFields.remoteResources || queryFields.rolloutStatus){
+    var remoteResources = await models.Resource.find({
+      org_id: orgId,
+      'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
+      deleted: false,
+    });
+    var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
+      return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
+    });
+    _.each(subs, (sub)=>{
+      var rrs = remoteResourcesBySubUuid[sub.uuid] || [];
+
+      // loops through each resource. if there are errors, increments the errorCount. if no errors, increments successfulCount
+      var errorCount = 0;
+      var successfulCount = 0;
+      _.each(rrs, (rr)=>{
+        var errors = _.toArray(rr.searchableData.get('errors')||[]);
+        if(errors.length > 0){
+          errorCount += 1;
+        }
+        else{
+          successfulCount += 1;
+        }
+      });
+
+      sub.remoteResources = rrs;
+      sub.rolloutStatus = {
+        successfulCount,
+        errorCount,
+      };
     });
   }
 };
