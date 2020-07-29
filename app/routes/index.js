@@ -39,6 +39,14 @@ const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
 
+router.get('/v1/health', (req, res)=>{
+  res.json({
+    success: true,
+    BUILD_ID: process.env.BUILD_ID || 'n/a',
+    BUILD_TIME: process.env.BUILD_TIME || 'n/a',
+  });
+});
+
 router.use('/kube', Kube);
 router.use(ebl(getBunyanConfig('/api/v2/')));
 

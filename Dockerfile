@@ -22,8 +22,17 @@ RUN apk add --upgrade --no-cache libssl1.1
 
 RUN mkdir -p /usr/src/
 ENV PATH="$PATH:/usr/src/"
+
+RUN export BUILD_TIME=`date '+%Y-%m-%d %H:%M:%S'`
+
 WORKDIR /usr/src/
 COPY --from=buildImg /usr/src /usr/src
+
+ARG BUILD_ID
+ENV BUILD_ID=${BUILD_ID}
+
+ARG BUILD_TIME
+ENV BUILD_TIME=${BUILD_TIME}
 
 EXPOSE 3333
 CMD ["npm", "start"]
