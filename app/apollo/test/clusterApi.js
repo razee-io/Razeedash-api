@@ -27,6 +27,7 @@ const clusterFunc = grahqlUrl => {
               id
               orgId
               clusterId
+              regState
           }
         }
     `,
@@ -329,6 +330,26 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
+  const enableRegistrationUrl = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!,$clusterId: String!) {
+            enableRegistrationUrl(orgId: $orgId clusterId: $clusterId) {
+              url
+          }
+        }
+      `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   return {
     byClusterID,
     byClusterName,
@@ -344,6 +365,7 @@ const clusterFunc = grahqlUrl => {
     deleteClusterByClusterId,
     deleteClusters,
     registerCluster,
+    enableRegistrationUrl
   };
 };
 
