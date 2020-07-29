@@ -241,6 +241,59 @@ const subscriptionResolvers = {
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
 
       return subscriptions;
+    },
+    
+    subscriptionsForClusterByName: async(parent, {  orgId: org_id, clusterName  }, context, fullQuery) => {
+
+      const queryFields = GraphqlFields(fullQuery);
+      const { models, me, req_id, logger } = context;
+      const queryName = 'subscriptionsForClusterByName';
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      
+      //find groups in cluster
+      const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });
+      if (!cluster) {
+        throw new ValidationError(`could not locate the cluster with clusterName ${clusterName}`);
+      }
+      var clusterGroupNames = [];
+      if (cluster.groups) {
+        clusterGroupNames = cluster.groups.map(l => l.name);
+      }
+      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      if (clusterGroupNames) {
+        clusterGroupNames.some(group => {
+          if(allowedGroups.indexOf(group) === -1) {
+            // if some group of the sub is not in user's group list, throws an error
+            throw new ForbiddenError(`you are not allowed to read subscriptions due to missing permissions on cluster group ${group.name}.`);
+          }
+          return false;
+        });
+      }
+
+      try{
+        // Return subscriptions that contain any clusterGroupNames passed in from the query
+        // examples:
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
+        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
+        var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
+      }catch(err){
+        logger.error(err);
+        throw err;
+      }
+      if(subscriptions) {
+        subscriptions = subscriptions.map((sub)=>{
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
+          }
+          return sub;
+        });
+      }
+
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+
+      return subscriptions;
     }
   },
   Mutation: {

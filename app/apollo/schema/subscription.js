@@ -108,6 +108,10 @@ const subscriptionSchema = gql`
      Ge subscriptions by clusterId
      """
      subscriptionsForCluster(orgId: String!, clusterId: String!): [BasicChannelSubscription]
+     """
+     Ge subscriptions by clusterName
+     """
+     subscriptionsForClusterByName(orgId: String!, clusterName: String!): [BasicChannelSubscription]
   }
   extend type Mutation {
      """

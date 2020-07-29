@@ -404,6 +404,24 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  it('get subscriptions by clusterName', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionsForClusterByName(adminToken, {
+        orgId: org01._id,
+        clusterName: 'my-cluster1',
+      });
+      const subscriptionsForCluster = result.data.data.subscriptionsForClusterByName;
+      expect(subscriptionsForCluster[0].uuid).to.equal(subscription_01_uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('add a subscription', async () => {
     try {
       const {
