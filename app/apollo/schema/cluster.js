@@ -68,6 +68,10 @@ const clusterSchema = gql`
     registration: JSON!
   }
 
+  type EnableRegistrationUrlResponse {
+    url: String!
+  }
+
   extend type Query {
     """
     Return a cluster based on **orgId** and **clusterId**.
@@ -150,6 +154,14 @@ const clusterSchema = gql`
       orgId: String!
       registration: JSON!
     ): RegisterClusterResponse!
+
+    """
+    Enable registration URL
+    """
+    enableRegistrationUrl (
+      orgId: String!
+      clusterId: String!
+    ): EnableRegistrationUrlResponse
   }
 
 `;
