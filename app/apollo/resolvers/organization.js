@@ -14,26 +14,10 @@
  * limitations under the License.
  */
 
-const { RDD_STATIC_ARGS, ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth } = require ('./common');
+const { whoIs } = require ('./common');
 
 const organizationResolvers = {
   Query: {
-
-    registrationUrl: async (parent, { orgId: org_id }, context) => {
-      const queryName = 'registrationUrl';
-      const { models, me, req_id, logger } = context;
-      logger.debug({req_id, org_id}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
-
-      let { url }  = await models.Organization.getRegistrationUrl(org_id, context);
-      if (RDD_STATIC_ARGS.length > 0) {
-        RDD_STATIC_ARGS.forEach(arg => {
-          url += `&args=${arg}`;
-        });
-      }
-      return { url };
-    },
 
     organizations: async (parent, args, context) => {
       const queryName = 'organizations';
