@@ -122,12 +122,6 @@ const buildSearchableDataForResource = (org, obj) => {
         out['children'] = Object.keys(child);
       }
     }
-    // else if(searchableAttr.name == 'errors') {
-    //   var errors = _.get(obj, searchableAttr.attrPath, null);
-    //   if (errors) {
-    //     out['errors'] = errors;
-    //   }
-    // }
     else {
       let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_"'[\]]/gi, '_');
       let valToSave = _.get(obj, searchableAttr.attrPath, null);
