@@ -96,6 +96,7 @@ const buildSearchableDataForResource = (org, obj) => {
     { name: 'image', attrPath: 'status.containerStatuses[0].image', },
     { name: 'razeeCommitSha', attrPath: 'metadata.annotations["razee.io/commit-sha"]', },
     { name: 'children', attrPath: 'status.children', },
+    { name: 'errors', attrPath: 'status["razee-logs"].error', },
   ];
 
   // adds this org's custom attrs
@@ -113,13 +114,15 @@ const buildSearchableDataForResource = (org, obj) => {
         const sanitizedName = `annotations["${key.replace(/[^a-z0-9_"'[\]]/gi, '_')}"]`;
         out[sanitizedName] = annotations[key];
       }
-    } else if(searchableAttr.name === 'children') {
+    }
+    else if(searchableAttr.name === 'children') {
       // status.children comes from RemoteResources.  It represents the selfLinks of the resources applied by the RR
       let child = _.get(obj, searchableAttr.attrPath, null);
-      if(child) {
+      if (child) {
         out['children'] = Object.keys(child);
       }
-    } else {
+    }
+    else {
       let saveAsName = (searchableAttr.name || searchableAttr.attrPath).replace(/[^a-z0-9_"'[\]]/gi, '_');
       let valToSave = _.get(obj, searchableAttr.attrPath, null);
       if (_.isObject(valToSave) || _.isArray(valToSave)) {
