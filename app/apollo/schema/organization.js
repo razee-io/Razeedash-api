@@ -28,11 +28,6 @@ const organizationSchema = gql`
 
   extend type Query {
     """
-    Return the cluster registration Url for a given **orgId**.
-    """
-    registrationUrl(orgId: String!): URL!
-
-    """
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]

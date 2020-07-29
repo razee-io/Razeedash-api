@@ -438,6 +438,36 @@ const clusterResolvers = {
         throw error;
       }
     }, // end registerCluster 
+
+    enableRegistrationUrl: async (parent, { orgId: org_id, clusterId: cluster_id }, context) => {
+      const queryName = 'enableRegistrationUrl';
+      const { models, me, req_id, logger } = context;
+      logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const updatedCluster = await models.Cluster.findOneAndUpdate(
+          {org_id: org_id, cluster_id: cluster_id},
+          {$set: {reg_state: CLUSTER_REG_STATES.REGISTERING}});
+
+        if (updatedCluster) {
+          var { url } = await models.Organization.getRegistrationUrl(org_id, context);
+          url = url + `&clusterId=${cluster_id}`;
+          if (RDD_STATIC_ARGS.length > 0) {
+            RDD_STATIC_ARGS.forEach(arg => {
+              url += `&args=${arg}`;
+            });
+          }
+          return { url };
+        } else {
+          return null;
+        }
+      } catch (error) {
+        logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
+        throw error;
+      }
+    }, // end enableRegistrationUrl
   }
 }; // end clusterResolvers
 
