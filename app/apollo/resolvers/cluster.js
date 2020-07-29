@@ -21,6 +21,7 @@ const { v4: UUID } = require('uuid');
 const { UserInputError, ValidationError } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
+const { convertStrToTextPropsObj } = require('../utils');
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
@@ -263,14 +264,19 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
+      var props = convertStrToTextPropsObj(filter);
+      var textProp = props.$text || '';
+      _.assign(conditions, models.Resource.translateAliases(_.omit(props, '$text')));
+
       let searchFilter;
-      if (!filter) {
+      if (!textProp) {
         searchFilter = {
           org_id: orgId,
           ...conditions
         };
-      } else {
-        searchFilter = buildSearchFilter(orgId, conditions, filter);
+      }
+      else {
+        searchFilter = buildSearchFilter(orgId, conditions, textProp);
       }
 
       const clusters = commonClusterSearch(models, searchFilter, limit);
