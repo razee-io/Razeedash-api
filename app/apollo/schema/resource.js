@@ -36,6 +36,7 @@ const resourceSchema = gql`
     deleted: Boolean
     created: Date
     updated: Date
+    lastModified: Date
     searchableData: JSON!
     searchableDataHash: String
     subscription: ChannelSubscription

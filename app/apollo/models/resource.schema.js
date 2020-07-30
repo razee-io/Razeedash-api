@@ -59,6 +59,10 @@ const ResourceSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  lastModified: {
+    type: Date,
+    default: Date.now,
+  },
 }, {
   strict:'throw',
 });
