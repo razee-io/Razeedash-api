@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const buildSearchForResources = require('../utils');
+const buildSearchForResources = require('../utils').buildSearchForResources;
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth } = require ('./common');
 

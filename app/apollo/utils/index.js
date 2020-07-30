@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+var _ = require('lodash');
+
 const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, kinds = []) => {
   let ands = [];
-  const tokens = searchStr.split(/\s+/);
+  const tokens = _.filter(searchStr.split(/\s+/));
   if (tokens.length > 0) {
     ands = tokens.map(token => {
       let searchRegex = {$regex: token, $options: 'i',};
@@ -63,7 +65,7 @@ const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, k
   }
 
   if (ands.length < 1) {
-    return null;
+    return baseSearch;
   }
   ands.push(baseSearch);
   const search = {
@@ -72,4 +74,25 @@ const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, k
   return search;
 };
 
-module.exports = buildSearchForResources;
+var convertStrToTextPropsObj = (str='')=>{
+  var out = {};
+  // converts 'aaa bbb:ccc ddd:"eee" fff' to { bbb: 'ccc', ddd: 'eee', '$text': 'aaa    fff' }
+  var regex = /\b([a-z0-9_.-]+)\s*:\s*(["']?)([^\s]*)\2/ig;
+  str = str.replace(regex, (z, key, quote, val)=>{
+    if(!_.includes(convertStrToTextPropsObj.invalidFields, key)) {
+      out[key] = val;
+    }
+    return ' ';
+  });
+  out.$text = str;
+  return out;
+};
+convertStrToTextPropsObj.invalidFields = [
+  'orgId', 'org_id',
+];
+
+convertStrToTextPropsObj('aaa bbb:ccc ddd:"eee" fff');
+
+module.exports = {
+  buildSearchForResources, convertStrToTextPropsObj,
+};

@@ -18,7 +18,7 @@ const _ = require('lodash');
 const { withFilter, ForbiddenError } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
 
-const buildSearchForResources = require('../utils');
+const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
@@ -229,7 +229,10 @@ const resourceResolvers = {
         searchFilter['searchableData.kind'] = { $in: kinds };
       }
       if ((filter && filter !== '') || fromDate != null || toDate != null) {
-        searchFilter = buildSearchForResources(searchFilter, filter, fromDate, toDate, kinds);
+        var props = convertStrToTextPropsObj(filter);
+        var textProp = props.$text || '';
+        _.assign(searchFilter, models.Resource.translateAliases(_.omit(props, '$text')));
+        searchFilter = buildSearchForResources(searchFilter, textProp, fromDate, toDate, kinds);
       }
       const resourcesResult = await commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, sort, context });
 
