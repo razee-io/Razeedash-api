@@ -133,6 +133,13 @@ const buildSearchableDataForResource = (org, obj) => {
       }
     }
   });
+
+  var expression = '';
+  _.each(out, (searchableAttr) => {
+    expression = expression + ':' + searchableAttr;
+  });
+  out['searchableExpression'] = expression.substring(1);
+
   return out;
 };
 

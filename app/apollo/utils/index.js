@@ -18,23 +18,12 @@ var _ = require('lodash');
 
 const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, kinds = []) => {
   let ands = [];
-  const tokens = _.filter(searchStr.split(/\s+/));
-  if (tokens.length > 0) {
-    ands = tokens.map(token => {
-      let searchRegex = {$regex: token, $options: 'i',};
-      let ors = [
-        {cluster_id: searchRegex,},
-        {selfLink: searchRegex},
-        {'searchableData.kind': searchRegex,},
-        {'searchableData.name': searchRegex,},
-        {'searchableData.namespace': searchRegex,},
-      ];
-      let out = {
-        $or: ors,
-      };
-      return out;
-    });
+
+  if (searchStr !== ''){
+    const searchExp = { '$text': { '$search': searchStr, '$caseSensitive': false } };
+    ands.push(searchExp);
   }
+
   if (fromTime && toTime) {
     ands.push({
       created: {
