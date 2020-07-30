@@ -192,7 +192,35 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-
+  
+  const subscriptionsForClusterByName = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String!, $clusterName: String! ) {
+            subscriptionsForClusterByName(orgId: $orgId clusterName: $clusterName ) {
+              uuid
+              orgId
+              name
+              groups
+              channelUuid
+              channelName
+              version
+              versionUuid
+              created
+              updated
+          }
+        }
+      `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
   const addSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -284,6 +312,7 @@ const subscriptionsFunc = grahqlUrl => {
     subscription,
     subscriptionByName,
     subscriptionsForCluster,
+    subscriptionsForClusterByName,
     addSubscription,
     editSubscription,
     setSubscription,
