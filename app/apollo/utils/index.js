@@ -74,7 +74,7 @@ const buildSearchForResources = (baseSearch, searchStr = '', fromTime, toTime, k
   return search;
 };
 
-var convertStrToTextPropsObj = (str)=>{
+var convertStrToTextPropsObj = (str='')=>{
   var out = {};
   // converts 'aaa bbb:ccc ddd:"eee" fff' to { bbb: 'ccc', ddd: 'eee', '$text': 'aaa    fff' }
   var regex = /\b([a-z0-9_.-]+)\s*:\s*(["']?)([^\s]*)\2/ig;
