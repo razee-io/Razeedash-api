@@ -109,6 +109,4 @@ const ClusterSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-ClusterSchema.index({ org_id: 1, cluster_id: 1 }, { unique: true });
-
 module.exports = ClusterSchema;

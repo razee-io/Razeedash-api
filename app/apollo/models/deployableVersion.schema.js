@@ -62,6 +62,4 @@ const DeployableVersionSchema = new mongoose.Schema({
   strict: 'throw',
 });
 
-DeployableVersionSchema.index({ org_id: 1 }, { });
-
 module.exports = DeployableVersionSchema;

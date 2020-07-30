@@ -60,6 +60,4 @@ GroupSchema.statics.findOrCreateList = async (models, orgId, groups, context) =>
   return groupList;
 };
 
-GroupSchema.index({ org_id: 1 }, { });
-
 module.exports = GroupSchema;

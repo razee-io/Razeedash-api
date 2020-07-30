@@ -67,6 +67,4 @@ const SubscriptionSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-SubscriptionSchema.index({ org_id: 1 }, { });
-
 module.exports = SubscriptionSchema;

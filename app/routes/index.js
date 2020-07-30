@@ -139,22 +139,34 @@ async function initialize(){
         },
         {
           keys: { org_id: 1, cluster_id: 1 },
-          options: { name: 'org_id.cluster_id'}
+          options: { name: 'org_id.cluster_id', unique: true}
         }
       ],
       channels: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
         {
           keys: { org_id: 1, name: 1 },
           options: { name: 'org_id.name', unique: true }
         }
       ],
       deployableVersions: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
         {
           keys: { org_id: 1, channel_id: 1, name: 1},
           options: { name: 'org_id.channel_id.name', unique: true }
         }
       ],
       groups: [
+        { 
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
         {
           keys: { org_id: 1, name: 1 },
           options: { name: 'orgId.name', unique: true }
@@ -171,13 +183,23 @@ async function initialize(){
           keys: { org_id: 1 },
           options: { name: 'org_id', }
         },
+        {
+          keys: { cluster_id: 1, },
+          options: { name: 'cluster_id', }
+        },
         { 
           keys: { org_id: 1, cluster_id: 1, selfLink: 1 },
           options: { name: 'org_id.cluster_id.selfLink', }
         },
+        { 
+          keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
+          options: { name: 'cluster_id.selfLink.searchableData.text', }
+        },
+      ],
+      subscriptions:[
         {
-          keys: { cluster_id: 1, },
-          options: { name: 'cluster_id', }
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
         }
       ],
       messages:[ 
