@@ -268,8 +268,8 @@ const updateClusterResources = async (req, res, next) => {
             else{
               // if obj in db and theres changes to save
               changes = {
-                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash, },
-                $currentDate: { updated: true },
+                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+                $currentDate: { updated: true, lastModified: true },
                 ...pushCmd
               };
             }
@@ -278,7 +278,7 @@ const updateClusterResources = async (req, res, next) => {
             // if obj not in db, then adds it
             changes = {
               $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
-              $currentDate: { created: true, updated: true },
+              $currentDate: { created: true, updated: true, lastModified: true },
               ...pushCmd
             };
             options = { upsert: true };
