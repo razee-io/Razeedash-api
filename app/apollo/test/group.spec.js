@@ -621,4 +621,31 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
+  it('assignClusterGroups / unassignClusterGroups', async()=>{
+    // assign
+    var result = await groupApi.assignClusterGroups(adminToken, {
+      orgId: org01._id,
+      groupUuids: [group_02_uuid],
+      clusterIds: ['cluster_01', 'cluster_04']
+    });
+    var assignClusterGroups = result.data.data.assignClusterGroups;
+    expect(assignClusterGroups.modified).to.equal(2);
+    var cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_01'}).exec();
+    expect(cluster1.groups).to.have.length(2);
+    var cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
+    expect(cluster4.groups).to.have.length(1);
+
+    // unassign
+    result = await groupApi.unassignClusterGroups(adminToken, {
+      orgId: org01._id,
+      groupUuids: [group_02_uuid],
+      clusterIds: ['cluster_01', 'cluster_04']
+    });
+    var unassignClusterGroups = result.data.data.unassignClusterGroups;
+    expect(unassignClusterGroups.modified).to.equal(2);
+    cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_01'}).exec();
+    expect(cluster1.groups).to.have.length(1);
+    cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
+    expect(cluster4.groups).to.have.length(0);
+  });
 });
