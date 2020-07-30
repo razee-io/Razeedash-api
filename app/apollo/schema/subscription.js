@@ -21,6 +21,10 @@ const subscriptionSchema = gql`
     id: String!
     name: String!
   }
+  type RolloutStatus {
+    successCount: Int
+    errorCount: Int
+  }
   type BasicChannelSubscription {
     uuid: String!
     orgId: String!
@@ -47,6 +51,8 @@ const subscriptionSchema = gql`
     resources: [Resource!]
     created: Date!
     updated: Date!
+    remoteResources: [Resource!]
+    rolloutStatus: RolloutStatus
   }
   type RemoveChannelSubscriptionReply {
     uuid: String!
