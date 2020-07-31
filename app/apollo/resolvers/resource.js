@@ -222,7 +222,7 @@ const resourceResolvers = {
       // use service level read
       await validAuth(me, org_id, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
-      sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'deleted', 'hash']);
+      sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'lastModified', 'deleted', 'hash']);
 
       let searchFilter = { org_id: org_id, deleted: false, };
       if(kinds.length > 0){
