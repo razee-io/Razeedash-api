@@ -98,9 +98,13 @@ module.exports = class MongoClient {
     const db = await this._clientConnect();
     for(let i=0; i<viewsToCreate.length;i++){
       let view = viewsToCreate[i];
-      let v=await db.createCollection(view.name, {viewOn: view.source, pipeline: view.pipeline, collation: view.options });
-      this.log.info(`Created new View ${view.name}`);
-      result.push(v);
+      try {
+        let v=await db.createCollection(view.name, {viewOn: view.source, pipeline: view.pipeline, collation: view.options });
+        this.log.info(`Created new View ${view.name}`);
+        result.push(v);
+      } catch (e) {
+        this.log.warn(e);
+      }
     }
     return result;
   }
