@@ -27,7 +27,12 @@ const clusterDistributedSchema = require('./clusterDistributed');
 const organizationSchema = require('./organization');
 
 const linkSchema = gql`
+
+  directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
+
   scalar Date
+  scalar DateTime
+  scalar JSON
 
   type Query {
     _: Boolean

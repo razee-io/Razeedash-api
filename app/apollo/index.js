@@ -73,7 +73,6 @@ class IdentifierSanitizer extends Sanitizer {
 
 class IdentifierDirective extends SchemaDirectiveVisitor {
   visitArgumentDefinition(param, details) {
-    //logger.info(`xxxxxxx ${JSON.stringify(param)} ${JSON.stringify(details)}`);
     const sanitizer = new IdentifierSanitizer(param.name, this.args.min, this.args.max);
     const field = details.field;
     if (!field.sanitizers) {
@@ -94,6 +93,7 @@ class IdentifierDirective extends SchemaDirectiveVisitor {
     field.sanitizers.push(sanitizer);
   }
 }
+
 
 const createDefaultApp = () => {
   const app = express();
@@ -150,6 +150,7 @@ const loadCustomPlugins =  () => {
   }
   return [];
 };
+
 
 const createApolloServer = () => {
   const customPlugins = loadCustomPlugins();

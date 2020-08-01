@@ -3,8 +3,6 @@ const { gql } = require('apollo-server-express');
 
 const groupSchema = gql`
 
-  directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
-
   type Group {
     uuid: String!
     orgId: String!

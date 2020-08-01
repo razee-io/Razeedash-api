@@ -17,7 +17,6 @@
 const { gql } = require('apollo-server-express');
 
 const resourceSchema = gql`
-  scalar JSON
   
   type ClusterInfo {
     clusterId: String!
@@ -67,8 +66,6 @@ const resourceSchema = gql`
     updated: Date!
   }
   
-  
-
   extend type Query {
     """
     Return total resource count for given **orgId**.
