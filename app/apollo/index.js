@@ -19,8 +19,10 @@ const express = require('express');
 const router = express.Router();
 const ebl = require('express-bunyan-logger');
 const bunyan = require('bunyan');
-const { ApolloServer } = require('apollo-server-express');
+const { ValidationError } = require('apollo-server');
+const { ApolloServer, SchemaDirectiveVisitor } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
+const { assert } = require('chai');
 
 const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
@@ -34,6 +36,64 @@ const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 
 const initModule = require(`./init.${AUTH_MODEL}`);
+
+class Sanitizer {
+  constructor(name, arg) {
+    this.name = name;
+    this.arg = arg;
+  }
+
+  sanitize() {
+  }
+}
+
+// in schema add following: might require granphql-tools 4.0.3+
+// directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
+// addGroup(orgId: String! name: String! @identifier(min: 3, max: 32)): AddGroupReply!
+class IdentifierSanitizer extends Sanitizer {
+
+  constructor(arg, minLength, maxLength) {
+    super(`Identifer_${minLength}_${maxLength}`, arg);
+    this.minLength = minLength;
+    this.maxLength = maxLength;
+  }
+
+  sanitize( args ) {
+    const value = args[this.arg];
+    if (value) {
+      try {
+        assert.isAtMost(value.length, this.maxLength);
+        assert.isAtLeast(value.length, this.minLength);
+      } catch (e) {
+        throw new ValidationError(`The ${this.arg}'s value "${value}" should be longer than ${this.minLength} and less then ${this.maxLength}`);
+      }
+    }  
+  }
+}
+
+class IdentifierDirective extends SchemaDirectiveVisitor {
+  visitArgumentDefinition(param, details) {
+    //logger.info(`xxxxxxx ${JSON.stringify(param)} ${JSON.stringify(details)}`);
+    const sanitizer = new IdentifierSanitizer(param.name, this.args.min, this.args.max);
+    const field = details.field;
+    if (!field.sanitizers) {
+      field.sanitizers = [];
+      const { resolve } = field;
+      field.resolve = async function (
+        source,
+        args,
+        context,
+        info,
+      ) {
+        for(const s of field.sanitizers) {
+          s.sanitize(args);
+        }
+        return resolve.call(this, source, args, context, info);
+      };
+    }
+    field.sanitizers.push(sanitizer);
+  }
+}
 
 const createDefaultApp = () => {
   const app = express();
@@ -105,6 +165,9 @@ const createApolloServer = () => {
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,
     resolvers,
+    schemaDirectives: {
+      identifier: IdentifierDirective,
+    },
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error

@@ -1,7 +1,10 @@
 const { gql } = require('apollo-server-express');
 
+
 const groupSchema = gql`
-  
+
+  directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
+
   type Group {
     uuid: String!
     orgId: String!
@@ -48,6 +51,7 @@ const groupSchema = gql`
   }
 
   extend type Query {
+
     """
     list all groups for orgId
     """
@@ -61,14 +65,14 @@ const groupSchema = gql`
     """
     Gets a group detail for orgId and name
     """
-    groupByName(orgId: String! name: String!): GroupDetail
+    groupByName(orgId: String!, name: String! ): GroupDetail
   }
 
   extend type Mutation {
     """
     Adds a group
     """
-    addGroup(orgId: String! name: String!): AddGroupReply!
+    addGroup(orgId: String! name: String! @identifier(min: 3, max: 32)): AddGroupReply!
 
     """
     Removes a group 
