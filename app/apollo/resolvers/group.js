@@ -334,7 +334,7 @@ const groupResolvers = {
       fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
-      const queryName = 'assignClusterGroups';
+      const queryName = 'unassignClusterGroups';
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
@@ -351,6 +351,47 @@ const groupResolvers = {
         );
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
+        pubSub.channelSubChangedFunc({org_id: orgId});
+        return {
+          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+        };
+      }
+      catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw err;
+      }
+    },
+
+    editClusterGroups: async(
+      parent,
+      { orgId, clusterId, groupUuids },
+      context,
+      fullQuery // eslint-disable-line no-unused-vars
+    )=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'editClusterGroups';
+      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId }, `${queryName} enter`);
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      try {
+        var groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
+        if (groups.length != groupUuids.length) {
+          throw new NotFoundError('One or more of the passed group uuids were not found');
+        }
+        groupUuids = _.map(groups, 'uuid');
+        var groupObjsToAdd = _.map(groups, (group)=>{
+          return {
+            uuid: group.uuid,
+            name: group.name,
+          };
+        });
+        var sets = {
+          groups: groupObjsToAdd,
+        };
+
+        const res = await models.Cluster.updateOne({ org_id: orgId, cluster_id: clusterId }, { $set: sets });
+
+        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: orgId});
         return {
           modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
