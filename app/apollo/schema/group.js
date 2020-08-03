@@ -46,6 +46,9 @@ const groupSchema = gql`
   type UnassignClusterGroupsReply{
     modified: Int!
   }
+  type EditClusterGroupsReply{
+    modified: Int!
+  }
 
   extend type Query {
     """
@@ -99,6 +102,11 @@ const groupSchema = gql`
     Removes a list of groups from a list of clusterIds
     """
     unassignClusterGroups(orgId: String!, groupUuids: [String!]!, clusterIds: [String!]!): UnassignClusterGroupsReply!
+
+    """
+    Overwrites a cluster's groups to exactly whats specified
+    """
+    editClusterGroups(orgId: String!, clusterId: String!, groupUuids: [String!]!): EditClusterGroupsReply!
   }
 `;
 
