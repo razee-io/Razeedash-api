@@ -36,103 +36,103 @@ items:
             runAsGroup: {{{NODE_GROUP_ID}}}
             fsGroup: {{{NODE_GROUP_ID}}}
           initContainers:
-          - env:
-            - name: MONGO_URL
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: mongo_url
-            image: "quay.io/razee/razeedash-api:{{{TRAVIS_TAG}}}"
-            command: ["npm", "run", "wait-mongo"]
-            imagePullPolicy: Always
-            name: razeedash-api-init
-            volumeMounts:
-              - name: razeedash-secret-vol
-                mountPath: /var/run/secrets/razeeio/razeedash-secret
+            - image: "quay.io/razee/razeedash-api:{{{TRAVIS_TAG}}}"
+              env:
+                - name: MONGO_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: mongo_url
+              command: ["npm", "run", "wait-mongo"]
+              imagePullPolicy: Always
+              name: razeedash-api-init
+              volumeMounts:
+                - name: razeedash-secret-vol
+                  mountPath: /var/run/secrets/razeeio/razeedash-secret
           containers:
-          - env:
-            - name: S3_ENDPOINT
-              valueFrom:
-                configMapKeyRef:
-                  name: razeedash-config
-                  key: s3_endpoint
-                  optional: true
-            - name: S3_LOCATION_CONSTRAINT
-              valueFrom:
-                configMapKeyRef:
-                  name: razeedash-config
-                  key: s3_location_constraint
-                  optional: true
-            - name: S3_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: s3_access_key_id
-                  optional: true
-            - name: S3_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: s3_secret_access_key
-                  optional: true
-            - name: S3_CHANNEL_BUCKET
-              valueFrom:
-                configMapKeyRef:
-                  name: razeedash-config
-                  key: s3_channel_bucket
-                  optional: true
-            - name: S3_RESOURCE_BUCKET
-              valueFrom:
-                configMapKeyRef:
-                  name: razeedash-config
-                  key: s3_resource_bucket
-                  optional: true
-            - name: MONGO_URL
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: mongo_url
-            - name: MONGO_DB_NAME
-              value: razeedash
-            - name: ORG_ADMIN_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: org_admin_key
-                  optional: true
-            - name: ADD_CLUSTER_WEBHOOK_URL
-              valueFrom:
-                secretKeyRef:
-                  name: razeedash-secret
-                  key: add_cluster_webhook_url
-                  optional: true
-            - name: REDIS_PUBSUB_URL
-              value: 'redis://redis-service:6379/0'
-            image: "quay.io/razee/razeedash-api:{{{TRAVIS_TAG}}}"
-            imagePullPolicy: Always
-            name: razeedash-api
-            ports:
-            - containerPort: 3333
-              protocol: TCP
-            livenessProbe:
-              httpGet:
-                path: /api/kube/liveness
-                port: 3333
-              initialDelaySeconds: 5
-              periodSeconds: 20
-              timeoutSeconds: 2
-            resources:
-              requests:
-                cpu: 100m
-                memory: 80Mi
-              limits:
-                cpu: 500m
-                memory: 256Mi
-            volumeMounts:
-              - name: add-cluster-webhook-headers-vol
-                mountPath: /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers
-              - name: razeedash-secret-vol
-                mountPath: /var/run/secrets/razeeio/razeedash-secret
+            - env:
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: s3_endpoint
+                      optional: true
+                - name: S3_LOCATION_CONSTRAINT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: s3_location_constraint
+                      optional: true
+                - name: S3_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: s3_access_key_id
+                      optional: true
+                - name: S3_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: s3_secret_access_key
+                      optional: true
+                - name: S3_CHANNEL_BUCKET
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: s3_channel_bucket
+                      optional: true
+                - name: S3_RESOURCE_BUCKET
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: s3_resource_bucket
+                      optional: true
+                - name: MONGO_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: mongo_url
+                - name: MONGO_DB_NAME
+                  value: razeedash
+                - name: ORG_ADMIN_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: org_admin_key
+                      optional: true
+                - name: ADD_CLUSTER_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: add_cluster_webhook_url
+                      optional: true
+                - name: REDIS_PUBSUB_URL
+                  value: 'redis://redis-service:6379/0'
+              image: "quay.io/razee/razeedash-api:{{{TRAVIS_TAG}}}"
+              imagePullPolicy: Always
+              name: razeedash-api
+              ports:
+                - containerPort: 3333
+                  protocol: TCP
+              livenessProbe:
+                httpGet:
+                  path: /api/kube/liveness
+                  port: 3333
+                initialDelaySeconds: 5
+                periodSeconds: 20
+                timeoutSeconds: 2
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 80Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: add-cluster-webhook-headers-vol
+                  mountPath: /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers
+                - name: razeedash-secret-vol
+                  mountPath: /var/run/secrets/razeeio/razeedash-secret
           volumes:
             - name: add-cluster-webhook-headers-vol
               secret:
