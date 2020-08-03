@@ -70,6 +70,16 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
   }
+  if(queryFields.groupObjs){
+    var groupNames = _.flatten(_.map(subs, 'groups'));
+    var groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
+    var groupsByName = _.keyBy(groups, 'name');
+    _.each(subs, (sub)=>{
+      sub.groupObjs = _.filter(_.map(sub.groups, (groupName)=>{
+        return groupsByName[groupName];
+      }));
+    });
+  }
   if(queryFields.remoteResources || queryFields.rolloutStatus){
     var remoteResources = await models.Resource.find({
       org_id: orgId,

@@ -53,6 +53,7 @@ const subscriptionSchema = gql`
     updated: Date!
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
+    groupObjs: [GroupDetail!]
   }
   type RemoveChannelSubscriptionReply {
     uuid: String!
