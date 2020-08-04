@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups, applyClusterInfoOnResources } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
@@ -69,6 +69,9 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
+    if (queryFields.resources.cluster) {
+      applyClusterInfoOnResources(orgId, resources, context);
+    }
   }
   if(queryFields.groupObjs){
     var groupNames = _.flatten(_.map(subs, 'groups'));
@@ -106,6 +109,9 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       });
 
       sub.remoteResources = rrs;
+      if (queryFields.remoteResources.cluster) {
+        applyClusterInfoOnResources(orgId, resources, context);
+      }
       sub.rolloutStatus = {
         successCount,
         errorCount,
