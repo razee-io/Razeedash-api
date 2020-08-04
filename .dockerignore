@@ -5,3 +5,7 @@ build-tools/
 coverage/
 test/
 compose/
+.*
+build/
+kubernetes/
+samples/
