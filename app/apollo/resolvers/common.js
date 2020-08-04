@@ -118,8 +118,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
 };
 
 // a helper function to render clusterInfo for a list of resources
-const applyClusterInfoOnResources = async (org_id, resources, context) => {
-  const {  models } = context;
+const applyClusterInfoOnResources = async (org_id, resources, models) => {
   const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
   if(clusterIds.length > 0){
     let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });

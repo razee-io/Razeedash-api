@@ -67,7 +67,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
     var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
     var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
     if (queryFields.resources.cluster) {
-      await applyClusterInfoOnResources(orgId, resources, context);
+      await applyClusterInfoOnResources(orgId, resources, models);
     }
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
@@ -91,7 +91,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       deleted: false,
     });
     if (queryFields.remoteResources.cluster) {
-      await applyClusterInfoOnResources(orgId, remoteResources, context);
+      await applyClusterInfoOnResources(orgId, remoteResources, models);
     }
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
