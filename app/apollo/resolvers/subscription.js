@@ -66,12 +66,13 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
   if(queryFields.resources && subs.length > 0){
     var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
     var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
+    if (queryFields.resources.cluster) {
+      await applyClusterInfoOnResources(orgId, resources, context);
+    }
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
+
     });
-    if (queryFields.resources.cluster) {
-      applyClusterInfoOnResources(orgId, resources, context);
-    }
   }
   if(queryFields.groupObjs){
     var groupNames = _.flatten(_.map(subs, 'groups'));
@@ -89,6 +90,9 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
       deleted: false,
     });
+    if (queryFields.remoteResources.cluster) {
+      await applyClusterInfoOnResources(orgId, remoteResources, context);
+    }
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
     });
@@ -109,9 +113,6 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       });
 
       sub.remoteResources = rrs;
-      if (queryFields.remoteResources.cluster) {
-        applyClusterInfoOnResources(orgId, resources, context);
-      }
       sub.rolloutStatus = {
         successCount,
         errorCount,

@@ -40,7 +40,7 @@ const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500,
     var count = await models.Resource.find(searchFilter).count();
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
     if( (queryFields.resources||{}).cluster ) {
-      applyClusterInfoOnResources(org_id, resources, context);
+      await applyClusterInfoOnResources(org_id, resources, context);
     }
     return {
       count,
