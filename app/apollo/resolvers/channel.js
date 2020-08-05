@@ -26,7 +26,7 @@ const stream = require('stream');
 const yaml = require('js-yaml');
 const fs = require('fs');
 
-const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT } = require('../models/const');
+const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB } = require('../models/const');
 const { whoIs, validAuth, getGroupConditions, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
@@ -264,8 +264,8 @@ const channelResolvers = {
           content = await fs.promises.readFile(file, 'utf8');
         }
         let yamlSize = Buffer.byteLength(content);
-        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT * 1024 * 1024){
-          throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT}mb`);
+        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
+          throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`);
         }
 
         yaml.safeLoad(content);
