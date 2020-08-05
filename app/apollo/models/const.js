@@ -19,6 +19,8 @@ const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.con
 const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
+
+// Set Yaml file maximum size allowed in MB
 const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT || 30;
 
 // controls static args to be passed to reazeedeploy-job 
