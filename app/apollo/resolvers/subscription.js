@@ -90,7 +90,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
       deleted: false,
     });
-    if (queryFields.remoteResources.cluster) {
+    if ((queryFields.remoteResources||{}).cluster) {
       await applyClusterInfoOnResources(orgId, remoteResources, models);
     }
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
