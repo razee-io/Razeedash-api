@@ -388,7 +388,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.3`,
-        type: "application/yaml",
+        type: 'application/yaml',
         content: '!@#$%^&*',
         description: `${channel_01_name}:v.0.3`
       });

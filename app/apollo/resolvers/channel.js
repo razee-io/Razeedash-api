@@ -261,9 +261,9 @@ const channelResolvers = {
 
       try {
         if(file){
-          content = await fs.promises.readFile(file, 'utf8')
+          content = await fs.promises.readFile(file, 'utf8');
         }
-        let yamlSize = Buffer.byteLength(content)
+        let yamlSize = Buffer.byteLength(content);
         if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT * 1024 * 1024){
           throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT}mb`);
         }
