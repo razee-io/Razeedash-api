@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const _ = require('lodash');
 const { ForbiddenError, ApolloError } = require('apollo-server');
 const { TYPES, ACTIONS } = require('../models/const');
 
@@ -114,7 +115,23 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
     );
   }
-}; 
+};
+
+// a helper function to render clusterInfo for a list of resources
+const applyClusterInfoOnResources = async (org_id, resources, models) => {
+  const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
+  if(clusterIds.length > 0){
+    let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
+    clusters = _.map(clusters, (cluster)=>{
+      cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
+      return cluster;
+    });
+    clusters = _.keyBy(clusters, 'cluster_id');
+    resources.forEach((resource)=>{
+      resource.cluster = clusters[resource.cluster_id] || null;
+    });
+  }
+};
 
 // Not Found Error when look up db
 class NotFoundError extends ApolloError {
@@ -124,4 +141,4 @@ class NotFoundError extends ApolloError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty };
+module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty , applyClusterInfoOnResources};
