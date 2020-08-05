@@ -23,8 +23,10 @@ const S3ClientClass = require('../../s3/s3Client');
 const { UserInputError, ValidationError } = require('apollo-server');
 const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
+const yaml = require('js-yaml');
+const fs = require('fs');
 
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT } = require('../models/const');
 const { whoIs, validAuth, getGroupConditions, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
@@ -257,14 +259,21 @@ const channelResolvers = {
         throw new ValidationError(`The version name ${name} already exists`);
       }
 
-      let fileStream = null;
-      if(file){
-        fileStream = (await file).createReadStream();
-      }
-      else{
-        fileStream = stream.Readable.from([ content ]);
+      try {
+        if(file){
+          content = await fs.promises.readFile(file, 'utf8')
+        }
+        let yamlSize = Buffer.byteLength(content)
+        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT * 1024 * 1024){
+          throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT}mb`);
+        }
+
+        yaml.safeLoad(content);
+      } catch (error) {
+        throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
 
+      let fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 

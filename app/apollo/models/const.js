@@ -19,6 +19,7 @@ const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.con
 const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
+const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT || 30;
 
 // controls static args to be passed to reazeedeploy-job 
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
@@ -35,5 +36,5 @@ const CLUSTER_REG_STATES = {
 };
 
 module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
-  CLUSTER_LIMITS, CLUSTER_REG_STATES};
+  CLUSTER_LIMITS, CLUSTER_REG_STATES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT};
 
