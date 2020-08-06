@@ -131,7 +131,7 @@ class JsonSanitizer extends Sanitizer {
         assert.isAtMost(keyvaluepairs, MAXKEYS);
         assert.isAtMost(depth, MAXDEPTH);
       } catch (e) {
-        throw new ValidationError(`The json object ${this.arg} has more than ${MAXKEYS} key value pairs or it is more than ${MAXDEPTH} level2 deep`);
+        throw new ValidationError(`The json object ${this.arg} has more than ${MAXKEYS} key value pairs or it is more than ${MAXDEPTH} levels deep`);
       }
     }
   }
