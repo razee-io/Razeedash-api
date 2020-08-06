@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
