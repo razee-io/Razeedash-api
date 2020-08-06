@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
@@ -39,19 +39,8 @@ const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500,
     ;
     var count = await models.Resource.find(searchFilter).count();
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
-    if((queryFields.resources||{}).cluster){
-      const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
-      if(clusterIds.length > 0){
-        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
-        clusters = _.map(clusters, (cluster)=>{
-          cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
-          return cluster;
-        });
-        clusters = _.keyBy(clusters, 'cluster_id');
-        resources.forEach((resource)=>{
-          resource.cluster = clusters[resource.cluster_id] || null;
-        });
-      }
+    if( (queryFields.resources||{}).cluster ) {
+      await applyClusterInfoOnResources(org_id, resources, models);
     }
     return {
       count,

@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups } = require ('./common');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups, applyClusterInfoOnResources } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
@@ -66,8 +66,12 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
   if(queryFields.resources && subs.length > 0){
     var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
     var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
+    if (queryFields.resources.cluster) {
+      await applyClusterInfoOnResources(orgId, resources, models);
+    }
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
+
     });
   }
   if(queryFields.groupObjs){
@@ -86,6 +90,9 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, mode
       'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
       deleted: false,
     });
+    if ((queryFields.remoteResources||{}).cluster) {
+      await applyClusterInfoOnResources(orgId, remoteResources, models);
+    }
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
     });
