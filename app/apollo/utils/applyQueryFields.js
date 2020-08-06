@@ -59,7 +59,7 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, models)=>{
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.uniq(_.map(groups, 'owner')));
     _.each(groups, (group)=>{
-      group.owner = owners[group.owner];
+      group.owner = owners[group.owner] || owners.undefined;
     });
   }
   if(queryFields.subscriptions || queryFields.subscriptionCount){
@@ -226,7 +226,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, models
       'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
       deleted: false,
     });
-    await applyQueryFieldsToResources(resources, queryFields.remoteResources, args, models);
+    await applyQueryFieldsToResources(remoteResources, queryFields.remoteResources, args, models);
 
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
