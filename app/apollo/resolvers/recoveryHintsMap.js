@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-// api method name to reveryHints map.
+// api method name to reveryHints map. We will populate this map later.
 const recoveryHintsMap = {
   resources: {
-    RazeeForbiddenError: 'You do not have enough permission to list all the Kubernetes resources in the account. Scope your request with the \'--cluster\' or \'--subscription\' flag for resources that you do have permissions to list, and try again.',
+    RazeeForbiddenError: 'You do not have enough permission to list all the Kubernetes resources in the account. Scope your request with the cluster or subscription for resources that you do have permissions to list, and try again.',
   }
 };
 

@@ -100,6 +100,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
   if (context.recoveryHintsMap) {
     context['recoveryHints'] = context.recoveryHintsMap[queryName];
   }
+  
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
@@ -160,7 +161,7 @@ class NotFoundError extends BasicRazeeError {
 // Customized Forbidden Error
 class RazeeForbiddenError extends BasicRazeeError {
   constructor(message, context) {
-    var name = 'RazeeForbiddenError';
+    var name = 'ForbiddenError';
     super(message, context, name);
   }
 }
