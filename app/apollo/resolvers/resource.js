@@ -208,6 +208,8 @@ const resourceResolvers = {
 
       limit = _.clamp(limit, 1, 10000);
 
+      // for now, just set the recover hint here, in future might loaded from some static json map
+      context['recoveryHints'] = {RazeeForbiddenError: ''};
       // use service level read
       await validAuth(me, org_id, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
