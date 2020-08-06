@@ -54,7 +54,7 @@ class IdentifierSanitizer extends Sanitizer {
 
   validateSting(value) {
     var MAXLEN = 256;
-    var MINLEN = 3;
+    var MINLEN = 1;
     if (this.arg === 'content')  MAXLEN = 10000;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
@@ -65,7 +65,7 @@ class IdentifierSanitizer extends Sanitizer {
       throw new ValidationError(`The ${this.arg}'s value ${value} should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
     if (this.arg !== 'content' && this.arg !== 'description') {
-      if (!/^[a-zA-Z0-9-_/]*$/.test(value)) {
+      if (/^[<>$%&!#]*$/.test(value)) {
         throw new ValidationError(`The ${this.arg}'s value ${value} should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
