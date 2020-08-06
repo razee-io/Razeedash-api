@@ -64,12 +64,8 @@ class IdentifierSanitizer extends Sanitizer {
     } catch (e) {
       throw new ValidationError(`The ${this.arg}'s value ${value} should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
-    if (this.arg === 'type' ) {
+    if (this.arg !== 'content' && this.arg !== 'description') {
       if (!/^[a-zA-Z0-9-_/]*$/.test(value)) {
-        throw new ValidationError(`The ${this.arg}'s value ${value} should only contain alphabets, numbers, underscore, forward slash and hyphen`);
-      }
-    } else if (this.arg !== 'content' && this.arg !== 'description') {
-      if (!/^[a-zA-Z0-9-_]*$/.test(value)) {
         throw new ValidationError(`The ${this.arg}'s value ${value} should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
