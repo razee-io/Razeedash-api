@@ -23,13 +23,14 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
+const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
 // This is service level search function which does not verify user tag permission
-const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500, queryFields, sort={created: -1} }) => {
+const commonResourcesSearch = async ({ context, searchFilter, limit=500, queryFields, sort={created: -1} }) => { // eslint-disable-line
   const {  models, req_id, logger } = context;
   try {
     const resources = await models.Resource.find(searchFilter)
@@ -39,20 +40,20 @@ const commonResourcesSearch = async ({ context, org_id, searchFilter, limit=500,
     ;
     var count = await models.Resource.find(searchFilter).count();
     // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
-    if((queryFields.resources||{}).cluster){
-      const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
-      if(clusterIds.length > 0){
-        let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
-        clusters = _.map(clusters, (cluster)=>{
-          cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
-          return cluster;
-        });
-        clusters = _.keyBy(clusters, 'cluster_id');
-        resources.forEach((resource)=>{
-          resource.cluster = clusters[resource.cluster_id] || null;
-        });
-      }
-    }
+    // if(queryFields.cluster){
+    //   const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
+    //   if(clusterIds.length > 0){
+    //     let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
+    //     clusters = _.map(clusters, (cluster)=>{
+    //       cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
+    //       return cluster;
+    //     });
+    //     clusters = _.keyBy(clusters, 'cluster_id');
+    //     resources.forEach((resource)=>{
+    //       resource.cluster = clusters[resource.cluster_id] || null;
+    //     });
+    //   }
+    // }
     return {
       count,
       resources,
@@ -149,43 +150,6 @@ const buildSortObj = (sortArr, allowedFields)=>{
   return out;
 };
 
-const applyQueryFieldsToResources = async(resources, queryFields, { subscriptionsLimit = 500 }, models)=>{
-  if(_.get(queryFields, 'resources.subscription')){
-    var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
-    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
-    _.each(subscriptions, (sub)=>{
-      if(_.isUndefined(sub.channelName)){
-        sub.channelName = sub.channel;
-      }
-    });
-    var subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');
-    _.each(resources, (resource)=>{
-      var subId = resource.searchableData.subscription_id;
-      if(!subId){
-        return;
-      }
-      resource.subscription = subscriptionsByUuid[subId] || null;
-      if(resource.subscription) {
-        delete resource.subscription.channel;
-      }
-    });
-
-    if(_.get(queryFields, 'resources.subscription.channel')){
-
-      var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
-      var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
-      var channelsByUuid = _.keyBy(channels, 'uuid');
-      _.each(resources, (resource)=>{
-        if(!resource.subscription){
-          return;
-        }
-        resource.subscription.channel = null;
-        resource.subscription.channel = channelsByUuid[resource.subscription.channel_uuid] || null;
-      });
-    }
-  }
-};
-
 const resourceResolvers = {
   Query: {
     resourcesCount: async (parent, { orgId: org_id }, context) => {
@@ -208,23 +172,23 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { orgId: org_id, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
+      { orgId, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
       context,
       fullQuery
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resources';
       const { me, req_id, logger, models } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), orgId, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
 
       // use service level read
-      await validAuth(me, org_id, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
+      await validAuth(me, orgId, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
       sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'lastModified', 'deleted', 'hash']);
 
-      let searchFilter = { org_id: org_id, deleted: false, };
+      let searchFilter = { org_id: orgId, deleted: false, };
       if(kinds.length > 0){
         searchFilter['searchableData.kind'] = { $in: kinds };
       }
@@ -234,34 +198,34 @@ const resourceResolvers = {
         _.assign(searchFilter, models.Resource.translateAliases(_.omit(props, '$text')));
         searchFilter = buildSearchForResources(searchFilter, textProp, fromDate, toDate, kinds);
       }
-      const resourcesResult = await commonResourcesSearch({ models, org_id, searchFilter, limit, queryFields, sort, context });
+      const resourcesResult = await commonResourcesSearch({ models, orgId, searchFilter, limit, queryFields: queryFields.resources, sort, context });
 
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { subscriptionsLimit }, models);
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, models);
 
       return resourcesResult;
     },
 
     resourcesByCluster: async (
       parent,
-      { orgId: org_id, clusterId: cluster_id, filter, limit },
+      { orgId, clusterId: cluster_id, filter, limit },
       context,
       fullQuery
     ) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesByCluster';
       const { me, models, req_id, logger } = context;
-      logger.debug( {req_id, user: whoIs(me), org_id, filter, limit, queryFields }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), orgId, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
 
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`);
       }
-      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
+      const allowedGroups = await getAllowedGroups(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
       if (cluster.groups) {
         cluster.groups.some(group => {
           if(allowedGroups.indexOf(group.uuid) === -1) {
@@ -273,7 +237,7 @@ const resourceResolvers = {
       }
 
       let searchFilter = {
-        org_id: org_id,
+        org_id: orgId,
         cluster_id: cluster_id,
         deleted: false,
       };
@@ -281,8 +245,8 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, limit, queryFields });
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      const resourcesResult = await commonResourcesSearch({ context, orgId, searchFilter, limit, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, models);
       return resourcesResult;
     },
 
@@ -341,20 +305,20 @@ const resourceResolvers = {
       return resource;
     },
 
-    resourcesBySubscription: async ( parent, { orgId: org_id, subscriptionId: subscription_id}, context, fullQuery) => {
+    resourcesBySubscription: async ( parent, { orgId, subscriptionId: subscription_id}, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
       const {  me, models, req_id, logger } = context;
   
-      logger.debug( {req_id, user: whoIs(me), org_id, subscription_id, queryFields}, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), orgId, subscription_id, queryFields}, `${queryName} enter`);
   
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`);
       }
-      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
+      const allowedGroups = await getAllowedGroups(me, orgId, ACTIONS.READ, 'name', queryName, context);
       if(subscription.groups) {
         subscription.groups.some(group => {
           if(allowedGroups.indexOf(group) === -1) {
@@ -364,9 +328,9 @@ const resourceResolvers = {
           return false;
         });
       }
-      const searchFilter = { org_id, 'searchableData.subscription_id': subscription_id, deleted: false, };
-      const resourcesResult = await commonResourcesSearch({ context, org_id, searchFilter, queryFields });
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields, { }, models);
+      const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
+      const resourcesResult = await commonResourcesSearch({ context, org_id: orgId, searchFilter, queryFields });
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, models);
       return resourcesResult;
     },
 
