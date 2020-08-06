@@ -21,4 +21,4 @@ const recoveryHintsMap = {
   }
 };
 
-module.export = recoveryHintsMap;
+module.exports = recoveryHintsMap;

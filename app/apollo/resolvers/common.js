@@ -97,6 +97,9 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
 
+  if (context.recoveryHintsMap) {
+    context['recoveryHints'] = context.recoveryHintsMap[queryName];
+  }
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
@@ -155,7 +158,7 @@ class NotFoundError extends BasicRazeeError {
 }
 
 // Customized Forbidden Error
-class RazeeForbiddenError extends ApolloError {
+class RazeeForbiddenError extends BasicRazeeError {
   constructor(message, context) {
     var name = 'RazeeForbiddenError';
     super(message, context, name);
