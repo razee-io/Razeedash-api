@@ -28,7 +28,7 @@ const clusterDistributedResolvers = require('./clusterDistributed');
 const organizationResolvers = require('./organization');
 
 const customScalarResolver = {
-  Date: GraphQLDateTime,
+  DateTime: GraphQLDateTime,
   JSON: GraphQLJSON,
 };
 
