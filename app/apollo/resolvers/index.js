@@ -19,12 +19,12 @@ const GraphQLJSON = require('graphql-type-json');
 
 const userResolvers = require('./user');
 const resourceResolvers = require('./resource');
-const resourceDistributedResolvers = require('./resourceDistributed');
+//const resourceDistributedResolvers = require('./resourceDistributed');
 const groupResolvers = require('./group');
 const clusterResolvers = require('./cluster');
 const channelResolvers = require('./channel');
 const subscriptionResolvers = require('./subscription');
-const clusterDistributedResolvers = require('./clusterDistributed');
+//const clusterDistributedResolvers = require('./clusterDistributed');
 const organizationResolvers = require('./organization');
 
 const customScalarResolver = {
@@ -37,12 +37,12 @@ const resolvers = [
   organizationResolvers,
   userResolvers,
   resourceResolvers,
-  resourceDistributedResolvers,
+  //resourceDistributedResolvers,
   groupResolvers,
   clusterResolvers,
   subscriptionResolvers,
   channelResolvers,
-  clusterDistributedResolvers,
+  //clusterDistributedResolvers,
 ];
 
 module.exports = resolvers;

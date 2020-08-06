@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-const bunyan = require('bunyan');
 const mongoose = require('mongoose');
 const User = require('./user');
 const Resource = require('./resource');
-const ResourceSchema = require('./resource.schema');
+//const ResourceSchema = require('./resource.schema');
 const Cluster = require('./cluster');
-const ClusterSchema = require('./cluster.schema');
+//const ClusterSchema = require('./cluster.schema');
 const Organization = require('./organization');
 const Channel = require('./channel');
 const Subscription = require('./subscription');
 const DeployableVersion = require('./deployableVersion');
 const ResourceYamlHist = require('./resourceYamlHist');
 const Group = require('./group');
-const { getBunyanConfig } = require('../../utils/bunyan');
 const fs = require('fs');
 const mongoConf = require('../../conf.js').conf;
 
 mongoose.Promise = global.Promise; // use global es6 promises
 
-const logger = bunyan.createLogger(getBunyanConfig('apollo/models'));
 
 const connectDb = mongoUrl => {
   let mongooseOptions;
@@ -85,11 +82,12 @@ const models = {
   DeployableVersion,
   ResourceYamlHist,
   dbConnections: [],
-  ClusterDistributed: [],
-  ResourceDistributed: [],
-  OrganizationDistributed: [],
+  //ClusterDistributed: [],
+  //ResourceDistributed: [],
+  //OrganizationDistributed: [],
 };
 
+/*
 function obscureUrl(url) {
   return url.replace(/:\/\/.*@/gi, '://xxxxxxx'.concat(':yyyyyyyy', '@'));
 }
@@ -160,5 +158,5 @@ async function setupDistributedCollections(mongoUrlsString) {
     return mod;
   });
 }
-
-module.exports = { models, connectDb, setupDistributedCollections, closeDistributedConnections };
+*/
+module.exports = { models, connectDb, /*setupDistributedCollections, closeDistributedConnections*/ };
