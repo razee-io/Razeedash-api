@@ -103,21 +103,28 @@ class IdentifierDirective extends SchemaDirectiveVisitor {
 class JsonSanitizer extends Sanitizer {
 
   constructor(arg) {
-    super(`Identifer_`, arg);
+    super('Identifer_', arg);
   }
 
-  depthOf(object, level) {
-    // Returns an int of the deepest level of an object
-    level = level || 1;
-    var key;
-    for(key in object){
-      if (!object.hasOwnProperty(key)) continue;
-      if(typeof object[key] == 'object'){
-        level++;
-        level = this.depthOf(object[key], level);
+  parseTree(parent) {
+    var hasNonLeafNodes = false;
+    var childCount = 0;  
+    for (var child in parent) {
+      if (typeof parent[child] === 'object') {
+      // Parse this sub-category:
+        childCount += this.parseTree(parent[child]);
+        // Set the hasNonLeafNodes flag (used below):
+        hasNonLeafNodes = true;
       }
     }
-    return level;
+    if (hasNonLeafNodes) {
+      // Add 'num_children' element and return the recursive result:
+      parent.num_children = childCount;
+      return childCount;
+    } else {
+      // This is a leaf item, so return 1:
+      return 1;
+    }
   }
 
   sanitize( args) {
@@ -126,7 +133,7 @@ class JsonSanitizer extends Sanitizer {
     const value = args[this.arg];
     if (value) {
       const keyvaluepairs = Object.keys(value).length;
-      var depth = this.depthOf(value);
+      var depth = this.parseTree(value);
       try {
         assert.isAtMost(keyvaluepairs, MAXKEYS);
         assert.isAtMost(depth, MAXDEPTH);
