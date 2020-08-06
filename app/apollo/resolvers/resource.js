@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
+const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
@@ -54,6 +54,9 @@ const commonResourcesSearch = async ({ context, searchFilter, limit=500, queryFi
     //     });
     //   }
     // }
+    //if( (queryFields.resources||{}).cluster ) {
+    //  await applyClusterInfoOnResources(org_id, resources, models);
+    //}
     return {
       count,
       resources,

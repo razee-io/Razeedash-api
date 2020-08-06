@@ -1,38 +1,48 @@
-#Build an intermediate image, have to use 12.x.x node since 13.x is not working for bcrypt yet
+################################################################################
+# Copyright 2019 IBM Corp. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+#######################################
+# Build the preliminary image
+#######################################
 FROM node:lts-alpine as buildImg
 
 RUN apk update
-RUN apk --no-cache add gnupg python make
-RUN apk add --upgrade --no-cache libssl1.1
-RUN apk add --no-cache g++
+RUN apk --no-cache add python make g++
 
-RUN mkdir -p /usr/src/
-ENV PATH="$PATH:/usr/src/"
+USER node
+WORKDIR /home/node
 
-WORKDIR /usr/src/
-COPY package.json /usr/src/
-COPY package-lock.json /usr/src/
-
+COPY --chown=node . /home/node
 RUN npm install --production --loglevel=warn
-COPY . /usr/src/
 
+
+#######################################
 # Build the production image
+#######################################
 FROM node:lts-alpine
-RUN apk add --upgrade --no-cache libssl1.1
 
-RUN mkdir -p /usr/src/
-ENV PATH="$PATH:/usr/src/"
+USER node
+WORKDIR /home/node
 
 RUN export BUILD_TIME=`date '+%Y-%m-%d %H:%M:%S'`
-
-WORKDIR /usr/src/
-COPY --from=buildImg /usr/src /usr/src
-
+ARG BUILD_TIME
+ENV BUILD_TIME=${BUILD_TIME}
 ARG BUILD_ID
 ENV BUILD_ID=${BUILD_ID}
 
-ARG BUILD_TIME
-ENV BUILD_TIME=${BUILD_TIME}
+COPY --chown=node --from=buildImg /home/node /home/node
 
 EXPOSE 3333
 CMD ["npm", "start"]
