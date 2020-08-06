@@ -55,22 +55,22 @@ class IdentifierSanitizer extends Sanitizer {
   validateSting(value) {
     var MAXLEN = 256;
     var MINLEN = 3;
-    if (this.arg === "content")  MAXLEN = 10000;
+    if (this.arg === 'content')  MAXLEN = 10000;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
     try {
       assert.isAtMost(value.length, MAXLEN);
       assert.isAtLeast(value.length, MINLEN);
     } catch (e) {
-      throw new ValidationError(`The ${this.arg}'s value "${value}" should be longer than ${MINLEN} and less then ${MAXLEN}`);
+      throw new ValidationError(`The ${this.arg}'s value ${value} should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
-    if (this.arg === "type" ) {
+    if (this.arg === 'type' ) {
       if (!/^[a-zA-Z0-9-_/]*$/.test(value)) {
-        throw new ValidationError(`The ${this.arg}'s value "${value}" should only contain alphabets, numbers, underscore, forward slash and hyphen`);
+        throw new ValidationError(`The ${this.arg}'s value ${value} should only contain alphabets, numbers, underscore, forward slash and hyphen`);
       }
-    } else if (this.arg !== "content" && this.arg !== "description") {
+    } else if (this.arg !== 'content' && this.arg !== 'description') {
       if (!/^[a-zA-Z0-9-_]*$/.test(value)) {
-        throw new ValidationError(`The ${this.arg}'s value "${value}" should only contain alphabets, numbers, underscore and hyphen`);
+        throw new ValidationError(`The ${this.arg}'s value ${value} should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
   }
