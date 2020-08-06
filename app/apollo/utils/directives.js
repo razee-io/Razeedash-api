@@ -109,19 +109,16 @@ class JsonSanitizer extends Sanitizer {
   depthOf(object, level) {
     // Returns an int of the deepest level of an object
     level = level || 1;
-
     var key;
     for(key in object){
-        if (!object.hasOwnProperty(key)) continue;
-
-        if(typeof object[key] == 'object'){
-            level++;
-            level = this.depthOf(object[key], level);
-        }
+      if (!object.hasOwnProperty(key)) continue;
+      if(typeof object[key] == 'object'){
+        level++;
+        level = this.depthOf(object[key], level);
+      }
     }
-
     return level;
-}
+  }
 
   sanitize( args) {
     const MAXKEYS = 100;
