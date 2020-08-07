@@ -57,19 +57,17 @@ class IdentifierSanitizer extends Sanitizer {
     var MINLEN = 1;
     const pattern = /[<>$%&!#]{1,}/;
     if (this.arg === 'content')  MAXLEN = 10000;
-    if (value) {
-      if (this.maxLength !== undefined) MAXLEN = this.maxLength;
-      if (this.minLength !== undefined) MINLEN = this.minLength;
-      try {
-        assert.isAtMost(value.length, MAXLEN);
-        assert.isAtLeast(value.length, MINLEN);
-      } catch (e) {
-        throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
-      }
-      if (this.arg !== 'content' && this.arg !== 'description') {
-        if (pattern.test(value)) {
-          throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
-        }
+    if (this.maxLength !== undefined) MAXLEN = this.maxLength;
+    if (this.minLength !== undefined) MINLEN = this.minLength;
+    try {
+      assert.isAtMost(value.length, MAXLEN);
+      assert.isAtLeast(value.length, MINLEN);
+    } catch (e) {
+      throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
+    }
+    if (this.arg !== 'content' && this.arg !== 'description') {
+      if (pattern.test(value)) {
+        throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
   }
