@@ -132,7 +132,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     },
@@ -152,7 +152,7 @@ const subscriptionResolvers = {
           return null;
         }
 
-        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, models);
+        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, context);
 
         return subscription;
       }catch(err){
@@ -214,7 +214,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     },
@@ -267,7 +267,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     }

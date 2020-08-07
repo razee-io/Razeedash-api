@@ -203,7 +203,7 @@ const resourceResolvers = {
       }
       const resourcesResult = await commonResourcesSearch({ models, orgId, searchFilter, limit, queryFields: queryFields.resources, sort, context });
 
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, models);
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
 
       return resourcesResult;
     },
@@ -249,7 +249,7 @@ const resourceResolvers = {
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
       const resourcesResult = await commonResourcesSearch({ context, orgId, searchFilter, limit, queryFields });
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, models);
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },
 
@@ -333,7 +333,7 @@ const resourceResolvers = {
       }
       const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
       const resourcesResult = await commonResourcesSearch({ context, org_id: orgId, searchFilter, queryFields });
-      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, models);
+      await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },
 

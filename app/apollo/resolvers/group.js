@@ -38,7 +38,7 @@ const groupResolvers = {
       try{
         groups = await models.Group.find({ org_id: orgId }).lean({ virtuals: true });
 
-        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, context);
 
         return groups;
       }catch(err){
@@ -59,7 +59,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
 
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
         return group;
       }catch(err){
@@ -80,7 +80,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
 
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
         return group;
       }catch(err){
