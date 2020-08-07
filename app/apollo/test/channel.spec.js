@@ -303,6 +303,35 @@ describe('channel graphql test suite', () => {
     }
   });
 
+  it('add a channel', async () => {
+    let illegal_char_caught = false;
+    try {
+      const {
+        data: {
+          data: { addChannel },
+        },
+      } = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: 'a_illegal_char#',
+      });
+    
+      expect(addChannel.uuid).to.be.an('string');
+    } catch (error) {
+      illegal_char_caught = true;
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      console.log('illegal character in name is caught' );
+    } finally {
+      console.log('illegar char', illegal_char_caught );
+      if (!illegal_char_caught) {
+        throw new Error ('illegal character is not caught');
+      }
+    }
+  });
+
   it('add and get channel version ', async () => {
     try {
       // step 1: add a channel version by admin token
@@ -338,6 +367,23 @@ describe('channel graphql test suite', () => {
     
       expect(addChannelVersion2.success).to.equal(true);
       expect(addChannelVersion2.versionUuid).to.be.an('string');
+
+      // step 2a: add another channel version with any character in content and description
+      const {
+        data: {
+          data: { addChannelVersion : addChannelVersion3 },
+        },
+      } = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.3`,
+        type: 'json',
+        content: '{"n0": 456.78 #! }',
+        description: `${channel_01_name}:v.0.3 #4`
+      });
+    
+      expect(addChannelVersion3.success).to.equal(true);
+      expect(addChannelVersion3.versionUuid).to.be.an('string');
 
       // step 3: get a channel version by user1 token
       const {
@@ -524,7 +570,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });  
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);
-      expect(channel.versions.length).to.equal(2);  
+      expect(channel.versions.length).to.equal(3);  
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

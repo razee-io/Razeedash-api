@@ -669,6 +669,44 @@ describe('cluster graphql test suite', () => {
     }
   });
 
+  it('pre register Cluster by an admin user', async () => {
+    let many_layers_found = false;
+    try {
+      const {
+        data: {
+          data: { registerCluster },
+        },
+      } = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration:   {
+          'name': [ {
+            'cluster-name': 'my-cluster',
+            'user-name': 'user1' },
+          {'cluster-name': 'my-cluster2',
+            'user-name': 'user2'}],
+          'location': [ {
+            'location-name': 'location1',
+            'user-name': 'user1' },
+          {'location': 'location2',
+            'user-name': 'user2'}]
+        }
+      });
+      expect(registerCluster.url).to.be.an('string');
+    } catch (error) {
+      many_layers_found = true;
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+    } finally {
+      console.log('many layers found', many_layers_found );
+      if (!many_layers_found) {
+        throw new Error ('expected many layers not found in json structure');
+      }
+    }
+  });
+
   it('enable registration url for Cluster by an admin user', async () => {
     try {
       const clusterIdEnableRegUrl = 'cluster_enable_reg_url';
