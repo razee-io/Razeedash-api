@@ -28,6 +28,8 @@ const DeployableVersion = require('./deployableVersion');
 const ResourceYamlHist = require('./resourceYamlHist');
 const Group = require('./group');
 const { getBunyanConfig } = require('../../utils/bunyan');
+const fs = require('fs');
+const mongoConf = require('../../conf.js').conf;
 
 mongoose.Promise = global.Promise; // use global es6 promises
 
@@ -61,6 +63,10 @@ const connectDb = mongoUrl => {
       useCreateIndex: true,
       useUnifiedTopology: true,
     };
+  }
+  
+  if(fs.existsSync(mongoConf.mongo.cert)) {
+    mongooseOptions['tlsCAFile'] = mongoConf.mongo.cert;
   }
 
   return mongoose.connect(url, {
@@ -99,18 +105,24 @@ async function closeDistributedConnections() {
 
 async function setupDistributedCollections(mongoUrlsString) {
   const urls = mongoUrlsString.split(';');
+  const options = {
+    autoIndex: false,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 5000,
+    poolSize: 5,
+    useNewUrlParser: true,
+    useFindAndModify: true,
+    useCreateIndex: true,
+    useUnifiedTopology: true,
+  };
+
+  if(fs.existsSync(mongoConf.mongo.cert)) {
+    options['tlsCAFile'] = mongoConf.mongo.cert;
+  }
+
   const dbConnections = await Promise.all(
     urls.map(async url => {
-      const conn = await mongoose.createConnection(url, {
-        autoIndex: false,
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 5000,
-        poolSize: 5,
-        useNewUrlParser: true,
-        useFindAndModify: true,
-        useCreateIndex: true,
-        useUnifiedTopology: true,
-      });
+      const conn = await mongoose.createConnection(url, options);
       return { url, conn };
     }),
   );
