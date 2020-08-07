@@ -26,6 +26,7 @@ const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
+const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
 const { models, connectDb, setupDistributedCollections, closeDistributedConnections } = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
@@ -68,9 +69,9 @@ const buildCommonApolloContext = async ({ models, req, res, connection, logger }
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
     const orgId = connection.context.orgId;
-    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, orgId, ...context };
+    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, recoveryHintsMap, orgId, ...context };
   } else if (req) {
-    context = { req, req_id: req.id, ...context};
+    context = { req, req_id: req.id, recoveryHintsMap, ...context };
   } 
   return context;
 };

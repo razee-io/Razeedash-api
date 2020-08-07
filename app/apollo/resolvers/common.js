@@ -92,27 +92,31 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
   };
 };
 
-
-
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
 const validAuth = async (me, org_id, action, type, queryName, context) => {
   const {req_id, models, logger} = context;
 
+  if (context.recoveryHintsMap) {
+    context['recoveryHints'] = context.recoveryHintsMap[queryName];
+  }
+  
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
     if(!result){
-      throw new ForbiddenError(
+      throw new RazeeForbiddenError(
         `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
+        context
       );
     }
     return;
   }
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
-    throw new ForbiddenError(
+    throw new RazeeForbiddenError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
+      context
     );
   }
 };
@@ -133,11 +137,32 @@ const applyClusterInfoOnResources = async (org_id, resources, models) => {
   }
 };
 
+// base error class which include req_id and recovery hint in the error
+class BasicRazeeError extends ApolloError {
+  constructor(message, context, name) {
+    const {req_id, recoveryHints} = context;
+    const extensions = {incidentID: req_id};
+    if (recoveryHints && recoveryHints[name]) {
+      extensions['recoveryHint'] = recoveryHints[name];
+    }
+    super(message, name, extensions);
+    Object.defineProperty(this, 'name', { value: name });
+  }
+}
+
 // Not Found Error when look up db
-class NotFoundError extends ApolloError {
-  constructor(message) {
-    super(message, 'NOT_FOUND');
-    Object.defineProperty(this, 'name', { value: 'NotFoundError' });
+class NotFoundError extends BasicRazeeError {
+  constructor(message, context) {
+    var name = 'NotFoundError';
+    super(message, context, name);
+  }
+}
+
+// Customized Forbidden Error
+class RazeeForbiddenError extends BasicRazeeError {
+  constructor(message, context) {
+    var name = 'ForbiddenError';
+    super(message, context, name);
   }
 }
 
