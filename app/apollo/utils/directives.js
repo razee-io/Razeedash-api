@@ -73,6 +73,7 @@ class IdentifierSanitizer extends Sanitizer {
       }
     }
   }
+}
 
 class IdentifierDirective extends SchemaDirectiveVisitor {
   visitArgumentDefinition(param, details) {
