@@ -702,6 +702,7 @@ describe('cluster graphql test suite', () => {
     } finally {
       console.log('many layers found', many_layers_found );
       if (!many_layers_found) {
+        // eslint-disable-next-line no-unsafe-finally
         throw new Error ('expected many layers not found in json structure');
       }
     }

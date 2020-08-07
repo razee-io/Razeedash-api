@@ -624,6 +624,7 @@ describe('groups graphql test suite', () => {
     } finally {
       console.log('illegar char', illegal_char_caught );
       if (!illegal_char_caught) {
+        // eslint-disable-next-line no-unsafe-finally
         throw new Error ('illegal character is not caught');
       }
     }
