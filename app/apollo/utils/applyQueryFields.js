@@ -71,14 +71,6 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
     var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscriptions, args, context);
 
-    // if(queryFields.subscriptions && queryFields.subscriptions.owner && subscriptions) {
-    //   const ownerIds = _.map(subscriptions, 'owner');
-    //   const subOwners = await models.User.getBasicUsersByIds(ownerIds);
-    //   subscriptions = subscriptions.map((sub)=>{
-    //     sub.owner = subOwners[sub.owner];
-    //     return sub;
-    //   });
-    // }
     const subscriptionsByGroupName = {};
     _.each(subscriptions, (sub)=>{
       if(_.isUndefined(sub.channelName)){
@@ -94,18 +86,6 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
       group.subscriptions = subscriptionsByGroupName[group.name] || [];
       group.subscriptionCount = group.subscriptions.length;
     });
-    // if(_.get(queryFields, 'subscriptions.resources')){
-    //   var subUuids = _.uniq(_.map(subscriptions, 'uuid'));
-    //   var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id': { $in: subUuids }});
-    //   var resourcesBySubUuid = _.groupBy(resources, (resource)=>{
-    //     return resource.searchableData.get('subscription_id');
-    //   });
-    //   _.each(groups, (group)=>{
-    //     _.each(group.subscriptions, (sub)=>{
-    //       sub.resources = resourcesBySubUuid[sub.uuid] || [];
-    //     });
-    //   });
-    // }
   }
   if(queryFields.clusters || queryFields.clusterCount){
     var groupUuids = _.uniq(_.map(groups, 'uuid'));
@@ -162,20 +142,6 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
         delete resource.subscription.channel;
       }
     });
-
-    // if(_.get(queryFields, 'resources.subscription.channel')){
-    //
-    //   var channelUuids = _.filter(_.uniq(_.map(resources, 'subscription.channel_uuid')));
-    //   var channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
-    //   var channelsByUuid = _.keyBy(channels, 'uuid');
-    //   _.each(resources, (resource)=>{
-    //     if(!resource.subscription){
-    //       return;
-    //     }
-    //     resource.subscription.channel = null;
-    //     resource.subscription.channel = channelsByUuid[resource.subscription.channel_uuid] || null;
-    //   });
-    // }
   }
 };
 

@@ -39,24 +39,6 @@ const commonResourcesSearch = async ({ context, searchFilter, limit=500, queryFi
       .lean({ virtuals: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
-    // if user is requesting the cluster field (i.e cluster_id/name), then adds it to the results
-    // if(queryFields.cluster){
-    //   const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
-    //   if(clusterIds.length > 0){
-    //     let clusters = await models.Cluster.find({ org_id, cluster_id: { $in: clusterIds }}).lean({ virtuals: true });
-    //     clusters = _.map(clusters, (cluster)=>{
-    //       cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.cluster_id;
-    //       return cluster;
-    //     });
-    //     clusters = _.keyBy(clusters, 'cluster_id');
-    //     resources.forEach((resource)=>{
-    //       resource.cluster = clusters[resource.cluster_id] || null;
-    //     });
-    //   }
-    // }
-    //if( (queryFields.resources||{}).cluster ) {
-    //  await applyClusterInfoOnResources(org_id, resources, models);
-    //}
     return {
       count,
       resources,
@@ -201,7 +183,7 @@ const resourceResolvers = {
         _.assign(searchFilter, models.Resource.translateAliases(_.omit(props, '$text')));
         searchFilter = buildSearchForResources(searchFilter, textProp, fromDate, toDate, kinds);
       }
-      const resourcesResult = await commonResourcesSearch({ models, orgId, searchFilter, limit, queryFields: queryFields.resources, sort, context });
+      const resourcesResult = await commonResourcesSearch({ models, searchFilter, limit, queryFields: queryFields.resources, sort, context });
 
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
 
@@ -248,7 +230,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      const resourcesResult = await commonResourcesSearch({ context, orgId, searchFilter, limit, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, searchFilter, limit, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },
@@ -332,7 +314,7 @@ const resourceResolvers = {
         });
       }
       const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
-      const resourcesResult = await commonResourcesSearch({ context, org_id: orgId, searchFilter, queryFields });
+      const resourcesResult = await commonResourcesSearch({ context, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },
