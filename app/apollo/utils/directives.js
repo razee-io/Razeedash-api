@@ -46,8 +46,9 @@ class IdentifierSanitizer extends Sanitizer {
         value.forEach(element => {
           this.validateSting(element);
         });
+      } else {
+        this.validateSting(value);
       }
-      this.validateSting(value);
     }
 
   }
