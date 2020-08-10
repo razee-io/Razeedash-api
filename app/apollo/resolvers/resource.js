@@ -374,6 +374,9 @@ const resourceResolvers = {
       };
 
       const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink },  {},  { lean:true });
+      if(!resource){
+        return null;
+      }
 
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
