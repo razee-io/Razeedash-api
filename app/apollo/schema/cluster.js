@@ -32,6 +32,7 @@ const clusterSchema = gql`
     id: ID!
     orgId: String!
     clusterId: String!
+    name: String
     metadata: JSON
     comments: [Comment]
     registration: JSON
