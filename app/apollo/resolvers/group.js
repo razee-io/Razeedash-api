@@ -22,71 +22,9 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, NotFoundError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
+const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
 
 const pubSub = GraphqlPubSub.getInstance();
-
-const applyQueryFieldsToGroups = async(groups, queryFields, { orgId }, models)=>{
-  if(queryFields.owner){
-    const owners = await models.User.getBasicUsersByIds(_.uniq(_.map(groups, 'owner')));
-    _.each(groups, (group)=>{
-      group.owner = owners[group.owner];
-    });
-  }
-  if(queryFields.subscriptions || queryFields.subscriptionCount){
-    var groupNames = _.uniq(_.map(groups, 'name'));
-    var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
-    if(queryFields.subscriptions && queryFields.subscriptions.owner && subscriptions) {
-      const ownerIds = _.map(subscriptions, 'owner');
-      const subOwners = await models.User.getBasicUsersByIds(ownerIds);
-      subscriptions = subscriptions.map((sub)=>{
-        sub.owner = subOwners[sub.owner];
-        return sub;
-      });
-    }
-    const subscriptionsByGroupName = {};
-    _.each(subscriptions, (sub)=>{
-      if(_.isUndefined(sub.channelName)){
-        sub.channelName = sub.channel;
-      }
-      delete sub.channel; // can not render channel, too deep
-      _.each(sub.groups, (groupName)=>{
-        subscriptionsByGroupName[groupName] = subscriptionsByGroupName[groupName] || [];
-        subscriptionsByGroupName[groupName].push(sub);
-      });
-    });
-    _.each(groups, (group)=>{
-      group.subscriptions = subscriptionsByGroupName[group.name] || [];
-      group.subscriptionCount = group.subscriptions.length;
-    });
-    if(_.get(queryFields, 'subscriptions.resources')){
-      var subUuids = _.uniq(_.map(subscriptions, 'uuid'));
-      var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id': { $in: subUuids }});
-      var resourcesBySubUuid = _.groupBy(resources, (resource)=>{
-        return resource.searchableData.get('subscription_id');
-      });
-      _.each(groups, (group)=>{
-        _.each(group.subscriptions, (sub)=>{
-          sub.resources = resourcesBySubUuid[sub.uuid] || [];
-        });
-      });
-    }
-  }
-  if(queryFields.clusters || queryFields.clusterCount){
-    var groupUuids = _.uniq(_.map(groups, 'uuid'));
-    const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: groupUuids } }).lean({ virtuals: true });
-    const clustersByGroupUuid = {};
-    _.each(clusters, (cluster)=>{
-      _.each(cluster.groups || [], (groupObj)=>{
-        clustersByGroupUuid[groupObj.uuid] = clustersByGroupUuid[groupObj.uuid] || [];
-        clustersByGroupUuid[groupObj.uuid].push(cluster);
-      });
-    });
-    _.each(groups, (group)=>{
-      group.clusters = clustersByGroupUuid[group.uuid] || [];
-      group.clusterCount = group.clusters.length;
-    });
-  }
-};
 
 const groupResolvers = {
   Query: {
@@ -100,7 +38,7 @@ const groupResolvers = {
       try{
         groups = await models.Group.find({ org_id: orgId }).lean({ virtuals: true });
 
-        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, context);
 
         return groups;
       }catch(err){
@@ -121,7 +59,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
 
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
         return group;
       }catch(err){
@@ -142,7 +80,7 @@ const groupResolvers = {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
 
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, models);
+        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
         return group;
       }catch(err){
