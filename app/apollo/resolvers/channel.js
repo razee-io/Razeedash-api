@@ -26,8 +26,6 @@ const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { ACTIONS, TYPES } = require('../models/const');
-
 const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
