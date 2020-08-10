@@ -73,7 +73,7 @@ var convertStrToTextPropsObj = (str='')=>{
     }
     return ' ';
   });
-  out.$text = str;
+  out.$text = _.trim(str);
   return out;
 };
 convertStrToTextPropsObj.invalidFields = [
