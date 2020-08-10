@@ -95,7 +95,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     if (!resource) return resource;
 
     if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = getS3Data(resource.data, logger);
+      const yaml = await getS3Data(resource.data, logger);
       resource.data = yaml;
     }
 
@@ -258,7 +258,7 @@ const resourceResolvers = {
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
         if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = getS3Data(resource.data, logger);
+          const yaml = await getS3Data(resource.data, logger);
           resource.data = yaml;
         }
 
@@ -326,7 +326,12 @@ const resourceResolvers = {
 
       const queryName = 'resourceHistory';
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
+      let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
+      if (!cluster) {
+        throw new ForbiddenError('you are not allowed to access this resource due to missing cluster group permission.');
+      }
 
       var searchObj = {
         org_id, cluster_id, resourceSelfLink
@@ -356,15 +361,26 @@ const resourceResolvers = {
 
       const queryName = 'resourceContent';
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
+
+      const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
+      let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
+      if (!cluster) {
+        throw new ForbiddenError('you are not allowed to access this resource due to missing cluster group permission.');
+      }
 
       var getContent = async(obj)=>{
         return obj.yamlStr;
       };
 
-      const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink });
+      const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink },  {},  { lean:true });
+
       if(!histId || histId == resource._id.toString()){
-        let content = await getContent(resource);
+        let content = resource.data;
+        if ( content && isLink(content) && s3IsDefined()) {
+          const yaml = await getS3Data(content, logger);
+          content = yaml;
+        }
         return {
           id: resource._id,
           histId: resource._id,
@@ -380,7 +396,7 @@ const resourceResolvers = {
 
       var content = await getContent(obj);
       if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = getS3Data(content, logger);
+        const yaml = await getS3Data(content, logger);
         content = yaml;
       }
 
