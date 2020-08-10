@@ -25,7 +25,7 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, getGroupConditions, NotFoundError} = require ('./common');
+const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
