@@ -18,7 +18,7 @@ const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups, applyClusterInfoOnResources } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -354,6 +354,12 @@ const subscriptionResolvers = {
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
+        // validate the number of total subscriptions are under the limit
+        const total = await models.Subscription.count({org_id});
+        if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
+          throw new ValidationError(`Too many subscriptions are registered under ${org_id}.`);
+        }
+
         const uuid = UUID();
 
         // loads the channel

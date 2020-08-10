@@ -659,6 +659,20 @@ describe('cluster graphql test suite', () => {
         registration: { name: 'my-cluster' },
       });
       expect(registerCluster.url).to.be.an('string');
+
+      //register another cluster
+      const registerCluster2 = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster2' },
+      });
+      expect(registerCluster2.data.data.registerCluster.url).to.be.an('string');
+
+      //register another cluster
+      const registerCluster3 = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster3' },
+      });
+      expect(registerCluster3.data.errors[0].message).to.equal(`Too many clusters are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
