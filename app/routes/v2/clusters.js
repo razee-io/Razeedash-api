@@ -36,7 +36,7 @@ const buildSearchableDataForResource = require('../../utils/cluster.js').buildSe
 const buildSearchableDataObjHash = require('../../utils/cluster.js').buildSearchableDataObjHash;
 const buildPushObj = require('../../utils/cluster.js').buildPushObj;
 const buildHashForResource = require('../../utils/cluster.js').buildHashForResource;
-const { CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
+const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
@@ -55,7 +55,7 @@ const addUpdateCluster = async (req, res, next) => {
         return;
       }
       const total = await Clusters.count({org_id:  req.org._id});
-      if (total > CLUSTER_LIMITS.MAX_TOTAL ) {
+      if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
         res.status(400).send({error: 'Too many clusters are registered under this organization.'});
         return;
       }
@@ -277,6 +277,11 @@ const updateClusterResources = async (req, res, next) => {
           }
           else{
             // if obj not in db, then adds it
+            const total = await Resources.count({org_id:  req.org._id, deleted: false});
+            if (total >= RESOURCE_LIMITS.MAX_TOTAL ) {
+              res.status(400).send({error: 'Too many resources are registered under this organization.'});
+              return;
+            }
             changes = {
               $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
               $currentDate: { created: true, updated: true, lastModified: true },

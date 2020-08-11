@@ -436,6 +436,15 @@ describe('subscription graphql test suite', () => {
         versionUuid: channelVersion_01_uuid,
       });
       expect(addSubscription.uuid).to.be.an('string');
+
+      const addSubscription2 = await subscriptionApi.addSubscription(adminToken, {
+        orgId: org01._id,
+        name: 'a_random_name2',
+        groups:['dev'],
+        channelUuid: channel_01_uuid,
+        versionUuid: channelVersion_02_uuid,
+      });
+      expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

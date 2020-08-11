@@ -25,7 +25,7 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
@@ -162,6 +162,11 @@ const channelResolvers = {
         if(channel){
           throw new ValidationError(`The channel name ${name} already exists.`);
         }
+        // validate the number of total channels are under the limit
+        const total = await models.Channel.count({org_id});
+        if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
+          throw new ValidationError(`Too many channels are registered under ${org_id}.`);
+        }
         const uuid = UUID();
         await models.Channel.create({
           _id: UUID(),
@@ -241,6 +246,11 @@ const channelResolvers = {
 
       if(versionNameExists) {
         throw new ValidationError(`The version name ${name} already exists`);
+      }
+      // validate the number of total channel versions are under the limit
+      const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
+      if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
+        throw new ValidationError(`Too many channel version are registered under ${channel_uuid}.`);
       }
 
       let fileStream = null;

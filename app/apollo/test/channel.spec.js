@@ -293,6 +293,12 @@ describe('channel graphql test suite', () => {
       });
     
       expect(addChannel.uuid).to.be.an('string');
+
+      const addChannel2 = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: 'a_random_name2',
+      });
+      expect(addChannel2.data.errors[0].message).to.equal(`Too many channels are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -469,12 +475,11 @@ describe('channel graphql test suite', () => {
       throw error;
 
     }
-
   });
+
   it('remove configuration version, channel has multiple versions ', async () => {
     try {
-      // step 1.1: add a channel version by admin token
-      // console.log('here step 1 in remove channel version');
+      // step 1: add a channel version by admin token
       const {
         data: {
           data: { addChannelVersion },
@@ -489,8 +494,37 @@ describe('channel graphql test suite', () => {
       });
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
-      // step 2: remove the channel version by an adminToken
-      // console.log('here step 2 in remove channel version');
+
+      // step 2: add another channel version by admin token
+      const {
+        data: {
+          data: { addChannelVersion : addChannelVersion4 },
+        },
+      } = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.5`,
+        type: 'json',
+        content: '{"n0": 234.78}',
+        description: `${channel_01_name}:v.0.5`
+      });
+
+      expect(addChannelVersion4.success).to.equal(true);
+      expect(addChannelVersion4.versionUuid).to.be.an('string');
+
+      // step 3: add another channel version by admin token
+
+      const addChannelVersion5 = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.6`,
+        type: 'json',
+        content: '{"n0": 1234.78}',
+        description: `${channel_01_name}:v.0.6`
+      });
+      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many channel version are registered under ${channel_01_uuid}.`);
+
+      // step 4: remove the channel version by an adminToken
       const {
         data: {
           data: { getChannelVersion },
@@ -513,8 +547,8 @@ describe('channel graphql test suite', () => {
       });
       expect(removeChannelVersion.success).to.equal(true);
       expect(removeChannelVersion.uuid).to.equal(getChannelVersion.uuid);
-      // step 3 validate the channel version is not there
-      // console.log('here step 3 in remove channel version');
+
+      // step 5 validate the channel version is not there
       const {
         data: {
           data: { channel },
@@ -524,7 +558,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });  
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);
-      expect(channel.versions.length).to.equal(2);  
+      expect(channel.versions.length).to.equal(3);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

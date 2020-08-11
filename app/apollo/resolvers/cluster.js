@@ -360,7 +360,7 @@ const clusterResolvers = {
 
         // validate the number of total clusters are under the limit
         const total = await models.Cluster.count({org_id});
-        if (!error && total > CLUSTER_LIMITS.MAX_TOTAL ) {
+        if (!error && total >= CLUSTER_LIMITS.MAX_TOTAL ) {
           error = new ValidationError(`Too many clusters are registered under ${org_id}.`);                
         }
 
