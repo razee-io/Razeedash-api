@@ -237,7 +237,7 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, conditions, textProp);
       }
 
-      const clusters = commonClusterSearch(models, searchFilter, limit);
+      const clusters = await commonClusterSearch(models, searchFilter, limit);
 
       await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
 
