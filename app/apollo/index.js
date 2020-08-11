@@ -27,7 +27,7 @@ const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
-const { models, connectDb, /*setupDistributedCollections, closeDistributedConnections*/ } = require('./models');
+const { models, connectDb } = require('./models');
 const bunyanConfig = getBunyanConfig('apollo');
 const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
@@ -165,7 +165,6 @@ const createApolloServer = () => {
 
 const stop = async (apollo) => {
   await apollo.db.connection.close();
-  //await closeDistributedConnections();
   await apollo.server.stop();
   await apollo.httpServer.close(() => {
     console.log('🏄 Apollo Server closed.');
@@ -176,14 +175,6 @@ const apollo = async (options = {}) => {
 
   try {
     const db = await connectDb(options.mongo_url);
-    /*const mongoUrls =
-      options.mongo_urls ||
-      process.env.MONGO_URLS ||
-      options.mongo_url ||
-      process.env.MONGO_URL ||
-      'mongodb://localhost:3001/meteor';
-    await setupDistributedCollections(mongoUrls);*/
-
     const app = options.app ? options.app : createDefaultApp();
     router.use(ebl(getBunyanConfig('apollo')));
     app.use(GRAPHQL_PATH, router);
