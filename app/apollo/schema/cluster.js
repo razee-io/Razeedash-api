@@ -123,7 +123,7 @@ const clusterSchema = gql`
     Return clusters based on **orgId** whose *updated* field has not been updated in the past day.
     Sorted with newest document first.
     """
-    clusterZombies(
+    inactiveClusters(
       orgId: String!
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
