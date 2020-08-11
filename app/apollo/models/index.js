@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-const bunyan = require('bunyan');
 const mongoose = require('mongoose');
 const User = require('./user');
 const Resource = require('./resource');
-const ResourceSchema = require('./resource.schema');
 const Cluster = require('./cluster');
-const ClusterSchema = require('./cluster.schema');
 const Organization = require('./organization');
 const Channel = require('./channel');
 const Subscription = require('./subscription');
 const DeployableVersion = require('./deployableVersion');
 const ResourceYamlHist = require('./resourceYamlHist');
 const Group = require('./group');
-const { getBunyanConfig } = require('../../utils/bunyan');
 const fs = require('fs');
 const mongoConf = require('../../conf.js').conf;
 
 mongoose.Promise = global.Promise; // use global es6 promises
 
-const logger = bunyan.createLogger(getBunyanConfig('apollo/models'));
 
 const connectDb = mongoUrl => {
   let mongooseOptions;
@@ -84,81 +79,7 @@ const models = {
   Subscription,
   DeployableVersion,
   ResourceYamlHist,
-  dbConnections: [],
-  ClusterDistributed: [],
-  ResourceDistributed: [],
-  OrganizationDistributed: [],
+  dbConnections: []
 };
 
-function obscureUrl(url) {
-  return url.replace(/:\/\/.*@/gi, '://xxxxxxx'.concat(':yyyyyyyy', '@'));
-}
-
-async function closeDistributedConnections() {
-  if ( models.dbConnections && models.dbConnections.length > 0) {
-    models.dbConnections.map(conn => {
-      conn.conn.close();
-    });
-  }
-  models.dbConnections = [];
-}
-
-async function setupDistributedCollections(mongoUrlsString) {
-  const urls = mongoUrlsString.split(';');
-  const options = {
-    autoIndex: false,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 5000,
-    poolSize: 5,
-    useNewUrlParser: true,
-    useFindAndModify: true,
-    useCreateIndex: true,
-    useUnifiedTopology: true,
-  };
-
-  if(fs.existsSync(mongoConf.mongo.cert)) {
-    options['tlsCAFile'] = mongoConf.mongo.cert;
-  }
-
-  const dbConnections = await Promise.all(
-    urls.map(async url => {
-      const conn = await mongoose.createConnection(url, options);
-      return { url, conn };
-    }),
-  );
-
-  await closeDistributedConnections();
-
-  models.dbConnections = dbConnections;
-  
-  models.ResourceDistributed = dbConnections.map(conn => {
-    const mod = conn.conn.model('resources', ResourceSchema);
-    logger.info(
-      `SetupDistributedCollections received modelName=${
-        mod.modelName
-      } for DB ${obscureUrl(conn.url)}`,
-    );
-    return mod;
-  });
-
-  const organizationSchema = models.Organization.schema;
-  models.OrganizationDistributed = dbConnections.map(conn => {
-    const mod = conn.conn.model('orgs', organizationSchema);
-    logger.info(
-      `SetupDistributedCollections received modelName=${
-        mod.modelName
-      } for DB ${obscureUrl(conn.url)}`,
-    );
-    return mod;
-  });
-
-  models.ClusterDistributed = dbConnections.map(conn => {
-    const mod = conn.conn.model('clusters', ClusterSchema);
-    logger.info(
-      `SetupDistributedCollections:clusters - received modelName=${mod.modelName} for DB ${obscureUrl(conn.url)}`,
-    );
-    return mod;
-  });
-}
-
-module.exports = { models, connectDb, setupDistributedCollections, closeDistributedConnections };
+module.exports = { models, connectDb };

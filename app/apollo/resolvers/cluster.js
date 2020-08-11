@@ -181,14 +181,14 @@ const clusterResolvers = {
     }, // end clusterByOrgId
 
     // Find all the clusters that have not been updated in the last day
-    clusterZombies: async (
+    inactiveClusters: async (
       parent,
       { orgId, limit, resourceLimit, groupLimit },
       context,
       fullQuery
     ) => {
       const queryFields = GraphqlFields(fullQuery);
-      const queryName = 'clusterZombies';
+      const queryName = 'inactiveClusters';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, limit}, `${queryName} enter`);
 
@@ -205,7 +205,7 @@ const clusterResolvers = {
       await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
 
       return clusters;
-    }, // end clusterZombies
+    }, // end inactiveClusters
 
     clusterSearch: async (
       parent,
@@ -360,7 +360,7 @@ const clusterResolvers = {
 
         // validate the number of total clusters are under the limit
         const total = await models.Cluster.count({org_id});
-        if (!error && total > CLUSTER_LIMITS.MAX_TOTAL ) {
+        if (!error && total >= CLUSTER_LIMITS.MAX_TOTAL ) {
           error = new ValidationError(`Too many clusters are registered under ${org_id}.`);                
         }
 
