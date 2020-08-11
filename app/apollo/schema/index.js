@@ -18,12 +18,10 @@ const { gql } = require('apollo-server-express');
 
 const userSchema = require('./user');
 const resourceSchema = require('./resource');
-const resourceDistributedSchema = require('./resourceDistributed');
 const groupSchema = require('./group');
 const clusterSchema = require('./cluster');
 const channelSchema = require('./channel');
 const subscriptionSchema = require('./subscription');
-const clusterDistributedSchema = require('./clusterDistributed');
 const organizationSchema = require('./organization');
 
 const linkSchema = gql`
@@ -51,11 +49,9 @@ const schemas = [ linkSchema,
   organizationSchema,
   userSchema,
   resourceSchema,
-  resourceDistributedSchema,
   groupSchema,
   clusterSchema,
   channelSchema,
-  subscriptionSchema,
-  clusterDistributedSchema ];
+  subscriptionSchema];
 
 module.exports = schemas;

@@ -223,13 +223,13 @@ const clusterFunc = grahqlUrl => {
       },
     );
 
-  const zombies = async (token, variables) =>
+  const inactiveClusters = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
           query($orgId: String! $limit: Int) {
-            clusterZombies(orgId: $orgId limit: $limit) {
+            inactiveClusters(orgId: $orgId limit: $limit) {
               id
               orgId
               clusterId
@@ -360,7 +360,7 @@ const clusterFunc = grahqlUrl => {
     searchDistributed,
     kubeVersionCount,
     kubeVersionCountDistributed,
-    zombies,
+    inactiveClusters,
     zombiesDistributed,
     deleteClusterByClusterId,
     deleteClusters,

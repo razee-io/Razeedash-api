@@ -480,17 +480,17 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('get all (zombie) clusters who have not been updated in last day', async () => {
+  it('get all (inactive) clusters who have not been updated in last day', async () => {
     try {
       const {
         data: {
-          data: { clusterZombies },
+          data: { inactiveClusters },
         },
-      } = await clusterApi.zombies(token, { orgId: org01._id });
+      } = await clusterApi.inactiveClusters(token, { orgId: org01._id });
 
-      expect(clusterZombies).to.be.an('array');
-      expect(clusterZombies).to.have.length(1);
-      expect(clusterZombies[0].clusterId).to.equal('cluster_04');
+      expect(inactiveClusters).to.be.an('array');
+      expect(inactiveClusters).to.have.length(1);
+      expect(inactiveClusters[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
