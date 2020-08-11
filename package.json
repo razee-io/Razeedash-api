@@ -94,7 +94,7 @@
     "eslint": "^7.6.0",
     "ioredis-mock": "^4.21.2",
     "markdownlint-cli": "^0.23.2",
-    "mocha": "^8.1.0",
+    "mocha": "^8.1.1",
     "mongo-mock": "^4.0.0",
     "mongodb-memory-server": "^6.6.3",
     "nock": "^13.0.3",
