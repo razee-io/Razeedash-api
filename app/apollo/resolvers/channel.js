@@ -25,7 +25,10 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
-const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
+const yaml = require('js-yaml');
+const fs = require('fs');
+
+const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
@@ -253,14 +256,21 @@ const channelResolvers = {
         throw new ValidationError(`Too many channel version are registered under ${channel_uuid}.`);
       }
 
-      let fileStream = null;
-      if(file){
-        fileStream = (await file).createReadStream();
-      }
-      else{
-        fileStream = stream.Readable.from([ content ]);
+      try {
+        if(file){
+          content = await fs.promises.readFile(file, 'utf8');
+        }
+        let yamlSize = Buffer.byteLength(content);
+        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
+          throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`);
+        }
+
+        yaml.safeLoad(content);
+      } catch (error) {
+        throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
 
+      let fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 
