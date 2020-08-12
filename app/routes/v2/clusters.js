@@ -267,15 +267,24 @@ const updateClusterResources = async (req, res, next) => {
               };
             }
             else{
+              const toSet = { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
+              if(hasSearchableDataChanges) {
+                // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
+                const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+                toSet['histId'] = histId;
+              }
               // if obj in db and theres changes to save
               changes = {
-                $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+                $set: toSet,
                 $currentDate: { updated: true, lastModified: true },
                 ...pushCmd
               };
             }
           }
           else{
+            // adds the yaml hist item too
+            const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+
             // if obj not in db, then adds it
             const total = await Resources.count({org_id:  req.org._id, deleted: false});
             if (total >= RESOURCE_LIMITS.MAX_TOTAL ) {
@@ -283,15 +292,12 @@ const updateClusterResources = async (req, res, next) => {
               return;
             }
             changes = {
-              $set: { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+              $set: { deleted: false, hash: resourceHash, histId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
               $currentDate: { created: true, updated: true, lastModified: true },
               ...pushCmd
             };
             options = { upsert: true };
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
-
-            // adds the yaml hist item too
-            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
           }
 
           const result = await Resources.updateOne(key, changes, options);
@@ -311,11 +317,6 @@ const updateClusterResources = async (req, res, next) => {
                   deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, 
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
-          }
-
-          if(hasSearchableDataChanges){
-            // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
-            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
           }
           break;
         }
