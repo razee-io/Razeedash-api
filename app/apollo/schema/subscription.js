@@ -114,7 +114,7 @@ const subscriptionSchema = gql`
      """
      Ge subscriptions by clusterId
      """
-     subscriptionsForCluster(orgId: String!, clusterId: String!): [BasicChannelSubscription]
+     subscriptionsForCluster(orgId: String!, clusterId: String!): [ChannelSubscription]
      """
      Ge subscriptions by clusterName
      """
