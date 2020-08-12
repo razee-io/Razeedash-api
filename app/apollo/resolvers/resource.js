@@ -101,7 +101,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
     if (!cluster) {
-      throw new ForbiddenError('you are not allowed to access this resource due to missing cluster tag permission.');
+      throw new ForbiddenError('you are not allowed to access this resource due to missing cluster group permission.');
     }
 
     if(queryFields['cluster']) {
@@ -249,7 +249,6 @@ const resourceResolvers = {
       if(!resource){
         return null;
       }
-      resource.histId = resource._id;
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
@@ -261,8 +260,12 @@ const resourceResolvers = {
           const yaml = await getS3Data(resource.data, logger);
           resource.data = yaml;
         }
-
         resource.updated = resourceYamlHistObj.updated;
+      }
+      if (!resource.histId) {
+        // histId should be populated from REST api now, this is just
+        // in case we need a value for un-migrated/updated resources
+        resource.histId = resource._id;
       }
       return resource;
     },
@@ -286,7 +289,11 @@ const resourceResolvers = {
       if(!resource){
         return null;
       }
-      resource.histId = resource._id;
+      if (!resource.histId) {
+        // histId should be populated from REST api now, this is just
+        // in case we need a value for un-migrated/updated resources
+        resource.histId = resource._id;
+      }
       return resource;
     },
 
@@ -386,7 +393,7 @@ const resourceResolvers = {
         }
         return {
           id: resource._id,
-          histId: resource._id,
+          histId: resource.histId ? resource.histId : resource._id,
           content,
           updated: resource.updated,
         };
