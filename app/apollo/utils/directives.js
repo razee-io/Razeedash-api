@@ -112,13 +112,13 @@ class JsonSanitizer extends Sanitizer {
     var hasNonLeafNodes = false;
     var childCount = 0; 
     var keylen = 0; 
+    var valuelen = 0;
     for (var child in parent) {
       if (typeof parent[child] === 'object') {
         if (typeof child === 'string') {
           keylen = child.length;
         }
         // Parse this sub-category:
-        //const keyvaluepairs = Object.keys(parent[child]).length;
         childCount += this.parseTree(parent[child]);
         try {
           assert.isAtMost(keylen, DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH);
@@ -128,6 +128,13 @@ class JsonSanitizer extends Sanitizer {
         }
         // Set the hasNonLeafNodes flag (used below):
         hasNonLeafNodes = true;
+      }else if(typeof parent[child] === 'string') {
+        valuelen = parent[child].length;
+        try {
+          assert.isAtMost(valuelen, DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH);
+        } catch (e) {
+          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items or exceeded the key length`);
+        }
       }
     }
     if (hasNonLeafNodes) {
