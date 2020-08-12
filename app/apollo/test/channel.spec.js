@@ -387,6 +387,31 @@ describe('channel graphql test suite', () => {
     }
   });
 
+  it('Verify user able to create channel version with malformed yaml data', async () => {
+    try {
+
+      const addChannelVersion = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.3`,
+        type: 'application/yaml',
+        content: '!@#$%^&*',
+        description: `${channel_01_name}:v.0.3`
+      });
+
+      var result = addChannelVersion.data.errors.map(error => error.message).join();
+      expect(result.includes('Provided YAML content is not valid')).to.equal(true);
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('edit and remove channel', async () => {
     try {
 
