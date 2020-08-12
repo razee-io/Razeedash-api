@@ -26,7 +26,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
   resourceLimit = resourceLimit || 500;
 
   _.each(clusters, (cluster)=>{
-    cluster.name = cluster.name || cluster.clusterId || cluster.id;
+    cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.clusterId || cluster.id;
   });
   if(queryFields.resources) {
     const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean({virtuals: true});
