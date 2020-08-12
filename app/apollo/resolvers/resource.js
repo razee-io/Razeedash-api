@@ -260,12 +260,12 @@ const resourceResolvers = {
           const yaml = await getS3Data(resource.data, logger);
           resource.data = yaml;
         }
-        if (!resource.histId) {
-          // histId should be populated from REST api now, this is just
-          // in case we need a value for un-migrated/updated resources
-          resource.histId = resource._id;
-        }
         resource.updated = resourceYamlHistObj.updated;
+      }
+      if (!resource.histId) {
+        // histId should be populated from REST api now, this is just
+        // in case we need a value for un-migrated/updated resources
+        resource.histId = resource._id;
       }
       return resource;
     },
