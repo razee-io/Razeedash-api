@@ -44,10 +44,9 @@ class IdentifierSanitizer extends Sanitizer {
     const value = args[this.arg];
     if (value) {
       if (value instanceof Array) {
-        if (value.length > DIRECTIVE_LIMITS.MAX_ARRAY_LEN) {
-          throw new ValidationError(`The array ${this.arg}'s length is '${value.length}' should be less than ${DIRECTIVE_LIMITS.MAX_ARRAY_LEN}`);
+        if (((this.arg === 'clusters' || this.arg === 'clusterIds') && value.length > DIRECTIVE_LIMITS.MAX_CLUSTER_ARRAY_LEN) || ((this.arg === 'groupUuids' || this.arg === 'groups') && value.length > DIRECTIVE_LIMITS.MAX_GROUP_ARRAY_LEN)) {
+          throw new ValidationError(`The array ${this.arg}'s length '${value.length}' exceeded the allowed limit`);
         }
-        console.log('jm: value.length  ', value.length);
         value.forEach(element => {
           this.validateSting(element);
         });
