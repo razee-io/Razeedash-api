@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 const { v4: uuid } = require('uuid');
-const request = require('request-promise-native');
+const axios = require('axios');
 const objectPath = require('object-path');
 const { URL } = require('url');
 
@@ -30,16 +30,15 @@ const fireWebhook = async (webhook, postData, req) => {
   var resp = '';
   postData.request_id = uuid();
   const options = {
-    method: 'POST',
-    uri: url,
-    body: postData,
-    json: true
+    method: 'post',
+    url: url,
+    data: postData,
   };
   req.log.debug(options, 'fireWebhook');
 
   try {
     req.log.debug({ org_id: req.org._id, options: options }, 'POSTing webhook');
-    resp = await request(options);
+    resp = await axios(options);
   }
   catch (e) {
     success = false;
@@ -55,7 +54,7 @@ const fireWebhook = async (webhook, postData, req) => {
       url: url,
       payload: JSON.stringify(postData),
     },
-    res: JSON.stringify(resp),
+    res: JSON.stringify(resp.data),
     hasError,
     created: new Date(),
   };

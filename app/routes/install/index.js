@@ -20,7 +20,7 @@ const asyncHandler = require('express-async-handler');
 const ebl = require('express-bunyan-logger');
 const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
-const request = require('request-promise-native');
+const axios = require('axios');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
 
@@ -64,7 +64,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     // allow custom job, agents versions and image location to be provided
     const rddJobUrl = process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml';
 
-    const rdd_job = await request.get(rddJobUrl);
+    const rdd_job = await axios.get(rddJobUrl);
     const view = {
       NAMESPACE: req.query.namespace || 'razeedeploy',
       COMMAND: req.query.command || 'install',
@@ -72,7 +72,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     };
     const m_esc = Mustache.escape;
     Mustache.escape = (text) => { return text; };
-    const configYaml = Mustache.render(rdd_job, view);
+    const configYaml = Mustache.render(rdd_job.data, view);
     Mustache.escape = m_esc;
     res.setHeader('content-type', 'application/yaml');
     return res.status(200).send(configYaml);
@@ -92,11 +92,11 @@ router.get('/inventory', asyncHandler(async (req, res, next) => {
   const wk_url = 'https://github.com/razee-io/Watch-keeper/releases/download/0.2.0/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/inventory.yaml`, 'utf8');
-    const wk = await request.get(wk_url);
+    const wk = await axios.get(wk_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
       RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
-      WATCH_KEEPER: wk
+      WATCH_KEEPER: wk.data
     };
     const configYaml = Mustache.render(inventory, view);
     res.setHeader('content-type', 'application/yaml');
@@ -114,13 +114,13 @@ router.get('/razeedeploy', asyncHandler(async (req, res, next) => {
   const kptn_url = 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/razeedeploy.yaml`, 'utf8');
-    const wk = await request.get(wk_url);
-    const kptn = await request.get(kptn_url);
+    const wk = await axios.get(wk_url);
+    const kptn = await axios.get(kptn_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
       RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
-      WATCH_KEEPER: wk,
-      RAZEEDEPLOY: kptn
+      WATCH_KEEPER: wk.data,
+      RAZEEDEPLOY: kptn.data
     };
     const configYaml = Mustache.render(inventory, view);
     res.setHeader('content-type', 'application/yaml');
@@ -138,13 +138,13 @@ router.get('/cluster', asyncHandler(async (req, res, next) => {
   const remoteResource_url = 'https://github.com/razee-io/RemoteResource/releases/latest/download/resource.yaml';
   try {
     const inventory = await readFile(`${__dirname}/cluster.yaml`, 'utf8');
-    const rr = await request.get(remoteResource_url);
-    const kptn = await request.get(kptn_url);
+    const rr = await axios.get(remoteResource_url);
+    const kptn = await axios.get(kptn_url);
     const view = {
       RAZEEDASH_URL: razeeapiUrl,
       RAZEEDASH_ORG_KEY: Buffer.from(orgKey).toString('base64'),
-      REMOTE_RESOURCE: rr,
-      RAZEEDEPLOY: kptn
+      REMOTE_RESOURCE: rr.data,
+      RAZEEDEPLOY: kptn.data
     };
     const configYaml = Mustache.render(inventory, view);
     res.setHeader('content-type', 'application/yaml');
@@ -158,9 +158,9 @@ router.get('/cluster', asyncHandler(async (req, res, next) => {
 router.get('/razeedeploy/:component', asyncHandler(async (req, res, next) => {
   const kptn_url = `https://github.com/razee-io/${req.params.component}/releases/latest/download/resource.yaml`;
   try {
-    const kptn = await request.get(kptn_url);
+    const kptn = await axios.get(kptn_url);
     res.setHeader('content-type', 'application/yaml');
-    return res.status(200).send(kptn);
+    return res.status(200).send(kptn.data);
   } catch (e) {
     req.log.error(e);
     next(e);

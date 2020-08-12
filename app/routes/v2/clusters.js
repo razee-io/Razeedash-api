@@ -23,7 +23,7 @@ const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
-const request = require('request-promise-native');
+const axios = require('axios');
 var glob = require('glob-promise');
 var fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -115,14 +115,11 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   req.log.info({ url, postData }, 'posting add cluster webhook');
   try{
     var headers = await getAddClusterWebhookHeaders();
-    var result = await request.post({
-      url,
-      body: postData,
-      json: true,
-      resolveWithFullResponse: true,
+    var result = await axios.post(url, {
+      data: postData,
       headers,
     });
-    req.log.info({ url, postData, statusCode: result.statusCode }, 'posted add cluster webhook');
+    req.log.info({ url, postData, statusCode: result.status }, 'posted add cluster webhook');
   }catch(err){
     req.log.error({ url, postData, err }, 'add cluster webhook failed');
   }
