@@ -118,14 +118,13 @@ class JsonSanitizer extends Sanitizer {
           keylen = child.length;
         }
         // Parse this sub-category:
-        const keyvaluepairs = Object.keys(parent[child]).length;
+        //const keyvaluepairs = Object.keys(parent[child]).length;
         childCount += this.parseTree(parent[child]);
         try {
-          assert.isAtMost(keylen, DIRECTIVE_LIMITS.MAX_STRING_LENGTH);
-          assert.isAtMost(keyvaluepairs, DIRECTIVE_LIMITS.MAX_JSON_KEYS);
-          assert.isAtMost(childCount, DIRECTIVE_LIMITS.MAX_JSON_DEPTH);
+          assert.isAtMost(keylen, DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH);
+          assert.isAtMost(childCount, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
         } catch (e) {
-          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_KEYS} key value pairs or it is more than ${DIRECTIVE_LIMITS.MAX_JSON_DEPTH} levels deep`);
+          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items or exceeded the key length`);
         }
         // Set the hasNonLeafNodes flag (used below):
         hasNonLeafNodes = true;
@@ -143,13 +142,7 @@ class JsonSanitizer extends Sanitizer {
   sanitize( args) {
     const value = args[this.arg];
     if (value) {
-      const depth = this.parseTree(value);
-      const keyvaluepairs = Object.keys(value).length;
-      try {
-        assert.isAtMost(keyvaluepairs, DIRECTIVE_LIMITS.MAX_JSON_KEYS);
-      } catch (e) {
-        //throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_KEYS} key value pairs or it is more than ${DIRECTIVE_LIMITS.MAX_JSON_DEPTH} levels deep`);
-      }
+      this.parseTree(value);
     }
   }
 }
