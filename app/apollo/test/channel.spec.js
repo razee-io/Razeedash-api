@@ -293,6 +293,12 @@ describe('channel graphql test suite', () => {
       });
     
       expect(addChannel.uuid).to.be.an('string');
+
+      const addChannel2 = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: 'a_random_name2',
+      });
+      expect(addChannel2.data.errors[0].message).to.equal(`Too many channels are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -368,23 +374,6 @@ describe('channel graphql test suite', () => {
     
       expect(addChannelVersion2.success).to.equal(true);
       expect(addChannelVersion2.versionUuid).to.be.an('string');
-
-      // step 2a: add another channel version with any character in content and description
-      const {
-        data: {
-          data: { addChannelVersion : addChannelVersion3 },
-        },
-      } = await channelApi.addChannelVersion(adminToken, {
-        orgId: org01._id,
-        channelUuid: channel_01_uuid,
-        name: `${channel_01_name}:v.0.3`,
-        type: 'json',
-        content: '{"n0": 456.78 #! }',
-        description: `${channel_01_name}:v.0.3 #4`
-      });
-    
-      expect(addChannelVersion3.success).to.equal(true);
-      expect(addChannelVersion3.versionUuid).to.be.an('string');
 
       // step 3: get a channel version by user1 token
       const {
@@ -516,12 +505,11 @@ describe('channel graphql test suite', () => {
       throw error;
 
     }
-
   });
+
   it('remove configuration version, channel has multiple versions ', async () => {
     try {
-      // step 1.1: add a channel version by admin token
-      // console.log('here step 1 in remove channel version');
+      // step 1: add a channel version by admin token
       const {
         data: {
           data: { addChannelVersion },
@@ -536,8 +524,37 @@ describe('channel graphql test suite', () => {
       });
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
-      // step 2: remove the channel version by an adminToken
-      // console.log('here step 2 in remove channel version');
+
+      // step 2: add another channel version by admin token
+      const {
+        data: {
+          data: { addChannelVersion : addChannelVersion4 },
+        },
+      } = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.5`,
+        type: 'json',
+        content: '{"n0": 234.78}',
+        description: `${channel_01_name}:v.0.5`
+      });
+
+      expect(addChannelVersion4.success).to.equal(true);
+      expect(addChannelVersion4.versionUuid).to.be.an('string');
+
+      // step 3: add another channel version by admin token
+
+      const addChannelVersion5 = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.6`,
+        type: 'json',
+        content: '{"n0": 1234.78}',
+        description: `${channel_01_name}:v.0.6`
+      });
+      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many channel version are registered under ${channel_01_uuid}.`);
+
+      // step 4: remove the channel version by an adminToken
       const {
         data: {
           data: { getChannelVersion },
@@ -560,8 +577,8 @@ describe('channel graphql test suite', () => {
       });
       expect(removeChannelVersion.success).to.equal(true);
       expect(removeChannelVersion.uuid).to.equal(getChannelVersion.uuid);
-      // step 3 validate the channel version is not there
-      // console.log('here step 3 in remove channel version');
+
+      // step 5 validate the channel version is not there
       const {
         data: {
           data: { channel },
@@ -571,7 +588,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });  
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);
-      expect(channel.versions.length).to.equal(3);  
+      expect(channel.versions.length).to.equal(3);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -581,4 +598,54 @@ describe('channel graphql test suite', () => {
       throw error;
     }
   });
+  it('add configuration version with special chars in content and description ', async () => {
+    try {
+      // step 1: add a channel version by admin token
+      const {
+        data: {
+          data: { addChannelVersion },
+        },
+      } = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.7`,
+        type: 'json',
+        content: '{"n0": 123.45 #! }',
+        description: `${channel_01_name}:v.0.4 $!#`
+      });
+      expect(addChannelVersion.success).to.equal(true);
+      expect(addChannelVersion.versionUuid).to.be.an('string');
+
+      // step 4: remove the channel version by an adminToken
+      const {
+        data: {
+          data: { getChannelVersion },
+        },
+      } = await channelApi.getChannelVersion(token, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        versionUuid: addChannelVersion.versionUuid,
+      }); 
+      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.7`);
+      expect(getChannelVersion.content).to.equal('{"n0": 123.45 #! }');
+      expect(getChannelVersion.created).to.be.an('string');
+      const {
+        data: {
+          data: { removeChannelVersion },
+        },
+      } = await channelApi.removeChannelVersion(adminToken, {
+        orgId: org01._id,
+        uuid: getChannelVersion.uuid,
+      });
+      expect(removeChannelVersion.success).to.equal(true);
+      expect(removeChannelVersion.uuid).to.equal(getChannelVersion.uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });      
 });

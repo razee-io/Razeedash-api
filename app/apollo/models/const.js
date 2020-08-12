@@ -19,13 +19,34 @@ const {ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL } = require('../../utils/auth.con
 const SECRET = process.env.SECRET || 'very-very-secret';
 const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
 const APOLLO_STREAM_SHARDING = process.env.APOLLO_STREAM_SHARDING === 'false' ? false : true;
+const CLUSTER_MAX_TOTAL_LIMIT = process.env.CLUSTER_MAX_TOTAL_LIMIT || 1000;
+const RESOURCE_MAX_TOTAL_LIMIT = process.env.RESOURCE_MAX_TOTAL_LIMIT || 500000;
+const CHANNEL_MAX_TOTAL_LIMIT = process.env.CHANNEL_MAX_TOTAL_LIMIT || 1000;
+const CHANNEL_VERSION_MAX_TOTAL_LIMIT = process.env.CHANNEL_VERSION_MAX_TOTAL_LIMIT || 1000;
+const SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SUBSCRIPTION_MAX_TOTAL_LIMIT || 1000;
 
 // controls static args to be passed to reazeedeploy-job 
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
 
 const CLUSTER_LIMITS = {
-  MAX_TOTAL: 20000, // max total cluster allowed per account
+  MAX_TOTAL: CLUSTER_MAX_TOTAL_LIMIT, // max total cluster allowed per account
   MAX_PENDING: 512  // max clusters are under register and pending states
+};
+
+const RESOURCE_LIMITS = {
+  MAX_TOTAL: RESOURCE_MAX_TOTAL_LIMIT, // max total resources allowed per account
+};
+
+const CHANNEL_LIMITS = {
+  MAX_TOTAL: CHANNEL_MAX_TOTAL_LIMIT, // max total channels allowed per account
+};
+
+const CHANNEL_VERSION_LIMITS = {
+  MAX_TOTAL: CHANNEL_VERSION_MAX_TOTAL_LIMIT, // max total channel versions allowed per channel
+};
+
+const SUBSCRIPTION_LIMITS = {
+  MAX_TOTAL: SUBSCRIPTION_MAX_TOTAL_LIMIT, // max total subscriptions allowed per account
 };
 
 const CLUSTER_REG_STATES = {
@@ -34,6 +55,14 @@ const CLUSTER_REG_STATES = {
   REGISTERED: 'registered',  // watch-keeper reported heat-beat back
 };
 
-module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
-  CLUSTER_LIMITS, CLUSTER_REG_STATES};
+const DIRECTIVE_LIMITS = {
+  MAX_STRING_LENGTH: 256,
+  MIN_STRING_LENGTH: 1,
+  MAX_CONTENT_LENGTH: 10000,
+  MAX_JSON_KEYS: 100,
+  MAX_JSON_DEPTH: 2,
+  MAX_ARRAY_LENGTH: 1000,
+};
 
+module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
+  CLUSTER_LIMITS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS, CLUSTER_REG_STATES, DIRECTIVE_LIMITS};

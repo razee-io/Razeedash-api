@@ -17,6 +17,7 @@
 const { ValidationError } = require('apollo-server');
 const { SchemaDirectiveVisitor } = require('apollo-server-express');
 const { assert } = require('chai');
+const { DIRECTIVE_LIMITS } = require('../models/const');
 
 class Sanitizer {
   constructor(name, arg) {
@@ -43,6 +44,10 @@ class IdentifierSanitizer extends Sanitizer {
     const value = args[this.arg];
     if (value) {
       if (value instanceof Array) {
+        if (value.length > DIRECTIVE_LIMITS.MAX_ARRAY_LEN) {
+          throw new ValidationError(`The array ${this.arg}'s length is '${value.length}' should be less than ${DIRECTIVE_LIMITS.MAX_ARRAY_LEN}`);
+        }
+        console.log('jm: value.length  ', value.length);
         value.forEach(element => {
           this.validateSting(element);
         });
@@ -54,8 +59,8 @@ class IdentifierSanitizer extends Sanitizer {
   }
 
   validateSting(value) {
-    var MAXLEN = 256;
-    var MINLEN = 1;
+    var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
+    var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
     const pattern = /[<>$%&!#]{1,}/;
     if (this.arg === 'content')  MAXLEN = 10000;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
@@ -101,23 +106,33 @@ class IdentifierDirective extends SchemaDirectiveVisitor {
 class JsonSanitizer extends Sanitizer {
 
   constructor(arg) {
-    super('Identifer_', arg);
+    super('Json_', arg);
   }
 
   parseTree(parent) {
     var hasNonLeafNodes = false;
-    var childCount = 0;  
+    var childCount = 0; 
+    var keylen = 0; 
     for (var child in parent) {
       if (typeof parent[child] === 'object') {
-      // Parse this sub-category:
+        if (typeof child === 'string') {
+          keylen = child.length;
+        }
+        // Parse this sub-category:
+        const keyvaluepairs = Object.keys(parent[child]).length;
         childCount += this.parseTree(parent[child]);
+        try {
+          assert.isAtMost(keylen, DIRECTIVE_LIMITS.MAX_STRING_LENGTH);
+          assert.isAtMost(keyvaluepairs, DIRECTIVE_LIMITS.MAX_JSON_KEYS);
+          assert.isAtMost(childCount, DIRECTIVE_LIMITS.MAX_JSON_DEPTH);
+        } catch (e) {
+          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_KEYS} key value pairs or it is more than ${DIRECTIVE_LIMITS.MAX_JSON_DEPTH} levels deep`);
+        }
         // Set the hasNonLeafNodes flag (used below):
         hasNonLeafNodes = true;
       }
     }
     if (hasNonLeafNodes) {
-      // Add 'num_children' element and return the recursive result:
-      parent.num_children = childCount;
       return childCount;
     } else {
       // This is a leaf item, so return 1:
@@ -125,18 +140,16 @@ class JsonSanitizer extends Sanitizer {
     }
   }
 
+
   sanitize( args) {
-    const MAXKEYS = 100;
-    const MAXDEPTH = 2;
     const value = args[this.arg];
     if (value) {
+      const depth = this.parseTree(value);
       const keyvaluepairs = Object.keys(value).length;
-      var depth = this.parseTree(value);
       try {
-        assert.isAtMost(keyvaluepairs, MAXKEYS);
-        assert.isAtMost(depth, MAXDEPTH);
+        assert.isAtMost(keyvaluepairs, DIRECTIVE_LIMITS.MAX_JSON_KEYS);
       } catch (e) {
-        throw new ValidationError(`The json object ${this.arg} has more than ${MAXKEYS} key value pairs or it is more than ${MAXDEPTH} levels deep`);
+        //throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_KEYS} key value pairs or it is more than ${DIRECTIVE_LIMITS.MAX_JSON_DEPTH} levels deep`);
       }
     }
   }

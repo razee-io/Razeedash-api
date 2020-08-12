@@ -18,11 +18,12 @@ const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter, ValidationError } = require('apollo-server');
 const { ForbiddenError } = require('apollo-server');
-const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups, applyClusterInfoOnResources } = require ('./common');
+const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
+const { whoIs, validAuth, NotFoundError, validClusterAuth, getGroupConditions, getAllowedGroups } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
+const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -44,82 +45,7 @@ async function validateGroups(org_id, groups, context) {
   return groupCount;
 }
 
-const applyQueryFieldsToSubscriptions = async(subs, queryFields, { orgId }, models)=>{ // eslint-disable-line
-  _.each(subs, (sub)=>{
-    if(_.isUndefined(sub.channelName)){
-      sub.channelName = sub.channel;
-    }
-    delete sub.channel;
-  });
-  var subUuids = _.uniq(_.map(subs, 'uuid'));
 
-  if(queryFields.channel && subs.length > 0){
-    var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
-    var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
-    var channelsByUuid = _.keyBy(channels, 'uuid');
-    _.each(subs, (sub)=>{
-      var channelUuid = sub.channelUuid;
-      var channel = channelsByUuid[channelUuid];
-      sub.channel = channel;
-    });
-  }
-  if(queryFields.resources && subs.length > 0){
-    var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({virtuals: true});
-    var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
-    if (queryFields.resources.cluster) {
-      await applyClusterInfoOnResources(orgId, resources, models);
-    }
-    _.each(subs, (sub)=>{
-      sub.resources = resourcesBySubUuid[sub.uuid] || [];
-
-    });
-  }
-  if(queryFields.groupObjs){
-    var groupNames = _.flatten(_.map(subs, 'groups'));
-    var groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
-    var groupsByName = _.keyBy(groups, 'name');
-    _.each(subs, (sub)=>{
-      sub.groupObjs = _.filter(_.map(sub.groups, (groupName)=>{
-        return groupsByName[groupName];
-      }));
-    });
-  }
-  if(queryFields.remoteResources || queryFields.rolloutStatus){
-    var remoteResources = await models.Resource.find({
-      org_id: orgId,
-      'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
-      deleted: false,
-    });
-    if ((queryFields.remoteResources||{}).cluster) {
-      await applyClusterInfoOnResources(orgId, remoteResources, models);
-    }
-    var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
-      return rr.searchableData.get('annotations["deploy_razee_io_clustersubscription"]');
-    });
-    _.each(subs, (sub)=>{
-      var rrs = remoteResourcesBySubUuid[sub.uuid] || [];
-
-      // loops through each resource. if there are errors, increments the errorCount. if no errors, increments successfulCount
-      var errorCount = 0;
-      var successCount = 0;
-      _.each(rrs, (rr)=>{
-        var errors = _.toArray(rr.searchableData.get('errors')||[]);
-        if(errors.length > 0){
-          errorCount += 1;
-        }
-        else{
-          successCount += 1;
-        }
-      });
-
-      sub.remoteResources = rrs;
-      sub.rolloutStatus = {
-        successCount,
-        errorCount,
-      };
-    });
-  }
-};
 
 const subscriptionResolvers = {
   Query: {
@@ -206,7 +132,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     },
@@ -226,7 +152,7 @@ const subscriptionResolvers = {
           return null;
         }
 
-        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, models);
+        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, context);
 
         return subscription;
       }catch(err){
@@ -288,7 +214,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     },
@@ -341,7 +267,7 @@ const subscriptionResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, models);
+      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     }
@@ -354,6 +280,12 @@ const subscriptionResolvers = {
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
+        // validate the number of total subscriptions are under the limit
+        const total = await models.Subscription.count({org_id});
+        if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
+          throw new ValidationError(`Too many subscriptions are registered under ${org_id}.`);
+        }
+
         const uuid = UUID();
 
         // loads the channel

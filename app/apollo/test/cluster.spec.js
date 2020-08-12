@@ -480,17 +480,17 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('get all (zombie) clusters who have not been updated in last day', async () => {
+  it('get all (inactive) clusters who have not been updated in last day', async () => {
     try {
       const {
         data: {
-          data: { clusterZombies },
+          data: { inactiveClusters },
         },
-      } = await clusterApi.zombies(token, { orgId: org01._id });
+      } = await clusterApi.inactiveClusters(token, { orgId: org01._id });
 
-      expect(clusterZombies).to.be.an('array');
-      expect(clusterZombies).to.have.length(1);
-      expect(clusterZombies[0].clusterId).to.equal('cluster_04');
+      expect(inactiveClusters).to.be.an('array');
+      expect(inactiveClusters).to.have.length(1);
+      expect(inactiveClusters[0].clusterId).to.equal('cluster_04');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -659,6 +659,20 @@ describe('cluster graphql test suite', () => {
         registration: { name: 'my-cluster' },
       });
       expect(registerCluster.url).to.be.an('string');
+
+      //register another cluster
+      const registerCluster2 = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster2' },
+      });
+      expect(registerCluster2.data.data.registerCluster.url).to.be.an('string');
+
+      //register another cluster
+      const registerCluster3 = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster3' },
+      });
+      expect(registerCluster3.data.errors[0].message).to.equal(`Too many clusters are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -669,15 +683,15 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('pre register Cluster by an admin user', async () => {
+  it('pre register Cluster while validating registration json', async () => {
     let many_layers_found = false;
     try {
       const {
         data: {
-          data: { registerCluster },
+          data: { registerCluster4 },
         },
       } = await clusterApi.registerCluster(adminToken, {
-        orgId: org01._id,
+        orgId: org77._id,
         registration:   {
           'name': [ {
             'cluster-name': 'my-cluster',
@@ -691,7 +705,7 @@ describe('cluster graphql test suite', () => {
             'user-name': 'user2'}]
         }
       });
-      expect(registerCluster.url).to.be.an('string');
+      expect(registerCluster4.url).to.be.an('string');
     } catch (error) {
       many_layers_found = true;
       if (error.response) {

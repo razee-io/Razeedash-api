@@ -106,14 +106,13 @@ const channelSchema = gql`
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String!, name: String! @sv): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv): EditChannelReply!
      
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload
      """
      addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
-
      """
      Removes a channel
      """
