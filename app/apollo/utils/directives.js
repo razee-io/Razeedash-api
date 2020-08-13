@@ -117,28 +117,26 @@ class JsonSanitizer extends Sanitizer {
       if (typeof parent[child] === 'object') {
         if (typeof child === 'string') {
           keylen = child.length;
+          if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
+            throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
+          }
         }
         // Parse this sub-category:
         childCount += this.parseTree(parent[child]);
-        try {
-          assert.isAtMost(keylen, DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH);
-          assert.isAtMost(childCount, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
-        } catch (e) {
-          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items or exceeded the key length`);
+        if (childCount > DIRECTIVE_LIMITS.MAX_JSON_ITEMS) {
+          throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
         }
         // Set the hasNonLeafNodes flag (used below):
         hasNonLeafNodes = true;
       }else if(typeof parent[child] === 'string') {
         valuelen = parent[child].length;
-        try {
-          assert.isAtMost(valuelen, DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH);
-        } catch (e) {
-          throw new ValidationError(`The json object ${this.arg} has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items or exceeded the key length`);
+        if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
+          throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
         }
       }
     }
     if (hasNonLeafNodes) {
-      return childCount;
+      return childCount + 1; // including this parent node
     } else {
       // This is a leaf item, so return 1:
       return 1;
