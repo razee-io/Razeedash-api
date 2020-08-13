@@ -596,37 +596,21 @@ describe('groups graphql test suite', () => {
     }
   });
 
-  it('group clusters', async () => {
-    let illegal_char_caught = false;
+  it('group clusters with illegal character', async () => {
     try {
-      const {
-        data: {
-          data: { groupClusters },
-        },
-      } = await groupApi.groupClusters(adminToken, {
+      const data = await groupApi.groupClusters(adminToken, {
         orgId: org01._id,
         uuid: group_02_uuid,
         clusters: ['cluster_01', 'cluster_04$']
       });
-      expect(groupClusters.modified).to.equal(2);
-      const cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_01'}).exec();
-      expect(cluster1.groups).to.have.length(2);
-      const cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
-      expect(cluster4.groups).to.have.length(1);
-      
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');  
     } catch (error) {
-      illegal_char_caught = true;
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
       } else {
         console.error('error encountered:  ', error);
       }
-    } finally {
-      console.log('illegar char', illegal_char_caught );
-      if (!illegal_char_caught) {
-        // eslint-disable-next-line no-unsafe-finally
-        throw new Error ('illegal character is not caught');
-      }
+      throw error;
     }
   });
 

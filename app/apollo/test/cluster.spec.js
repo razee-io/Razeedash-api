@@ -684,14 +684,9 @@ describe('cluster graphql test suite', () => {
   });
 
   it('pre register Cluster while validating registration json', async () => {
-    let many_layers_found = false;
     try {
-      const {
-        data: {
-          data: { registerCluster4 },
-        },
-      } = await clusterApi.registerCluster(adminToken, {
-        orgId: org77._id,
+      const data = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
         registration:   {
           'name': [ {
             'cluster-name': 'my-cluster',
@@ -705,20 +700,15 @@ describe('cluster graphql test suite', () => {
             'user-name': 'user2'}]
         }
       });
-      expect(registerCluster4.url).to.be.an('string');
+      console.log(`data=${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('The json object has more than');
     } catch (error) {
-      many_layers_found = true;
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
       } else {
         console.error('error encountered:  ', error);
       }
-    } finally {
-      console.log('many layers found', many_layers_found );
-      if (!many_layers_found) {
-        // eslint-disable-next-line no-unsafe-finally
-        throw new Error ('expected many layers not found in json structure');
-      }
+      throw error;
     }
   });
 

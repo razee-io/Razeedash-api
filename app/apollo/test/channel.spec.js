@@ -309,33 +309,21 @@ describe('channel graphql test suite', () => {
     }
   });
 
-  it('add a channel', async () => {
-    let illegal_char_caught = false;
+  it('add a channel with illegal characters', async () => {
     try {
-      const {
-        data: {
-          data: { addChannel },
-        },
-      } = await channelApi.addChannel(adminToken, {
+      const data = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
         name: 'a_illegal_char#',
       });
-    
-      expect(addChannel.uuid).to.be.an('string');
+      console.log(`${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
     } catch (error) {
-      illegal_char_caught = true;
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
       } else {
         console.error('error encountered:  ', error);
       }
-      console.log('illegal character in name is caught' );
-    } finally {
-      console.log('illegar char', illegal_char_caught );
-      if (!illegal_char_caught) {
-        // eslint-disable-next-line no-unsafe-finally
-        throw new Error ('illegal character is not caught');
-      }
+      throw error;
     }
   });
 
