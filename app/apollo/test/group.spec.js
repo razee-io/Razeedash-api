@@ -595,6 +595,25 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
+
+  it('group clusters with illegal character', async () => {
+    try {
+      const data = await groupApi.groupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: ['cluster_01', 'cluster_04$']
+      });
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');  
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('ungroup clusters', async () => {
     try {
       const {
