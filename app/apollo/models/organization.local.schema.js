@@ -55,7 +55,10 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   context.logger.debug({org_id}, 'getRegistrationUrl enter');
   const org = await this.findById(org_id);
   const protocol = context.req ? context.req.protocol : 'http';
-  const host = context.req ? context.req.header('host') : 'localhost:3333';
+  var host = context.req ? context.req.header('host') : 'localhost:3333';
+  if (process.env.EXTERNAL_HOST) {
+    host = process.env.EXTERNAL_HOST;
+  }
   return {
     url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
   }; 
