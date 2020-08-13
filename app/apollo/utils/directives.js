@@ -40,7 +40,7 @@ class IdentifierSanitizer extends Sanitizer {
     this.maxLength = maxLength;
   }
 
-  sanitize( args) {
+  sanitize(args) {
     const value = args[this.arg];
     if (value) {
       if (value instanceof Array) {
@@ -108,11 +108,14 @@ class JsonSanitizer extends Sanitizer {
     super('Json_', arg);
   }
 
-  parseTree(parent) {
+  parseTree(parent, totalAllowed) {
     var hasNonLeafNodes = false;
     var childCount = 0; 
     var keylen = 0; 
     var valuelen = 0;
+    if (totalAllowed <= 0) {
+      throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
+    }
     for (var child in parent) {
       if (typeof parent[child] === 'object') {
         if (typeof child === 'string') {
@@ -122,7 +125,7 @@ class JsonSanitizer extends Sanitizer {
           }
         }
         // Parse this sub-category:
-        childCount += this.parseTree(parent[child]);
+        childCount += this.parseTree(parent[child], totalAllowed - childCount );
         if (childCount > DIRECTIVE_LIMITS.MAX_JSON_ITEMS) {
           throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
         }
@@ -147,7 +150,7 @@ class JsonSanitizer extends Sanitizer {
   sanitize( args) {
     const value = args[this.arg];
     if (value) {
-      this.parseTree(value);
+      this.parseTree(value, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
     }
   }
 }
