@@ -683,7 +683,7 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('pre register Cluster while validating registration json', async () => {
+  it('pre register Cluster with more than expected json elements', async () => {
     try {
       const data = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
