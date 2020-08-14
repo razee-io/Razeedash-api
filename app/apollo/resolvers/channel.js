@@ -262,7 +262,6 @@ const channelResolvers = {
           fileStream = (await file).createReadStream();
           content = await fs.promises.readFile(fileStream.path, 'utf8');
         }
-
         let yamlSize = Buffer.byteLength(content);
         if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
           throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`);
@@ -272,7 +271,7 @@ const channelResolvers = {
       } catch (error) {
         throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
- 
+
       fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
