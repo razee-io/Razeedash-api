@@ -69,6 +69,7 @@ const DIRECTIVE_LIMITS = {
   MAX_JSON_ITEMS: config.has('directive_limits.max_json_items') ? config.get('directive_limits.max_json_items') : 128,
   MAX_CLUSTER_ARRAY_LENGTH: CLUSTER_MAX_TOTAL_LIMIT,
   MAX_GROUP_ARRAY_LENGTH: config.has('directive_limits.max_group_array_length') ? config.get('directive_limits.max_group_array_length') : 32,
+  PATTERN: /[<>$%&! @()}{"#]{1,}/,
 };
 
 // console.log('NODE_ENV: ' + config.util.getEnv('NODE_ENV') + `, DIRECTIVE_LIMITS: ${JSON.stringify(DIRECTIVE_LIMITS)}`);
