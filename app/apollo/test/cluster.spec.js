@@ -712,7 +712,7 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('pre register Cluster while validating registration json', async () => {
+  it('pre register Cluster with invalid cluster name', async () => {
     try {
       const data = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
@@ -720,6 +720,24 @@ describe('cluster graphql test suite', () => {
       });
       console.log(`data=${JSON.stringify(data.data)}`);
       expect(data.data.errors[0].message).to.have.string('The registration');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('pre register Cluster with invalid mongo data', async () => {
+    try {
+      const data = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'asdasdasdtryrtygdfgdf', usersword: { $ne: 1 } },
+      });
+      console.log(`data=${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('The json object registration contain illegal characters');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

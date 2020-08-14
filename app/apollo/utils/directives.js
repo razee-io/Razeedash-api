@@ -18,6 +18,7 @@ const { ValidationError } = require('apollo-server');
 const { SchemaDirectiveVisitor } = require('apollo-server-express');
 const { assert } = require('chai');
 const { DIRECTIVE_LIMITS } = require('../models/const');
+const mongoSanitize = require('express-mongo-sanitize');
 
 class Sanitizer {
   constructor(name, arg) {
@@ -122,9 +123,6 @@ class JsonSanitizer extends Sanitizer {
           if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
             throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
           }
-          if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(child)) {
-            throw new ValidationError(`The ${this.arg} value ${child} should only contain alphabets, numbers, underscore and hyphen`);
-          }
         }
         // Parse this sub-category:
         childCount += this.parseTree(parent[child], totalAllowed - childCount );
@@ -155,6 +153,10 @@ class JsonSanitizer extends Sanitizer {
   sanitize( args) {
     const value = args[this.arg];
     if (value) {
+      const hasProhibited = mongoSanitize.has(value);
+      if (hasProhibited) {
+        throw new ValidationError(`The json object ${this.arg} contain illegal characters.`);
+      }
       this.parseTree(value, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
     }
   }
