@@ -26,7 +26,7 @@ const subscriptionResolvers = require('./subscription');
 const organizationResolvers = require('./organization');
 
 const customScalarResolver = {
-  Date: GraphQLDateTime,
+  DateTime: GraphQLDateTime,
   JSON: GraphQLJSON,
 };
 

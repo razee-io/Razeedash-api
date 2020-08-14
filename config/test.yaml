@@ -1,0 +1,2 @@
+directive_limits:
+  max_json_items: 2

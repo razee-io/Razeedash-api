@@ -31,11 +31,6 @@ const organizationSchema = gql`
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
-
-    """
-    Return an Organization 
-    """
-    organization: Organization!
   }
 `;
 
