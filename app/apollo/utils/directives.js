@@ -69,7 +69,7 @@ class IdentifierSanitizer extends Sanitizer {
     } catch (e) {
       throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
-    if (this.arg !== 'content' && this.arg !== 'description') {
+    if (this.arg !== 'content') {
       if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
         throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
       }
