@@ -256,10 +256,13 @@ const channelResolvers = {
         throw new ValidationError(`Too many channel version are registered under ${channel_uuid}.`);
       }
 
+      let fileStream = null;
       try {
         if(file){
-          content = await fs.promises.readFile(file, 'utf8');
+          fileStream = (await file).createReadStream();
+          content = await fs.promises.readFile(fileStream.path, 'utf8');
         }
+
         let yamlSize = Buffer.byteLength(content);
         if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
           throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`);
@@ -270,7 +273,10 @@ const channelResolvers = {
         throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
 
-      let fileStream = stream.Readable.from([ content ]);
+      if(!file){
+        fileStream = stream.Readable.from([ content ]);
+      }
+
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 
