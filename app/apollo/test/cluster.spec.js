@@ -712,6 +712,24 @@ describe('cluster graphql test suite', () => {
     }
   });
 
+  it('pre register Cluster while validating registration json', async () => {
+    try {
+      const data = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster3$' },
+      });
+      console.log(`data=${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('The registration');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('enable registration url for Cluster by an admin user', async () => {
     try {
       const clusterIdEnableRegUrl = 'cluster_enable_reg_url';

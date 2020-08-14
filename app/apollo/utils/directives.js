@@ -48,19 +48,18 @@ class IdentifierSanitizer extends Sanitizer {
           throw new ValidationError(`The array ${this.arg}'s length '${value.length}' exceeded the allowed limit`);
         }
         value.forEach(element => {
-          this.validateSting(element);
+          this.validateString(element);
         });
       } else {
-        this.validateSting(value);
+        this.validateString(value);
       }
     }
 
   }
 
-  validateSting(value) {
+  validateString(value) {
     var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
     var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
-    const pattern = /[<>$%&!#]{1,}/;
     if (this.arg === 'content')  MAXLEN = 10000;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
@@ -70,8 +69,8 @@ class IdentifierSanitizer extends Sanitizer {
     } catch (e) {
       throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
-    if (this.arg !== 'content' && this.arg !== 'description') {
-      if (pattern.test(value)) {
+    if (this.arg !== 'content') {
+      if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
         throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
@@ -123,6 +122,9 @@ class JsonSanitizer extends Sanitizer {
           if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
             throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
           }
+          if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(child)) {
+            throw new ValidationError(`The ${this.arg} value ${child} should only contain alphabets, numbers, underscore and hyphen`);
+          }
         }
         // Parse this sub-category:
         childCount += this.parseTree(parent[child], totalAllowed - childCount );
@@ -135,6 +137,9 @@ class JsonSanitizer extends Sanitizer {
         valuelen = parent[child].length;
         if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
           throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
+        }
+        if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
+          throw new ValidationError(`The ${this.arg} value ${parent[child]} should only contain alphabets, numbers, underscore and hyphen`);
         }
       }
     }
