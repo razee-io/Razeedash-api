@@ -113,6 +113,7 @@ class JsonSanitizer extends Sanitizer {
     var childCount = 0; 
     var keylen = 0; 
     var valuelen = 0;
+    const pattern = /[~@<>$%&!#^()+{};:"`']{1,}/;
     if (totalAllowed <= 0) {
       throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
     }
@@ -122,6 +123,9 @@ class JsonSanitizer extends Sanitizer {
           keylen = child.length;
           if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
             throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
+          }
+          if (pattern.test(child)) {
+            throw new ValidationError(`The json key '${child}' should only contains alphabets, numbers, underscore and hyphen`);
           }
         }
         // Parse this sub-category:
@@ -135,6 +139,9 @@ class JsonSanitizer extends Sanitizer {
         valuelen = parent[child].length;
         if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
           throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
+        }
+        if (pattern.test(parent[child])) {
+          throw new ValidationError(`The json value '${parent[child]}' contains illegal characters.`);
         }
       }
     }
