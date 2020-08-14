@@ -48,16 +48,16 @@ class IdentifierSanitizer extends Sanitizer {
           throw new ValidationError(`The array ${this.arg}'s length '${value.length}' exceeded the allowed limit`);
         }
         value.forEach(element => {
-          this.validateSting(element);
+          this.validateString(element);
         });
       } else {
-        this.validateSting(value);
+        this.validateString(value);
       }
     }
 
   }
 
-  validateSting(value) {
+  validateString(value) {
     var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
     var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
     if (this.arg === 'content')  MAXLEN = 10000;
