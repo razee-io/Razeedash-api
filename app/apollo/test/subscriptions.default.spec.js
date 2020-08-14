@@ -194,7 +194,7 @@ describe('subscriptions graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get should return a subscription for a cluster by calling deprecated subscriptionsByCluster', async () => {
+  it('get should return a subscription for a cluster by calling subscriptionsByClusterId', async () => {
     try {
       const result = await subscriptionsApi.subscriptionsByClusterId(token, {
         clusterId: cluster_id,
@@ -224,26 +224,6 @@ describe('subscriptions graphql test suite', () => {
 
       expect(subscriptionsByClusterId).to.have.length(1);
       expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
-  it('get should return an empty array when there are no matching groups by calling deprecated subscriptionsByCluster', async () => {
-    try {
-      const {
-        data: {
-          data: { subscriptionsByCluster },
-        },
-      } = await subscriptionsApi.subscriptionsByCluster(token, {
-        cluster_id: cluster_id_2
-      }, orgKey);
-      expect(subscriptionsByCluster).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

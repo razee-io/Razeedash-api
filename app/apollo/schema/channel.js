@@ -82,11 +82,6 @@ const channelSchema = gql`
      channelByName(orgId: String! @sv, name: String! @sv): Channel
 
      """
-     deprecated, please use channelVersion api. Gets a channel version info from this channel uuid and version uuid
-     """
-     getChannelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!
-
-     """
      Gets a channel version info from this channel uuid and version uuid 
      """
      channelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!

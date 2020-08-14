@@ -89,14 +89,6 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
     },
-
-    // deprecated, please use channelVersion
-    getChannelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid }, context) => {
-      const { me, req_id, logger } = context;
-      const queryName = 'getChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid }, `${queryName} enter`);
-      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelUuid, versionUuid, _queryName: queryName }, context);
-    },
     
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
       const { models, me, req_id, logger } = context;
