@@ -309,6 +309,24 @@ describe('channel graphql test suite', () => {
     }
   });
 
+  it('add a channel with illegal characters', async () => {
+    try {
+      const data = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: 'a_illegal_char#',
+      });
+      console.log(`${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('add and get channel version ', async () => {
     try {
       // step 1: add a channel version by admin token

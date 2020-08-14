@@ -94,52 +94,52 @@ const subscriptionSchema = gql`
      """
      Gets all subscriptions for orgId
      """
-     subscriptions(orgId: String!): [ChannelSubscription]
+     subscriptions(orgId: String! @sv): [ChannelSubscription]
      """
      Get a single subscription
      """
-     subscription(orgId: String!, uuid: String!): ChannelSubscription
+     subscription(orgId: String! @sv, uuid: String! @sv): ChannelSubscription
      """
      Get a single subscription by name
      """
-     subscriptionByName(orgId: String!, name: String!): ChannelSubscription
+     subscriptionByName(orgId: String! @sv, name: String! @sv): ChannelSubscription
      """
      Agent-facing API, deprecated. Gets all subscriptions for a cluster
      """
-     subscriptionsByCluster(cluster_id: String): [UpdatedSubscriptionDeprecated]
+     subscriptionsByCluster(cluster_id: String @sv): [UpdatedSubscriptionDeprecated]
      """
      Agent-facing API. Gets all subscriptions for a cluster.
      """
-     subscriptionsByClusterId(clusterId: String!): [UpdatedSubscription]
+     subscriptionsByClusterId(clusterId: String! @sv): [UpdatedSubscription]
      """
      Ge subscriptions by clusterId
      """
-     subscriptionsForCluster(orgId: String!, clusterId: String!): [ChannelSubscription]
+     subscriptionsForCluster(orgId: String! @sv, clusterId: String! @sv): [ChannelSubscription]
      """
      Ge subscriptions by clusterName
      """
-     subscriptionsForClusterByName(orgId: String!, clusterName: String!): [BasicChannelSubscription]
+     subscriptionsForClusterByName(orgId: String! @sv, clusterName: String! @sv): [BasicChannelSubscription]
   }
   extend type Mutation {
      """
      Adds a subscription
      """
-     addSubscription(orgId: String!, name: String!, groups: [String!]!, channelUuid: String!, versionUuid: String!): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(orgId: String!, uuid: String!, name: String!, groups: [String!]!, channelUuid: String!, versionUuid: String!): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion
      """
-     setSubscription(orgId: String!, uuid: String!, versionUuid: String! ): SetSubscriptionReply!
+     setSubscription(orgId: String! @sv, uuid: String! @sv, versionUuid: String! @sv ): SetSubscriptionReply!
      
      """
      Removes a subscription
      """
-     removeSubscription(orgId: String!, uuid: String!): RemoveChannelSubscriptionReply
+     removeSubscription(orgId: String! @sv, uuid: String! @sv): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
     subscriptionUpdated: SubscriptionUpdated!

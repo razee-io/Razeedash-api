@@ -683,6 +683,35 @@ describe('cluster graphql test suite', () => {
     }
   });
 
+  it('pre register Cluster while validating registration json', async () => {
+    try {
+      const data = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration:   {
+          'name': [ {
+            'cluster-name': 'my-cluster',
+            'user-name': 'user1' },
+          {'cluster-name': 'my-cluster2',
+            'user-name': 'user2'}],
+          'location': [ {
+            'location-name': 'location1',
+            'user-name': 'user1' },
+          {'location': 'location2',
+            'user-name': 'user2'}]
+        }
+      });
+      console.log(`data=${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('The json object has more than');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('enable registration url for Cluster by an admin user', async () => {
     try {
       const clusterIdEnableRegUrl = 'cluster_enable_reg_url';
