@@ -272,11 +272,8 @@ const channelResolvers = {
       } catch (error) {
         throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
-
-      if(!file){
-        fileStream = stream.Readable.from([ content ]);
-      }
-
+ 
+      fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 
