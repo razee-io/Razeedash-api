@@ -3,7 +3,7 @@ const { models } = require('../apollo/models');
 
 const _ = require('lodash');
 
-const getSubscriptionUrls = async(orgId, matchingSubscriptions, deprecated) => {
+const getSubscriptionUrls = async(orgId, matchingSubscriptions) => {
 
   const matchingChannels = await models.Channel.find({
     org_id: orgId,
@@ -22,15 +22,6 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, deprecated) => {
     if(foundVersion.length > 0) {
       url = `api/v1/channels/${subscription.channelName}/${foundVersion[0].uuid}`;
     } 
-    if (deprecated) {
-      return {
-        subscription_name: subscription.name,
-        subscription_channel: subscription.channelName,
-        subscription_version: subscription.version,
-        subscription_uuid: subscription.uuid,
-        url: url
-      };
-    }
     return {
       subscriptionName: subscription.name,
       subscriptionChannel: subscription.channelName,
