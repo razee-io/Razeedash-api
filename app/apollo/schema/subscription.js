@@ -70,13 +70,6 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
-  type UpdatedSubscriptionDeprecated {
-    subscription_name: String!,
-    subscription_channel: String!,
-    subscription_version: String!,
-    subscription_uuid: String!,
-    url: String!
-  }
   type UpdatedSubscription {
     subscriptionName: String!,
     subscriptionChannel: String!,
@@ -85,8 +78,6 @@ const subscriptionSchema = gql`
     url: String!
   }
   type SubscriptionUpdated {
-    "**has_updates**: deprecated, use hasUpdates"
-    has_updates: Boolean
     hasUpdates: Boolean
   }
   
@@ -103,10 +94,7 @@ const subscriptionSchema = gql`
      Get a single subscription by name
      """
      subscriptionByName(orgId: String! @sv, name: String! @sv): ChannelSubscription
-     """
-     Agent-facing API, deprecated. Gets all subscriptions for a cluster
-     """
-     subscriptionsByCluster(cluster_id: String @sv): [UpdatedSubscriptionDeprecated]
+
      """
      Agent-facing API. Gets all subscriptions for a cluster.
      """

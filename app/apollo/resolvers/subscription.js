@@ -49,16 +49,12 @@ async function validateGroups(org_id, groups, context) {
 
 const subscriptionResolvers = {
   Query: {
-    // Cluster-facing API, deprecated,
-    subscriptionsByCluster: async(parent, { cluster_id }, context) => {
-      return await subscriptionResolvers.Query.subscriptionsByClusterId(parent, {clusterId: cluster_id, deprecated: true}, context);
-    },
 
     // Cluster-facing API,
-    subscriptionsByClusterId: async(parent, { clusterId: cluster_id, deprecated /* may add some unique data from the cluster later for verification. */ }, context) => {
+    subscriptionsByClusterId: async(parent, { clusterId: cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByClusterId';
-      logger.debug({req_id, user: whoIs(me), cluster_id, deprecated}, `${query} enter`);
+      logger.debug({req_id, user: whoIs(me), cluster_id,}, `${query} enter`);
       await validClusterAuth(me, query, context);
 
       const org = await models.User.getOrg(models, me);
@@ -96,7 +92,7 @@ const subscriptionResolvers = {
           }
         });
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, foundSubscriptions, deprecated);
+          urls = await getSubscriptionUrls(org_id, foundSubscriptions);
         }
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
@@ -457,7 +453,7 @@ const subscriptionResolvers = {
         // Sends a message back to a subscribed client
         // 'parent' is the object representing the subscription that was updated
         // 
-        return { has_updates: true,  hasUpdates: true };
+        return { hasUpdates: true };
       },
 
       subscribe: withFilter(

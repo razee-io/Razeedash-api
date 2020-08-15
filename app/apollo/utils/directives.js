@@ -18,6 +18,7 @@ const { ValidationError } = require('apollo-server');
 const { SchemaDirectiveVisitor } = require('apollo-server-express');
 const { assert } = require('chai');
 const { DIRECTIVE_LIMITS } = require('../models/const');
+const mongoSanitize = require('express-mongo-sanitize');
 
 class Sanitizer {
   constructor(name, arg) {
@@ -48,19 +49,18 @@ class IdentifierSanitizer extends Sanitizer {
           throw new ValidationError(`The array ${this.arg}'s length '${value.length}' exceeded the allowed limit`);
         }
         value.forEach(element => {
-          this.validateSting(element);
+          this.validateString(element);
         });
       } else {
-        this.validateSting(value);
+        this.validateString(value);
       }
     }
 
   }
 
-  validateSting(value) {
+  validateString(value) {
     var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
     var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
-    const pattern = /[<>$%&!#]{1,}/;
     if (this.arg === 'content')  MAXLEN = 10000;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
@@ -70,8 +70,8 @@ class IdentifierSanitizer extends Sanitizer {
     } catch (e) {
       throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
-    if (this.arg !== 'content' && this.arg !== 'description') {
-      if (pattern.test(value)) {
+    if (this.arg !== 'content') {
+      if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
         throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
       }
     }
@@ -136,6 +136,9 @@ class JsonSanitizer extends Sanitizer {
         if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
           throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
         }
+        if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
+          throw new ValidationError(`The ${this.arg} value ${parent[child]} should only contain alphabets, numbers, underscore and hyphen`);
+        }
       }
     }
     if (hasNonLeafNodes) {
@@ -150,6 +153,10 @@ class JsonSanitizer extends Sanitizer {
   sanitize( args) {
     const value = args[this.arg];
     if (value) {
+      const hasProhibited = mongoSanitize.has(value);
+      if (hasProhibited) {
+        throw new ValidationError(`The json object ${this.arg} contain illegal characters.`);
+      }
       this.parseTree(value, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
     }
   }

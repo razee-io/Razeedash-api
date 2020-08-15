@@ -104,34 +104,6 @@ const channelFunc = grahqlUrl => {
       },
     );
 
-  const getChannelVersion = async (token, variables) =>
-    axios.post(
-      grahqlUrl,
-      {
-        query: `
-          query($orgId: String! $channelUuid: String!, $versionUuid: String!) {
-            getChannelVersion(orgId: $orgId channelUuid: $channelUuid versionUuid: $versionUuid) {
-              orgId
-              uuid
-              channelId
-              channelName
-              name
-              type
-              description
-              content
-              created
-          }
-        }
-    `,
-        variables,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
   const channelVersion = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -298,8 +270,7 @@ const channelFunc = grahqlUrl => {
     channel,
     channelByName,
     channelVersion,
-    channelVersionByName,    
-    getChannelVersion, // deprecated
+    channelVersionByName,
     addChannelVersion,
     removeChannelVersion,
     addChannel,

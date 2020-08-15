@@ -570,26 +570,26 @@ describe('channel graphql test suite', () => {
       // step 4: remove the channel version by an adminToken
       const {
         data: {
-          data: { getChannelVersion },
+          data: { channelVersion },
         },
-      } = await channelApi.getChannelVersion(token, {
+      } = await channelApi.channelVersion(token, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
       }); 
-      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
-      expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
-      expect(getChannelVersion.created).to.be.an('string');
+      expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
+      expect(channelVersion.content).to.equal('{"n0": 123.45}');
+      expect(channelVersion.created).to.be.an('string');
       const {
         data: {
           data: { removeChannelVersion },
         },
       } = await channelApi.removeChannelVersion(adminToken, {
         orgId: org01._id,
-        uuid: getChannelVersion.uuid,
+        uuid: channelVersion.uuid,
       });
       expect(removeChannelVersion.success).to.equal(true);
-      expect(removeChannelVersion.uuid).to.equal(getChannelVersion.uuid);
+      expect(removeChannelVersion.uuid).to.equal(channelVersion.uuid);
 
       // step 5 validate the channel version is not there
       const {
