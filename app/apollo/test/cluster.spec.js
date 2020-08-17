@@ -648,31 +648,55 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('pre register Cluster by an admin user', async () => {
+  it('register Cluster', async () => {
     try {
-      const {
-        data: {
-          data: { registerCluster },
-        },
-      } = await clusterApi.registerCluster(adminToken, {
+      const registerCluster = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
-        registration: { name: 'my-cluster' },
+        registration: { name: 'my-cluster123' },
       });
-      expect(registerCluster.url).to.be.an('string');
+      expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 
-      //register another cluster
-      const registerCluster2 = await clusterApi.registerCluster(adminToken, {
+  it('try to register a cluster with the same name', async () => {
+    try {
+      const registerCluster = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
-        registration: { name: 'my-cluster2' },
+        registration: { name: 'my-cluster123' },
       });
-      expect(registerCluster2.data.data.registerCluster.url).to.be.an('string');
+      //expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
+      expect(registerCluster.data.errors[0].message).to.contain('Another cluster already exists with the same registration name');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 
-      //register another cluster
-      const registerCluster3 = await clusterApi.registerCluster(adminToken, {
+
+
+  it('try to register a cluster when max # of clusters per account is reached', async () => {
+    try {
+      let registerCluster = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
-        registration: { name: 'my-cluster3' },
+        registration: { name: 'my-cluster-plus-1' },
       });
-      expect(registerCluster3.data.errors[0].message).to.equal(`Too many clusters are registered under ${org01._id}.`);
+
+      registerCluster = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster-past-max' },
+      });
+      expect(registerCluster.data.errors[0].message).to.contain('You have exceeded the maximum amount of clusters for this org');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
