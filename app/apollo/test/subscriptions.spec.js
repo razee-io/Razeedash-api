@@ -444,7 +444,7 @@ describe('subscription graphql test suite', () => {
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_02_uuid,
       });
-      expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);
+      expect(addSubscription2.data.errors[0].message).to.equal(`Query addSubscription error. Too many subscriptions are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
