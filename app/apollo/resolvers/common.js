@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 const _ = require('lodash');
-const { ForbiddenError, ApolloError } = require('apollo-server');
+const { ApolloError } = require('apollo-server');
 const { TYPES, ACTIONS } = require('../models/const');
 
 const whoIs = me => { 
@@ -31,8 +31,9 @@ const validClusterAuth = async (me, queryName, context) => {
   if(me && me.type == 'cluster'){
     const result = await models.User.isValidOrgKey(models, me);
     if(!result){
-      throw new ForbiddenError(
+      throw new RazeeForbiddenError(
         `Invalid razee-org-key was submitted for ${queryName}`,
+        context
       );
     }
     return;
@@ -166,4 +167,19 @@ class RazeeForbiddenError extends BasicRazeeError {
   }
 }
 
-module.exports =  { whoIs, validAuth, NotFoundError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty , applyClusterInfoOnResources};
+// Customized  Validation Error
+class RazeeValidationError extends BasicRazeeError {
+  constructor(message, context) {
+    var name = 'ValidationError';
+    super(message, context, name);
+  }
+}
+
+class RazeeQueryError extends BasicRazeeError {
+  constructor(message, context) {
+    var name = 'QueryError';
+    super(message, context, name);
+  }
+}
+
+module.exports =  { whoIs, validAuth, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty , applyClusterInfoOnResources};
