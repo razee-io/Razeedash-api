@@ -477,9 +477,9 @@ const subscriptionResolvers = {
             throw new ForbiddenError('No org was found');
           }
 
-          logger.debug('setting pub sub topic for org id:', orgId);
+          logger.info('setting pub sub topic for org id:', orgId);
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
-          logger.debug('pub sub topic for the above org id:', topic);
+          logger.info('pub sub topic for the above org id:', topic);
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         // eslint-disable-next-line no-unused-vars
@@ -510,7 +510,7 @@ const subscriptionResolvers = {
             logger.error('wrong org id for this subscription. returning false');
             found = false;
           }
-          logger.debug('Updated subscription returning found for org_id ', orgId);
+          logger.info('Updated subscription returning "found" for org_id ', orgId);
           return Boolean(found);
         },
       ),
