@@ -17,6 +17,7 @@
 const responseCodeMapper = (status, err, meta) => {
   if (meta['req-headers'] && meta['req-headers']['authorization']) {
     meta['req-headers']['authorization'] = 'Bearer [HIDDEN]';
+    meta['req-headers']['x-auth-refresh-token'] = 'Bearer [HIDDEN]';
   } 
   if (meta.method === 'OPTIONS' && status === 204) {
     // skip OPTION request 204 response

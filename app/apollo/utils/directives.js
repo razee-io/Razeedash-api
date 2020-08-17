@@ -61,7 +61,7 @@ class IdentifierSanitizer extends Sanitizer {
   validateString(value) {
     var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
     var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
-    if (this.arg === 'content')  MAXLEN = 10000;
+    if (this.arg === 'content')  MAXLEN = DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
     try {
