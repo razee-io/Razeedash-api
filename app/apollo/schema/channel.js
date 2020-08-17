@@ -69,60 +69,54 @@ const channelSchema = gql`
      """
      Gets all channels for orgId
      """
-     channels(orgId: String!): [Channel]
+     channels(orgId: String! @sv): [Channel]
 
      """
      Gets a channel from the given orgId and uuid
      """
-     channel(orgId: String!, uuid: String! ): Channel
+     channel(orgId: String! @sv, uuid: String! @sv): Channel
 
      """
      Gets a channel from the given orgId and channel name
      """
-     channelByName(orgId: String!, name: String! ): Channel
-
-     """
-     deprecated, please use channelVersion api. Gets a channel version info from this channel uuid and version uuid
-     """
-     getChannelVersion(orgId: String!, channelUuid: String!, versionUuid: String!): DeployableVersion!
+     channelByName(orgId: String! @sv, name: String! @sv): Channel
 
      """
      Gets a channel version info from this channel uuid and version uuid 
      """
-     channelVersion(orgId: String!, channelUuid: String!, versionUuid: String!): DeployableVersion!
+     channelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!
 
      """
      Gets a channel version info from this channel name and version name 
      """
-     channelVersionByName(orgId: String!, channelName: String!, versionName: String!): DeployableVersion!
+     channelVersionByName(orgId: String! @sv, channelName: String! @sv, versionName: String! @sv): DeployableVersion!
   }
 
   extend type Mutation {
      """
      Adds a channel
      """
-     addChannel(orgId: String!, name: String!): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv): AddChannelReply!
      
      """
      Edits a channel
      """
-     editChannel(orgId: String!, uuid: String!, name: String!): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv): EditChannelReply!
      
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String!, channelUuid: String!, name: String!, type: String!, content: String, file: Upload, description: String): AddChannelVersionReply!
-
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
      """
      Removes a channel
      """
-     removeChannel(orgId: String!, uuid: String!): RemoveChannelReply!
+     removeChannel(orgId: String! @sv, uuid: String! @sv): RemoveChannelReply!
 
      """
      Removes a channel version
      """
-     removeChannelVersion(orgId: String!, uuid: String!): RemoveChannelVersionReply!
+     removeChannelVersion(orgId: String! @sv, uuid: String! @sv): RemoveChannelVersionReply!
   }
 `;
 

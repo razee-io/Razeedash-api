@@ -24,7 +24,10 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
-const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
+const yaml = require('js-yaml');
+const fs = require('fs');
+
+const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError,RazeeValidationError, BasicRazeeError,RazeeQueryError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
@@ -90,14 +93,6 @@ const channelResolvers = {
       const queryName = 'channelVersionByName';
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
-    },
-
-    // deprecated, please use channelVersion
-    getChannelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid }, context) => {
-      const { me, req_id, logger } = context;
-      const queryName = 'getChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid }, `${queryName} enter`);
-      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelUuid, versionUuid, _queryName: queryName }, context);
     },
     
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
@@ -265,13 +260,22 @@ const channelResolvers = {
       }
 
       let fileStream = null;
-      if(file){
-        fileStream = (await file).createReadStream();
-      }
-      else{
-        fileStream = stream.Readable.from([ content ]);
+      try {
+        if(file){
+          fileStream = (await file).createReadStream();
+          content = await fs.promises.readFile(fileStream.path, 'utf8');
+        }
+        let yamlSize = Buffer.byteLength(content);
+        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
+          throw new ValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`);
+        }
+
+        yaml.safeLoad(content);
+      } catch (error) {
+        throw new ValidationError(`Provided YAML content is not valid: ${error}`);
       }
 
+      fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 

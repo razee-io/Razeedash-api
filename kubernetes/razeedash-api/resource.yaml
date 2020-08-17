@@ -158,12 +158,12 @@ items:
           name: redis
         spec:
           securityContext:
-            runAsUser: 999
-            runAsGroup: 1000
-            fsGroup: 1000
+            runAsUser: {{{REDIS_USER_ID}}}
+            runAsGroup: {{{REDIS_GROUP_ID}}}
+            fsGroup: {{{REDIS_GROUP_ID}}}
           containers:
             - name: redis
-              image: redis:latest
+              image: "{{{REDIS_IMAGE}}}"
               imagePullPolicy: Always
               ports:
                 - containerPort: 6379

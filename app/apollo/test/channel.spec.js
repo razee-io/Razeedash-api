@@ -309,6 +309,24 @@ describe('channel graphql test suite', () => {
     }
   });
 
+  it('add a channel with illegal characters', async () => {
+    try {
+      const data = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: 'a_illegal_char#',
+      });
+      console.log(`${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('add and get channel version ', async () => {
     try {
       // step 1: add a channel version by admin token
@@ -376,6 +394,31 @@ describe('channel graphql test suite', () => {
       expect(channelVersionByName.name).to.equal(`${channel_01_name}:v.0.2`);
       expect(channelVersionByName.content).to.equal('{"n0": 456.78}');
       expect(channelVersionByName.created).to.be.an('string');
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('Verify user able to create channel version with malformed yaml data', async () => {
+    try {
+
+      const addChannelVersion = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_01_uuid,
+        name: `${channel_01_name}:v.0.3`,
+        type: 'application/yaml',
+        content: '!@#$%^&*',
+        description: `${channel_01_name}:v.0.3`
+      });
+
+      var result = addChannelVersion.data.errors.map(error => error.message).join();
+      expect(result.includes('Provided YAML content is not valid')).to.equal(true);
 
     } catch (error) {
       if (error.response) {
@@ -527,26 +570,26 @@ describe('channel graphql test suite', () => {
       // step 4: remove the channel version by an adminToken
       const {
         data: {
-          data: { getChannelVersion },
+          data: { channelVersion },
         },
-      } = await channelApi.getChannelVersion(token, {
+      } = await channelApi.channelVersion(token, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
       }); 
-      expect(getChannelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
-      expect(getChannelVersion.content).to.equal('{"n0": 123.45}');
-      expect(getChannelVersion.created).to.be.an('string');
+      expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
+      expect(channelVersion.content).to.equal('{"n0": 123.45}');
+      expect(channelVersion.created).to.be.an('string');
       const {
         data: {
           data: { removeChannelVersion },
         },
       } = await channelApi.removeChannelVersion(adminToken, {
         orgId: org01._id,
-        uuid: getChannelVersion.uuid,
+        uuid: channelVersion.uuid,
       });
       expect(removeChannelVersion.success).to.equal(true);
-      expect(removeChannelVersion.uuid).to.equal(getChannelVersion.uuid);
+      expect(removeChannelVersion.uuid).to.equal(channelVersion.uuid);
 
       // step 5 validate the channel version is not there
       const {

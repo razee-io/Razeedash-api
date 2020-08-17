@@ -21,7 +21,7 @@ const ebl = require('express-bunyan-logger');
 const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-
+const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
@@ -100,12 +100,16 @@ const createApolloServer = () => {
   }
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: false,
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,
     resolvers,
+    schemaDirectives: {
+      sv: IdentifierDirective,
+      jv: JsonDirective,
+    },
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
