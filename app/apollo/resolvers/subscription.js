@@ -477,9 +477,8 @@ const subscriptionResolvers = {
             throw new RazeeValidationError('No org was found for the org key.', context);
           }
 
-          logger.info('setting pub sub topic for org id:', orgId);
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
-          logger.info('pub sub topic for the above org id:', topic);
+          logger.info({org_id: orgId, topic}, 'post subscription update notification to redis.');
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         // eslint-disable-next-line no-unused-vars
@@ -510,7 +509,7 @@ const subscriptionResolvers = {
             logger.error('wrong org id for this subscription. returning false');
             found = false;
           }
-          logger.info('Updated subscription returning "found" for org_id ', orgId);
+          logger.info(`Updated subscription returning ${found} for org_id: ${orgId}`);
           return Boolean(found);
         },
       ),
