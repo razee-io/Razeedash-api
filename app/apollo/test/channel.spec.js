@@ -298,7 +298,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: 'a_random_name2',
       });
-      expect(addChannel2.data.errors[0].message).to.equal(`Too many channels are registered under ${org01._id}.`);
+      expect(addChannel2.data.errors[0].message).to.equal(`Query addChannel error. Too many channels are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -16,10 +16,9 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -43,7 +42,7 @@ const groupResolvers = {
         return groups;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
     group: async(parent, { orgId, uuid }, context, fullQuery) => {
@@ -56,7 +55,7 @@ const groupResolvers = {
       try{
         let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
         if (!group) {
-          throw new NotFoundError(`could not find group with uuid ${uuid}.`);
+          throw new NotFoundError(`could not find group with uuid ${uuid}.`, context);
         }
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
@@ -64,7 +63,7 @@ const groupResolvers = {
         return group;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
     groupByName: async(parent, { orgId, name }, context, fullQuery) => {
@@ -77,7 +76,7 @@ const groupResolvers = {
       try{
         let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
-          throw new NotFoundError(`could not find group with name ${name}.`);
+          throw new NotFoundError(`could not find group with name ${name}.`, context);
         }
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
@@ -85,7 +84,7 @@ const groupResolvers = {
         return group;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },    
   },
@@ -100,7 +99,7 @@ const groupResolvers = {
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
         if(group){
-          throw new ValidationError(`The group name ${name} already exists.`);
+          throw new RazeeValidationError(`The group name ${name} already exists.`, context);
         }
         const uuid = UUID();
         await models.Group.create({
@@ -115,7 +114,7 @@ const groupResolvers = {
         };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -128,13 +127,13 @@ const groupResolvers = {
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(`group uuid "${uuid}" not found`, context);
         }
   
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
   
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
+          throw new RazeeValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`, context);
         }
         
         const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
@@ -152,7 +151,7 @@ const groupResolvers = {
         };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -165,12 +164,12 @@ const groupResolvers = {
       try{
         const group = await models.Group.findOne({ name, org_id: org_id }).lean();
         if(!group){
-          throw new NotFoundError(`group name "${name}" not found`);
+          throw new NotFoundError(`group name "${name}" not found`, context);
         }
   
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
+          throw new RazeeValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`, context);
         }
 
         const uuid = group.uuid;
@@ -181,7 +180,7 @@ const groupResolvers = {
         
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
-          throw new ValidationError(`${clusterCount} clusters depend on this group. Please update/remove the group from the clusters.`);
+          throw new RazeeValidationError(`${clusterCount} clusters depend on this group. Please update/remove the group from the clusters.`, context);
         }      
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
@@ -194,7 +193,7 @@ const groupResolvers = {
         };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -212,7 +211,7 @@ const groupResolvers = {
       try {
         var groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
-          throw new NotFoundError('None of the passed group uuids were found');
+          throw new NotFoundError('None of the passed group uuids were found', context);
         }
         groupUuids = _.map(groups, 'uuid');
         var groupObjsToAdd = _.map(groups, (group)=>{
@@ -261,7 +260,7 @@ const groupResolvers = {
       }
       catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -296,7 +295,7 @@ const groupResolvers = {
       }
       catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -314,7 +313,7 @@ const groupResolvers = {
       try {
         var groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
-          throw new NotFoundError('One or more of the passed group uuids were not found');
+          throw new NotFoundError('One or more of the passed group uuids were not found', context);
         }
         groupUuids = _.map(groups, 'uuid');
         var groupObjsToAdd = _.map(groups, (group)=>{
@@ -337,7 +336,7 @@ const groupResolvers = {
       }
       catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -352,7 +351,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(`group uuid "${uuid}" not found`, context);
         }
 
         // update clusters group array with the above group
@@ -366,7 +365,7 @@ const groupResolvers = {
   
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
 
@@ -381,7 +380,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(`group uuid "${uuid}" not found`, context);
         }
 
         // update clusters group array with the above group
@@ -395,7 +394,7 @@ const groupResolvers = {
   
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
   },
