@@ -63,7 +63,7 @@ const CLUSTER_REG_STATES = {
 const DIRECTIVE_LIMITS = {
   MAX_STRING_LENGTH: config.has('directive_limits.max_string_length') ? config.get('directive_limits.max_string_length') : 256,
   MIN_STRING_LENGTH: config.has('directive_limits.min_string_length') ? config.get('directive_limits.min_string_length') : 1,
-  MAX_CONTENT_LENGTH: config.has('directive_limits.max_content_length') ? config.get('directive_limits.max_content_length') : 1000000,
+  MAX_CONTENT_LENGTH: config.has('directive_limits.max_content_length') ? config.get('directive_limits.max_content_length') : 2000000,
   MAX_JSON_KEY_LENGTH: config.has('directive_limits.max_json_key_length') ? config.get('directive_limits.max_json_key_length') : 256,
   MAX_JSON_VALUE_LENGTH: config.has('directive_limits.max_json_value_length') ? config.get('directive_limits.max_json_value_length') : 1000,
   MAX_JSON_ITEMS: config.has('directive_limits.max_json_items') ? config.get('directive_limits.max_json_items') : 128,
