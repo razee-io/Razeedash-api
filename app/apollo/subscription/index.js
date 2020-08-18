@@ -91,7 +91,7 @@ class PubSubImpl {
     if (this.enabled) {
       try {
         const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
-        logger.debug({ data, topic }, 'Publishing channel subscription update');
+        logger.info({ data, topic }, 'Publishing channel subscription update');
         await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
       } catch (error) {
         logger.error(error, 'Channel subscription publish error');
