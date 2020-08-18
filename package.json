@@ -61,7 +61,7 @@
     "graphql-redis-subscriptions": "^2.2.2",
     "graphql-resolvers": "^0.4.2",
     "graphql-tag": "^2.10.3",
-    "graphql-tools": "^4.0.3",
+    "graphql-tools": "^6.0.18",
     "graphql-type-json": "^0.3.2",
     "ioredis": "^4.17.3",
     "is-port-reachable": "^3.0.0",
