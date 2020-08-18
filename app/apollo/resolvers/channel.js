@@ -270,7 +270,7 @@ const channelResolvers = {
           throw new RazeeValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`, context);
         }
 
-        yaml.safeLoad(content);
+        yaml.safeLoadAll(content);
       } catch (error) {
         throw new RazeeValidationError(`Provided YAML content is not valid: ${error}`, context);
       }
