@@ -235,6 +235,7 @@ const updateClusterResources = async (req, res, next) => {
           }
           const rrSearchKey =  { 
             org_id: req.org._id, 
+            cluster_id: req.params.cluster_id,
             'searchableData.kind': 'RemoteResource', 
             'searchableData.children': selfLink,
             deleted: false
