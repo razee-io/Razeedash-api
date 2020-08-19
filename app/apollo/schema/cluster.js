@@ -36,6 +36,7 @@ const clusterSchema = gql`
     metadata: JSON
     comments: [Comment]
     registration: JSON
+    status: String
     regState: String
     groups: [ClusterGroup]
     groupObjs: [GroupDetail!]
