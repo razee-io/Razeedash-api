@@ -178,6 +178,10 @@ async function initialize(){
         {
           keys: { cluster_id: 1, },
           options: { name: 'cluster_id', }
+        },
+        {
+          keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
+          options: { name: 'cluster_id_text_selfLink_text_searchableData.searchableExpression_text', }
         }
       ],
       messages:[ 
