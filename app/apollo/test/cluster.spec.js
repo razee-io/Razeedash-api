@@ -137,7 +137,8 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
-    registration: { name: 'my-cluster1' }
+    registration: { name: 'my-cluster1' },
+    reg_state: 'registered',
   });
 
   await models.Cluster.create({
@@ -156,6 +157,10 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'my-cluster2' },
+    reg_state: 'registered',
+    created: new Moment().subtract(2, 'day').toDate(),
+    updated: new Moment().subtract(2, 'hour').toDate(),
   });
 
   await models.Cluster.create({
@@ -270,16 +275,16 @@ describe('cluster graphql test suite', () => {
 
   it('get cluster by cluster name', async () => {
     try {
-      const clusterId1 = 'cluster_01';
-      const clusterName1 = 'my-cluster1';
+      const clusterId2 = 'cluster_02';
+      const clusterName2 = 'my-cluster2';
       const result = await clusterApi.byClusterName(token, {
         orgId: org01._id,
-        clusterName: clusterName1,
+        clusterName: clusterName2,
       });
       const clusterByClusterName = result.data.data.clusterByName;
 
-      expect(clusterByClusterName.clusterId).to.equal(clusterId1);
-      expect(clusterByClusterName.status).to.equal('active');
+      expect(clusterByClusterName.clusterId).to.equal(clusterId2);
+      expect(clusterByClusterName.status).to.equal('inactive');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
