@@ -32,10 +32,10 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     if (cluster.reg_state) {
       cluster.status = CLUSTER_STATUS.REGISTERED;
     }
-    if (cluster.update.getTime() < now.getTime() - 3600000 ) {
-      cluster.status = CLUSTER_STATUS.ACTIVE;
-    } else {
+    if (cluster.updated.getTime() < now.getTime() - 3600000 ) {
       cluster.status = CLUSTER_STATUS.INACTIVE;
+    } else {
+      cluster.status = CLUSTER_STATUS.ACTIVE;
     }
   });
   if(queryFields.resources) {
