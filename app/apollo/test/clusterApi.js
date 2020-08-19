@@ -27,6 +27,7 @@ const clusterFunc = grahqlUrl => {
               id
               orgId
               clusterId
+              status
               regState
           }
         }
@@ -49,6 +50,7 @@ const clusterFunc = grahqlUrl => {
             clusterByName(orgId: $orgId clusterName: $clusterName, resourceLimit: $resourceLimit) {
               id
               orgId
+              status
               clusterId
           }
         }
@@ -94,6 +96,7 @@ const clusterFunc = grahqlUrl => {
               id
               orgId
               clusterId
+              status
               resources{
                 selfLink
               }
@@ -140,6 +143,7 @@ const clusterFunc = grahqlUrl => {
             clusterSearch(orgId: $orgId filter: $filter limit: $limit) {
               id
               orgId
+              status
               clusterId
           }
         }

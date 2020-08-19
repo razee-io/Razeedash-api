@@ -257,6 +257,7 @@ describe('cluster graphql test suite', () => {
       const clusterByClusterId = result.data.data.clusterByClusterId;
 
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
+      expect(clusterByClusterId.status).to.equal('active');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -278,6 +279,7 @@ describe('cluster graphql test suite', () => {
       const clusterByClusterName = result.data.data.clusterByName;
 
       expect(clusterByClusterName.clusterId).to.equal(clusterId1);
+      expect(clusterByClusterName.status).to.equal('active');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -655,6 +657,13 @@ describe('cluster graphql test suite', () => {
         registration: { name: 'my-cluster123' },
       });
       expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
+
+      const result = await clusterApi.byClusterName(token, {
+        orgId: org01._id,
+        clusterName: 'my-cluster123',
+      });
+      const clusterByClusterName = result.data.data.clusterByName;
+      expect(clusterByClusterName.status).to.equal('registered');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
