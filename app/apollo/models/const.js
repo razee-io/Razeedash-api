@@ -60,6 +60,13 @@ const CLUSTER_REG_STATES = {
   REGISTERED: 'registered',  // watch-keeper reported heat-beat back
 };
 
+const CLUSTER_STATUS = {
+  UNKNOWN: 'unknown', // really shouldn't happen 
+  REGISTERED: 'registered',
+  ACTIVE: 'active',
+  INACTIVE: 'inactive'
+};
+
 const DIRECTIVE_LIMITS = {
   MAX_STRING_LENGTH: config.has('directive_limits.max_string_length') ? config.get('directive_limits.max_string_length') : 256,
   MIN_STRING_LENGTH: config.has('directive_limits.min_string_length') ? config.get('directive_limits.min_string_length') : 1,
@@ -75,4 +82,4 @@ const DIRECTIVE_LIMITS = {
 // console.log('NODE_ENV: ' + config.util.getEnv('NODE_ENV') + `, DIRECTIVE_LIMITS: ${JSON.stringify(DIRECTIVE_LIMITS)}`);
 
 module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
-  CLUSTER_LIMITS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS, CLUSTER_REG_STATES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, DIRECTIVE_LIMITS};
+  CLUSTER_LIMITS, CLUSTER_REG_STATES, CLUSTER_STATUS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, DIRECTIVE_LIMITS};

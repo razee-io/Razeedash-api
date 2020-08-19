@@ -16,7 +16,7 @@
 
 var _ = require('lodash');
 const { getGroupConditions } = require('../resolvers/common');
-const { ACTIONS } = require('../models/const');
+const { ACTIONS, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
   var { models } = context;
@@ -24,9 +24,20 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
 
   const clusterIds = _.map(clusters, 'cluster_id');
   resourceLimit = resourceLimit || 500;
+  const now = new Date();
 
   _.each(clusters, (cluster)=>{
     cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.clusterId || cluster.id;
+    cluster.status = CLUSTER_STATUS.UNKNOWN;
+    if (cluster.reg_state === CLUSTER_REG_STATES.REGISTERING || cluster.reg_state === CLUSTER_REG_STATES.PENDING) {
+      cluster.status = CLUSTER_STATUS.REGISTERED;
+    } else if (cluster.reg_state === CLUSTER_REG_STATES.REGISTERED) {
+      if (cluster.updated.getTime() < now.getTime() - 3600000 ) {
+        cluster.status = CLUSTER_STATUS.INACTIVE;
+      } else {
+        cluster.status = CLUSTER_STATUS.ACTIVE;
+      }
+    }
   });
   if(queryFields.resources) {
     const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean({virtuals: true});
@@ -37,6 +48,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       cluster.resources = resourcesByClusterId[cluster.cluster_id] || [];
     });
   }
+
   if(queryFields.groupObjs){
     if(clusterIds.length > 0){
       // [
