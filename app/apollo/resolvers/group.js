@@ -108,7 +108,7 @@ const groupResolvers = {
           uuid, org_id: org_id, name, owner: me._id,
         });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         return {
           uuid,
@@ -144,7 +144,7 @@ const groupResolvers = {
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
   
         return {
           uuid: group.uuid,
@@ -186,7 +186,7 @@ const groupResolvers = {
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
   
         return {
           uuid: group.uuid,
@@ -254,7 +254,7 @@ const groupResolvers = {
         var res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: orgId});
+        pubSub.channelSubChangedFunc({org_id: orgId}, context);
         return {
           modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
         };
@@ -289,7 +289,7 @@ const groupResolvers = {
         );
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: orgId});
+        pubSub.channelSubChangedFunc({org_id: orgId}, context);
         return {
           modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
         };
@@ -330,7 +330,7 @@ const groupResolvers = {
         const res = await models.Cluster.updateOne({ org_id: orgId, cluster_id: clusterId }, { $set: sets });
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: orgId});
+        pubSub.channelSubChangedFunc({org_id: orgId}, context);
         return {
           modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
         };
@@ -361,7 +361,7 @@ const groupResolvers = {
           {$push: {groups: {uuid: group.uuid, name: group.name}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
   
       } catch(err){
@@ -390,7 +390,7 @@ const groupResolvers = {
           {$pull: {groups: {uuid}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
   
       } catch(err){
