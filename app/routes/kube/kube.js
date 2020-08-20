@@ -28,7 +28,7 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   await require('../../apollo/models').models.Cluster.find({}, { _id:1 }, { limit:1 });
 
   // TODO: not real pub-sub liveness test yet, will add later
-  if (pubSub.initRetries > 4) {
+  if (pubSub.initRetries > 5) {
     // if the remote redis is not ready after 5 initial retries, then
     // it is better to restart this pod, return 500 error
     logger.error('Razeedash Api is down due to Redis pubsub connection issue, please check logs.');
