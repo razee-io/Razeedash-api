@@ -31,8 +31,8 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   if (pubSub.initRetries > 4) {
     // if the remote redis is not ready after 5 initial retries, then
     // it is better to restart this pod, return 500 error
-    logger.error('Razeedash Api is down due to Redis connection issue.');
-    return res.sendStatus(500);
+    logger.error('Razeedash Api is down due to Redis pubsub connection issue, please check logs.');
+    return res.sendStatus(503);
   }
   return res.sendStatus(200);
 }));
