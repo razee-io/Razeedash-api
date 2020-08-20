@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth, getGroupConditionsIncludingEmpty, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, validAuth, getGroupConditionsIncludingEmpty, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -395,7 +395,7 @@ const clusterResolvers = {
         }
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
       } catch (error) {
-        if (error.extensions.code === 'ValidationError') {
+        if(error instanceof BasicRazeeError ){
           throw error;
         }
 
