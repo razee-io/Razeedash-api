@@ -90,11 +90,13 @@ class PubSubImpl {
       `Apollo streaming is not ready yet, because ${url.hostname}:${url.port} is unreachable, will retry init in 10 seconds, already retried ${this.initRetries}.`,
     );
 
-    const instance = this;
-    setTimeout( () => {
-      this.initRetries++;
-      instance.init();
-    }, 10000);
+    if (process.env.NODE_ENV !== 'unit-test' && process.env.NODE_ENV !== 'test') {
+      const instance = this;
+      setTimeout( () => {
+        this.initRetries++;
+        instance.init();
+      }, 10000);
+    }
     return false;
   }
 
