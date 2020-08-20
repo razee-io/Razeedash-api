@@ -28,7 +28,7 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, NotFoundError,RazeeValidationError, BasicRazeeError,RazeeQueryError} = require ('./common');
+const { whoIs, validAuth, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
@@ -179,6 +179,9 @@ const channelResolvers = {
           uuid,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -209,6 +212,9 @@ const channelResolvers = {
           name,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -272,6 +278,9 @@ const channelResolvers = {
 
         yaml.safeLoadAll(content);
       } catch (error) {
+        if (error instanceof BasicRazeeError) {
+          throw error;
+        }
         throw new RazeeValidationError(`Provided YAML content is not valid: ${error}`, context);
       }
 
@@ -370,6 +379,9 @@ const channelResolvers = {
           success: true,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -422,6 +434,9 @@ const channelResolvers = {
           success: true,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
