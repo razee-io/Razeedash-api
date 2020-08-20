@@ -33,8 +33,10 @@ const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
-
+const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
+
+const pubSub = GraphqlPubSub.getInstance();
 
 const createDefaultApp = () => {
   const app = express();
@@ -185,7 +187,19 @@ const apollo = async (options = {}) => {
     initModule.initApp(app, models, logger);
 
     const server = createApolloServer();
-    server.applyMiddleware({ app, path: GRAPHQL_PATH });
+    server.applyMiddleware({
+      app,
+      path: GRAPHQL_PATH,
+      onHealthCheck: () => {
+        return new Promise((resolve, reject) => {
+          if (pubSub.enabled) {
+            resolve();
+          } else {
+            reject();
+          }
+        });
+      }
+    });
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
     server.installSubscriptionHandlers(httpServer);
