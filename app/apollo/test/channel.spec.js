@@ -338,7 +338,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.1`,
-        type: 'json',
+        type: 'yaml',
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.1`
       });
@@ -355,7 +355,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.2`,
-        type: 'json',
+        type: 'yaml',
         content: '{"n0": 456.78}',
         description: `${channel_01_name}:v.0.2`
       });
@@ -531,7 +531,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.4`,
-        type: 'json',
+        type: 'yaml',
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.4`
       });
@@ -547,7 +547,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.5`,
-        type: 'json',
+        type: 'yaml',
         content: '{"n0": 234.78}',
         description: `${channel_01_name}:v.0.5`
       });
@@ -561,7 +561,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.6`,
-        type: 'json',
+        type: 'yaml',
         content: '{"n0": 1234.78}',
         description: `${channel_01_name}:v.0.6`
       });

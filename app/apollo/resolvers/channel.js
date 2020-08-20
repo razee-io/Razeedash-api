@@ -231,7 +231,7 @@ const channelResolvers = {
         throw new RazeeValidationError('A "name" must be specified', context);
       }
       if(!type || type !== 'yaml' && type !== 'application/yaml'){
-        throw new RazeeValidationError('A "type" of application/yaml must be specified', context);
+        throw new RazeeValidationError('A "type" of application/yaml must be specified', context); 
       }
       if(!channel_uuid){
         throw new RazeeValidationError('A "channel_uuid" must be specified', context);
