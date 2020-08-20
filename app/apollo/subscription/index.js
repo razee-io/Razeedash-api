@@ -52,23 +52,28 @@ function getStreamingTopic(prefix, org_id) {
 class PubSubImpl {
   
   constructor(params) {
+    this.initRetries = 0;
     this.enabled = false;
-    this.pubSub = null;
+    this.pubSub = new PubSub();
     this.redisUrl = params.redisUrl || process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
     logger.info(
       `Apollo streaming service is configured on redisUrl: ${obscureUrl(
         this.redisUrl,
       )}`,
     );
-    this.isRedisReachable();
+    this.init();
   }
     
-  async isRedisReachable() {
+  async init() {
     const url = new URL(this.redisUrl);
+
     if (await isPortReachable(url.port, { host: url.hostname, timeout: 5000 })) {
       const options = process.env.REDIS_CERTIFICATE_PATH
         ? { tls: { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } }
         : {};
+      if (this.pubSub && this.pubSub.close) {
+        this.pubSub.close();
+      }
       this.pubSub = new RedisPubSub({
         publisher: new Redis(this.redisUrl, options),
         subscriber: new Redis(this.redisUrl, options),
@@ -79,23 +84,30 @@ class PubSubImpl {
       );
       return true;
     }
+
     logger.warn(
-      `Apollo streaming is disabled because ${url.hostname}:${url.port} is unreachable.`,
+      `Apollo streaming is not ready yet, because ${url.hostname}:${url.port} is unreachable, will retry init in 10 seconds, already retried ${this.initRetries}.`,
     );
-    this.enabled = false;
-    this.pubSub = new PubSub();
+
+    const instance = this;
+    setTimeout( () => {
+      this.initRetries++;
+      instance.init();
+    }, 10000);
     return false;
   }
 
   async channelSubChangedFunc(data) {
+    const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
     if (this.enabled) {
       try {
-        const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
         logger.info({ data, topic }, 'Publishing channel subscription update');
         await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
       } catch (error) {
         logger.error(error, 'Channel subscription publish error');
       }
+    } else {
+      logger.warn( { data, topic }, 'Failed to Publish channel subscription update, since pubsub is not ready.');      
     }
     return data;
   }

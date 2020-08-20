@@ -13,16 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+const bunyan = require('bunyan');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
+const { GraphqlPubSub } = require('../../apollo/subscription');
+const pubSub = GraphqlPubSub.getInstance();
+const { getBunyanConfig } = require('../../utils/bunyan');
+const logger = bunyan.createLogger(getBunyanConfig('kube/liveness'));
 
 // /kube/liveness
 const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   // does a db call to make sure we didnt disconnect
   await require('../../apollo/models').models.Cluster.find({}, { _id:1 }, { limit:1 });
 
+  // TODO: not real pub-sub liveness test yet, will add later
+  if (pubSub.initRetries > 4) {
+    // if the remote redis is not ready after 5 initial retries, then
+    // it is better to restart this pod, return 500 error
+    logger.error('Razeedash Api is down due to Redis connection issue');
+    return res.sendStatus(500);
+  }
   return res.sendStatus(200);
 }));
 
