@@ -68,6 +68,7 @@ class PubSubImpl {
     const url = new URL(this.redisUrl);
 
     if (await isPortReachable(url.port, { host: url.hostname, timeout: 5000 })) {
+      this.initRetries = 0;
       const options = process.env.REDIS_CERTIFICATE_PATH
         ? { tls: { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] } }
         : {};
