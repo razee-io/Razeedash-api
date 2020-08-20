@@ -117,13 +117,13 @@ class PubSubImpl {
   }
 
   async resourceChangedFunc(resource) {
+    const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.orgId);
     if (this.enabled) {
       let op = 'upsert';
       if (resource.deleted) {
         op = 'delete';
       }
       try {
-        const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.orgId);
         logger.debug({ op, resource, topic }, 'Publishing resource updates');
         await this.pubSub.publish(topic, {
           resourceUpdated: { resource, op },
@@ -131,6 +131,9 @@ class PubSubImpl {
       } catch (error) {
         logger.error(error, 'Resource publish error');
       }
+    } else {
+      logger.warn( { resource, topic }, 'Failed to Publish resource update, since pubsub is not ready.');
+      throw new RazeeQueryError('Failed to Publish resource notification, please reload the page.', context);  
     }
     return resource;
   }
