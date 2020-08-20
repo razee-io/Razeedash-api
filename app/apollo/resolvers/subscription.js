@@ -307,7 +307,7 @@ const subscriptionResolvers = {
           channelName: channel.name, channel_uuid, version: version.name, version_uuid
         });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         return {
           uuid,
@@ -356,7 +356,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({ org_id: orgId });
+        pubSub.channelSubChangedFunc({ org_id: orgId }, context);
 
         return {
           uuid,
@@ -411,7 +411,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         return {
           uuid,
@@ -441,7 +441,7 @@ const subscriptionResolvers = {
         }
         await subscription.deleteOne();
 
-        pubSub.channelSubChangedFunc({org_id: org_id});
+        pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         success = true;
       }catch(err){
