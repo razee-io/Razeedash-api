@@ -18,7 +18,7 @@ const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
 const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, validClusterAuth, getGroupConditions, getAllowedGroups, NotFoundError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError } = require ('./common');
+const { whoIs, validAuth, validClusterAuth, getGroupConditions, getAllowedGroups, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
@@ -314,6 +314,9 @@ const subscriptionResolvers = {
         };
       }
       catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -361,6 +364,9 @@ const subscriptionResolvers = {
         };
       }
       catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -413,6 +419,9 @@ const subscriptionResolvers = {
         };
       }
       catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
@@ -436,6 +445,9 @@ const subscriptionResolvers = {
 
         success = true;
       }catch(err){
+        if ( err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
