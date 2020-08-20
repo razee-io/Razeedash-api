@@ -20,7 +20,7 @@ const { RedisPubSub } = require('graphql-redis-subscriptions');
 const isPortReachable = require('is-port-reachable');
 const { PubSub } = require('apollo-server');
 const { APOLLO_STREAM_SHARDING } = require('../models/const');
-
+const { RazeeQueryError } = require('../resolvers/common');
 const { getBunyanConfig } = require('../../utils/bunyan');
 
 const logger = bunyan.createLogger(getBunyanConfig('apollo/subscription'));
@@ -87,7 +87,7 @@ class PubSubImpl {
     }
 
     logger.warn(
-      `Apollo streaming is not ready yet, because ${url.hostname}:${url.port} is unreachable, will retry init in 10 seconds, already retried ${this.initRetries}.`,
+      `Apollo streaming is not ready yet, because redis port is unreachable, will retry init in 10 seconds, already retried ${this.initRetries}.`,
     );
 
     if (process.env.NODE_ENV !== 'unit-test' && process.env.NODE_ENV !== 'test') {
@@ -100,7 +100,7 @@ class PubSubImpl {
     return false;
   }
 
-  async channelSubChangedFunc(data) {
+  async channelSubChangedFunc(data, context) {
     const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
     if (this.enabled) {
       try {
@@ -110,7 +110,8 @@ class PubSubImpl {
         logger.error(error, 'Channel subscription publish error');
       }
     } else {
-      logger.warn( { data, topic }, 'Failed to Publish channel subscription update, since pubsub is not ready.');      
+      logger.warn( { data, topic }, 'Failed to Publish subscription update, since pubsub is not ready.');
+      throw new RazeeQueryError('Failed to Publish subscription notification to clusters, please retry.', context);  
     }
     return data;
   }
