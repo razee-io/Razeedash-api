@@ -65,9 +65,6 @@ const addUpdateCluster = async (req, res, next) => {
       res.status(200).send('Welcome to Razee');
     }
     else {
-      if (cluster.reg_state == CLUSTER_REG_STATES.REGISTERING){
-        reg_state = CLUSTER_REG_STATES.REGISTERING;
-      }
       if (cluster.dirty) {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
           { $set: { metadata, reg_state, updated: new Date(), dirty: false } });
