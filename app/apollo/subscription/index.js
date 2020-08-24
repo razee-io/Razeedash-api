@@ -53,7 +53,7 @@ class PubSubImpl {
   
   constructor(params) {
     this.initRetries = 0;
-    this.pubsubQueue = new Array();
+    this.lastPubSubMessage = null;
     this.enabled = false;
     this.pubSub = new PubSub();
     this.redisUrl = params.redisUrl || process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
@@ -85,7 +85,7 @@ class PubSubImpl {
         `Apollo streaming is enabled on redis endpoint ${url.hostname}:${url.port}`,
       );
       this.livenessCheckPublisher();
-      this.livenessCheckSubscriber(this.pubsubQueue);
+      this.livenessCheckSubscriber();
       return true;
     }
 
@@ -102,13 +102,12 @@ class PubSubImpl {
     }
     return false;
   }
-  async livenessCheckSubscriber(pubsubQueue){
+  async livenessCheckSubscriber(){
+    const instance = this;
     if (process.env.NODE_ENV !== 'unit-test' && process.env.NODE_ENV !== 'test') {
-      const sizeLimit = 10;
       this.pubSub.redisSubscriber.on('message', function(channel, message){
         //console.log('receiving: ', JSON.parse(message));
-        if(pubsubQueue.length > sizeLimit) pubsubQueue.shift();
-        pubsubQueue.push(JSON.parse(message));
+        if(channel === 'testTopic') instance.lastPubSubMessage = JSON.parse(message);
       });
     }
   }

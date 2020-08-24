@@ -36,7 +36,7 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
     return res.sendStatus(503);
   }
   
-  if (pubSub.pubsubQueue.length !== 0 && Date.now()- pubSub.pubsubQueue[pubSub.pubsubQueue.length-1].time > timeInterval) {
+  if (pubSub.lastPubSubMessage !== null && Date.now()- pubSub.lastPubSubMessage.time > timeInterval) {
     // check if the most recent message received is within ${timeInterval/60000} minitue
     logger.error(`Razeedash Api is down, haven't received any published messages within ${timeInterval/60000} minitue, please check logs.`);
     return res.sendStatus(503);
