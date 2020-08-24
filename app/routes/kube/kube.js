@@ -21,6 +21,7 @@ const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const { getBunyanConfig } = require('../../utils/bunyan');
 const logger = bunyan.createLogger(getBunyanConfig('kube/liveness'));
+const timeInterval = 300000; //5 mintues
 
 // /kube/liveness
 const kube = router.get('/liveness', asyncHandler(async(req, res) => {
@@ -32,6 +33,12 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
     // if the remote redis is not ready after 5 initial retries, then
     // it is better to restart this pod, return 500 error
     logger.error('Razeedash Api is down due to Redis pubsub connection issue, please check logs.');
+    return res.sendStatus(503);
+  }
+  
+  if (pubSub.pubsubQueue.length !== 0 && Date.now()- pubSub.pubsubQueue[pubSub.pubsubQueue.length-1].time > timeInterval) {
+    // check if the most recent message received is within ${timeInterval/60000} minitue
+    logger.error(`Razeedash Api is down, haven't received any published messages within ${timeInterval/60000} minitue, please check logs.`);
     return res.sendStatus(503);
   }
   return res.sendStatus(200);
