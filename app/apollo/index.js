@@ -102,7 +102,7 @@ const createApolloServer = () => {
   }
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
-    introspection: false,
+    introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
@@ -183,6 +183,10 @@ const apollo = async (options = {}) => {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
     router.use(ebl(getBunyanConfig('apollo')));
+    if (initModule.playgroundAuth && process.env.NODE_ENV !== 'production') {
+      logger.info('Enabled playground route with authorization enforcement.');
+      app.get(GRAPHQL_PATH, initModule.playgroundAuth);
+    }
     app.use(GRAPHQL_PATH, router);
     initModule.initApp(app, models, logger);
 
