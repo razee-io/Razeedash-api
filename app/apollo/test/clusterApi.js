@@ -22,13 +22,21 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $clusterId: String! $resourceLimit: Int = 500) {
-            clusterByClusterId(orgId: $orgId clusterId: $clusterId, resourceLimit: $resourceLimit) {
+          query($orgId: String! $clusterId: String! $resourceLimit: Int = 500 $groupLimit : Int) {
+            clusterByClusterId(orgId: $orgId clusterId: $clusterId, resourceLimit: $resourceLimit, groupLimit: $groupLimit) {
               id
               orgId
               clusterId
               status
               regState
+              groups {
+                uuid
+                name
+              }
+              groupObjs {
+                uuid
+                name
+              }
           }
         }
     `,
@@ -91,14 +99,22 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!  $limit: Int, $startingAfter: String) {
-            clustersByOrgId(orgId: $orgId limit: $limit startingAfter: $startingAfter) {
+          query($orgId: String!  $limit: Int, $startingAfter: String $groupLimit : Int) {
+            clustersByOrgId(orgId: $orgId limit: $limit startingAfter: $startingAfter, groupLimit : $groupLimit) {
               id
               orgId
               clusterId
               status
               resources{
                 selfLink
+              }
+              groups {
+                uuid
+                name
+              }
+              groupObjs {
+                uuid
+                name
               }
           }
         }
@@ -139,12 +155,20 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $filter: String $limit: Int) {
-            clusterSearch(orgId: $orgId filter: $filter limit: $limit) {
+          query($orgId: String! $filter: String $limit: Int, $groupLimit: Int) {
+            clusterSearch(orgId: $orgId filter: $filter limit: $limit, groupLimit: $groupLimit) {
               id
               orgId
               status
               clusterId
+              groups {
+                uuid
+                name
+              }
+              groupObjs {
+                uuid
+                name
+              }
           }
         }
     `,
@@ -232,12 +256,20 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $limit: Int) {
-            inactiveClusters(orgId: $orgId limit: $limit) {
+          query($orgId: String! $limit: Int, $groupLimit: Int) {
+            inactiveClusters(orgId: $orgId limit: $limit groupLimit: $groupLimit) {
               id
               orgId
               clusterId
               updated
+              groups {
+                uuid
+                name
+              }
+              groupObjs {
+                uuid
+                name
+              }
           }
         }
     `,
