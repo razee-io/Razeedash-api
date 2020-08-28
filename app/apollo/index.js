@@ -21,7 +21,7 @@ const ebl = require('express-bunyan-logger');
 const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-
+const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { getBunyanConfig } = require('./utils/bunyan');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
@@ -33,8 +33,10 @@ const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
-
+const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
+
+const pubSub = GraphqlPubSub.getInstance();
 
 const createDefaultApp = () => {
   const app = express();
@@ -100,12 +102,16 @@ const createApolloServer = () => {
   }
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.NODE_ENV !== 'production',
     typeDefs,
     resolvers,
+    schemaDirectives: {
+      sv: IdentifierDirective,
+      jv: JsonDirective,
+    },
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -177,11 +183,27 @@ const apollo = async (options = {}) => {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
     router.use(ebl(getBunyanConfig('apollo')));
+    if (initModule.playgroundAuth && process.env.NODE_ENV !== 'production') {
+      logger.info('Enabled playground route with authorization enforcement.');
+      app.get(GRAPHQL_PATH, initModule.playgroundAuth);
+    }
     app.use(GRAPHQL_PATH, router);
     initModule.initApp(app, models, logger);
 
     const server = createApolloServer();
-    server.applyMiddleware({ app, path: GRAPHQL_PATH });
+    server.applyMiddleware({
+      app,
+      path: GRAPHQL_PATH,
+      onHealthCheck: () => {
+        return new Promise((resolve, reject) => {
+          if (pubSub.enabled) {
+            resolve();
+          } else {
+            reject();
+          }
+        });
+      }
+    });
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
     server.installSubscriptionHandlers(httpServer);

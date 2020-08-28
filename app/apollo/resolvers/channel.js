@@ -24,8 +24,11 @@ var fs = require('fs');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 var { encrypt, decrypt } = require('../../utils/crypt');
 
-const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, NotFoundError} = require ('./common');
+const yaml = require('js-yaml');
+const fs = require('fs');
+
+const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
+const { whoIs, validAuth, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const channelResolvers = {
   Query: {
@@ -41,7 +44,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new NotFoundError(`Query ${queryName} find error. ${err.message}.`, context);
       }
       return channels;
     },
@@ -53,11 +56,14 @@ const channelResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid });
+        var channel = await models.Channel.findOne({org_id: orgId, uuid });
+        if (!channel) {
+          throw new NotFoundError(`Could not find the channel with uuid ${uuid}.`, context);
+        }
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
       return channel;
     },
@@ -70,10 +76,13 @@ const channelResolvers = {
 
       try{
         var channel = await models.Channel.findOne({ org_id: orgId, name });
+        if (!channel) {
+          throw new NotFoundError(`Could not find the channel with name ${name}.`, context);
+        }
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
       return channel;
     },
@@ -83,14 +92,6 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
     },
-
-    // deprecated, please use channelVersion
-    getChannelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid }, context) => {
-      const { me, req_id, logger } = context;
-      const queryName = 'getChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid }, `${queryName} enter`);
-      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelUuid, versionUuid, _queryName: queryName }, context);
-    },
     
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
       const { models, me, req_id, logger } = context;
@@ -98,24 +99,31 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
       try{
+
+        const org = await models.Organization.findOne({ _id: org_id });
+        if (!org) {
+          throw new NotFoundError(`Could not find the organization with ID ${org_id}.`, context);
+        }
+        const orgKey = _.first(org.orgKeys);
+
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
         const channel = await models.Channel.findOne(channelFilter);
         if(!channel){
-          throw new NotFoundError(`Could not find the channel with uuid/name ${channel_uuid}/channelName.`);
+          throw new NotFoundError(`Could not find the channel with uuid/name ${channel_uuid}/channelName.`, context);
         } 
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
         // search version by version uuid or version name
         const versionObj = channel.versions.find(v => (v.uuid === versionUuid || v.name === versionName));
         if (!versionObj) {
-          throw new NotFoundError(`versionObj "${versionUuid}" is not found for ${channel.name}:${channel.uuid}`);
+          throw new NotFoundError(`versionObj "${versionUuid}" is not found for ${channel.name}:${channel.uuid}`, context);
         }
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
 
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
         if (!deployableVersionObj) {
-          throw `DeployableVersion is not found for ${channel.name}:${channel.uuid}/${versionObj.name}:${versionObj.uuid}.`;
+          throw new NotFoundError(`DeployableVersion is not found for ${channel.name}:${channel.uuid}/${versionObj.name}:${versionObj.uuid}.`, context);
         }
 
         if (versionObj.location === 'mongo') {
@@ -134,12 +142,12 @@ const channelResolvers = {
           deployableVersionObj.content = decrypt(encryptedContent, org_id);
         }
         else {
-          throw `versionObj.location="${versionObj.location}" not implemented yet`;
+          throw new BasicRazeeError(`versionObj.location="${versionObj.location}" not implemented yet`, context);
         }
         return deployableVersionObj;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       } 
     }
   },
@@ -154,12 +162,12 @@ const channelResolvers = {
         // might not necessary with uunique index. Worth to check to return error better.
         const channel = await models.Channel.findOne({ name, org_id });
         if(channel){
-          throw new ValidationError(`The channel name ${name} already exists.`);
+          throw new RazeeValidationError(`The channel name ${name} already exists.`, context);
         }
         // validate the number of total channels are under the limit
         const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
-          throw new ValidationError(`Too many channels are registered under ${org_id}.`);
+          throw new RazeeValidationError(`Too many channels are registered under ${org_id}.`, context);
         }
         const uuid = UUID();
         await models.Channel.create({
@@ -170,8 +178,11 @@ const channelResolvers = {
           uuid,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
     editChannel: async (parent, { orgId: org_id, uuid, name }, context)=>{
@@ -183,7 +194,7 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw new NotFoundError(`channel uuid "${uuid}" not found`);
+          throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
         }
 
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
@@ -200,8 +211,11 @@ const channelResolvers = {
           name,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
@@ -211,17 +225,24 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
 
-      if(!name){
-        throw new UserInputError('A name was not included');
+      // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
+      const org = await models.Organization.findOne({ _id: org_id });
+      if (!org) {
+        throw new NotFoundError(`Could not find the organization with ID ${org_id}.`, context);
       }
-      if(!type){
-        throw 'A "type" of application/json or application/yaml must be included';
+      const orgKey = _.first(org.orgKeys);
+
+      if(!name){
+        throw new RazeeValidationError('A "name" must be specified', context);
+      }
+      if(!type || type !== 'yaml' && type !== 'application/yaml'){
+        throw new RazeeValidationError('A "type" of application/yaml must be specified', context);
       }
       if(!channel_uuid){
-        throw 'channel_uuid not specified';
+        throw new RazeeValidationError('A "channel_uuid" must be specified', context);
       }
       if(!file && !content){
-        throw 'Please specify either file or content';
+        throw new RazeeValidationError('A "file" or "content" must be specified', context);
       }
 
       if(file){
@@ -231,7 +252,7 @@ const channelResolvers = {
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
       if(!channel){
-        throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
+        throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
       }
 
       const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
@@ -240,13 +261,30 @@ const channelResolvers = {
       });
 
       if(versionNameExists) {
-        throw new ValidationError(`The version name ${name} already exists`);
+        throw new RazeeValidationError(`The version name ${name} already exists`, context);
       }
       // validate the number of total channel versions are under the limit
       const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
-        throw new ValidationError(`Too many channel version are registered under ${channel_uuid}.`);
+        throw new RazeeValidationError(`Too many channel version are registered under ${channel_uuid}.`, context);
       }
+
+      try{
+        let yamlSize = Buffer.byteLength(content);
+        if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
+          throw new RazeeValidationError(`YAML file size should not be more than ${CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}mb`, context);
+        }
+        yaml.safeLoadAll(content);
+      } catch (error) {
+        if (error instanceof BasicRazeeError) {
+          throw error;
+        }
+        throw new RazeeValidationError(`Provided YAML content is not valid: ${error}`, context);
+      }
+
+      fileStream = stream.Readable.from([ content ]);
+      const iv = crypto.randomBytes(16);
+      const ivText = iv.toString('base64');
 
       let location = 'mongo';
       let data = encrypt(content, org_id);
@@ -303,14 +341,14 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw new NotFoundError(`channel uuid "${uuid}" not found`);
+          throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
         }
         const channel_uuid = channel.uuid;
 
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
 
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`);
+          throw new RazeeValidationError(`${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`, context);
         }
 
         await models.Channel.deleteOne({ org_id, uuid });
@@ -320,8 +358,11 @@ const channelResolvers = {
           success: true,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
     removeChannelVersion: async (parent, { orgId: org_id, uuid }, context)=>{
@@ -332,20 +373,20 @@ const channelResolvers = {
       try{
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
         if(!deployableVersionObj){
-          throw new NotFoundError(`version uuid "${uuid}" not found`);
+          throw new NotFoundError(`version uuid "${uuid}" not found`, context);
         }
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this channel version. Please update/remove them before removing this channel version.`);
+          throw new RazeeValidationError(`${subCount} subscriptions depend on this channel version. Please update/remove them before removing this channel version.`, context);
         }
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         if(!channel){
-          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`);
+          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
         }
         const versionObj = channel.versions.find(v => v.uuid === uuid);
         if (!versionObj) {
-          throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`);
+          throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`, context);
         }
         if(versionObj.location === 's3'){
           const url = deployableVersionObj.content;
@@ -372,8 +413,11 @@ const channelResolvers = {
           success: true,
         };
       } catch(err){
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
   },

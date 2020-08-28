@@ -17,7 +17,6 @@
 const { gql } = require('apollo-server-express');
 
 const resourceSchema = gql`
-  scalar JSON
   
   type ClusterInfo {
     clusterId: String!
@@ -67,8 +66,6 @@ const resourceSchema = gql`
     updated: Date!
   }
   
-  
-
   extend type Query {
     """
     Return total resource count for given **orgId**.
@@ -92,35 +89,35 @@ const resourceSchema = gql`
     """
     Search resources against **orgId**, **clusterId**, **filter** string, and date ranges.
     """
-    resourcesByCluster(orgId: String! clusterId: String! filter: String limit: Int = 500): ResourcesList!
+    resourcesByCluster(orgId: String! @sv clusterId: String! @sv filter: String @sv limit: Int = 500): ResourcesList!
 
     """
     Return the resource by given resource **id**.
     """
-    resource(orgId: String!, id: String!, histId: String): Resource
+    resource(orgId: String! @sv, id: String! @sv, histId: String @sv): Resource
 
     """
     return the resource by given **orgId**, **clusterId** and **selfLink** of the resource.
     """
-    resourceByKeys(orgId: String! clusterId: String! selfLink: String!): Resource
+    resourceByKeys(orgId: String! @sv clusterId: String! @sv selfLink: String! @sv): Resource
 
     """
     Search resources against **orgId** and **subscriptionId**.
     """
-    resourcesBySubscription(orgId: String! subscriptionId: String!): ResourcesList!
+    resourcesBySubscription(orgId: String! @sv subscriptionId: String! @sv): ResourcesList!
     """
     Gets the yaml history for a resource
     """
-    resourceHistory(orgId: String!, clusterId: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
+    resourceHistory(orgId: String! @sv, clusterId: String! @sv, resourceSelfLink: String! @sv, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
     
     """
     Gets the content for a yaml hist item
     """
-    resourceContent(orgId: String!, clusterId: String!, resourceSelfLink: String!, histId: String): ResourceContentObj
+    resourceContent(orgId: String! @sv, clusterId: String! @sv, resourceSelfLink: String! @sv, histId: String @sv): ResourceContentObj
   }
 
   extend type Subscription {
-    resourceUpdated(orgId: String!, filter: String): ResourceUpdated!
+    resourceUpdated(orgId: String! @sv, filter: String @sv): ResourceUpdated!
   }
 `;
 

@@ -36,6 +36,7 @@ const clusterSchema = gql`
     metadata: JSON
     comments: [Comment]
     registration: JSON
+    status: String
     regState: String
     groups: [ClusterGroup]
     groupObjs: [GroupDetail!]
@@ -78,8 +79,8 @@ const clusterSchema = gql`
     Return a cluster based on **orgId** and **clusterId**.
     """
     clusterByClusterId(
-      orgId: String!,
-      clusterId: String!
+      orgId: String!, @sv
+      clusterId: String! @sv
       resourceLimit: Int = 500
     ): Cluster
 
@@ -87,8 +88,8 @@ const clusterSchema = gql`
     Return a cluster based on **orgId** and **cluster name**.
     """
     clusterByName(
-      orgId: String!,
-      clusterName: String!
+      orgId: String!, @sv
+      clusterName: String! @sv
       resourceLimit: Int = 500
     ): Cluster
 
@@ -96,11 +97,11 @@ const clusterSchema = gql`
     Return clusters based on **orgId**, sorted with newest document first.
     """
     clustersByOrgId(
-      orgId: String!
+      orgId: String! @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
-      startingAfter: String
+      startingAfter: String @sv
       resourceLimit: Int = 500
     ): [Cluster]!
 
@@ -108,12 +109,12 @@ const clusterSchema = gql`
     Return clusters based on **orgId** and **filter** on **clusterId**. Sorted with newest document first.
     """
     clusterSearch(
-      orgId: String!
+      orgId: String! @sv
       """
       **filter**: applies to **clusterId** field.
       If no **filter** is provided, this returns clusters based on just **origId**.
       """
-      filter: String
+      filter: String @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       resourceLimit: Int = 500
@@ -124,7 +125,7 @@ const clusterSchema = gql`
     Sorted with newest document first.
     """
     inactiveClusters(
-      orgId: String!
+      orgId: String! @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       resourceLimit: Int = 500
@@ -134,34 +135,34 @@ const clusterSchema = gql`
     Return counts of different kubernetes versions deployed in **orgId**. Only active
     clusters are counted (**updated** field updated in last day).
     """
-    clusterCountByKubeVersion(orgId: String!): [ClusterCountByKubeVersion]!
+    clusterCountByKubeVersion(orgId: String! @sv): [ClusterCountByKubeVersion]!
   }
 
   extend type Mutation {
     """
     Delete a cluster and all resources under the cluster
     """
-    deleteClusterByClusterId(orgId: String!, clusterId: String!): DeleteClustersResponse!
+    deleteClusterByClusterId(orgId: String! @sv, clusterId: String! @sv): DeleteClustersResponse!
 
     """
     Delete all clusters under an organization and all resources under the deleted clusters
     """
-    deleteClusters(orgId: String!): DeleteClustersResponse!
+    deleteClusters(orgId: String! @sv): DeleteClustersResponse!
 
     """
     Register a cluster with razee api for an organization. registration.name is required.
     """ 
     registerCluster (
-      orgId: String!
-      registration: JSON!
+      orgId: String! @sv
+      registration: JSON! @jv
     ): RegisterClusterResponse!
 
     """
     Enable registration URL
     """
     enableRegistrationUrl (
-      orgId: String!
-      clusterId: String!
+      orgId: String! @sv
+      clusterId: String! @sv
     ): EnableRegistrationUrlResponse
   }
 
