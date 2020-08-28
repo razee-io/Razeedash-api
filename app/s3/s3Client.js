@@ -15,11 +15,7 @@
  */
 const clone = require('clone');
 const AWS = require('aws-sdk');
-const crypto = require('crypto');
-const _ = require('lodash');
 const stream = require('stream');
-
-const encryptionAlgorithm = 'aes-256-cbc';
 
 module.exports = class S3Client {
   constructor(options) {
@@ -133,7 +129,7 @@ module.exports = class S3Client {
     }
   }
 
-  async encryptAndUploadFile(bucketName, path, fileStream, encryptionKey, iv=null){
+  async uploadFile(bucketName, path, content){
     try {
       const exists = await this.bucketExists(bucketName);
       if(!exists){
@@ -144,65 +140,18 @@ module.exports = class S3Client {
       this.log.error('could not create bucket', { bucketName });
       throw err;
     }
-
-    const key = Buffer.concat([Buffer.from(encryptionKey)], 32);
-
-    if(!iv){
-      iv = crypto.randomBytes(16);
-    }
-    const ivText = iv.toString('base64');
-
-    const cipher = crypto.createCipheriv(encryptionAlgorithm, key, iv);
-
     const awsStream = this._aws.upload({
       Bucket: bucketName,
       Key: path,
-      Body: fileStream.pipe(cipher),
+      Body: stream.Readable.from([ content ]),
     });
     await awsStream.promise();
 
-    const url = `${this._conf.endpoint.match(/^http/i) ? '' : 'https://'}${this._conf.endpoint}/${bucketName}/${path}`;
-    return {
-      url, ivText,
-    };
+    return `${this._conf.endpoint.match(/^http/i) ? '' : 'https://'}${this._conf.endpoint}/${bucketName}/${path}`;
   }
 
-  async getAndDecryptFile(bucketName, path, key, iv) {
-    return new Promise((resolve, reject) => {
-      try {
-        const { WritableStreamBuffer } = require('stream-buffers');
-
-        if (_.isString(iv)) {
-          iv = Buffer.from(iv, 'base64');
-        }
-        key = Buffer.concat([Buffer.from(key)], 32);
-
-        const awsStream = this.getObject(bucketName, path).createReadStream();
-        const decipher = crypto.createDecipheriv(encryptionAlgorithm, key, iv);
-
-        var buf = new WritableStreamBuffer();
-        stream.pipeline(
-          awsStream,
-          decipher,
-          buf,
-          (err) => {
-            if(err){
-              reject(err);
-              return;
-            }
-            try {
-              resolve(buf.getContents().toString('utf8'));
-            }
-            catch(err){
-              reject(err);
-            }
-          }
-        );
-      }
-      catch(err){
-        reject(err);
-      }
-    });
+  async getFile(bucketName, path){
+    return (await this.getObject(bucketName, path).promise()).Body;
   }
 };
 

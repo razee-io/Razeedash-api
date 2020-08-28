@@ -27,6 +27,9 @@ const request = require('request-promise-native');
 var glob = require('glob-promise');
 var fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
+const conf = require('../../conf.js').conf;
+const S3ClientClass = require('../../s3/s3Client');
+var { encrypt } = require('../../utils/crypt');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
@@ -39,7 +42,7 @@ const buildHashForResource = require('../../utils/cluster.js').buildHashForResou
 const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
-const conf = require('../../conf.js').conf;
+
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -130,11 +133,15 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
 
 const pushToS3 = async (req, key, searchableDataHash, dataStr) => {
   //if its a new or changed resource, write the data out to an S3 object
-  const bucket = conf.s3.resourceBucket;
+  const bucketName = conf.s3.resourceBucket;
+
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  await req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
-  return `https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+  var resourceName = `${keyHash}/${searchableDataHash}`;
+
+  const s3Client = new S3ClientClass(conf);
+  var url = await s3Client.uploadFile(bucketName, resourceName, dataStr);
+  return url;
 };
 
 var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
@@ -184,6 +191,10 @@ const syncClusterResources = async(req, res)=>{
   }
 
   res.status(200).send('Thanks');
+};
+
+var encryptDataStr = (dataStr, orgId)=>{
+  return encrypt(dataStr, orgId);
 };
 
 const updateClusterResources = async (req, res, next) => {
@@ -252,6 +263,9 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
+
+          dataStr = encryptDataStr(dataStr, req.org._id);
+
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
           }
@@ -331,6 +345,8 @@ const updateClusterResources = async (req, res, next) => {
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
+          dataStr = encryptDataStr(dataStr, req.org._id);
+
           if (req.s3) {
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
           }

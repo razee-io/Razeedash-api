@@ -24,6 +24,7 @@ const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
+var { decrypt } = require('../../utils/crypt');
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
@@ -57,7 +58,7 @@ const s3IsDefined = () => {
   return conf.s3.endpoint;
 };
 
-const getS3Data = async (s3Link, logger) => {
+const getS3Data = async (s3Link, org, logger) => {
   try {
     const s3Client = new S3ClientClass(conf);
     const link = url.parse(s3Link); 
@@ -66,22 +67,12 @@ const getS3Data = async (s3Link, logger) => {
     // we do not need to decode URL here because path[2] and path[3] are hash code
     // path[2] stores keyHash , path[3] stores searchableDataHash 
     const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
-    const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
-    const yaml = await readS3File(s3stream);
-    return yaml;
+
+    return s3Client.getFile(bucket, resourceName);
   } catch (error) {
     logger.error(error, 'Error retrieving data from s3 bucket');
     throw(error);
   }
-};
-
-const readS3File = async (readable) => {
-  readable.setEncoding('utf8');
-  let data = '';
-  for await (const chunk of readable) {
-    data += chunk;
-  }
-  return data;
 };
 
 const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
@@ -91,12 +82,14 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 
     searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
-
     if (!resource) return resource;
 
-    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = await getS3Data(resource.data, logger);
-      resource.data = yaml;
+    if (queryFields['data'] && resource.data){
+      if(isLink(resource.data) && s3IsDefined()) {
+        var org = await models.Organization.findOne({ _id: org_id }).lean({ virtuals: true });
+        resource.data = await getS3Data(resource.data, org, logger);
+      }
+      resource.data = decrypt(resource.data, org_id);
     }
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
@@ -257,9 +250,12 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
-        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = await getS3Data(resource.data, logger);
-          resource.data = yaml;
+        if (queryFields['data'] && resource.data){
+          var org = await models.Organization.findOne({ _id: org_id }).lean({ virtuals: true });
+          if(isLink(resource.data) && s3IsDefined()) {
+            resource.data = await getS3Data(resource.data, org, logger);
+          }
+          resource.data = decrypt(resource.data, org._id);
         }
 
         resource.updated = resourceYamlHistObj.updated;
@@ -363,6 +359,8 @@ const resourceResolvers = {
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
+      var org = await models.Organization.findOne({ _id: org_id }).lean({ virtuals: true });
+
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
       let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
       if (!cluster) {
@@ -378,10 +376,13 @@ const resourceResolvers = {
         return null;
       }
 
+      var encryptedContent, yaml;
+
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
         if ( content && isLink(content) && s3IsDefined()) {
-          const yaml = await getS3Data(content, logger);
+          encryptedContent = await getS3Data(content, org, logger);
+          yaml = decrypt(encryptedContent, org._id);
           content = yaml;
         }
         return {
@@ -399,7 +400,8 @@ const resourceResolvers = {
 
       var content = await getContent(obj);
       if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = await getS3Data(content, logger);
+        encryptedContent = await getS3Data(content, org, logger);
+        yaml = decrypt(encryptedContent, org._id);
         content = yaml;
       }
 

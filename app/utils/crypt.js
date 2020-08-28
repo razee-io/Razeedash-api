@@ -16,14 +16,15 @@
 
 const CryptoJS = require('crypto-js');
 
-const tokenCrypt = {
-  encrypt: (str, token) => {
-    var out = CryptoJS.AES.encrypt(str, token).toString();
-    return out;
-  },
-  decrypt: (str, token) => {
-    var out = CryptoJS.AES.decrypt(str, token).toString(CryptoJS.enc.Utf8);
-    return out;
-  },
+var encrypt = (str, token) => {
+  var out = CryptoJS.AES.encrypt(str, token).toString();
+  return out;
 };
-module.exports = tokenCrypt;
+var decrypt = (str, token) => {
+  var out = CryptoJS.AES.decrypt(str.toString('utf8'), token).toString(CryptoJS.enc.Utf8);
+  return out;
+};
+
+module.exports = {
+  encrypt, decrypt,
+};

@@ -16,19 +16,16 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const crypto = require('crypto');
 const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const { UserInputError, ValidationError } = require('apollo-server');
-const { WritableStreamBuffer } = require('stream-buffers');
-const stream = require('stream');
+var fs = require('fs');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
+var { encrypt, decrypt } = require('../../utils/crypt');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError} = require ('./common');
-
-const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
 const channelResolvers = {
   Query: {
@@ -101,10 +98,6 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
       try{
-
-        const org = await models.Organization.findOne({ _id: org_id });
-        const orgKey = _.first(org.orgKeys);
-
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
         const channel = await models.Channel.findOne(channelFilter);
@@ -126,7 +119,7 @@ const channelResolvers = {
         }
 
         if (versionObj.location === 'mongo') {
-          deployableVersionObj.content = await decryptOrgData(orgKey, deployableVersionObj.content);
+          deployableVersionObj.content = await decrypt(deployableVersionObj.content, org_id);
         }
         else if(versionObj.location === 's3'){
           const url = deployableVersionObj.content;
@@ -137,7 +130,8 @@ const channelResolvers = {
           var path = `${parts.join('/')}`;
 
           const s3Client = new S3ClientClass(conf);
-          deployableVersionObj.content = await s3Client.getAndDecryptFile(bucketName, path, orgKey, deployableVersionObj.iv);
+          var encryptedContent = await s3Client.getFile(bucketName, path);
+          deployableVersionObj.content = decrypt(encryptedContent, org_id);
         }
         else {
           throw `versionObj.location="${versionObj.location}" not implemented yet`;
@@ -217,10 +211,6 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
 
-      // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
-      const org = await models.Organization.findOne({ _id: org_id });
-      const orgKey = _.first(org.orgKeys);
-
       if(!name){
         throw new UserInputError('A name was not included');
       }
@@ -232,6 +222,11 @@ const channelResolvers = {
       }
       if(!file && !content){
         throw 'Please specify either file or content';
+      }
+
+      if(file){
+        var fileStream = (await file).createReadStream();
+        content = await fs.promises.readFile(fileStream.path, 'utf8');
       }
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
@@ -253,19 +248,8 @@ const channelResolvers = {
         throw new ValidationError(`Too many channel version are registered under ${channel_uuid}.`);
       }
 
-      let fileStream = null;
-      if(file){
-        fileStream = (await file).createReadStream();
-      }
-      else{
-        fileStream = stream.Readable.from([ content ]);
-      }
-
-      const iv = crypto.randomBytes(16);
-      const ivText = iv.toString('base64');
-
       let location = 'mongo';
-      let data = null;
+      let data = encrypt(content, org_id);
 
       if(conf.s3.endpoint){
         const resourceName = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
@@ -276,27 +260,9 @@ const channelResolvers = {
         await s3Client.ensureBucketExists(bucketName);
 
         //data is now the s3 hostpath to the resource
-        const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, fileStream, orgKey, iv);
-        data = result.url;
+        data = await s3Client.uploadFile(bucketName, resourceName, data);
 
         location = 's3';
-      }
-      else{
-        var buf = new WritableStreamBuffer();
-        await new Promise((resolve, reject)=>{
-          return stream.pipeline(
-            fileStream,
-            buf,
-            (err)=>{
-              if(err){
-                reject(err);
-              }
-              resolve(err);
-            }
-          );
-        });
-        const content = buf.getContents().toString('utf8');
-        data = await encryptOrgData(orgKey, content);
       }
 
       const deployableVersionObj = {
@@ -309,7 +275,6 @@ const channelResolvers = {
         description,
         location,
         content: data,
-        iv: ivText,
         type,
       };
 
