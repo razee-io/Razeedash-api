@@ -19,10 +19,7 @@ const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
-const { UserInputError, ValidationError } = require('apollo-server');
 var fs = require('fs');
-var stream = require('stream');
-var crypto = require('crypto');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 var { encrypt, decrypt } = require('../../utils/crypt');
 
@@ -105,7 +102,6 @@ const channelResolvers = {
         if (!org) {
           throw new NotFoundError(`Could not find the organization with ID ${org_id}.`, context);
         }
-        const orgKey = _.first(org.orgKeys);
 
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
@@ -231,7 +227,6 @@ const channelResolvers = {
       if (!org) {
         throw new NotFoundError(`Could not find the organization with ID ${org_id}.`, context);
       }
-      const orgKey = _.first(org.orgKeys);
 
       if(!name){
         throw new RazeeValidationError('A "name" must be specified', context);

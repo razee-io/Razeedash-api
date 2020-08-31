@@ -15,20 +15,11 @@
 */
 
 const CryptoJS = require('crypto-js');
-var crypto = require('crypto');
 
 var encrypt = (str, token) => {
   var out = CryptoJS.AES.encrypt(str, token).toString();
   return out;
 };
-
-console.log(1111, encrypt('akljasdaAAAABBCD','k4TTY77XNPMGjppfWQ_KJHDSFKJHSDKFJHDSF'))
-//U2FsdGVkX19PQtcp6DcHe3v/eCRYQ/nHfdScDZtuPLE=
-//U2FsdGVkX1+AfwFelC3whsYxn6bHuD3KWynNsxDtdG4=
-//U2FsdGVkX1/CrG94loOsfkkaTlTXkg+gknmH+jZW+WU=
-//U2FsdGVkX1/5cKbh/dwMACZOhgoBvuipc5ToKy+cYwI=
-//U2FsdGVkX19c7IClAP2kHCGr/IjDcUIq942u+WcyYPw=
-//U2FsdGVkX187d57SFcgq/98etuE+LJ7ay16R05x3jYc=
 
 var decrypt = (str, token, throwOnError=false) => {
   try {
