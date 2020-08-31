@@ -21,11 +21,12 @@ const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const { UserInputError, ValidationError } = require('apollo-server');
 var fs = require('fs');
+var stream = require('stream');
+var crypto = require('crypto');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 var { encrypt, decrypt } = require('../../utils/crypt');
 
 const yaml = require('js-yaml');
-const fs = require('fs');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
@@ -281,10 +282,6 @@ const channelResolvers = {
         }
         throw new RazeeValidationError(`Provided YAML content is not valid: ${error}`, context);
       }
-
-      fileStream = stream.Readable.from([ content ]);
-      const iv = crypto.randomBytes(16);
-      const ivText = iv.toString('base64');
 
       let location = 'mongo';
       let data = encrypt(content, org_id);

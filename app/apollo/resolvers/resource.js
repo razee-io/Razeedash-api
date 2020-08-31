@@ -82,6 +82,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 
     searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
+    resource = JSON.parse(JSON.stringify(resource));
     if (!resource) return resource;
 
     if (queryFields['data'] && resource.data){
@@ -89,7 +90,9 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
         var org = await models.Organization.findOne({ _id: org_id }).lean({ virtuals: true });
         resource.data = await getS3Data(resource.data, org, logger);
       }
-      resource.data = decrypt(resource.data, org_id);
+      var decrypted = decrypt(resource.data, org_id);
+      resource.data = decrypted;
+      console.log(4444, decrypted, resource.data)
     }
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
@@ -105,7 +108,6 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
       var subscriptions = await models.Subscription.findOne({ uuid: resource.searchableData.subscription_id}).lean({ virtuals: true });
       resource.subscription = subscriptions;
     }
-
     return resource;
   } catch (error) {
     logger.error(error, `commonResourceSearch encountered an error for the request ${req_id}`);
@@ -239,6 +241,7 @@ const resourceResolvers = {
 
       const searchFilter = { org_id, _id: ObjectId(_id) };
       var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
+      console.log(3333, resource.data)
       if(!resource){
         return null;
       }
