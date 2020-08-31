@@ -29,7 +29,7 @@ S3Client.__set__({
 
 describe('s3', () => {
   describe('s3Client', () => {
-    it.only('encrypt, upload, download, and decrypt', async () => {
+    it('encrypt, upload, download, and decrypt', async () => {
       //assert.equal(responseCodeMapper(500), 'error');
       var s3Client = new S3Client({
         s3: {
