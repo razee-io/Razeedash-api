@@ -21,6 +21,7 @@ const { RedisPubSub } = require('graphql-redis-subscriptions');
 const ObjectId = require('mongoose').Types.ObjectId;
 var Redis = require('ioredis-mock');
 const _ = require('lodash');
+var { encrypt } = require('../../utils/crypt');
 
 // const why = require('why-is-node-running');
 
@@ -242,7 +243,7 @@ const createResources = async () => {
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     resourceSelfLink: '/mybla/selfLink',
-    yamlStr: 'YAML_HIST_DATA_01',
+    yamlStr: encrypt('YAML_HIST_DATA_01', org_01._id),
     updated: new Date(),
   });
   await models.ResourceYamlHist.create({
@@ -250,7 +251,7 @@ const createResources = async () => {
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     resourceSelfLink: '/mybla/selfLink',
-    yamlStr: 'YAML_HIST_DATA_02',
+    yamlStr: encrypt('YAML_HIST_DATA_02', org_01._id),
     updated: new Date(),
   });
 };
