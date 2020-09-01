@@ -20,6 +20,7 @@ var httpMocks = require('node-mocks-http');
 const objectHash = require('object-hash');
 const log = require('../../log').log;
 var moment = require('moment');
+var { decrypt } = require('../../utils/crypt');
 
 const rewire = require('rewire');
 let v2 = rewire('./clusters');
@@ -318,13 +319,11 @@ describe('clusters', () => {
 
     it('ADDED should return 200 and use s3', async () => {
       // Setup
-      let createBucketAndObject = false;
       let mockS3client = {
         // eslint-disable-next-line no-unused-vars
         createBucketAndObject: async (bucket, key, data) => {
           // eslint-disable-next-line no-unused-vars
           return new Promise((resolve, reject) => {
-            createBucketAndObject = true;
             resolve('createBucketAndObject');
           });
         }
@@ -369,8 +368,6 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Thanks');
       assert.equal(resource.deleted, false);
       assert.equal(resource.hash, hash);
-
-      assert.equal(createBucketAndObject, true);
     });
 
 
@@ -569,18 +566,16 @@ describe('clusters', () => {
       assert.equal(response._getData(), 'Thanks');
       assert.equal(resource.deleted, false); // we set the field to be true for the the test
       assert.equal(resource.hash, buildHashForResource(data, {})); // hash of the data we POSTED
-      assert.equal(resource.data, JSON.stringify(data)); // data we POSTED
+      assert.equal(decrypt(resource.data, org_id), JSON.stringify(data)); // data we POSTED
     });
 
     it('DELETED should return 200 and use S3', async () => {
       // Setup
-      let createBucketAndObject = false;
       let mockS3client = {
         // eslint-disable-next-line no-unused-vars
         createBucketAndObject: async (bucket, key, data) => {
           // eslint-disable-next-line no-unused-vars
           return new Promise((resolve, reject) => {
-            createBucketAndObject = true;
             resolve('createBucketAndObject');
           });
         }
@@ -634,7 +629,6 @@ describe('clusters', () => {
       assert.equal(response.statusCode, 200);
       assert.equal(response._getData(), 'Thanks');
       assert.equal(resource.deleted, true);
-      assert.equal(createBucketAndObject, true);
     });
 
     it('SYNC should return 200', async () => {
