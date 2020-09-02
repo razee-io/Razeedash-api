@@ -265,11 +265,10 @@ const channelResolvers = {
         throw new RazeeValidationError(`Too many channel version are registered under ${channel_uuid}.`, context);
       }
 
-      let fileStream = null;
       try {
         if(file){
-          fileStream = (await file).createReadStream();
-          content = await fs.promises.readFile(fileStream.path, 'utf8');
+          var tempFileStream = (await file).createReadStream();
+          content = await fs.promises.readFile(tempFileStream.path, 'utf8');
         }
         let yamlSize = Buffer.byteLength(content);
         if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
@@ -284,7 +283,7 @@ const channelResolvers = {
         throw new RazeeValidationError(`Provided YAML content is not valid: ${error}`, context);
       }
 
-      fileStream = stream.Readable.from([ content ]);
+      var fileStream = stream.Readable.from([ content ]);
       const iv = crypto.randomBytes(16);
       const ivText = iv.toString('base64');
 

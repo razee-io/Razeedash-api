@@ -84,7 +84,7 @@ const cleanObjKeysForMongo = (obj) => {
   return obj;
 };
 
-const buildSearchableDataForResource = (org, obj) => {
+const buildSearchableDataForResource = (org, obj, { clusterId }) => {
   var kind = obj.kind;
   let searchableAttrs = [
     { name: 'kind', attrPath: 'kind', },
@@ -134,11 +134,15 @@ const buildSearchableDataForResource = (org, obj) => {
     }
   });
 
-  var expression = '';
-  _.each(out, (searchableAttr) => {
-    expression = expression + ':' + searchableAttr;
-  });
-  out['searchableExpression'] = expression.substring(1);
+  var searchableExpressionArr = _.uniq(_.union(
+    _.map(out, (searchableAttr)=>{
+      return searchableAttr;
+    }),
+    [clusterId]
+  ));
+
+  // not sure why we're joining by colon instead of space, but thats what was in the original code, so keeping it
+  out['searchableExpression'] = searchableExpressionArr.join(':');
 
   return out;
 };
