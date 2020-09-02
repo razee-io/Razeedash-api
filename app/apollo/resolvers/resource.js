@@ -21,7 +21,7 @@ const GraphqlFields = require('graphql-fields');
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeQueryError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
@@ -30,7 +30,7 @@ const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
 // This is service level search function which does not verify user tag permission
-const commonResourcesSearch = async ({ context, searchFilter, limit=500, queryFields, sort={created: -1} }) => { // eslint-disable-line
+const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, queryFields, sort={created: -1} }) => { // eslint-disable-line
   const {  models, req_id, logger } = context;
   try {
     const resources = await models.Resource.find(searchFilter)
@@ -39,8 +39,10 @@ const commonResourcesSearch = async ({ context, searchFilter, limit=500, queryFi
       .lean({ virtuals: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
+    var totalCount = await models.Resource.find({ org_id: orgId, deleted: false }).count();
     return {
       count,
+      totalCount,
       resources,
     };
   } catch (error) {
@@ -121,15 +123,9 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 };
 
 // usage: buildSortObj([{field: 'updated', desc: true}], ['_id', 'name', 'created', 'updated'], context);
-const buildSortObj = (sortArr, allowedFields, context)=>{
-  if(!allowedFields){
-    throw new BasicRazeeError('You need to pass allowedFields into buildSortObj()', context); 
-  }
+const buildSortObj = (sortArr)=>{
   var out = {};
   _.each(sortArr, (sortObj)=>{
-    if(!_.includes(allowedFields, sortObj.field)){
-      throw new RazeeValidationError(`You are not allowed to sort on field "${sortObj.field}"`, context);
-    }
     out[sortObj.field] = (sortObj.desc ? -1 : 1);
   });
   return out;
@@ -171,7 +167,7 @@ const resourceResolvers = {
       // use service level read
       await validAuth(me, orgId, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
-      sort = buildSortObj(sort, ['_id', 'cluster_id', 'selfLink', 'created', 'updated', 'lastModified', 'deleted', 'hash'], context);
+      sort = buildSortObj(sort);
 
       let searchFilter = { org_id: orgId, deleted: false, };
       if(kinds.length > 0){
@@ -183,7 +179,7 @@ const resourceResolvers = {
         _.assign(searchFilter, models.Resource.translateAliases(_.omit(props, '$text')));
         searchFilter = buildSearchForResources(searchFilter, textProp, fromDate, toDate, kinds);
       }
-      const resourcesResult = await commonResourcesSearch({ models, searchFilter, limit, queryFields: queryFields.resources, sort, context });
+      const resourcesResult = await commonResourcesSearch({ orgId, models, searchFilter, limit, queryFields: queryFields.resources, sort, context });
 
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
 
@@ -230,7 +226,7 @@ const resourceResolvers = {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      const resourcesResult = await commonResourcesSearch({ context, searchFilter, limit, queryFields });
+      const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, limit, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },
@@ -321,7 +317,7 @@ const resourceResolvers = {
         });
       }
       const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
-      const resourcesResult = await commonResourcesSearch({ context, searchFilter, queryFields });
+      const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
       return resourcesResult;
     },

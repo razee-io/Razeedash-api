@@ -216,7 +216,7 @@ const updateClusterResources = async (req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          let searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          let searchableDataObj = buildSearchableDataForResource(req.org, resource.object, { clusterId });
 
           if (searchableDataObj.kind == 'RemoteResource' && searchableDataObj.children && searchableDataObj.children.length > 0) {
             // if children arrives earlier than this RR without subscription_id, update children's subscription_id
@@ -333,7 +333,7 @@ const updateClusterResources = async (req, res, next) => {
             cluster_id: req.params.cluster_id,
             selfLink: selfLink
           };
-          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object);
+          const searchableDataObj = buildSearchableDataForResource(req.org, resource.object, { clusterId });
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
