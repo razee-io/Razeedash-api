@@ -36,6 +36,9 @@ describe('clusters', () => {
     db.collection('clusters');
     db.collection('resources');
     db.collection('resourceStats');
+    v2.__set__('S3ClientClass', class S3MockClass{
+      uploadFile(){}
+    });
   });
 
   after(function () {
@@ -319,15 +322,6 @@ describe('clusters', () => {
 
     it('ADDED should return 200 and use s3', async () => {
       // Setup
-      let mockS3client = {
-        // eslint-disable-next-line no-unused-vars
-        createBucketAndObject: async (bucket, key, data) => {
-          // eslint-disable-next-line no-unused-vars
-          return new Promise((resolve, reject) => {
-            resolve('createBucketAndObject');
-          });
-        }
-      };
       const org_id = '1';
       const cluster_id = 'testupdateClusterResourcesAdd200';
       const data = { 'kind': 'Deployment', 'apiVersion': 'apps/v1', 'metadata': { 'name': 'watch-keeper', 'namespace': 'razee', 'selfLink': '/apis/apps/v1/namespaces/razee/deployments/watch-keeper', 'uid': '672ff712-7c9f-11e9-b757-ce243beadde5', 'resourceVersion': '131921', 'generation': 1, 'creationTimestamp': '2019-05-22T14:39:28Z', 'labels': { 'razee/watch-resource': 'detail' }, 'annotations': { 'deployment.kubernetes.io/revision': '1', 'razee.io/commit-sha': 'ec8ca9edcb1c24f137773a8fb681a1d327ebe770', 'razee.io/git-repo': 'https://github.com/razee-io/Watch-keeper.git', 'version': 'ec8ca9edcb1c24f137773a8fb681a1d327ebe770' } }, 'spec': { 'replicas': 1, 'selector': { 'matchLabels': { 'app': 'watch-keeper' } }, 'template': { 'metadata': { 'name': 'watch-keeper', 'creationTimestamp': null, 'labels': { 'app': 'watch-keeper' } }, 'spec': { 'containers': [{ 'name': 'watch-keeper', 'image': 'quay.io/razee/watch-keeper:0.0.3', 'env': [{ 'name': 'START_DELAY_MAX', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'START_DELAY_MAX', 'optional': true } } }, { 'name': 'NAMESPACE', 'valueFrom': { 'fieldRef': { 'apiVersion': 'v1', 'fieldPath': 'metadata.namespace' } } }, { 'name': 'RAZEEDASH_URL', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'RAZEEDASH_URL' } } }, { 'name': 'RAZEEDASH_ORG_KEY', 'valueFrom': { 'secretKeyRef': { 'name': 'watch-keeper-secret', 'key': 'RAZEEDASH_ORG_KEY' } } }, { 'name': 'NODE_ENV', 'value': 'REDACTED' }], 'resources': { 'limits': { 'cpu': '400m', 'memory': '500Mi' }, 'requests': { 'cpu': '50m', 'memory': '100Mi' } }, 'livenessProbe': { 'exec': { 'command': ['sh/liveness.sh'] }, 'initialDelaySeconds': 600, 'timeoutSeconds': 30, 'periodSeconds': 300, 'successThreshold': 1, 'failureThreshold': 1 }, 'terminationMessagePath': '/dev/termination-log', 'terminationMessagePolicy': 'File', 'imagePullPolicy': 'Always' }], 'restartPolicy': 'Always', 'terminationGracePeriodSeconds': 30, 'dnsPolicy': 'ClusterFirst', 'serviceAccountName': 'watch-keeper-sa', 'serviceAccount': 'watch-keeper-sa', 'securityContext': {}, 'schedulerName': 'default-scheduler' } }, 'strategy': { 'type': 'RollingUpdate', 'rollingUpdate': { 'maxUnavailable': '25%', 'maxSurge': '25%' } }, 'revisionHistoryLimit': 0, 'progressDeadlineSeconds': 600 }, 'status': { 'observedGeneration': 1, 'replicas': 1, 'updatedReplicas': 1, 'readyReplicas': 1, 'availableReplicas': 1, 'conditions': [{ 'type': 'Available', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:32Z', 'reason': 'MinimumReplicasAvailable', 'message': 'Deployment has minimum availability.' }, { 'type': 'Progressing', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:28Z', 'reason': 'NewReplicaSetAvailable', 'message': 'ReplicaSet watch-keeper-6678dd4f6f has successfully progressed.' }] } };
@@ -346,7 +340,6 @@ describe('clusters', () => {
           _id: org_id
         },
         log: log,
-        s3: mockS3client,
         db: db
       });
 
