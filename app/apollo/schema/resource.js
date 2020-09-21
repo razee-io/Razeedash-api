@@ -79,9 +79,11 @@ const resourceSchema = gql`
     resources(
       orgId: String!,
       filter: String,
+      mongoQuery: JSON,
       fromDate: Date,
       toDate: Date,
       limit: Int = 500,
+      skip: Int = 0,
       kinds: [String!],
       sort: [SortObj!],
       subscriptionsLimit: Int = 500
