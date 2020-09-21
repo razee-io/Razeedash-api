@@ -117,8 +117,10 @@ const clusterSchema = gql`
       If no **filter** is provided, this returns clusters based on just **origId**.
       """
       filter: String @sv
+      mongoQuery: JSON,
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      skip: Int = 0
       resourceLimit: Int = 500
       groupLimit: Int = 16
     ): [Cluster]!
