@@ -99,7 +99,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, channel_uuid);
       try{
 
         const org = await models.Organization.findOne({ _id: org_id });
