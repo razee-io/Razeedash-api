@@ -224,7 +224,6 @@ const channelResolvers = {
 
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
       const org = await models.Organization.findOne({ _id: org_id });
@@ -250,6 +249,8 @@ const channelResolvers = {
       if(!channel){
         throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
       }
+
+      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
       const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
       const versionNameExists = !!versions.find((version)=>{
