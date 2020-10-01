@@ -390,7 +390,6 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context);
       try{
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
         if(!deployableVersionObj){
@@ -405,6 +404,7 @@ const channelResolvers = {
         if(!channel){
           throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
         }
+        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const versionObj = channel.versions.find(v => v.uuid === uuid);
         if (!versionObj) {
           throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`, context);
