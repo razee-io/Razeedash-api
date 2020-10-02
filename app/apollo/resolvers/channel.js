@@ -61,7 +61,7 @@ const channelResolvers = {
         if (!channel) {
           throw new NotFoundError(`Could not find the channel with uuid ${uuid}.`, context);
         }
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -80,7 +80,7 @@ const channelResolvers = {
         if (!channel) {
           throw new NotFoundError(`Could not find the channel with name ${name}.`, context);
         }
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -158,6 +158,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
+      await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
         // might not necessary with uunique index. Worth to check to return error better.
@@ -165,7 +166,7 @@ const channelResolvers = {
         if(channel){ 
           throw new RazeeValidationError(`The channel name ${name} already exists.`, context);
         }
-        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        
         // validate the number of total channels are under the limit
         const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
