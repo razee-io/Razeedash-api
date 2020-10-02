@@ -55,13 +55,13 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
       logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
         var channel = await models.Channel.findOne({org_id: orgId, uuid });
         if (!channel) {
           throw new NotFoundError(`Could not find the channel with uuid ${uuid}.`, context);
         }
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -74,13 +74,13 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'channelByName';
       logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
         var channel = await models.Channel.findOne({ org_id: orgId, name });
         if (!channel) {
           throw new NotFoundError(`Could not find the channel with name ${name}.`, context);
         }
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -99,7 +99,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+      
       try{
 
         const org = await models.Organization.findOne({ _id: org_id });
@@ -114,6 +114,7 @@ const channelResolvers = {
         if(!channel){
           throw new NotFoundError(`Could not find the channel with uuid/name ${channel_uuid}/channelName.`, context);
         } 
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
         // search version by version uuid or version name
@@ -157,7 +158,6 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
         // might not necessary with uunique index. Worth to check to return error better.
@@ -165,6 +165,7 @@ const channelResolvers = {
         if(channel){ 
           throw new RazeeValidationError(`The channel name ${name} already exists.`, context);
         }
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         // validate the number of total channels are under the limit
         const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
@@ -190,14 +191,13 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
           throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
         }
-
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
 
         // find any subscriptions for this channel and update channelName in those subs
@@ -357,13 +357,13 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context);
-
+      
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
           throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
         }
+        await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid;
 
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
