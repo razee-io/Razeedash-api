@@ -50,8 +50,7 @@ const buildSearchFilter = (ordId, condition, searchStr) => {
 const commonClusterSearch = async (
   models,
   searchFilter,
-  limit,
-  startingAfter,
+  { limit, skip=0, startingAfter }
 ) => {
   let results = [];
 
@@ -63,6 +62,7 @@ const commonClusterSearch = async (
   results = await models.Cluster.find(searchFilter)
     .sort({ _id: -1 })
     .limit(limit)
+    .skip(skip)
     .lean({ virtuals: true });
   return results;
 };
@@ -172,7 +172,7 @@ const clusterResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const searchFilter = { org_id: orgId, ...conditions };
-      const clusters = await commonClusterSearch(models, searchFilter, limit, startingAfter);
+      const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
 
       await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
 
@@ -199,7 +199,7 @@ const clusterResolvers = {
           $lt: new Moment().subtract(1, 'day').toDate(),
         },
       };
-      const clusters = await commonClusterSearch(models, searchFilter, limit);
+      const clusters = await commonClusterSearch(models, searchFilter, { limit });
 
       await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
 
@@ -208,7 +208,7 @@ const clusterResolvers = {
 
     clusterSearch: async (
       parent,
-      { orgId, filter, limit, resourceLimit, groupLimit },
+      { orgId, filter, limit, skip, resourceLimit, groupLimit, mongoQuery },
       context,
       fullQuery
     ) => {
@@ -236,7 +236,16 @@ const clusterResolvers = {
         searchFilter = buildSearchFilter(orgId, conditions, textProp);
       }
 
-      const clusters = await commonClusterSearch(models, searchFilter, limit);
+      if(mongoQuery){
+        searchFilter = {
+          $and: [
+            searchFilter,
+            mongoQuery,
+          ]
+        };
+      }
+
+      const clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
       await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
 

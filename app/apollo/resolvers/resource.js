@@ -30,12 +30,13 @@ const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
 // This is service level search function which does not verify user tag permission
-const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, queryFields, sort={created: -1} }) => { // eslint-disable-line
+const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, skip=0, queryFields, sort={created: -1} }) => { // eslint-disable-line
   const {  models, req_id, logger } = context;
   try {
     const resources = await models.Resource.find(searchFilter)
       .sort(sort)
       .limit(limit)
+      .skip(skip)
       .lean({ virtuals: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
@@ -153,7 +154,7 @@ const resourceResolvers = {
     },
     resources: async (
       parent,
-      { orgId, filter, fromDate, toDate, limit, kinds = [], sort, subscriptionsLimit },
+      { orgId, filter, fromDate, toDate, limit, skip, kinds = [], sort, subscriptionsLimit, mongoQuery },
       context,
       fullQuery
     ) => {
@@ -163,6 +164,7 @@ const resourceResolvers = {
       logger.debug( {req_id, user: whoIs(me), orgId, filter, fromDate, toDate, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
+      skip = _.clamp(skip, 0, Number.MAX_SAFE_INTEGER);
 
       // use service level read
       await validAuth(me, orgId, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
@@ -179,7 +181,15 @@ const resourceResolvers = {
         _.assign(searchFilter, models.Resource.translateAliases(_.omit(props, '$text')));
         searchFilter = buildSearchForResources(searchFilter, textProp, fromDate, toDate, kinds);
       }
-      const resourcesResult = await commonResourcesSearch({ orgId, models, searchFilter, limit, queryFields: queryFields.resources, sort, context });
+      if(mongoQuery){
+        searchFilter = {
+          $and: [
+            searchFilter,
+            mongoQuery,
+          ]
+        };
+      }
+      const resourcesResult = await commonResourcesSearch({ orgId, models, searchFilter, limit, skip, queryFields: queryFields.resources, sort, context });
 
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
 
