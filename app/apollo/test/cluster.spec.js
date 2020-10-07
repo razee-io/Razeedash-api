@@ -18,6 +18,7 @@ const { expect } = require('chai');
 const fs = require('fs');
 const Moment = require('moment');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const { v4: UUID } = require('uuid');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
@@ -50,6 +51,11 @@ let userRootData;
 let presetOrgs;
 let presetUsers;
 let presetClusters;
+
+const group_01_uuid = 'fake_group_01_uuid;';
+const group_02_uuid = 'fake_group_02_uuid;';
+const group_03_uuid = 'fake_group_03_uuid;';
+const group_01_77_uuid = 'fake_group_01_77_uuid;';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -222,6 +228,87 @@ const createClusters = async () => {
   });
 }; // create clusters
 
+const createGroups = async () => {
+  await models.Group.create({
+    _id: UUID(),
+    uuid: group_01_uuid,
+    org_id: org01._id,
+    name: 'group1',
+    owner: 'undefined'
+  });
+  await models.Group.create({
+    _id: UUID(),
+    uuid: group_02_uuid,
+    org_id: org01._id,
+    name: 'group2',
+    owner: 'undefined'
+  });
+  await models.Group.create({
+    _id: UUID(),
+    uuid: group_03_uuid,
+    org_id: org01._id,
+    name: 'group3',
+    owner: 'undefined'
+  });
+  await models.Group.create({
+    _id: UUID(),
+    uuid: group_01_77_uuid,
+    org_id: org77._id,
+    name: 'group1',
+    owner: 'undefined'
+  });
+}; // create groups
+
+const groupClusters = async () => {
+  await models.Cluster.updateMany({
+    org_id: org01._id,
+    cluster_id: {$in: ['cluster_01', 'cluster_04']},
+    'groups.uuid': {$nin: [group_01_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_01_uuid,
+      name: 'group1'
+    }
+  }});
+
+  await models.Cluster.updateMany({
+    org_id: org01._id,
+    cluster_id: {$in: ['cluster_01', 'cluster_02', 'cluster_03', 'cluster_04']},
+    'groups.uuid': {$nin: [group_02_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_02_uuid,
+      name: 'group2'
+    }
+  }});
+
+  await models.Cluster.updateMany({
+    org_id: org01._id,
+    cluster_id: {$in: ['cluster_01','cluster_03', 'cluster_04']},
+    'groups.uuid': {$nin: [group_03_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_03_uuid,
+      name: 'group3'
+    }
+  }});
+
+  await models.Cluster.updateMany({
+    org_id: org77._id,
+    cluster_id: {$in: 'cluster_a'},
+    'groups.uuid': {$nin: [group_01_77_uuid]}
+  },
+  {$push: {
+    groups: {
+      uuid: group_01_77_uuid,
+      name: 'group1'
+    }
+  }});
+};
+
 describe('cluster graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
@@ -237,6 +324,8 @@ describe('cluster graphql test suite', () => {
     await createOrganizations();
     await createUsers();
     await createClusters();
+    await createGroups();
+    await groupClusters();
 
     // Can be uncommented if you want to see the test data that was added to the DB
     //await getPresetOrgs();
@@ -261,8 +350,22 @@ describe('cluster graphql test suite', () => {
       });
       const clusterByClusterId = result.data.data.clusterByClusterId;
 
+      expect(clusterByClusterId.groups).to.have.length(3);
+      expect(clusterByClusterId.groupObjs).to.have.length(3);
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
       expect(clusterByClusterId.status).to.equal('active');
+
+      //with group limit
+      const result2 = await clusterApi.byClusterID(token, {
+        orgId: org01._id,
+        clusterId: clusterId1,
+        groupLimit: 2,
+      });
+      const clusterByClusterId2 = result2.data.data.clusterByClusterId;
+      expect(clusterByClusterId2.groups).to.have.length(2);
+      expect(clusterByClusterId2.groupObjs).to.have.length(2);
+      expect(clusterByClusterId2.clusterId).to.equal(clusterId1);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -305,9 +408,27 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
       });
 
+      expect(clustersByOrgId[3].groupObjs).to.have.length(3);
+      expect(clustersByOrgId[3].groups).to.have.length(3);
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(4);
       expect(clustersByOrgId[0].resources).to.be.an('array');
+
+      // with group limit
+      const {
+        data: {
+          data: { clustersByOrgId: clustersByOrgId2 },
+        },
+      } = await clusterApi.byOrgID(token, {
+        orgId: org01._id,
+        groupLimit: 2,
+      });
+
+      expect(clustersByOrgId2[3].groupObjs).to.have.length(2);
+      expect(clustersByOrgId2[3].groups).to.have.length(2);
+      expect(clustersByOrgId2).to.be.an('array');
+      expect(clustersByOrgId2).to.have.length(4);
+      expect(clustersByOrgId2[0].resources).to.be.an('array');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -430,8 +551,26 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
       });
 
+      expect(clusterSearch[3].groupObjs).to.have.length(3);
+      expect(clusterSearch[3].groups).to.have.length(3);
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(4);
+
+      // with group limit
+      const {
+        data: {
+          data: { clusterSearch:  clusterSearch2},
+        },
+      } = await clusterApi.search(token, {
+        orgId: org01._id,
+        groupLimit: 2,
+      });
+
+      expect(clusterSearch2[3].groupObjs).to.have.length(2);
+      expect(clusterSearch2[3].groups).to.have.length(2);
+      expect(clusterSearch2).to.be.an('array');
+      expect(clusterSearch2).to.have.length(4);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -498,6 +637,23 @@ describe('cluster graphql test suite', () => {
       expect(inactiveClusters).to.be.an('array');
       expect(inactiveClusters).to.have.length(1);
       expect(inactiveClusters[0].clusterId).to.equal('cluster_04');
+      expect(inactiveClusters[0].groups).to.have.length(3);
+
+      // with group filter
+      const {
+        data: {
+          data: { inactiveClusters: inactiveClusters2 },
+        },
+      } = await clusterApi.inactiveClusters(token, {
+        orgId: org01._id,
+        groupLimit: 1,
+      });
+
+      expect(inactiveClusters2).to.be.an('array');
+      expect(inactiveClusters2).to.have.length(1);
+      expect(inactiveClusters2[0].clusterId).to.equal('cluster_04');
+      expect(inactiveClusters2[0].groups).to.have.length(1);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

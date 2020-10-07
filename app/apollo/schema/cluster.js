@@ -82,6 +82,7 @@ const clusterSchema = gql`
       orgId: String!, @sv
       clusterId: String! @sv
       resourceLimit: Int = 500
+      groupLimit: Int = 16
     ): Cluster
 
     """
@@ -103,6 +104,7 @@ const clusterSchema = gql`
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String @sv
       resourceLimit: Int = 500
+      groupLimit: Int = 16
     ): [Cluster]!
 
     """
@@ -115,9 +117,12 @@ const clusterSchema = gql`
       If no **filter** is provided, this returns clusters based on just **origId**.
       """
       filter: String @sv
+      mongoQuery: JSON,
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      skip: Int = 0
       resourceLimit: Int = 500
+      groupLimit: Int = 16
     ): [Cluster]!
 
     """
@@ -129,6 +134,7 @@ const clusterSchema = gql`
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       resourceLimit: Int = 500
+      groupLimit: Int = 16
     ): [Cluster]
 
     """

@@ -49,7 +49,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     });
   }
 
-  if(queryFields.groupObjs){
+  if(queryFields.groupObjs || queryFields.groups){
     if(clusterIds.length > 0){
       // [
       //   {groups: [{name: 'tag1'}]},
@@ -63,6 +63,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       _.each(clusters, (cluster)=>{
         var clusterGroupUuids = _.map(cluster.groups, 'uuid');
         cluster.groupObjs = _.filter(_.pick(groupsByUuid, clusterGroupUuids));
+        cluster.groups = _.filter(_.pick(groupsByUuid, clusterGroupUuids));
       });
     }
   }

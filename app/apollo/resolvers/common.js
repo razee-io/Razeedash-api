@@ -95,7 +95,7 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
-const validAuth = async (me, org_id, action, type, queryName, context) => {
+const validAuth = async (me, org_id, action, type, queryName, context, attrs = null) => {
   const {req_id, models, logger} = context;
 
   if (context.recoveryHintsMap) {
@@ -113,7 +113,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
     }
     return;
   }
-  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     throw new RazeeForbiddenError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
