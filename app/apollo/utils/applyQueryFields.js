@@ -16,7 +16,7 @@
 
 var _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed } = require('../resolvers/common');
-const { ACTIONS, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
   var { models } = context;

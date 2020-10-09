@@ -36,7 +36,7 @@ const channelResolvers = {
   Query: {
     channels: async(parent, { orgId }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
