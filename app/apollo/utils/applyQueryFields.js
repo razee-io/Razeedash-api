@@ -15,7 +15,7 @@
  */
 
 var _ = require('lodash');
-const { getGroupConditions } = require('../resolvers/common');
+const { getGroupConditions, filterChannelsToAllowed } = require('../resolvers/common');
 const { ACTIONS, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
@@ -177,7 +177,7 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
 };
 
 const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, context)=>{ // eslint-disable-line
-  var { models } = context;
+  var { me, models } = context;
   var { orgId } = args;
 
   _.each(subs, (sub)=>{
@@ -191,6 +191,8 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   if(queryFields.channel){
     var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
     var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
+
     await applyQueryFieldsToChannels(channels, queryFields.channel, args, context);
 
     var channelsByUuid = _.keyBy(channels, 'uuid');
