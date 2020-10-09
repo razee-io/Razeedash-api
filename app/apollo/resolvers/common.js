@@ -50,7 +50,7 @@ var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)
   const { models } = context;
   var decisionInputs = _.map(channels, (channel)=>{
     return {
-      type: TYPES.CHANNEL,
+      type: field,
       action,
       uuid: channel.uuid,
       name: channel.name,
