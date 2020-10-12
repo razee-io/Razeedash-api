@@ -112,6 +112,7 @@ items:
                   command: ["npm", "run", "wait-mongo"]
                 initialDelaySeconds: 5
                 periodSeconds: 15
+                timeoutSeconds: 10
               resources:
                 requests:
                   cpu: 100m
