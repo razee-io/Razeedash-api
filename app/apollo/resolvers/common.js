@@ -38,7 +38,30 @@ const validClusterAuth = async (me, queryName, context) => {
     }
     return;
   }
-}; 
+};
+
+var getAllowedChannels = async(me, orgId, action, field, context)=>{
+  const { models } = context;
+  var channels = await models.Channel.find({ org_id: orgId });
+  return await filterChannelsToAllowed(me, orgId, action, field, channels, context);
+};
+
+var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)=>{
+  const { models } = context;
+  var decisionInputs = _.map(channels, (channel)=>{
+    return {
+      type: field,
+      action,
+      uuid: channel.uuid,
+      name: channel.name,
+    };
+  });
+  var decisions = await models.User.isAuthorizedBatch(me, orgId, decisionInputs, context);
+  channels = _.filter(channels, (val, idx)=>{
+    return decisions[idx];
+  });
+  return channels;
+};
 
 // return user permitted cluster groups in an array 
 const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
@@ -95,7 +118,7 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
 
 // Validate is user is authorized for the requested action.
 // Throw exception if not.
-const validAuth = async (me, org_id, action, type, queryName, context) => {
+const validAuth = async (me, org_id, action, type, queryName, context, attrs = null) => {
   const {req_id, models, logger} = context;
 
   if (context.recoveryHintsMap) {
@@ -113,7 +136,7 @@ const validAuth = async (me, org_id, action, type, queryName, context) => {
     }
     return;
   }
-  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context))) {
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     throw new RazeeForbiddenError(
       `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
@@ -182,4 +205,8 @@ class RazeeQueryError extends BasicRazeeError {
   }
 }
 
-module.exports =  { whoIs, validAuth, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty , applyClusterInfoOnResources};
+module.exports =  {
+  whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed,
+  BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError,
+  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
+};
