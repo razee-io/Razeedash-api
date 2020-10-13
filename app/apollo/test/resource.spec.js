@@ -683,7 +683,7 @@ describe('resource graphql test suite', () => {
           }
         }`;
 
-        const meResult = await api.me();
+        const meResult = await api.me(token);
         const unsub = subClient
           .request(query, {
             orgId: meResult.data.data.me.orgId,
