@@ -29,13 +29,13 @@ const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
-
+// Filters out the namespaces you dont have access to. has to get all the resources first.
 const filterNamespaces = async (data, me, orgId, queryName, context) => {
   const res = data.resources.resources;
   const deleteArray = [];
   const namespaces = res.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
 
-  //do something. need to adjust validateAuth to retun false and not throw error
+  //need to adjust validateAuth to retun false and not throw error
   namespaces.forEach(n => {
     async () => {
       const valid = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
@@ -43,13 +43,16 @@ const filterNamespaces = async (data, me, orgId, queryName, context) => {
     };
   });
   
+  // find and push good resources to new array
   const filteredData = [];
   res.map( (d, i) => {
     const findInArray = deleteArray.filter(del => del === d.searchableData.namespace).filter(x => x)[0];
     if (!findInArray) filteredData.push(res[i]);
   });
   
-  return filteredData;
+  // replace and return
+  data.resources.resources = filteredData;
+  return data;
 };
 
 // This is service level search function which does not verify user tag permission
