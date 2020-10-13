@@ -124,7 +124,7 @@ describe('user graphql', () => {
     it('returns a user after user sign in', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const result1 = await api.me(token);
         console.log(JSON.stringify(result1.data));
@@ -140,7 +140,7 @@ describe('user graphql', () => {
     it('sign up a new user and org', async () => {
       try {
         token = await signUpUser(models, api, user02Data);
-        console.log(`user01 token=${token}`);
+        
        
         const {
           data: {
