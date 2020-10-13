@@ -38,7 +38,30 @@ const validClusterAuth = async (me, queryName, context) => {
     }
     return;
   }
-}; 
+};
+
+var getAllowedChannels = async(me, orgId, action, field, context)=>{
+  const { models } = context;
+  var channels = await models.Channel.find({ org_id: orgId });
+  return await filterChannelsToAllowed(me, orgId, action, field, channels, context);
+};
+
+var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)=>{
+  const { models } = context;
+  var decisionInputs = _.map(channels, (channel)=>{
+    return {
+      type: field,
+      action,
+      uuid: channel.uuid,
+      name: channel.name,
+    };
+  });
+  var decisions = await models.User.isAuthorizedBatch(me, orgId, decisionInputs, context);
+  channels = _.filter(channels, (val, idx)=>{
+    return decisions[idx];
+  });
+  return channels;
+};
 
 // return user permitted cluster groups in an array 
 const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
@@ -186,4 +209,8 @@ class RazeeQueryError extends BasicRazeeError {
   }
 }
 
-module.exports =  { whoIs, validAuth, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty , applyClusterInfoOnResources};
+module.exports =  {
+  whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed,
+  BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError,
+  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
+};
