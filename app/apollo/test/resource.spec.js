@@ -363,7 +363,7 @@ describe('resource graphql test suite', () => {
     it('should sort based on the users input', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+        
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -396,7 +396,7 @@ describe('resource graphql test suite', () => {
     it('should filter based on input kinds', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+        
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -661,7 +661,7 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+      
 
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
