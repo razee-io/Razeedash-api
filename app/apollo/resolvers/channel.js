@@ -28,7 +28,7 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
+const { whoIs, validAuth, getAllowedChannels, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
@@ -36,13 +36,12 @@ const channelResolvers = {
   Query: {
     channels: async(parent, { orgId }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
-        var channels = await models.Channel.find({ org_id: orgId });
+        var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);

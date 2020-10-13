@@ -289,7 +289,7 @@ const subscriptionResolvers = {
         if(!channel){
           throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
         }
-       
+
         // validate groups are all exists in label dbs
         await validateGroups(org_id, groups, context);
 
@@ -325,13 +325,15 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         var subscription = await models.Subscription.findOne({ org_id: orgId, uuid });
         if(!subscription){
           throw  new NotFoundError(`Subscription { uuid: "${uuid}", orgId:${orgId} } not found.`, context);
         }
+
+        await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
 
         // loads the channel
         var channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
@@ -384,6 +386,9 @@ const subscriptionResolvers = {
           throw  new NotFoundError(`Subscription { uuid: "${uuid}", org_id:${org_id} } not found.`, context);
         }
 
+        // this may be overkill, but will check for strings first, then groups below
+        await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
+
         // validate user has enough cluster groups permissions to for this sub
         // TODO: we should use specific groups action below instead of manage, e.g. setSubscription action
         const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
@@ -431,7 +436,7 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
 
       var success = false;
       try{
@@ -439,6 +444,9 @@ const subscriptionResolvers = {
         if(!subscription){
           throw  new NotFoundError(`Subscription uuid "${uuid}" not found.`, context);
         }
+
+        await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
+
         await subscription.deleteOne();
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
