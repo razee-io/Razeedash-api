@@ -331,7 +331,7 @@ describe('resource graphql test suite', () => {
     it('a user should see a resource by given id', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -363,7 +363,7 @@ describe('resource graphql test suite', () => {
     it('should sort based on the users input', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+        
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -396,7 +396,7 @@ describe('resource graphql test suite', () => {
     it('should filter based on input kinds', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+        
         const meResult = await api.me(token);
 
         const result1 = await api.resources(token, {
@@ -433,7 +433,7 @@ describe('resource graphql test suite', () => {
     it('should see resource history item', async()=>{
       try{
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+       
         const meResult = await api.me(token);
 
 
@@ -462,7 +462,7 @@ describe('resource graphql test suite', () => {
       let token;
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
 
@@ -497,7 +497,7 @@ describe('resource graphql test suite', () => {
       try {
 
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
 
@@ -527,7 +527,7 @@ describe('resource graphql test suite', () => {
     it('a user should be able to get the total counts of resources', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
         const result1 = await api.resourcesCount(token, {
@@ -552,7 +552,7 @@ describe('resource graphql test suite', () => {
     it('a user should only see resources belongs to his organization', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
 
@@ -578,7 +578,7 @@ describe('resource graphql test suite', () => {
     it('a user should only see resources for given clusterId with optional filter', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
 
@@ -608,7 +608,7 @@ describe('resource graphql test suite', () => {
     it('a user should only see resources for given subscription id', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        console.log(`user01 token=${token}`);
+        
 
         const meResult = await api.me(token);
 
@@ -661,7 +661,7 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
-        console.log(`user02 token=${token}`);
+        
 
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
