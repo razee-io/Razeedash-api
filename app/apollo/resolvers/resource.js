@@ -51,6 +51,7 @@ const filterNamespaces = async (data, me, orgId, queryName, context) => {
   });
   
   // replace and return
+  data.resources.count = filteredData.length;
   data.resources.resources = filteredData;
   return data;
 };
