@@ -31,29 +31,26 @@ const url = require('url');
 
 // Filters out the namespaces you dont have access to. has to get all the resources first.
 const filterNamespaces = async (data, me, orgId, queryName, context) => {
-  const res = data.resources.resources;
-  const deleteArray = [];
-  const namespaces = res.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
-
-  //need to adjust validateAuth to retun false and not throw error
-  namespaces.forEach(n => {
-    async () => {
-      const valid = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
-      if (!valid) deleteArray.push(n);
-    };
-  });
   
+  if (data.resources.length === 0) return data;
+  const namespaces = data.resources.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
+  const deleteArray = await Promise.all(namespaces.map(async n => {
+    const invalid = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
+    return invalid ? n : false;
+  }));
+
   // find and push good resources to new array
   const filteredData = [];
-  res.map( (d, i) => {
+  data.resources.map( (d, i) => {
     const findInArray = deleteArray.filter(del => del === d.searchableData.namespace).filter(x => x)[0];
-    if (!findInArray) filteredData.push(res[i]);
+    if (!findInArray) filteredData.push(data.resources[i]);
   });
   
-  // replace and return
-  data.resources.count = filteredData.length;
-  data.resources.resources = filteredData;
-  return data;
+  return {
+    count: filteredData.length,
+    totalCount: filteredData.length,
+    resources: filteredData
+  };
 };
 
 // This is service level search function which does not verify user tag permission
