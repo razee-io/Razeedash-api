@@ -281,13 +281,17 @@ UserPassportLocalSchema.statics.userTokenIsAuthorizedBatch = async function(me, 
 };
 
 UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArray, context) {
-  const { req_id, logger } = context;
+  const { req_id, logger, models } = context;
   logger.debug({ req_id, orgId, objectArray, me },'passport.local isAuthorizedBatch enter..');
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
     logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'passport.local isAuthorizedBatch exit..');
-    return new Array(objectArray.length).fill(false);
+    var result = false;
+    if(await models.User.isValidOrgKey(models, me)){
+      result = true;
+    }
+    return new Array(objectArray.length).fill(result);
   }
 
   const orgMeta = me.meta.orgs.find((o)=>{

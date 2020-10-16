@@ -105,7 +105,11 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
     logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'default isAuthorizedBatch exit..');
-    return new Array(objectArray.length).fill(false);
+    var result = false;
+    if(await models.User.isValidOrgKey(models, me)){
+      result = true;
+    }
+    return new Array(objectArray.length).fill(result);
   }
 
   const user = await this.findOne({ apiKey: me.apiKey }).lean();
