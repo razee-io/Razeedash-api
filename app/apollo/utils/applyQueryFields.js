@@ -15,7 +15,7 @@
  */
 
 var _ = require('lodash');
-const { getGroupConditions, filterChannelsToAllowed } = require('../resolvers/common');
+const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
 const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
@@ -70,7 +70,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
 };
 
 const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
-  var { models } = context;
+  var { me, models } = context;
   var { orgId } = args;
 
   if(queryFields.owner){
@@ -82,6 +82,8 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
   if(queryFields.subscriptions || queryFields.subscriptionCount){
     var groupNames = _.uniq(_.map(groups, 'name'));
     var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+    subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscriptions, args, context);
 
     const subscriptionsByGroupName = {};
@@ -120,7 +122,7 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
 };
 
 const applyQueryFieldsToResources = async(resources, queryFields={}, args, context)=>{
-  var { models } = context;
+  var { me, models } = context;
   var { orgId, subscriptionsLimit = 500 } = args;
 
   if(queryFields.cluster){
@@ -137,6 +139,8 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
   if(queryFields.subscription){
     var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
     var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
+    subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscription, args, context);
 
     _.each(subscriptions, (sub)=>{
@@ -167,6 +171,8 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
     const conditions = await getGroupConditions(me, orgId, ACTIONS.READ, 'name', 'applyQueryFieldsToChannels queryFields.subscriptions', context);
     var channelUuids = _.uniq(_.map(channels, 'uuid'));
     var subscriptions = await models.Subscription.find({ org_id: orgId, channel_uuid: { $in: channelUuids }, ...conditions }, {}).lean({ virtuals: true });
+    subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscriptions, args, context);
 
     var subscriptionsByChannelUuid = _.groupBy(subscriptions, 'channel_uuid');

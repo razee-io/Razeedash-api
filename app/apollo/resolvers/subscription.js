@@ -18,7 +18,11 @@ const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
 const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, validClusterAuth, getGroupConditions, getAllowedGroups, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError } = require ('./common');
+const {
+  whoIs, validAuth, validClusterAuth,
+  getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
+  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
+} = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
@@ -81,10 +85,11 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        const foundSubscriptions = await models.Subscription.find({
+        var foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           groups: { $in: clusterGroupNames },
         }).lean(/* skip virtuals: true for now since it is class facing api. */);
+        foundSubscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, foundSubscriptions, context);
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
@@ -109,6 +114,7 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
       try{
         var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+        subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
         throw new NotFoundError('Could not find the subscription.', context);
@@ -139,6 +145,7 @@ const subscriptionResolvers = {
 
       try{
         var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
+        subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
 
         var subscription = subscriptions.find((sub)=>{
           return (sub.uuid == uuid || sub.name == name);
@@ -197,6 +204,7 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
         var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
+        subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
         throw new NotFoundError('Could not find subscriptions.', context); 
@@ -250,6 +258,7 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
         var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
+        subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
         throw new NotFoundError('Could not find subscriptions.', context); 
