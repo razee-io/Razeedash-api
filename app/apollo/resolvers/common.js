@@ -63,6 +63,29 @@ var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)
   return channels;
 };
 
+var getAllowedSubscriptions = async(me, orgId, action, field, context)=>{
+  const { models } = context;
+  var subscriptions = await models.Subscription.find({ org_id: orgId });
+  return await filterSubscriptionsToAllowed(me, orgId, action, field, subscriptions, context);
+};
+
+var filterSubscriptionsToAllowed = async(me, orgId, action, field, subscriptions, context)=>{
+  const { models } = context;
+  var decisionInputs = _.map(subscriptions, (subscription)=>{
+    return {
+      type: field,
+      action,
+      uuid: subscription.uuid,
+      name: subscription.name,
+    };
+  });
+  var decisions = await models.User.isAuthorizedBatch(me, orgId, decisionInputs, context);
+  subscriptions = _.filter(subscriptions, (val, idx)=>{
+    return decisions[idx];
+  });
+  return subscriptions;
+};
+
 // return user permitted cluster groups in an array 
 const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
   const {req_id, models, logger} = context;
@@ -206,7 +229,8 @@ class RazeeQueryError extends BasicRazeeError {
 }
 
 module.exports =  {
-  whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed,
+  whoIs, validAuth,
+  getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError,
   validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
 };
