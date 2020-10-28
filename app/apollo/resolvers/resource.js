@@ -29,6 +29,30 @@ const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
 
+// Filters out the namespaces you dont have access to. has to get all the resources first.
+const filterNamespaces = async (data, me, orgId, queryName, context) => {
+  
+  if (data.resources.length === 0) return data;
+  const namespaces = data.resources.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
+  const deleteArray = await Promise.all(namespaces.map(async n => {
+    const invalid = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
+    return invalid ? n : false;
+  }));
+
+  // find and push good resources to new array
+  const filteredData = [];
+  data.resources.map( (d, i) => {
+    const findInArray = deleteArray.filter(del => del === d.searchableData.namespace).filter(x => x)[0];
+    if (!findInArray) filteredData.push(data.resources[i]);
+  });
+  
+  return {
+    count: filteredData.length,
+    totalCount: filteredData.length,
+    resources: filteredData
+  };
+};
+
 // This is service level search function which does not verify user tag permission
 const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, skip=0, queryFields, sort={created: -1} }) => { // eslint-disable-line
   const {  models, req_id, logger } = context;
@@ -193,7 +217,7 @@ const resourceResolvers = {
 
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
 
-      return resourcesResult;
+      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
     },
 
     resourcesByCluster: async (
@@ -209,13 +233,12 @@ const resourceResolvers = {
 
       limit = _.clamp(limit, 1, 10000);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
-
       const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
         throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`, context);
       }
+
       const allowedGroups = await getAllowedGroups(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
       if (cluster.groups) {
         cluster.groups.some(group => {
@@ -238,7 +261,7 @@ const resourceResolvers = {
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
       const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, limit, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
-      return resourcesResult;
+      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
     },
 
     resource: async (parent, { orgId: org_id, id: _id, histId }, context, fullQuery) => {
@@ -310,7 +333,6 @@ const resourceResolvers = {
   
       logger.debug( {req_id, user: whoIs(me), orgId, subscription_id, queryFields}, `${queryName} enter`);
   
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
@@ -329,7 +351,7 @@ const resourceResolvers = {
       const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
       const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
-      return resourcesResult;
+      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
     },
 
     resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{

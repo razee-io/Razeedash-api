@@ -51,14 +51,14 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'group';
       logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
         let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with uuid ${uuid}.`);
         }
-
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
         return group;
@@ -72,13 +72,14 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'groupByName';
       logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
   
       try{
         let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(`could not find group with name ${name}.`);
         }
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
 
@@ -123,7 +124,7 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
   
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
@@ -131,6 +132,7 @@ const groupResolvers = {
           throw new NotFoundError(`group uuid "${uuid}" not found`);
         }
   
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
   
         if(subCount > 0){
@@ -160,13 +162,15 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroupByName';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
   
       try{
         const group = await models.Group.findOne({ name, org_id: org_id }).lean();
         if(!group){
           throw new NotFoundError(`group name "${name}" not found`);
         }
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
   
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
@@ -345,7 +349,7 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'groupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
       try{
 
@@ -354,6 +358,8 @@ const groupResolvers = {
         if(!group){
           throw new NotFoundError(`group uuid "${uuid}" not found`);
         }
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -374,7 +380,7 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'unGroupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
       try{
 
@@ -383,6 +389,8 @@ const groupResolvers = {
         if(!group){
           throw new NotFoundError(`group uuid "${uuid}" not found`);
         }
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(

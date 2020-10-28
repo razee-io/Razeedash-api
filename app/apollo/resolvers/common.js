@@ -161,10 +161,14 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
   }
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
-    throw new RazeeForbiddenError(
-      `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
-      context
-    );
+    if (type === TYPES.RESOURCE){
+      return true;
+    } else {
+      throw new RazeeForbiddenError(
+        `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
+        context
+      );
+    }
   }
 };
 

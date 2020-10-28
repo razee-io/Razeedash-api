@@ -80,7 +80,7 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      //await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const cluster = await models.Cluster.findOne({
@@ -92,6 +92,8 @@ const clusterResolvers = {
       if(!cluster){
         throw new NotFoundError(`Could not find the cluster with Id ${clusterId}.`, context); 
       }
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
 
       if(cluster){
         var { url } = await models.Organization.getRegistrationUrl(orgId, context);
@@ -121,7 +123,7 @@ const clusterResolvers = {
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), orgId, clusterName}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
       const cluster = await models.Cluster.findOne({
@@ -133,6 +135,8 @@ const clusterResolvers = {
       if(!cluster){
         throw new NotFoundError(`Could not find the cluster with name ${clusterName}.`, context);
       }
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, cluster.name, clusterName]);
 
       if(cluster){
         var { url } = await models.Organization.getRegistrationUrl(orgId, context);
