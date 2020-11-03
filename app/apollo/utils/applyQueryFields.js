@@ -18,12 +18,24 @@ var _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
 const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
+
+var loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
+  var { models } = context;
+  var resourceLimit = args.resourceLimit || 500;
+  return await models.Resource.find({
+    $and: [
+      search,
+      _.get(args, 'mongoQueries.resources', {}),
+    ],
+  }).limit(resourceLimit).lean({virtuals: true});
+};
+
+
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
   var { models } = context;
-  var { orgId, resourceLimit, groupLimit } = args;
+  var { orgId, groupLimit } = args;
 
   const clusterIds = _.map(clusters, 'cluster_id');
-  resourceLimit = resourceLimit || 500;
   const now = new Date();
 
   _.each(clusters, (cluster)=>{
@@ -40,7 +52,11 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     }
   });
   if(queryFields.resources) {
-    const resources = await models.Resource.find({ cluster_id: { $in: clusterIds } }).limit(resourceLimit).lean({virtuals: true});
+    var resources = await loadResourcesWithSearchAndArgs({
+      search: { cluster_id: { $in: clusterIds } },
+      args,
+      context,
+    });
     await applyQueryFieldsToResources(resources, queryFields.resources, args, context);
 
     const resourcesByClusterId = _.groupBy(resources, 'cluster_id');
@@ -209,7 +225,11 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     });
   }
   if(queryFields.resources){
-    var resources = await models.Resource.find({ org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } }).lean({ virtuals: true });
+    var resources = await loadResourcesWithSearchAndArgs({
+      search: { org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } },
+      args,
+      context,
+    });
     await applyQueryFieldsToResources(resources, queryFields.resources, args, context);
 
     var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
@@ -230,10 +250,14 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     });
   }
   if(queryFields.remoteResources || queryFields.rolloutStatus){
-    var remoteResources = await models.Resource.find({
-      org_id: orgId,
-      'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
-      deleted: false,
+    var remoteResources = await loadResourcesWithSearchAndArgs({
+      search: {
+        org_id: orgId,
+        'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
+        deleted: false,
+      },
+      args,
+      context,
     });
     await applyQueryFieldsToResources(remoteResources, queryFields.remoteResources, args, context);
 
