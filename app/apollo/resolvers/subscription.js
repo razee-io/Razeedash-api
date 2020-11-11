@@ -89,7 +89,6 @@ const subscriptionResolvers = {
           'org_id': org_id,
           groups: { $in: clusterGroupNames },
         }).lean(/* skip virtuals: true for now since it is class facing api. */);
-        foundSubscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, foundSubscriptions, context);
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
@@ -160,7 +159,7 @@ const subscriptionResolvers = {
       }catch(err){
         logger.error(err);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
-      
+
       }
     },
     subscriptionByName: async(parent, { orgId, name }, context, fullQuery) => {
@@ -171,12 +170,12 @@ const subscriptionResolvers = {
     },
 
     subscriptionsForCluster: async(parent, {  orgId: org_id , clusterId: cluster_id  }, context, fullQuery) => {
-      
+
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForCluster';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      
+
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
       if (!cluster) {
@@ -207,7 +206,7 @@ const subscriptionResolvers = {
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
-        throw new NotFoundError('Could not find subscriptions.', context); 
+        throw new NotFoundError('Could not find subscriptions.', context);
       }
       if(subscriptions) {
         subscriptions = subscriptions.map((sub)=>{
@@ -222,14 +221,14 @@ const subscriptionResolvers = {
 
       return subscriptions;
     },
-    
+
     subscriptionsForClusterByName: async(parent, {  orgId: org_id, clusterName  }, context, fullQuery) => {
 
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForClusterByName';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
-      
+
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });
       if (!cluster) {
@@ -261,7 +260,7 @@ const subscriptionResolvers = {
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
-        throw new NotFoundError('Could not find subscriptions.', context); 
+        throw new NotFoundError('Could not find subscriptions.', context);
       }
       if(subscriptions) {
         subscriptions = subscriptions.map((sub)=>{
@@ -352,7 +351,7 @@ const subscriptionResolvers = {
 
         // validate groups are all exists in label dbs
         await validateGroups(orgId, groups, context);
-        
+
         // loads the version
         var version = channel.versions.find((version)=>{
           return (version.uuid == version_uuid);
@@ -405,7 +404,7 @@ const subscriptionResolvers = {
           // if some tag of the sub does not in user's cluster group list, throws an error
           throw new RazeeForbiddenError(`You are not allowed to set subscription for all of ${subscription.groups} groups.`, context);
         }
-        
+
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
@@ -478,20 +477,20 @@ const subscriptionResolvers = {
     subscriptionUpdated: {
       // eslint-disable-next-line no-unused-vars
       resolve: async (parent, args) => {
-        //  
+        //
         // Sends a message back to a subscribed client
         // 'parent' is the object representing the subscription that was updated
-        // 
+        //
         return { hasUpdates: true };
       },
 
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
-          //  
+          //
           //  This function runs when a client initially connects
           // 'args' contains the razee-org-key sent by a connected client
-          // 
+          //
           const { logger } = context;
 
           const orgKey = context.apiKey || '';
@@ -512,7 +511,7 @@ const subscriptionResolvers = {
         },
         // eslint-disable-next-line no-unused-vars
         async (parent, args, context) => {
-          // 
+          //
           // this function determines whether or not to send data back to a subscriber
           //
           const { logger } = context;
@@ -526,7 +525,7 @@ const subscriptionResolvers = {
             logger.error('No razee-org-key was supplied');
             return Boolean(false);
           }
-          
+
           const orgId = context.orgId || '';
           if (!orgId) {
             logger.error('No org was found for this org key. returning false');
