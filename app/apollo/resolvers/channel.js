@@ -26,7 +26,6 @@ const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
 const yaml = require('js-yaml');
-const fs = require('fs');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
