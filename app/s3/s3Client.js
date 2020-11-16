@@ -104,7 +104,7 @@ module.exports = class S3Client {
   get endpoint() {
     return this._conf.endpoint;
   }
-  
+
   get log() {
     const nop = {
       error: () => {},
