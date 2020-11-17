@@ -52,6 +52,17 @@ const linkSchema = gql`
     field: String!
     desc: Boolean = false
   }
+  
+  input MongoQueries {
+    resources: JSON
+    
+    #we'll enable these ones later
+    # clusters: JSON
+    # channels: JSON
+    # groups: JSON
+    # orgs: JSON
+    # subscriptions: JSON
+  }
 `;
 
 const schemas = [ linkSchema,

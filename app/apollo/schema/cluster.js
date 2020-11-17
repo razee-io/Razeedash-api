@@ -15,6 +15,7 @@
  */
 
 const { gql } = require('apollo-server-express');
+var { globalGraphqlInputs } = require('./common');
 
 const clusterSchema = gql`
   type Comment {
@@ -81,8 +82,7 @@ const clusterSchema = gql`
     clusterByClusterId(
       orgId: String!, @sv
       clusterId: String! @sv
-      resourceLimit: Int = 500
-      groupLimit: Int = 16
+      ${globalGraphqlInputs}
     ): Cluster
 
     """
@@ -91,7 +91,7 @@ const clusterSchema = gql`
     clusterByName(
       orgId: String!, @sv
       clusterName: String! @sv
-      resourceLimit: Int = 500
+      ${globalGraphqlInputs}
     ): Cluster
 
     """
@@ -103,8 +103,7 @@ const clusterSchema = gql`
       limit: Int = 50
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String @sv
-      resourceLimit: Int = 500
-      groupLimit: Int = 16
+      ${globalGraphqlInputs}
     ): [Cluster]!
 
     """
@@ -121,8 +120,7 @@ const clusterSchema = gql`
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       skip: Int = 0
-      resourceLimit: Int = 500
-      groupLimit: Int = 16
+      ${globalGraphqlInputs}
     ): [Cluster]!
 
     """
@@ -133,8 +131,7 @@ const clusterSchema = gql`
       orgId: String! @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
-      resourceLimit: Int = 500
-      groupLimit: Int = 16
+      ${globalGraphqlInputs}
     ): [Cluster]
 
     """
