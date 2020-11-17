@@ -71,10 +71,11 @@ const clusterResolvers = {
   Query: {
     clusterByClusterId: async (
       parent,
-      { orgId, clusterId, resourceLimit, groupLimit },
+      args,
       context,
       fullQuery
     ) => {
+      var { orgId, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
@@ -107,17 +108,18 @@ const clusterResolvers = {
         cluster.registration.url = url;
       }
 
-      await applyQueryFieldsToClusters([cluster], queryFields, { orgId, resourceLimit, groupLimit }, context);
+      await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
       return cluster;
     }, // end cluster by _id
 
     clusterByName: async (
       parent,
-      { orgId, clusterName, resourceLimit },
+      args,
       context,
       fullQuery
     ) => {
+      var { orgId, clusterName } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByName';
       const { models, me, req_id, logger } = context;
@@ -150,7 +152,7 @@ const clusterResolvers = {
         cluster.registration.url = url;
       }
 
-      await applyQueryFieldsToClusters([cluster], queryFields, { resourceLimit }, context);
+      await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
       return cluster;
     }, // end clusterByClusterName
@@ -163,10 +165,11 @@ const clusterResolvers = {
     //   older than.
     clustersByOrgId: async (
       parent,
-      { orgId, limit, startingAfter, resourceLimit, groupLimit },
+      args,
       context,
       fullQuery
     ) => {
+      var { orgId, limit, startingAfter } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
@@ -178,7 +181,7 @@ const clusterResolvers = {
       const searchFilter = { org_id: orgId, ...conditions };
       const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
+      await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
       return clusters;
     }, // end clustersByOrgId
@@ -186,10 +189,11 @@ const clusterResolvers = {
     // Find all the clusters that have not been updated in the last day
     inactiveClusters: async (
       parent,
-      { orgId, limit, resourceLimit, groupLimit },
+      args,
       context,
       fullQuery
     ) => {
+      var { orgId, limit } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'inactiveClusters';
       const { models, me, req_id, logger } = context;
@@ -205,17 +209,18 @@ const clusterResolvers = {
       };
       const clusters = await commonClusterSearch(models, searchFilter, { limit });
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
+      await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
       return clusters;
     }, // end inactiveClusters
 
     clusterSearch: async (
       parent,
-      { orgId, filter, limit, skip, resourceLimit, groupLimit, mongoQuery },
+      args,
       context,
       fullQuery
     ) => {
+      var { orgId, filter, limit, skip, mongoQuery } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterSearch';
       const { models, me, req_id, logger } = context;
@@ -251,7 +256,7 @@ const clusterResolvers = {
 
       const clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
-      await applyQueryFieldsToClusters(clusters, queryFields, { orgId, resourceLimit, groupLimit }, context);
+      await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
       return clusters;
     }, // end clusterSearch
