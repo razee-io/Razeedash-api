@@ -134,15 +134,23 @@ const buildSearchableDataForResource = (org, obj, { clusterId }) => {
     }
   });
 
+  var allAnnotations = _.get(obj, 'metadata.annotations', {});
+  var searchableAnnotationValues = _.filter(allAnnotations , (val, key)=>{
+    return key.toString().match(/^(razee|satellite)/i);
+  });
+
   var searchableExpressionArr = _.uniq(_.union(
     _.map(out, (searchableAttr)=>{
       return searchableAttr;
     }),
-    [clusterId]
+    [clusterId],
+    searchableAnnotationValues,
   ));
 
   // not sure why we're joining by colon instead of space, but thats what was in the original code, so keeping it
-  out['searchableExpression'] = searchableExpressionArr.join(':');
+  out['searchableExpression'] = searchableExpressionArr.join(' ');
+  // caps the length at 4kb
+  out['searchableExpression'] = out['searchableExpression'].slice(0, 4000);
 
   return out;
 };
