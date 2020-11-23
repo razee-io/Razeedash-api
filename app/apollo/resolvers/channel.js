@@ -21,11 +21,11 @@ const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const { WritableStreamBuffer } = require('stream-buffers');
+const streamToString = require('stream-to-string');
 const stream = require('stream');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
 const yaml = require('js-yaml');
-const fs = require('fs');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
@@ -93,12 +93,12 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
     },
-    
+
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
-      
+
       try{
 
         const org = await models.Organization.findOne({ _id: org_id });
@@ -112,7 +112,7 @@ const channelResolvers = {
         const channel = await models.Channel.findOne(channelFilter);
         if(!channel){
           throw new NotFoundError(`Could not find the channel with uuid/name ${channel_uuid}/channelName.`, context);
-        } 
+        }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
@@ -140,7 +140,7 @@ const channelResolvers = {
           var path = `${parts.join('/')}`;
 
           const s3Client = new S3ClientClass(conf);
-          deployableVersionObj.content = await s3Client.getAndDecryptFile(bucketName, path, orgKey, deployableVersionObj.iv);
+          deployableVersionObj.content = await s3Client.getAndDecryptFile(bucketName, decodeURIComponent(path), orgKey, deployableVersionObj.iv);
         }
         else {
           throw new BasicRazeeError(`versionObj.location="${versionObj.location}" not implemented yet`, context);
@@ -149,7 +149,7 @@ const channelResolvers = {
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
-      } 
+      }
     }
   },
   Mutation: {
@@ -162,10 +162,10 @@ const channelResolvers = {
       try {
         // might not necessary with uunique index. Worth to check to return error better.
         const channel = await models.Channel.findOne({ name, org_id });
-        if(channel){ 
+        if(channel){
           throw new RazeeValidationError(`The channel name ${name} already exists.`, context);
         }
-        
+
         // validate the number of total channels are under the limit
         const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
@@ -236,7 +236,7 @@ const channelResolvers = {
         throw new RazeeValidationError('A "name" must be specified', context);
       }
       if(!type || type !== 'yaml' && type !== 'application/yaml'){
-        throw new RazeeValidationError('A "type" of application/yaml must be specified', context); 
+        throw new RazeeValidationError('A "type" of application/yaml must be specified', context);
       }
       if(!channel_uuid){
         throw new RazeeValidationError('A "channel_uuid" must be specified', context);
@@ -269,7 +269,7 @@ const channelResolvers = {
       try {
         if(file){
           var tempFileStream = (await file).createReadStream();
-          content = await fs.promises.readFile(tempFileStream.path, 'utf8');
+          content = await streamToString(tempFileStream);
         }
         let yamlSize = Buffer.byteLength(content);
         if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
@@ -357,7 +357,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      
+
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
@@ -421,7 +421,7 @@ const channelResolvers = {
           await s3Client.deleteObject(bucketName, path);
         }
         await models.DeployableVersion.deleteOne({ org_id, uuid});
-        
+
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
         versionObjs.splice(vIndex, 1);
