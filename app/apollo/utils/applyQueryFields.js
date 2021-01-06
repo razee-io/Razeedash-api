@@ -262,7 +262,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     await applyQueryFieldsToResources(remoteResources, queryFields.remoteResources, args, context);
 
     var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
-      return _.get(rr, "searchableData['annotations[\"deploy_razee_io_clustersubscription\"]']");
+      return _.get(rr, 'searchableData[\'annotations["deploy_razee_io_clustersubscription"]\']');
     });
     _.each(subs, (sub)=>{
       var rrs = remoteResourcesBySubUuid[sub.uuid] || [];
