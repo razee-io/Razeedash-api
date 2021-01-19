@@ -7,7 +7,7 @@ services:
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch; else npx audit-ci --low -a node-fetch || true; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci; else npx audit-ci || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:default
@@ -18,12 +18,13 @@ script:
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images
   - ./build/process-template.sh kubernetes/razeedash-api/resource.yaml >/tmp/resource.yaml
+  - if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then npm version --no-git-tag-version "${TRAVIS_TAG}"; fi
 
 before_deploy:
   - docker login -u="${QUAY_ID}" -p="${QUAY_TOKEN}" quay.io
 
 deploy:
-  # Deploy alpha builds
+  # Publish alpha builds
   - provider: script
     script: docker push "quay.io/razee/razeedash-api:${TRAVIS_TAG}"
     skip_cleanup: true
@@ -39,7 +40,7 @@ deploy:
       condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+_[0-9]{3}$
     api_key: "${GITHUB_TOKEN}"
     name: "${TRAVIS_TAG}"
-  # Deploy released builds
+  # Publish released builds
   - provider: script
     script: docker push "quay.io/razee/razeedash-api:${TRAVIS_TAG}"
     skip_cleanup: true
@@ -54,3 +55,10 @@ deploy:
       condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$
     api_key: "${GITHUB_TOKEN}"
     name: "${TRAVIS_TAG}"
+  - provider: npm
+    email: "${NPMJS_EMAIL}"
+    api_key: "${NPMJS_API_KEY}"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$
