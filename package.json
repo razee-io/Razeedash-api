@@ -1,5 +1,5 @@
 {
-  "name": "razeedash-api",
+  "name": "@razee/razeedash-api",
   "version": "0.0.0-dev",
   "description": "API for razeedash and graphql",
   "license": "Apache-2.0",
