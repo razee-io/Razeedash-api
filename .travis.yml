@@ -21,26 +21,35 @@ script:
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images
   - ./build/process-template.sh kubernetes/razeedash-api/resource.yaml >/tmp/resource.yaml
-  - if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(.rc-[0-9]+)?$ ]]; then npm version --no-git-tag-version "${TRAVIS_TAG}"; fi
+  - if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$ ]]; then npm version --no-git-tag-version "${TRAVIS_TAG}"; fi
 
 before_deploy:
   - docker login -u="${QUAY_ID}" -p="${QUAY_TOKEN}" quay.io
 
 deploy:
-  # Publish builds tagged as 1.2.3 for release, or 1.2.3.rc-1 as release candidates
+  # Publish builds tagged as 1.2.3 for release, or 1.2.3-1 as release candidates
   - provider: script
     script: docker push "quay.io/razee/razeedash-api:${TRAVIS_TAG}"
     skip_cleanup: true
+    draft: true
     on:
       tags: true
-      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(.rc-[0-9]+)?$
+      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$
   - provider: releases
     file: /tmp/resource.yaml
     skip_cleanup: true
     draft: true
     on:
       tags: true
-      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(.rc-[0-9]+)?$
+      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$
+    api_key: "${GITHUB_TOKEN}"
+    name: "${TRAVIS_TAG}"
+  - provider: releases
+    file: /tmp/resource.yaml
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$
     api_key: "${GITHUB_TOKEN}"
     name: "${TRAVIS_TAG}"
   - provider: npm
@@ -49,4 +58,4 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
-      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(.rc-[0-9]+)?$
+      condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$
