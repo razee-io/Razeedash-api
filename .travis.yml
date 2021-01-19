@@ -11,17 +11,16 @@ env:
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci; else npx audit-ci || true; fi
+  - travis_fold start "npx.audit-ci" && if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci; else npx audit-ci || true; fi && travis_fold end "npx.audit-ci"
   - travis_fold start "npm.lint" && npm run lint && travis_fold end "npm.lint"
   - travis_fold start "npm.test" && npm test && travis_fold end "npm.test"
   - travis_fold start "npm.test:apollo:default" && npm run test:apollo:default && travis_fold end "npm.test:apollo:default"
   - travis_fold start "npm.test:apollo:local" && npm run test:apollo:local && travis_fold end "npm.test:apollo:local"
   - travis_fold start "npm.test:apollo:passport.local" && npm run test:apollo:passport.local && travis_fold end "npm.test:apollo:passport.local"
-  - docker build --rm --build-arg BUILD_TIME="$BUILD_TIME" --build-arg BUILD_ID="${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}" -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" .
+  - travis_fold start "docker.build" && docker build --rm --build-arg BUILD_TIME="$BUILD_TIME" --build-arg BUILD_ID="${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}" -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" . && travis_fold end "docker.build"
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images
   - ./build/process-template.sh kubernetes/razeedash-api/resource.yaml >/tmp/resource.yaml
-  - ls -la
   - if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(.rc-[0-9]+)?$ ]]; then npm version --no-git-tag-version "${TRAVIS_TAG}"; fi
 
 before_deploy:
