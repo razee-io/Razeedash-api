@@ -1,6 +1,6 @@
 {
   "name": "@razee/razeedash-api",
-  "version": "1.3.2-0",
+  "version": "1.3.2-1",
   "description": "API for razeedash and graphql",
   "license": "Apache-2.0",
   "main": "app/index.js",
