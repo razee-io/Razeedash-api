@@ -153,7 +153,6 @@ const buildSearchableDataForResource = (org, obj, { clusterId }) => {
     searchableLabelValues,
   ));
 
-  // not sure why we're joining by colon instead of space, but thats what was in the original code, so keeping it
   out['searchableExpression'] = searchableExpressionArr.join(' ');
 
   return out;
