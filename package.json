@@ -23,8 +23,13 @@
     "dockerlint": "npx dockerlint Dockerfile",
     "markdownlint": "npx markdownlint README.md docs/",
     "jsonlint": "npx jsonlint --quiet build/viewTemplate.json",
+    "check": "npm run lint && npm run test && npm run i18n:dry",
     "shellcheck": "npx shellcheck build/*.sh",
-    "preinstall": "npx npm-force-resolutions"
+    "preinstall": "npx npm-force-resolutions",
+    "i18n:armada": "npx armada-i18n --files './client/*(utils|view|api|widgets)/**/*.*,./*(routes|views|lib)/**/*.*'",
+    "i18n:common": "npx armada-i18n --files './node_modules/@console/armada-ui-common/src/**/*.*' --namespace common",
+    "i18n": "npm run i18n:armada && npm run i18n:common",
+    "i18n:dry": "npm run i18n:armada -- --dry && npm run i18n:common -- --dry"
   },
   "keywords": [],
   "author": "",
