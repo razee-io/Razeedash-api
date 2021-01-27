@@ -188,16 +188,18 @@ const channelResolvers = {
       }
     },
     editChannel: async (parent, { orgId: org_id, uuid, name }, context)=>{
-      const { models, me, req_id, logger } = context;
+      const reqContext=context;
+      const { models, me, req_id, logger } = reqContext;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
+          throw new NotFoundError(`channel uuid "${uuid}" not found`, reqContext);
         }
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        reqContext.channel=channel;
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, reqContext, [channel.uuid, channel.name]);
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
 
         // find any subscriptions for this channel and update channelName in those subs
@@ -216,7 +218,7 @@ const channelResolvers = {
           throw err;
         }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, reqContext);
       }
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{

@@ -31,7 +31,6 @@ deploy:
   - provider: script
     script: docker push "quay.io/razee/razeedash-api:${TRAVIS_TAG}"
     skip_cleanup: true
-    draft: true
     on:
       tags: true
       condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$

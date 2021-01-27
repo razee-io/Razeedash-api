@@ -330,34 +330,35 @@ const subscriptionResolvers = {
       }
     },
     editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
-      const { models, me, req_id, logger } = context;
+      const reqContext = context;
+      const { models, me, req_id, logger } = reqContext;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      // await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
+      // await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, reqContext);
 
       try{
-        var subscription = await models.Subscription.findOne({ org_id: orgId, uuid });
+        const subscription = await models.Subscription.findOne({ org_id: orgId, uuid });
         if(!subscription){
-          throw  new NotFoundError(`Subscription { uuid: "${uuid}", orgId:${orgId} } not found.`, context);
+          throw  new NotFoundError(`Subscription { uuid: "${uuid}", orgId:${orgId} } not found.`, reqContext);
         }
-
-        await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
+        reqContext.subscription = subscription;
+        await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, reqContext, [subscription.uuid, subscription.name]);
 
         // loads the channel
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
+        const channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
         if(!channel){
-          throw  new NotFoundError(`Channel uuid "${channel_uuid}" not found.`, context);
+          throw  new NotFoundError(`Channel uuid "${channel_uuid}" not found.`, reqContext);
         }
 
         // validate groups are all exists in label dbs
-        await validateGroups(orgId, groups, context);
+        await validateGroups(orgId, groups, reqContext);
 
         // loads the version
         var version = channel.versions.find((version)=>{
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw  new NotFoundError(`Version uuid "${version_uuid}" not found.`, context);
+          throw  new NotFoundError(`Version uuid "${version_uuid}" not found.`, reqContext);
         }
 
         var sets = {
@@ -366,7 +367,7 @@ const subscriptionResolvers = {
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({ org_id: orgId }, context);
+        pubSub.channelSubChangedFunc({ org_id: orgId }, reqContext);
 
         return {
           uuid,
@@ -378,7 +379,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, reqContext);
       }
     },
     setSubscription: async (parent, { orgId: org_id, uuid, versionUuid: version_uuid }, context)=>{
