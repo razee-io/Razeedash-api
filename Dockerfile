@@ -25,7 +25,7 @@ USER node
 WORKDIR /home/node
 
 COPY --chown=node . /home/node
-RUN npm install --production --loglevel=warn
+RUN npm ci --production --loglevel=warn
 
 
 #######################################
@@ -36,13 +36,12 @@ FROM node:12-alpine
 USER node
 WORKDIR /home/node
 
-RUN export BUILD_TIME=`date '+%Y-%m-%d %H:%M:%S'`
-ARG BUILD_TIME
-ENV BUILD_TIME=${BUILD_TIME}
-ARG BUILD_ID
-ENV BUILD_ID=${BUILD_ID}
+ARG BUILD_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+ENV BUILD_TIME="${BUILD_TIME}"
+ARG BUILD_ID="dev"
+ENV BUILD_ID="${BUILD_ID}"
 
 COPY --chown=node --from=buildImg /home/node /home/node
 
 EXPOSE 3333
-CMD ["npm", "start"]
+CMD ["./bin/main"]

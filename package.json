@@ -1,12 +1,16 @@
 {
-  "name": "razeedash-api",
-  "version": "0.6.3",
+  "name": "@razee/razeedash-api",
+  "version": "0.0.0-0",
   "description": "API for razeedash and graphql",
   "license": "Apache-2.0",
   "main": "app/index.js",
-  "repository": "https://github.com/razee-io/Razeedash-api",
+  "bin": {"razeedashApi": "./bin/main"},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/razee-io/Razeedash-api"
+  },
   "scripts": {
-    "start": "node app/index.js",
+    "start": "${npm_package_bin_razeedashApi}",
     "dev": "nodemon -r dotenv/config app/index.js | bunyan",
     "local": "export AUTH_MODEL=local; nodemon app/index.js | bunyan",
     "start:mon": "nodemon app/index.js | bunyan",
@@ -23,15 +27,17 @@
     "dockerlint": "npx dockerlint Dockerfile",
     "markdownlint": "npx markdownlint README.md docs/",
     "jsonlint": "npx jsonlint --quiet build/viewTemplate.json",
-    "shellcheck": "npx shellcheck build/*.sh",
-    "preinstall": "npx npm-force-resolutions"
+    "shellcheck": "npx shellcheck build/*.sh"
   },
-  "keywords": [],
+  "keywords": [
+    "kubernetes",
+    "razee",
+    "razeedash"
+  ],
   "author": "",
   "contributors": [],
-  "resolutions": {
-    "graphql-upload": "^11.0.0",
-    "fs-capacitor": "^6.2.0"
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "apollo-metrics": "^1.0.1",
@@ -80,7 +86,6 @@
     "mongoose": "^5.10.11",
     "mongoose-lean-virtuals": "^0.7.2",
     "mustache": "^4.0.1",
-    "npm-force-resolutions": "0.0.3",
     "object-hash": "^2.0.3",
     "object-path": "^0.11.5",
     "p-limit": "^3.0.2",
