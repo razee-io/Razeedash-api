@@ -31,9 +31,8 @@ const validClusterAuth = async (me, queryName, context) => {
   if(me && me.type == 'cluster'){
     const result = await models.User.isValidOrgKey(models, me);
     if(!result){
-      throw new RazeeForbiddenError(
-        `Invalid razee-org-key was submitted for ${queryName}`,
-        context
+      throw new RazeeForbiddenError(context.req.t(
+        'Invalid razee-org-key was submitted for {{queryName}}', {'queryName':queryName}), context
       );
     }
     return;
@@ -153,9 +152,9 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
     if(!result){
       throw new RazeeForbiddenError(
-        `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}. (using userToken)`,
-        context
-      );
+        context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}
+        ), context);
+
     }
     return;
   }
@@ -164,10 +163,8 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
     if (type === TYPES.RESOURCE){
       return true;
     } else {
-      throw new RazeeForbiddenError(
-        `You are not allowed to ${action} on ${type} under organization ${org_id} for the query ${queryName}.`,
-        context
-      );
+      throw new RazeeForbiddenError(context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}), context);
+
     }
   }
 };

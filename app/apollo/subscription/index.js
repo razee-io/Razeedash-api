@@ -133,12 +133,11 @@ class PubSubImpl {
         logger.info({ data, topic }, 'Publishing channel subscription update');
         await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
       } catch (error) {
-        logger.error(error, 'Channel subscription publish error');
-        throw new RazeeQueryError('Failed to Publish subscription notification to clusters, please retry.', context);  
+        logger.error(error, 'Channel subscription publish error');        throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, please retry.'), context);  
       }
     } else {
       logger.warn( { data, topic }, 'Failed to Publish subscription update, since pubsub is not ready.');
-      throw new RazeeQueryError('Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.', context);  
+      throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.'), context);  
     }
     return data;
   }
@@ -157,11 +156,11 @@ class PubSubImpl {
         });
       } catch (error) {
         logger.error(error, 'Resource publish error');
-        throw new RazeeQueryError('Failed to Publish resource notification, please reload the page.', context);  
+        throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, please reload the page.'), context);  
       }
     } else {
       logger.warn( { resource, topic }, 'Failed to Publish resource update, since pubsub is not ready.');
-      throw new RazeeQueryError('Failed to Publish resource notification, pubsub is not ready yet, please retry later.', context);  
+      throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, pubsub is not ready yet, please retry later.'), context);  
     }
     return resource;
   }

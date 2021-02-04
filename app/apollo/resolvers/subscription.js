@@ -36,7 +36,7 @@ async function validateGroups(org_id, groups, context) {
   let groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
   if (groupCount < groups.length) {
     if (process.env.LABEL_VALIDATION_REQUIRED) {
-      throw new RazeeValidationError(`Could not find all the cluster groups ${groups} in the groups database, please create them first.`, context);
+      throw new RazeeValidationError(context.req.t('Could not find all the cluster groups {{groups}} in the groups database, please create them first.', {'groups':groups}), context);
     } else {
       // in migration period, we automatically populate groups into label db
       logger.info({req_id, user: whoIs(me), org_id}, `could not find all the cluster groups ${groups}, migrate them into label database.`);
@@ -63,13 +63,13 @@ const subscriptionResolvers = {
       const org = await models.User.getOrg(models, me);
       if(!org) {
         logger.error('An org was not found for this razee-org-key');
-        throw new RazeeValidationError('org id was not found', context);
+        throw new RazeeValidationError(context.req.t('org id was not found'), context);
       }
       const org_id = org._id;
 
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
       if (!cluster) {
-        throw new RazeeValidationError(`Could not locate the cluster with cluster_id ${cluster_id}`, context);
+        throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
       }
       var clusterGroupNames = [];
       if (cluster.groups) {
@@ -116,7 +116,7 @@ const subscriptionResolvers = {
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
-        throw new NotFoundError('Could not find the subscription.', context);
+        throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
       }
       // render owner information if users ask for
       if(queryFields.owner && subscriptions) {
@@ -158,7 +158,7 @@ const subscriptionResolvers = {
         return subscription;
       }catch(err){
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
 
       }
     },
@@ -179,7 +179,7 @@ const subscriptionResolvers = {
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
       if (!cluster) {
-        throw new RazeeValidationError(`Could not locate the cluster with cluster_id ${cluster_id}`, context);
+        throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
       }
       var clusterGroupNames = [];
       if (cluster.groups) {
@@ -190,7 +190,7 @@ const subscriptionResolvers = {
         clusterGroupNames.some(group => {
           if(allowedGroups.indexOf(group) === -1) {
             // if some group of the sub is not in user's group list, throws an error
-            throw new RazeeForbiddenError(`You are not allowed to read subscriptions due to missing permissions on cluster group ${group.name}.`, context);
+            throw new RazeeForbiddenError(context.req.t('You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.', {'group.name':group.name}), context);
           }
           return false;
         });
@@ -206,7 +206,7 @@ const subscriptionResolvers = {
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
-        throw new NotFoundError('Could not find subscriptions.', context);
+        throw new NotFoundError(context.req.t('Could not find subscriptions.'), context);
       }
       if(subscriptions) {
         subscriptions = subscriptions.map((sub)=>{
@@ -232,7 +232,7 @@ const subscriptionResolvers = {
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });
       if (!cluster) {
-        throw new RazeeValidationError(`Could not locate the cluster with clusterName ${clusterName}`, context);
+        throw new RazeeValidationError(context.req.t('Could not locate the cluster with clusterName {{clusterName}}', {'clusterName':clusterName}), context);
       }
       var clusterGroupNames = [];
       if (cluster.groups) {
@@ -243,7 +243,7 @@ const subscriptionResolvers = {
         clusterGroupNames.some(group => {
           if(allowedGroups.indexOf(group) === -1) {
             // if some group of the sub is not in user's group list, throws an error
-            throw new RazeeForbiddenError(`You are not allowed to read subscriptions due to missing permissions on cluster group ${group.name}.`, context);
+            throw new RazeeForbiddenError(context.req.t('You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.', {'group.name':group.name}), context);
           }
           return false;
         });
@@ -260,7 +260,7 @@ const subscriptionResolvers = {
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
-        throw new NotFoundError('Could not find subscriptions.', context);
+        throw new NotFoundError(context.req.t('Could not find subscriptions.'), context);
       }
       if(subscriptions) {
         subscriptions = subscriptions.map((sub)=>{
@@ -287,7 +287,7 @@ const subscriptionResolvers = {
         // validate the number of total subscriptions are under the limit
         const total = await models.Subscription.count({org_id});
         if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
-          throw new RazeeValidationError(`Too many subscriptions are registered under ${org_id}.`, context);
+          throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
 
         const uuid = UUID();
@@ -295,7 +295,7 @@ const subscriptionResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw new NotFoundError(`channel uuid "${channel_uuid}" not found`, context);
+          throw new NotFoundError(context.req.t('channel uuid "{{channel_uuid}}" not found', {'channel_uuid':channel_uuid}), context);
         }
 
         // validate groups are all exists in label dbs
@@ -306,7 +306,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw  new NotFoundError(`version uuid "${version_uuid}" not found`, context);
+          throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
         }
 
         await models.Subscription.create({
@@ -326,7 +326,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
     },
     editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
@@ -338,7 +338,7 @@ const subscriptionResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id: orgId, uuid });
         if(!subscription){
-          throw  new NotFoundError(`Subscription { uuid: "${uuid}", orgId:${orgId} } not found.`, context);
+          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", orgId:{{orgId}} } not found.', {'uuid':uuid, 'orgId':orgId}), context);
         }
 
         await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
@@ -346,7 +346,7 @@ const subscriptionResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
         if(!channel){
-          throw  new NotFoundError(`Channel uuid "${channel_uuid}" not found.`, context);
+          throw  new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
         // validate groups are all exists in label dbs
@@ -357,7 +357,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw  new NotFoundError(`Version uuid "${version_uuid}" not found.`, context);
+          throw  new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
         var sets = {
@@ -378,7 +378,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
     },
     setSubscription: async (parent, { orgId: org_id, uuid, versionUuid: version_uuid }, context)=>{
@@ -391,7 +391,7 @@ const subscriptionResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw  new NotFoundError(`Subscription { uuid: "${uuid}", org_id:${org_id} } not found.`, context);
+          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
 
         // this may be overkill, but will check for strings first, then groups below
@@ -402,13 +402,13 @@ const subscriptionResolvers = {
         const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
         if (subscription.groups.some(t => {return allowedGroups.indexOf(t) === -1;})) {
           // if some tag of the sub does not in user's cluster group list, throws an error
-          throw new RazeeForbiddenError(`You are not allowed to set subscription for all of ${subscription.groups} groups.`, context);
+          throw new RazeeForbiddenError(context.req.t('You are not allowed to set subscription for all of {{subscription.groups}} groups.', {'subscription.groups':subscription.groups}), context);
         }
 
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
-          throw new NotFoundError(`Channel uuid "${subscription.channel_uuid}" not found.`, context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{subscription.channel_uuid}}" not found.', {'subscription.channel_uuid':subscription.channel_uuid}), context);
         }
 
         // loads the version
@@ -416,7 +416,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw new NotFoundError(`Version uuid "${version_uuid}" not found.`, context);
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
         var sets = {
@@ -436,7 +436,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
     },
 
@@ -450,7 +450,7 @@ const subscriptionResolvers = {
       try{
         var subscription = await models.Subscription.findOne({ org_id, uuid });
         if(!subscription){
-          throw  new NotFoundError(`Subscription uuid "${uuid}" not found.`, context);
+          throw  new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
         }
 
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
@@ -465,7 +465,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
       return {
         uuid, success,
@@ -496,13 +496,13 @@ const subscriptionResolvers = {
           const orgKey = context.apiKey || '';
           if (!orgKey) {
             logger.error('No razee-org-key was supplied');
-            throw new RazeeValidationError('No razee-org-key was supplied.', context);
+            throw new RazeeValidationError(context.req.t('No razee-org-key was supplied.'), context);
           }
 
           const orgId = context.orgId || '';
           if (!orgId) {
             logger.error('No org was found for this org key');
-            throw new RazeeValidationError('No org was found for the org key.', context);
+            throw new RazeeValidationError(context.req.t('No org was found for the org key.'), context);
           }
 
           const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, orgId);
