@@ -231,7 +231,6 @@ const channelResolvers = {
           uuid,
           success: true,
           name,
-          tags,
         };
       } catch(err){
         if (err instanceof BasicRazeeError) {
