@@ -32,6 +32,7 @@ const channelSchema = gql`
     created: Date!
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
+    tags: [String!]!
   }
   type AddChannelReply {
     uuid: String!
@@ -82,6 +83,11 @@ const channelSchema = gql`
      channelByName(orgId: String! @sv, name: String! @sv): Channel
 
      """
+     Gets channels that contain all passed tags
+     """
+     channelsByTags(orgId: String! @sv, tags: [String!]!): [Channel]!
+
+     """
      Gets a channel version info from this channel uuid and version uuid 
      """
      channelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!
@@ -96,12 +102,12 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, tags: [String!]): AddChannelReply!
      
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, tags: [String!]): EditChannelReply!
      
      """
      Adds a yaml version to this channel

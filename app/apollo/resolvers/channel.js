@@ -28,7 +28,7 @@ const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 const yaml = require('js-yaml');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, getAllowedChannels, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
+const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
 
@@ -86,6 +86,26 @@ const channelResolvers = {
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
       return channel;
+    },
+    channelsByTags: async(parent, { orgId, tags }, context, fullQuery)=>{
+      const queryFields = GraphqlFields(fullQuery);
+      const { models, me, req_id, logger } = context;
+      const queryName = 'channelsByTags';
+      logger.debug({req_id, user: whoIs(me), orgId, tags}, `${queryName} enter`);
+
+      try{
+        if(tags.length < 1){
+          throw new RazeeValidationError('Please supply at one or more tags', context);
+        }
+        var channels = await models.Channel.find({ org_id: orgId, tags: { $all: tags } });
+        channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
+        await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
+
+      }catch(err){
+        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+      }
+      return channels;
     },
     channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context) => {
       const { me, req_id, logger } = context;
@@ -153,7 +173,7 @@ const channelResolvers = {
     }
   },
   Mutation: {
-    addChannel: async (parent, { orgId: org_id, name }, context)=>{
+    addChannel: async (parent, { orgId: org_id, name, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -175,6 +195,7 @@ const channelResolvers = {
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
+          tags,
         });
         return {
           uuid,
@@ -187,7 +208,7 @@ const channelResolvers = {
         throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
       }
     },
-    editChannel: async (parent, { orgId: org_id, uuid, name }, context)=>{
+    editChannel: async (parent, { orgId: org_id, uuid, name, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
@@ -198,7 +219,7 @@ const channelResolvers = {
           throw new NotFoundError(`channel uuid "${uuid}" not found`, context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name } });
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags } });
 
         // find any subscriptions for this channel and update channelName in those subs
         await models.Subscription.updateMany(
@@ -210,6 +231,7 @@ const channelResolvers = {
           uuid,
           success: true,
           name,
+          tags,
         };
       } catch(err){
         if (err instanceof BasicRazeeError) {
