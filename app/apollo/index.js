@@ -38,6 +38,24 @@ const initModule = require(`./init.${AUTH_MODEL}`);
 
 const pubSub = GraphqlPubSub.getInstance();
 
+const i18next = require('i18next');
+const i18nextMiddleware = require('i18next-http-middleware');
+const Backend = require('i18next-fs-backend');
+i18next.use(Backend).use(i18nextMiddleware.LanguageDetector).init({
+  //debug: true,
+  backend: {
+    loadPath: './locales/{{lng}}/razee-resources.json',
+    addPath: './locales/{{lng}}/{{ns}}.missing.json'
+  },
+  fallbackLng: 'en',
+  supportedLngs: ['en', 'cn', 'zh-cn'],
+  load: 'languageOnly',
+  saveMissing: true,
+  initImmediate: true,
+  nsSeparator: '#||#',
+  keySeparator: '#|#'
+});
+
 const createDefaultApp = () => {
   const app = express();
   app.set('trust proxy', true);
@@ -54,6 +72,7 @@ const createDefaultApp = () => {
     }
     return next();
   });
+  app.use(i18nextMiddleware.handle(i18next));
   return app;
 };
 
