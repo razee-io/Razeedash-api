@@ -40,6 +40,7 @@ const channelSchema = gql`
   type EditChannelReply {
     uuid: String!
     name: String!
+    tags: [String!]!
     success: Boolean
   }
   type AddChannelVersionReply {
