@@ -113,12 +113,12 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String  @sv): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion
