@@ -54,6 +54,11 @@ const ChannelSchema = new mongoose.Schema({
       }
     }
   ],
+  tags: [
+    {
+      type: String,
+    }
+  ],
 }, {
   strict:'throw',
 });
