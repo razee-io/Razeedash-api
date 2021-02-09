@@ -95,7 +95,7 @@ const channelResolvers = {
 
       try{
         if(tags.length < 1){
-          throw new RazeeValidationError('Please supply at one or more tags', context);
+          throw new RazeeValidationError('Please supply one or more tags', context);
         }
         var channels = await models.Channel.find({ org_id: orgId, tags: { $all: tags } });
         channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
