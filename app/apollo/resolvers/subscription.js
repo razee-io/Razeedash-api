@@ -87,7 +87,10 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
         var foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
-          groups: { $in: clusterGroupNames },
+          $or: [
+            { groups: { $in: clusterGroupNames } },
+            { clusterId: cluster_id },
+          ],
         }).lean(/* skip virtuals: true for now since it is class facing api. */);
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
@@ -202,7 +205,13 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
+        var subscriptions = await models.Subscription.find({
+          org_id,
+          $or: [
+            { groups: { $in: clusterGroupNames } },
+            { clusterId: cluster_id },
+          ],
+        }).lean({ virtuals: true });
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
@@ -256,7 +265,13 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        var subscriptions = await models.Subscription.find({org_id, groups: { $in: clusterGroupNames },}).lean({ virtuals: true });
+        var subscriptions = await models.Subscription.find({
+          org_id,
+          $or: [
+            { groups: { $in: clusterGroupNames } },
+            { clusterId: cluster.cluster_id },
+          ]
+        }).lean({ virtuals: true });
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
@@ -277,7 +292,7 @@ const subscriptionResolvers = {
     }
   },
   Mutation: {
-    addSubscription: async (parent, { orgId: org_id, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
+    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -312,7 +327,8 @@ const subscriptionResolvers = {
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
+          clusterId,
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
@@ -329,7 +345,7 @@ const subscriptionResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
     },
-    editSubscription: async (parent, { orgId, uuid, name, groups, channelUuid: channel_uuid, versionUuid: version_uuid }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -363,6 +379,7 @@ const subscriptionResolvers = {
         var sets = {
           name, groups,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
+          clusterId,
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 

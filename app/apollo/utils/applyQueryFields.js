@@ -182,6 +182,12 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
   const { models, me } = context;
   var { orgId } = args;
 
+  _.each(channels, (channel)=>{
+    if(!channel.tags){
+      channel.tags = [];
+    }
+  });
+
   if(queryFields.subscriptions){
     //piggyback basic-info of subscriptions associated with this channel that user allowed to see
     const conditions = await getGroupConditions(me, orgId, ACTIONS.READ, 'name', 'applyQueryFieldsToChannels queryFields.subscriptions', context);
