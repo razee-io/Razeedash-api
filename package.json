@@ -17,7 +17,7 @@
     "test:apollo:local": "export AUTH_MODEL=local; export NODE_ENV=test; export CHANNEL_MAX_TOTAL_LIMIT=4; export CHANNEL_VERSION_MAX_TOTAL_LIMIT=4; export CLUSTER_MAX_TOTAL_LIMIT=2; export SUBSCRIPTION_MAX_TOTAL_LIMIT=3; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha  --timeout 5000  'app/apollo/test/*.spec.js'",
     "test:apollo:passport.local": "export AUTH_MODEL=passport.local; export NODE_ENV=test; export CHANNEL_MAX_TOTAL_LIMIT=4; export CHANNEL_VERSION_MAX_TOTAL_LIMIT=4; export CLUSTER_MAX_TOTAL_LIMIT=2; export SUBSCRIPTION_MAX_TOTAL_LIMIT=3; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha  --timeout 5000 'app/apollo/test/*.spec.js'",
     "wait-mongo": "node app/wait-mongo.js",
-    "lint": "npx npm-run-all eslint yamllint dockerlint markdownlint jsonlint shellcheck",
+    "lint": "npx npm-run-all i18n eslint yamllint dockerlint markdownlint jsonlint shellcheck",
     "eslint": "npx eslint app/",
     "yamllint": "npx yamllint .travis.yml kubernetes/razeedash-api/resource.yaml",
     "dockerlint": "npx dockerlint Dockerfile",
