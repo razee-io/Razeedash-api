@@ -44,8 +44,7 @@ const i18nextBackend = require('i18next-fs-backend');
 i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   //debug: true,
   backend: {
-    loadPath: './locales/{{lng}}/razee-resources.json',
-    addPath: './locales/{{lng}}/{{ns}}.missing.json'
+    loadPath: './locales/{{lng}}/razee-resources.json'
   },
   fallbackLng: 'en',
   supportedLngs:['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-br', 'zh-cn', 'zh-tw'],
