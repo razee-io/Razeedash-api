@@ -35,6 +35,9 @@ const SubscriptionSchema = new mongoose.Schema({
       type: String,
     }
   ],
+  clusterId: {
+    type: String,
+  },
   channel_uuid: {
     type: String,
     alias: 'channelUuid',
