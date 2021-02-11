@@ -40,8 +40,8 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
-const Backend = require('i18next-fs-backend');
-i18next.use(Backend).use(i18nextMiddleware.LanguageDetector).init({
+const i18nextBackend = require('i18next-fs-backend');
+i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   //debug: true,
   backend: {
     loadPath: './locales/{{lng}}/razee-resources.json',
