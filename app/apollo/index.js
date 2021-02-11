@@ -48,7 +48,7 @@ i18next.use(Backend).use(i18nextMiddleware.LanguageDetector).init({
     addPath: './locales/{{lng}}/{{ns}}.missing.json'
   },
   fallbackLng: 'en',
-  supportedLngs: ['en', 'cn', 'zh-cn'],
+  supportedLngs:['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-br', 'zh-cn', 'zh-tw'],
   load: 'languageOnly',
   saveMissing: true,
   initImmediate: true,
