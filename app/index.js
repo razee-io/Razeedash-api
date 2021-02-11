@@ -73,7 +73,7 @@ i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   fallbackLng: 'en',
   supportedLngs:['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-br', 'zh-cn', 'zh-tw'],
   load: 'all',
-  saveMissing: true ,
+  saveMissing: false ,
   initImmediate: true,
   nsSeparator: '#||#',
   keySeparator: '#|#'
