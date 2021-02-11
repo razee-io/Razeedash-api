@@ -68,8 +68,7 @@ app.use(function errorHandler(err, req, res, next) {
 });
 i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   backend: {
-    loadPath:'./locales/{{lng}}/razee-resources.json',
-    addPath:'./locales/{{lng}}/{{ns}}.missing.json'
+    loadPath:'./locales/{{lng}}/razee-resources.json'
   },
   fallbackLng: 'en',
   supportedLngs:['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-br', 'zh-cn', 'zh-tw'],
