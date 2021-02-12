@@ -5,7 +5,7 @@
 
 Razeedash-API is the interface used by
 
-- app.razee.io
+- [Razeedash](https://github.com/razee-io/Razeedash)
 - [watch-keeper](https://github.com/razee-io/watch-keeper)
 
 ## Requirements
