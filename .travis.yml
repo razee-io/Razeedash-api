@@ -6,9 +6,8 @@ services:
   - docker
 
 before_install:
-  - echo 'DOCKER_OPTS="$DOCKER_OPTS --registry-mirror=https://mirror.gcr.io"'
-  - sudo service docker restart
-  
+  - docker login -u "icdevops@us.ibm.com" -p="${DOCKERHUB_TOKEN}"
+
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
   - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch; else npx audit-ci --low -a node-fetch || true; fi
