@@ -6,7 +6,7 @@ services:
   - docker
 
 before_install:
-  - docker login -u "icdevops@us.ibm.com" -p="${DOCKERHUB_TOKEN}"
+  - docker login -u "icdevops@us.ibm.com" --password-stdin="${DOCKERHUB_TOKEN}"
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
