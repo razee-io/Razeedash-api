@@ -34,7 +34,9 @@ const promClient = require('prom-client');
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
 collectDefaultMetrics({ timeout: 5000 });    //Collect all default metrics
 const connections = new promClient.Gauge({ name: 'razee_server_connections_count', help: 'Razee server request count' });
-
+const i18next = require('i18next');
+const i18nextMiddleware = require('i18next-http-middleware');
+const i18nextBackend = require('i18next-fs-backend');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 router.use(ebl(getBunyanConfig('razeedash-api')));
@@ -64,7 +66,19 @@ app.use(function errorHandler(err, req, res, next) {
   }
   next();
 });
-
+i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
+  backend: {
+    loadPath:'./locales/{{lng}}/razee-resources.json'
+  },
+  fallbackLng: 'en',
+  supportedLngs:['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-br', 'zh-cn', 'zh-tw'],
+  load: 'all',
+  saveMissing: false ,
+  initImmediate: true,
+  nsSeparator: '#||#',
+  keySeparator: '#|#'
+});
+app.use(i18nextMiddleware.handle(i18next));
 app.get('/metrics', function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
   response.end(promClient.register.metrics());
