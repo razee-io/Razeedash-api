@@ -72,7 +72,7 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
     };
   } catch (error) {
     logger.error(error, `commonResourcesSearch encountered an error for the request ${req_id}`);
-    throw new BasicRazeeError(`commonResourcesSearch encountered an error. ${error.message}`, context); 
+    throw new BasicRazeeError(context.req.t('commonResourcesSearch encountered an error. {{error.message}}', {'error.message':error.message}), context); 
   }  
 };
 
@@ -98,7 +98,7 @@ const getS3Data = async (s3Link, logger, context) => {
     return yaml;
   } catch (error) {
     logger.error(error, 'Error retrieving data from s3 bucket');
-    throw new BasicRazeeError(`Error retrieving data from s3 bucket. ${error.message}`, context); 
+    throw new BasicRazeeError(context.req.t('Error retrieving data from s3 bucket. {{error.message}}', {'error.message':error.message}), context); 
   }
 };
 
@@ -128,7 +128,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
     if (!cluster) {
-      throw new RazeeForbiddenError('You are not allowed to access this resource due to missing cluster tag permission.', context);
+      throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster tag permission.'), context);
     }
 
     if(queryFields['cluster']) {
@@ -143,7 +143,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     return resource;
   } catch (error) {
     logger.error(error, `commonResourceSearch encountered an error for the request ${req_id}`);
-    throw new BasicRazeeError(`commonResourceSearch encountered an error. ${error.message}`, context); 
+    throw new BasicRazeeError(context.req.t('commonResourceSearch encountered an error. {{error.message}}', {'error.message':error.message}), context); 
   }
 };
 
@@ -172,7 +172,7 @@ const resourceResolvers = {
         });
       } catch (error) {
         logger.error(error, 'resourcesCount encountered an error');
-        throw new RazeeQueryError(`resourcesCount encountered an error. ${error.message}`, context);
+        throw new RazeeQueryError(context.req.t('resourcesCount encountered an error. {{error.message}}', {'error.message':error.message}), context);
       }
       return count;
     },
@@ -236,7 +236,7 @@ const resourceResolvers = {
       const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
-        throw new NotFoundError(`Could not find the cluster for the cluster id ${cluster_id}.`, context);
+        throw new NotFoundError(context.req.t('Could not find the cluster for the cluster id {{cluster_id}}.', {'cluster_id':cluster_id}), context);
       }
 
       const allowedGroups = await getAllowedGroups(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
@@ -244,7 +244,7 @@ const resourceResolvers = {
         cluster.groups.some(group => {
           if(allowedGroups.indexOf(group.uuid) === -1) {
             // if some group of the sub does not in user's group list, throws an error
-            throw new RazeeForbiddenError(`You are not allowed to read resources due to missing permissions on cluster group ${group.name}.`, context);
+            throw new RazeeForbiddenError(context.req.t('You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.', {'group.name':group.name}), context);
           }
           return false;
         });
@@ -281,7 +281,7 @@ const resourceResolvers = {
       if(histId && histId != _id){
         var resourceYamlHistObj = await models.ResourceYamlHist.findOne({ _id: histId, org_id, resourceSelfLink: resource.selfLink }, {}, {lean:true});
         if(!resourceYamlHistObj){
-          throw new NotFoundError(`hist _id "${histId}" not found`, context);
+          throw new NotFoundError(context.req.t('hist _id "{{histId}}" not found', {'histId':histId}), context);
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
@@ -336,14 +336,14 @@ const resourceResolvers = {
       const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
-        throw new NotFoundError(`Could not find the subscription for the subscription id ${subscription_id}.`, context);
+        throw new NotFoundError(context.req.t('Could not find the subscription for the subscription id {{subscription_id}}.', {'subscription_id':subscription_id}), context);
       }
       const allowedGroups = await getAllowedGroups(me, orgId, ACTIONS.READ, 'name', queryName, context);
       if(subscription.groups) {
         subscription.groups.some(group => {
           if(allowedGroups.indexOf(group) === -1) {
             // if some tag of the sub does not in user's tag list, throws an error
-            throw new RazeeForbiddenError(`You are not allowed to read resources due to missing permissions on subscription group ${group}.`, context);
+            throw new RazeeForbiddenError(context.req.t('You are not allowed to read resources due to missing permissions on subscription group {{group}}.', {'group':group}), context);
           }
           return false;
         });
@@ -365,7 +365,7 @@ const resourceResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
       let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
       if (!cluster) {
-        throw new RazeeForbiddenError('You are not allowed to access this resource due to missing cluster group permission.', context);
+        throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster group permission.'), context);
       }
 
       var searchObj = {
@@ -401,7 +401,7 @@ const resourceResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
       let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
       if (!cluster) {
-        throw new RazeeForbiddenError('You are not allowed to access this resource due to missing cluster group permission.', context);
+        throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster group permission.'), context);
       }
 
       var getContent = async(obj)=>{
