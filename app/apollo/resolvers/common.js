@@ -17,7 +17,7 @@ const _ = require('lodash');
 const { ApolloError } = require('apollo-server');
 const { TYPES, ACTIONS } = require('../models/const');
 
-const whoIs = me => { 
+const whoIs = me => {
   if (me === null || me === undefined) return 'null';
   if (me.email) return me.email;
   if (me.identifier) return me.identifier;
@@ -86,7 +86,7 @@ var filterSubscriptionsToAllowed = async(me, orgId, action, field, subscriptions
   return subscriptions;
 };
 
-// return user permitted cluster groups in an array 
+// return user permitted cluster groups in an array
 const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
   const {req_id, models, logger} = context;
 
@@ -114,7 +114,7 @@ const getGroupConditions = async (me, org_id, action, field, queryName, context)
     return {
       groups: {$not: {$elemMatch: {uuid: {$nin: allowedGroups}}}},
     };
-  } 
+  }
   return {
     'groups': {$not: {$elemMatch: {$nin: allowedGroups}}},
   };
@@ -130,7 +130,7 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
         {groups: {$not: {$elemMatch: {uuid: {$nin: allowedGroups}}}}}
       ]
     };
-  } 
+  }
   return {
     $or: [
       {'groups': {$not: {$elemMatch: {$nin: allowedGroups}}}},
@@ -147,7 +147,7 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
   if (context.recoveryHintsMap) {
     context['recoveryHints'] = context.recoveryHintsMap[queryName];
   }
-  
+
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);

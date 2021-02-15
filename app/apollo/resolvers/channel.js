@@ -23,6 +23,7 @@ const S3ClientClass = require('../../s3/s3Client');
 const { WritableStreamBuffer } = require('stream-buffers');
 const streamToString = require('stream-to-string');
 const stream = require('stream');
+const pLimit = require('p-limit');
 const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
 
 const yaml = require('js-yaml');
@@ -31,6 +32,18 @@ const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, 
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
+
+const deleteDeployableVersionFromS3 = async(deployableVersionObj)=>{
+  const url = deployableVersionObj.content;
+  const urlObj = new URL(url);
+  const fullPath = urlObj.pathname;
+  var parts = _.filter(_.split(fullPath, '/'));
+  var bucketName = parts.shift();
+  var path = `${parts.join('/')}`;
+
+  const s3Client = new S3ClientClass(conf);
+  return await s3Client.deleteObject(bucketName, path);
+};
 
 const channelResolvers = {
   Query: {
@@ -394,6 +407,19 @@ const channelResolvers = {
           throw new RazeeValidationError(`${subCount} subscriptions depend on this channel. Please update/remove them before removing this channel.`, context);
         }
 
+        // deletes the linked deployableVersions in s3
+        var versionsToDeleteFromS3 = await models.DeployableVersion.find({ org_id, channel_id: channel.uuid, location: 's3', });
+        const limit = pLimit(5);
+        await Promise.all(_.map(versionsToDeleteFromS3, async(deployableVersionObj)=>{
+          return limit(async()=>{
+            return await deleteDeployableVersionFromS3(deployableVersionObj);
+          });
+        }));
+
+        // deletes the linked deployableVersions in db
+        await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
+
+        // deletes the channel
         await models.Channel.deleteOne({ org_id, uuid });
 
         return {
@@ -432,15 +458,7 @@ const channelResolvers = {
           throw new NotFoundError(`versionObj "${uuid}" is not found for ${channel.name}:${channel.uuid}`, context);
         }
         if(versionObj.location === 's3'){
-          const url = deployableVersionObj.content;
-          const urlObj = new URL(url);
-          const fullPath = urlObj.pathname;
-          var parts = _.filter(_.split(fullPath, '/'));
-          var bucketName = parts.shift();
-          var path = `${parts.join('/')}`;
-
-          const s3Client = new S3ClientClass(conf);
-          await s3Client.deleteObject(bucketName, path);
+          await deleteDeployableVersionFromS3(deployableVersionObj);
         }
         await models.DeployableVersion.deleteOne({ org_id, uuid});
 
