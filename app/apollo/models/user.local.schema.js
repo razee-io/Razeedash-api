@@ -159,7 +159,7 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
-UserLocalSchema.statics.getKubeOwnerName = async(context)=>{
+UserLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
 };
 

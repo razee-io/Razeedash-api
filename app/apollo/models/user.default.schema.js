@@ -48,7 +48,7 @@ const UserDefaultSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{
+UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
 };
 

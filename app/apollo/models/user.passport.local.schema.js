@@ -165,7 +165,7 @@ UserPassportLocalSchema.statics.createToken = async (
   });
 };
 
-UserPassportLocalSchema.statics.getKubeOwnerName = async(context)=>{
+UserPassportLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
 };
 
