@@ -23,6 +23,8 @@ const readFile = require('fs-readfile-promise');
 const axios = require('axios');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
+const timeuuid = require('node-time-uuid');
+const timestamp = timeuuid.getTimestamp();
 
 router.use(ebl(getBunyanConfig('/api/install')));
 
@@ -31,6 +33,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args = req.query.args ? req.query.args : [];
   let args_array = Array.isArray(args) ? args : [args];
   let host = req.get('host');
+  let time = timestamp;
   if (process.env.EXTERNAL_HOST) {
     host = process.env.EXTERNAL_HOST;
   }
@@ -72,7 +75,8 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     const view = {
       NAMESPACE: req.query.namespace || 'razeedeploy',
       COMMAND: req.query.command || 'install',
-      ARGS_ARRAY: args_array
+      ARGS_ARRAY: args_array,
+      UUID: 'razeedeploy-job-' + time.toString()
     };
     const m_esc = Mustache.escape;
     Mustache.escape = (text) => { return text; };
