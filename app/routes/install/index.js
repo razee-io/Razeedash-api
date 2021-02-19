@@ -24,7 +24,6 @@ const axios = require('axios');
 const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
 
-
 router.use(ebl(getBunyanConfig('/api/install')));
 
 
