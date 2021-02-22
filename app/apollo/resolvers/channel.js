@@ -58,7 +58,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new NotFoundError(context.req.t('Query {{queryName}} find error. {{err.message}}.', {'queryName':queryName, 'err.message':err.essage}), context);
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. {{err.message}}.', {'queryName':queryName, 'err.message':err.message}), context);
       }
       return channels;
     },
