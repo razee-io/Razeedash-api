@@ -179,8 +179,7 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
 };
 
 const applyQueryFieldsToDeployableVersions = async(versions, queryFields={}, args, context)=> { // eslint-disable-line
-  const { models, me } = context;
-  var { orgId } = args;
+  const { models } = context;
 
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.filter(_.uniq(_.map(versions, 'ownerId'))));
