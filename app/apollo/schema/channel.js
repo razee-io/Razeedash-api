@@ -33,6 +33,8 @@ const channelSchema = gql`
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
+    owner: BasicUser
+    kubeOwnerName: String
   }
   type AddChannelReply {
     uuid: String!
@@ -64,6 +66,8 @@ const channelSchema = gql`
     type: String!
     description: String
     content: String
+    owner: BasicUser
+    kubeOwnerName: String
     created: Date!
   }
 
