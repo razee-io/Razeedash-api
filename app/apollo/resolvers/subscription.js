@@ -476,8 +476,7 @@ const subscriptionResolvers = {
         //var subscription = await models.Subscription.findOne({ org_id, uuid });
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
-        var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
-        //var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {});
+        var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {});
 
         if(!subscription){
           throw  new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
