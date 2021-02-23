@@ -98,7 +98,7 @@ const subscriptionResolvers = {
           }
         });
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, foundSubscriptions);
+          urls = await getSubscriptionUrls(org_id, foundSubscriptions, cluster);
         }
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
