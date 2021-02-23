@@ -48,7 +48,6 @@ const UserLocalSchema = new mongoose.Schema({
       type: String,
     },
   },
-
   services: {
     local: {
       username: {
@@ -160,6 +159,10 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
+UserLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+  return null;
+};
+
 UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
   let data = me.meta.orgs[0];
@@ -210,7 +213,7 @@ UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   const orgKey = req.get('razee-org-key');
   if (orgKey) {
     // cluster facing api (e.g. subscriptionsByCluster)
-    return {orgKey, type: 'cluster'};  
+    return {orgKey, type: 'cluster'};
   }
   let token = req.headers['authorization'];
   if (token) {
@@ -313,7 +316,7 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     // say no for if it is cluster facing api
     return false;
   }
-    
+
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });

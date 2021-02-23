@@ -58,6 +58,9 @@ const SubscriptionSchema = new mongoose.Schema({
   owner: {
     type: String,
   },
+  kubeOwnerName: {
+    type: String,
+  },
   created: {
     type: Date,
     default: Date.now,
