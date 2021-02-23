@@ -16,7 +16,7 @@
 #######################################
 # Build the preliminary image
 #######################################
-FROM node:lts-alpine as buildImg
+FROM node:12-alpine as buildImg
 
 RUN apk update
 RUN apk --no-cache add python make g++
@@ -31,7 +31,7 @@ RUN npm install --production --loglevel=warn
 #######################################
 # Build the production image
 #######################################
-FROM node:lts-alpine
+FROM node:12-alpine
 
 USER node
 WORKDIR /home/node

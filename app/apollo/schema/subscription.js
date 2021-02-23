@@ -42,12 +42,14 @@ const subscriptionSchema = gql`
     orgId: String!
     name: String!
     groups: [String!]
+    clusterId: String
     channelUuid: String!
     channelName: String!
     channel: Channel
     version: String!
     versionUuid: String!
     owner: BasicUser!
+    kubeOwnerName: String
     resources: [Resource!]
     created: Date!
     updated: Date!
@@ -76,6 +78,7 @@ const subscriptionSchema = gql`
     subscriptionVersion: String!,
     subscriptionUuid: String!,
     url: String!
+    kubeOwnerName: String
   }
   type SubscriptionUpdated {
     hasUpdates: Boolean
@@ -112,12 +115,12 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String  @sv): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion

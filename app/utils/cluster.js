@@ -134,15 +134,26 @@ const buildSearchableDataForResource = (org, obj, { clusterId }) => {
     }
   });
 
+  var razeeNameFilterFunc = (val, key)=>{
+    return key.toString().match(/^(razee\.io|satellite\.cloud\.ibm\.com|cpdaas\.cloud\.ibm\.com)/i);
+  };
+
+  var allAnnotations = _.get(obj, 'metadata.annotations', {});
+  var searchableAnnotationValues = _.filter(allAnnotations , razeeNameFilterFunc);
+
+  var allLabels = _.get(obj, 'metadata.labels', {});
+  var searchableLabelValues = _.filter(allLabels , razeeNameFilterFunc);
+
   var searchableExpressionArr = _.uniq(_.union(
     _.map(out, (searchableAttr)=>{
       return searchableAttr;
     }),
-    [clusterId]
+    [clusterId],
+    searchableAnnotationValues,
+    searchableLabelValues,
   ));
 
-  // not sure why we're joining by colon instead of space, but thats what was in the original code, so keeping it
-  out['searchableExpression'] = searchableExpressionArr.join(':');
+  out['searchableExpression'] = searchableExpressionArr.join(' ');
 
   return out;
 };

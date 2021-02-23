@@ -178,9 +178,33 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
   }
 };
 
+const applyQueryFieldsToDeployableVersions = async(versions, queryFields={}, args, context)=> { // eslint-disable-line
+  const { models } = context;
+
+  if(queryFields.owner){
+    const owners = await models.User.getBasicUsersByIds(_.filter(_.uniq(_.map(versions, 'ownerId'))));
+    _.each(versions, (version)=>{
+      version.owner = owners[version.ownerId] || version.undefined;
+    });
+  }
+};
+
 const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context)=>{ // eslint-disable-line
   const { models, me } = context;
   var { orgId } = args;
+
+  if(queryFields.owner){
+    const owners = await models.User.getBasicUsersByIds(_.filter(_.uniq(_.map(channels, 'ownerId'))));
+    _.each(channels, (channel)=>{
+      channel.owner = owners[channel.ownerId] || channel.undefined;
+    });
+  }
+
+  _.each(channels, (channel)=>{
+    if(!channel.tags){
+      channel.tags = [];
+    }
+  });
 
   if(queryFields.subscriptions){
     //piggyback basic-info of subscriptions associated with this channel that user allowed to see
@@ -295,4 +319,5 @@ module.exports = {
   applyQueryFieldsToGroups,
   applyQueryFieldsToResources,
   applyQueryFieldsToSubscriptions,
+  applyQueryFieldsToDeployableVersions,
 };
