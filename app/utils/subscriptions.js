@@ -3,7 +3,7 @@ const { models } = require('../apollo/models');
 
 const _ = require('lodash');
 
-const getSubscriptionUrls = async(orgId, matchingSubscriptions) => {
+const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
 
   const matchingChannels = await models.Channel.find({
     org_id: orgId,
@@ -22,13 +22,17 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions) => {
     if(foundVersion.length > 0) {
       url = `api/v1/channels/${subscription.channelName}/${foundVersion[0].uuid}`;
     }
+    let kubeOwnerName = null;
+    if(cluster.registration.location){
+      kubeOwnerName = subscription.kubeOwnerName;
+    }
     return {
       subscriptionName: subscription.name,
       subscriptionChannel: subscription.channelName,
       subscriptionVersion: subscription.version,
       subscriptionUuid: subscription.uuid,
       url: url,
-      kubeOwnerName: subscription.kubeOwnerName,
+      kubeOwnerName,
     };
   });
   urls = urls.filter(Boolean);

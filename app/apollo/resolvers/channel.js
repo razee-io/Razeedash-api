@@ -24,7 +24,7 @@ const { WritableStreamBuffer } = require('stream-buffers');
 const streamToString = require('stream-to-string');
 const stream = require('stream');
 const pLimit = require('p-limit');
-const { applyQueryFieldsToChannels } = require('../utils/applyQueryFields');
+const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = require('../utils/applyQueryFields');
 
 const yaml = require('js-yaml');
 
@@ -58,7 +58,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new NotFoundError(context.req.t('Query {{queryName}} find error. {{err.message}}.', {'queryName':queryName}), context);
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. {{err.message}}.', {'queryName':queryName, 'err.message':err.message}), context);
       }
       return channels;
     },
@@ -77,7 +77,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
       return channel;
     },
@@ -116,18 +116,19 @@ const channelResolvers = {
 
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${err.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
       }
       return channels;
     },
-    channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context) => {
+    channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context, fullQuery) => {
       const { me, req_id, logger } = context;
       const queryName = 'channelVersionByName';
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
-      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context);
+      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context, fullQuery);
     },
 
-    channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context) => {
+    channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
@@ -160,6 +161,7 @@ const channelResolvers = {
         if (!deployableVersionObj) {
           throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.', {'channel.name':channel.name, 'channel.uuid':channel.uuid, 'versionObj.name':versionObj.name, 'versionObj.uuid':versionObj.uuid}), context);
         }
+        await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
         if (versionObj.location === 'mongo') {
           deployableVersionObj.content = await decryptOrgData(orgKey, deployableVersionObj.content);
@@ -205,10 +207,13 @@ const channelResolvers = {
           throw new RazeeValidationError(context.req.t('Too many channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
         const uuid = UUID();
+        const kubeOwnerName = await models.User.getKubeOwnerName(context);
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
+          ownerId: me._id,
+          kubeOwnerName,
         });
         return {
           uuid,
@@ -358,6 +363,7 @@ const channelResolvers = {
         data = await encryptOrgData(orgKey, content);
       }
 
+      const kubeOwnerName = await models.User.getKubeOwnerName(context);
       const deployableVersionObj = {
         _id: UUID(),
         org_id,
@@ -370,6 +376,8 @@ const channelResolvers = {
         content: data,
         iv: ivText,
         type,
+        ownerId: me._id,
+        kubeOwnerName,
       };
 
       const dObj = await models.DeployableVersion.create(deployableVersionObj);

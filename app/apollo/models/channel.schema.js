@@ -30,6 +30,12 @@ const ChannelSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
+  ownerId: {
+    type: String,
+  },
+  kubeOwnerName: {
+    type: String,
+  },
   created: {
     type: Date,
     default: Date.now,
