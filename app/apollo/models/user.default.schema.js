@@ -48,6 +48,10 @@ const UserDefaultSchema = new mongoose.Schema({
   strict:'throw',
 });
 
+UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+  return null;
+};
+
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   const {req_id, logger} = context;
   const apiKey = req.get('x-api-key');
@@ -66,7 +70,9 @@ UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   } else {
     type = 'cluster';
   }
-  return {apiKey, orgKey, type, _id: id}; 
+  return {
+    apiKey, orgKey, type, _id: id,
+  };
 };
 
 UserDefaultSchema.statics.getMeFromConnectionParams = async function(connectionParams, context){
@@ -85,7 +91,7 @@ UserDefaultSchema.statics.userTokenIsAuthorized = async function(me, orgId, acti
     logger.error('A user was not found for this apiKey');
     throw new ForbiddenError('user not found');
   }
-  
+
   // make sure that the user is a member of the orgId that was passed in
   const orgs = user.orgs || [];
   const orgNames = orgs.map( (org) => org.name );
@@ -122,12 +128,12 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
   if(!orgName) {
     logger.error('An org has not been set for this user');
     return new Array(objectArray.length).fill(false);
-  } 
+  }
   const org = await models.Organization.findOne({ name: orgName }).lean();
   if(!org || org._id !== orgId) {
     logger.error('User is not authorized for this organization');
     return new Array(objectArray.length).fill(false);
-  } 
+  }
   return new Array(objectArray.length).fill(true);
 };
 

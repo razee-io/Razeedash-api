@@ -49,6 +49,7 @@ const subscriptionSchema = gql`
     version: String!
     versionUuid: String!
     owner: BasicUser!
+    kubeOwnerName: String
     resources: [Resource!]
     created: Date!
     updated: Date!
@@ -77,6 +78,7 @@ const subscriptionSchema = gql`
     subscriptionVersion: String!,
     subscriptionUuid: String!,
     url: String!
+    kubeOwnerName: String
   }
   type SubscriptionUpdated {
     hasUpdates: Boolean

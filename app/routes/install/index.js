@@ -72,7 +72,8 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     const view = {
       NAMESPACE: req.query.namespace || 'razeedeploy',
       COMMAND: req.query.command || 'install',
-      ARGS_ARRAY: args_array
+      ARGS_ARRAY: args_array,
+      UUID: `-${Date.now()}`
     };
     const m_esc = Mustache.escape;
     Mustache.escape = (text) => { return text; };
