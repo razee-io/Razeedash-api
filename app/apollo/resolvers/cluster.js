@@ -91,7 +91,7 @@ const clusterResolvers = {
       }).lean({ virtuals: true });
 
       if(!cluster){
-        throw new NotFoundError(`Could not find the cluster with Id ${clusterId}.`, context); 
+        throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context); 
       }
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
@@ -135,7 +135,7 @@ const clusterResolvers = {
       }).lean({ virtuals: true });
 
       if(!cluster){
-        throw new NotFoundError(`Could not find the cluster with name ${clusterName}.`, context);
+        throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
       }
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, cluster.name, clusterName]);
@@ -328,7 +328,7 @@ const clusterResolvers = {
         
       } catch (error) {
         logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${error.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id and cluster_id
 
@@ -358,7 +358,7 @@ const clusterResolvers = {
         
       } catch (error) {
         logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${error.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id 
 
@@ -371,19 +371,19 @@ const clusterResolvers = {
 
       try {
         if (!registration.name) {
-          throw new RazeeValidationError('A cluster name is not defined in the registration data', context);
+          throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
 
         // validate the number of total clusters are under the limit
         const total = await models.Cluster.count({org_id});
         if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {  // *** shoud be just >
-          throw new RazeeValidationError(`You have exceeded the maximum amount of clusters for this org - ${org_id}`, context);               
+          throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);               
         }
 
         // validate the number of pending clusters are under the limit
         const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
         if (total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
-          throw new RazeeValidationError(`You have exeeded the maximum amount of pending clusters for this org - ${org_id}.`, context);         
+          throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);         
         }
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
@@ -396,7 +396,7 @@ const clusterResolvers = {
               {'metadata.name': registration.name },
             ]}
           ]}).lean()) {
-          throw new RazeeValidationError(`Another cluster already exists with the same registration name ${registration.name}`, context);
+          throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
         }
 
         const cluster_id = UUID();
@@ -418,7 +418,7 @@ const clusterResolvers = {
         }
 
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${error.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end registerCluster 
 
@@ -448,7 +448,7 @@ const clusterResolvers = {
         }
       } catch (error) {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
-        throw new RazeeQueryError(`Query ${queryName} error. ${error.message}`, context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end enableRegistrationUrl
   }

@@ -56,7 +56,7 @@ const groupResolvers = {
       try{
         let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
         if (!group) {
-          throw new NotFoundError(`could not find group with uuid ${uuid}.`);
+          throw new NotFoundError(context.req.t('could not find group with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
@@ -77,7 +77,7 @@ const groupResolvers = {
       try{
         let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
-          throw new NotFoundError(`could not find group with name ${name}.`);
+          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}));
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
@@ -101,7 +101,7 @@ const groupResolvers = {
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
         if(group){
-          throw new ValidationError(`The group name ${name} already exists.`);
+          throw new ValidationError(context.req.t('The group name {{name}} already exists.', {'name':name}));
         }
         const uuid = UUID();
         await models.Group.create({
@@ -129,14 +129,14 @@ const groupResolvers = {
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
   
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
   
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
+          throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
         
         const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
@@ -167,14 +167,14 @@ const groupResolvers = {
       try{
         const group = await models.Group.findOne({ name, org_id: org_id }).lean();
         if(!group){
-          throw new NotFoundError(`group name "${name}" not found`);
+          throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
   
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
-          throw new ValidationError(`${subCount} subscriptions depend on this cluster group. Please update/remove them before removing this group.`);
+          throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
 
         const uuid = group.uuid;
@@ -185,7 +185,7 @@ const groupResolvers = {
         
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
-          throw new ValidationError(`${clusterCount} clusters depend on this group. Please update/remove the group from the clusters.`);
+          throw new ValidationError(context.req.t('{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.', {'clusterCount':clusterCount}));
         }      
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
@@ -216,7 +216,7 @@ const groupResolvers = {
       try {
         var groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
-          throw new NotFoundError('None of the passed group uuids were found');
+          throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
         groupUuids = _.map(groups, 'uuid');
         var groupObjsToAdd = _.map(groups, (group)=>{
@@ -318,7 +318,7 @@ const groupResolvers = {
       try {
         var groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
-          throw new NotFoundError('One or more of the passed group uuids were not found');
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
         groupUuids = _.map(groups, 'uuid');
         var groupObjsToAdd = _.map(groups, (group)=>{
@@ -356,7 +356,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
@@ -387,7 +387,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(`group uuid "${uuid}" not found`);
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);

@@ -1,0 +1,156 @@
+{
+
+  "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} Cluster hängen von dieser Gruppe ab. Bitte aktualisieren Sie die Gruppe oder entfernen Sie die Gruppe von den Clustern.",
+
+  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} Subskription(en) hängen von diesem Kanal ab. Bitte aktualisieren/entfernen Sie die Subskriptionen, bevor Sie den Kanal entfernen. ",
+
+  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} Subskriptionen hängen von dieser Kanalversion ab. Bitte aktualisieren/entfernen Sie die Subskriptionen, bevor Sie sie diese Kanalversion entfernen. ",
+
+  "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} Subskriptionen hängen von dieser Clustergruppe ab. Bitte aktualisieren/entfernen Sie die Subskriptionen, bevor Sie diese Gruppe entfernen. ",
+
+  "A \"channel_uuid\" must be specified": "Eine \"channel_uuid\" muss angegeben werden. ",
+
+  "A \"file\" or \"content\" must be specified": "Eine \"file\" oder ein \"content\" muss angegeben werden.",
+
+  "A \"name\" must be specified": "Ein \"name\" muss angegeben werden. ",
+
+  "A \"type\" of application/yaml must be specified": "Ein \"type\" für die Anwendung/YAML muss angegeben werden. ",
+
+  "A cluster name is not defined in the registration data": "In den Registrierungsdaten ist kein Clustername definiert. ",
+
+  "Another cluster already exists with the same registration name {{registration.name}}": "Es ist bereits ein anderer Cluster mit demselben eingetragenen Namen {{registration.name}} vorhanden.",
+
+  "channel uuid \"{{channel_uuid}}\" not found": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden",
+
+  "Channel uuid \"{{channel_uuid}}\" not found.": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden.",
+
+  "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "Kanal-UUID \"{{subscription.channel_uuid}}\" nicht gefunden.",
+
+  "channel uuid \"{{uuid}}\" not found": "Kanal-UUID \"{{uuid}}\" nicht gefunden",
+
+  "commonResourceSearch encountered an error. {{error.message}}": "commonResourceSearch hat einen Fehler festgestellt. {{error.message}}",
+
+  "commonResourcesSearch encountered an error. {{error.message}}": "commonResourcesSearch hat einen Fehler festgestellt. {{error.message}}",
+
+  "Could not find all the cluster groups {{groups}} in the groups database, please create them first.": "In der Gruppendatenbank konnten nicht alle Clustergruppen {{groups}} gefunden werden. Bitte erstellen Sie diese zuerst. ",
+
+  "could not find group with name {{name}}.": "Die Gruppe mit dem Namen {{name}} konnte nicht gefunden werden.",
+
+  "could not find group with uuid {{uuid}}.": "Die Gruppe mit der UUID {{uuid}} konnte nicht gefunden werden.",
+
+  "Could not find subscriptions.": "Subskriptionen konnten nicht gefunden werden.",
+
+  "Could not find the channel with name {{name}}.": "Der Kanal mit dem Namen {{name}} konnte nicht gefunden werden.",
+
+  "Could not find the channel with uuid {{uuid}}.": "Der Kanal mit der UUID {{uuid}} konnte nicht gefunden werden.",
+
+  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "Der Kanal mit der UUID/dem Namen {{channel_uuid}}/channelName konnte nicht gefunden werden.",
+
+  "Could not find the cluster for the cluster id {{cluster_id}}.": "Der Cluster für die Cluster-ID {{cluster_id}} konnte nicht gefunden werden.",
+
+  "Could not find the cluster with Id {{clusterId}}.": "Der Cluster mit der ID {{clusterId}} konnte nicht gefunden werden.",
+
+  "Could not find the cluster with name {{clusterName}}.": "Der Cluster mit dem Namen {{clusterName}} konnte nicht gefunden werden.",
+
+  "Could not find the organization with ID {{org_id}}.": "Die Organisation mit der ID {{org_id}} konnte nicht gefunden werden.",
+
+  "Could not find the subscription for the subscription id {{subscription_id}}.": "Die Subskription für die Subskriptions-ID {{subscription_id}} konnte nicht gefunden werden.",
+
+  "Could not find the subscription.": "Die Subskription konnte nicht gefunden werden. ",
+
+  "Could not locate the cluster with cluster_id {{cluster_id}}": "Der Cluster mit der Cluster-ID {{cluster_id}} konnte nicht gefunden werden.",
+
+  "Could not locate the cluster with clusterName {{clusterName}}": "Der Cluster mit dem Clusternamen {{clusterName}} konnte nicht gefunden werden.",
+
+  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "DeployableVersion konnte für {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}} nicht gefunden werden.",
+
+  "Error retrieving data from s3 bucket. {{error.message}}": "Fehler beim Abrufen der Daten vom s3-Bucket. {{error.message}}",
+
+  "Failed to Publish resource notification, please reload the page.": "Publizieren der Ressourcenbenachrichtigung fehlgeschlagen. Bitte laden Sie die Seite erneut. ",
+
+  "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Publizieren der Ressourcenbenachrichtigung fehlgeschlagen. pubsub ist noch nicht bereit. Bitte versuchen Sie es später erneut. ",
+
+  "Failed to Publish subscription notification to clusters, please retry.": "Publizieren der Subskriptionsbenachrichtigung an Cluster fehlgeschlagen. Bitte versuchen Sie es erneut. ",
+
+  "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.": "Publizieren der Subskriptionsbenachrichtigungen an Cluster fehlgeschlagen. pubsub ist noch nicht bereit. Bitte versuchen Sie es später erneut. ",
+
+  "group name \"{{name}}\" not found": "Gruppenname \"{{name}}\" nicht gefunden",
+
+  "group uuid \"{{uuid}}\" not found": "Gruppen-UUID \"{{uuid}}\" nicht gefunden",
+
+  "hist _id \"{{histId}}\" not found": "Verlaufs-ID \"{{histId}}\" nicht gefunden",
+
+  "Invalid razee-org-key was submitted for {{queryName}}": "Ungültiger razee-org-key wurde für {{queryName}} übergeben.",
+
+  "No org was found for the org key.": "Für den Organisationsschlüssel wurde keine Organisation gefunden.",
+
+  "No razee-org-key was supplied.": "Es wurde kein razee-org-key bereitgestellt.",
+
+  "None of the passed group uuids were found": "Keine der übergebenen Gruppen-UUIDs wurde gefunden. ",
+
+  "One or more of the passed group uuids were not found": "Mindestens eine der übergebenen Gruppen-UUIDs wurde nicht gefunden. ",
+
+  "org id was not found": "Organisation-ID nicht gefunden",
+
+  "Provided YAML content is not valid: {{error}}": "Bereitgestellter YAML-Inhalt ist ungültig: {{error}}",
+
+  "Query {{queryName}} error. {{err.message}}": "Bei Abfrage {{queryName}} Fehler {{err.message}}",
+
+  "Query {{queryName}} error. {{error.message}}": "Bei Abfrage {{queryName}} Fehler {{error.message}}",
+
+  "Query {{queryName}} find error. {{err.message}}.": "Bei Abfrage {{queryName}} Suchfehler {{err.message}}.",
+
+  "resourcesCount encountered an error. {{error.message}}": "resourcesCount hat einen Fehler festgestellt. {{error.message}}",
+
+  "Subscription { uuid: \"{{uuid}}\", org_id:{{org_id}} } not found.": "Subskription { uuid: \"{{uuid}}\", org_id:{{org_id}} } nicht gefunden.",
+
+  "Subscription { uuid: \"{{uuid}}\", orgId:{{orgId}} } not found.": "Subskription { uuid: \"{{uuid}}\", orgId:{{orgId}} } nicht gefunden.",
+
+  "Subscription uuid \"{{uuid}}\" not found.": "Subskriptions-UUID \"{{uuid}}\" nicht gefunden.",
+
+  "The channel name {{name}} already exists.": "Der Kanalname {{name}} ist bereits vorhanden.",
+
+  "The group name {{name}} already exists.": "Der Gruppenname {{name}} ist bereits vorhanden.",
+
+  "The version name {{name}} already exists": "Der Versionsname {{name}} ist bereits vorhanden.",
+
+  "Too many channel version are registered under {{channel_uuid}}.": "Unter {{channel_uuid}} sind zu viele Kanalversionen registriert.",
+
+  "Too many channels are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Kanäle registriert.",
+
+  "Too many subscriptions are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Subskriptionen registriert.",
+
+  "version uuid \"{{uuid}}\" not found": "Versions-UUID \"{{uuid}}\" nicht gefunden",
+
+  "version uuid \"{{version_uuid}}\" not found": "Versions-UUID \"{{version_uuid}}\" nicht gefunden",
+
+  "Version uuid \"{{version_uuid}}\" not found.": "Versions-UUID \"{{version_uuid}}\" nicht gefunden.",
+
+  "versionObj \"{{uuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "Versionsobjekt \"{{uuid}}\" für {{channel.name}}:{{channel.uuid}} nicht gefunden",
+
+  "versionObj \"{{versionUuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "Versionsobjekt \"{{versionUuid}}\" für {{channel.name}}:{{channel.uuid}} nicht gefunden",
+
+  "versionObj.location=\"{{versionObj.location}}\" not implemented yet": "versionObj.location=\"{{versionObj.location}}\" noch nicht implementiert",
+
+  "YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb": "YAML-Dateigröße sollte nicht mehr als {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}MB betragen",
+
+  "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.": "Sie sind nicht für die Ausführung von {{action}} auf {{type}} unter Organisation {{org_id}} für die Abfrage {{queryName}} berechtigt.",
+
+  "You are not allowed to access this resource due to missing cluster group permission.": "Sie dürfen nicht auf diese Ressource zugreifen, da die Berechtigung für die Clustergruppe fehlt. ",
+
+  "You are not allowed to access this resource due to missing cluster tag permission.": "Sie dürfen nicht auf diese Ressource zugreifen, da die Berechtigung für das Cluster-Tag fehlt. ",
+
+  "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.": "Sie dürfen Ressourcen nicht lesen, da die Berechtigungen für die Clustergruppe {{group.name}} fehlen.",
+
+  "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "Sie dürfen Ressourcen nicht lesen, da die Berechtigungen für die Subskriptionsgruppe {{group}} fehlen.",
+
+  "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "Sie dürfen Subskriptionen nicht lesen, da Berechtigungen für die Clustergruppe {{group.name}} fehlen.",
+
+  "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "Sie dürfen keine Subskription für alle {{subscription.groups}}-Gruppen festlegen. ",
+
+  "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "Sie haben den Maximalwert an Clustern für diese Organisation {{org_id}} überschritten.",
+
+  "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "Sie haben den Maximalwert an anstehenden Clustern für diese Organisation {{org_id}} überschritten."
+
+}
+

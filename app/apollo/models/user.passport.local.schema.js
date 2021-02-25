@@ -111,7 +111,7 @@ async function getOrCreateOrganization(models, args) {
 
 UserPassportLocalSchema.statics.createUser = async function(models, args) {
   const org = await getOrCreateOrganization(models, args);
-  
+
   const user = await this.create({
     _id: `${uuid()}`,
     type: 'passportlocal',
@@ -165,6 +165,10 @@ UserPassportLocalSchema.statics.createToken = async (
   });
 };
 
+UserPassportLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+  return null;
+};
+
 UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
   let data = me.meta.orgs[0];
@@ -176,7 +180,7 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
       type: me.type,
       id: me._id,
       email: me.email,
-      identifier: me.identifier, 
+      identifier: me.identifier,
       orgId: me.org_id,
       role: me.role,
       meta: me.meta,
@@ -218,7 +222,7 @@ UserPassportLocalSchema.statics.getMeFromRequest = async function(req, context) 
   const orgKey = req.get('razee-org-key');
   if (orgKey) {
     // cluster facing api (e.g. subscriptionsByCluster)
-    return {orgKey, type: 'cluster'};  
+    return {orgKey, type: 'cluster'};
   }
   // user facing api
   let token = req.headers['authorization'];
@@ -325,7 +329,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
     // say no for if it is cluster facing api
     return false;
   }
-  
+
   if (action === ACTIONS.READ) {
     return me.org_id === orgId;
   } else {
