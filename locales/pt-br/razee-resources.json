@@ -1,78 +1,156 @@
 {
-  "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.",
-  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.",
-  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.",
-  "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.",
-  "A \"channel_uuid\" must be specified": "A \"channel_uuid\" must be specified",
-  "A \"file\" or \"content\" must be specified": "A \"file\" or \"content\" must be specified",
-  "A \"name\" must be specified": "A \"name\" must be specified",
-  "A \"type\" of application/yaml must be specified": "A \"type\" of application/yaml must be specified",
-  "A cluster name is not defined in the registration data": "A cluster name is not defined in the registration data",
-  "Another cluster already exists with the same registration name {{registration.name}}": "Another cluster already exists with the same registration name {{registration.name}}",
-  "channel uuid \"{{channel_uuid}}\" not found": "channel uuid \"{{channel_uuid}}\" not found",
-  "Channel uuid \"{{channel_uuid}}\" not found.": "Channel uuid \"{{channel_uuid}}\" not found.",
-  "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "Channel uuid \"{{subscription.channel_uuid}}\" not found.",
-  "channel uuid \"{{uuid}}\" not found": "channel uuid \"{{uuid}}\" not found",
-  "commonResourceSearch encountered an error. {{error.message}}": "commonResourceSearch encountered an error. {{error.message}}",
-  "commonResourcesSearch encountered an error. {{error.message}}": "commonResourcesSearch encountered an error. {{error.message}}",
-  "Could not find all the cluster groups {{groups}} in the groups database, please create them first.": "Could not find all the cluster groups {{groups}} in the groups database, please create them first.",
-  "could not find group with name {{name}}.": "could not find group with name {{name}}.",
-  "could not find group with uuid {{uuid}}.": "could not find group with uuid {{uuid}}.",
-  "Could not find subscriptions.": "Could not find subscriptions.",
-  "Could not find the channel with name {{name}}.": "Could not find the channel with name {{name}}.",
-  "Could not find the channel with uuid {{uuid}}.": "Could not find the channel with uuid {{uuid}}.",
-  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "Could not find the channel with uuid/name {{channel_uuid}}/channelName.",
-  "Could not find the cluster for the cluster id {{cluster_id}}.": "Could not find the cluster for the cluster id {{cluster_id}}.",
-  "Could not find the cluster with Id {{clusterId}}.": "Could not find the cluster with Id {{clusterId}}.",
-  "Could not find the cluster with name {{clusterName}}.": "Could not find the cluster with name {{clusterName}}.",
-  "Could not find the organization with ID {{org_id}}.": "Could not find the organization with ID {{org_id}}.",
-  "Could not find the subscription for the subscription id {{subscription_id}}.": "Could not find the subscription for the subscription id {{subscription_id}}.",
-  "Could not find the subscription.": "Could not find the subscription.",
-  "Could not locate the cluster with cluster_id {{cluster_id}}": "Could not locate the cluster with cluster_id {{cluster_id}}",
-  "Could not locate the cluster with clusterName {{clusterName}}": "Could not locate the cluster with clusterName {{clusterName}}",
-  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.",
-  "Error retrieving data from s3 bucket. {{error.message}}": "Error retrieving data from s3 bucket. {{error.message}}",
-  "Failed to Publish resource notification, please reload the page.": "Failed to Publish resource notification, please reload the page.",
-  "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Failed to Publish resource notification, pubsub is not ready yet, please retry later.",
-  "Failed to Publish subscription notification to clusters, please retry.": "Failed to Publish subscription notification to clusters, please retry.",
-  "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.": "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.",
-  "group name \"{{name}}\" not found": "group name \"{{name}}\" not found",
-  "group uuid \"{{uuid}}\" not found": "group uuid \"{{uuid}}\" not found",
-  "hist _id \"{{histId}}\" not found": "hist _id \"{{histId}}\" not found",
-  "Invalid razee-org-key was submitted for {{queryName}}": "Invalid razee-org-key was submitted for {{queryName}}",
-  "No org was found for the org key.": "No org was found for the org key.",
-  "No razee-org-key was supplied.": "No razee-org-key was supplied.",
-  "None of the passed group uuids were found": "None of the passed group uuids were found",
-  "One or more of the passed group uuids were not found": "One or more of the passed group uuids were not found",
-  "org id was not found": "org id was not found",
-  "Provided YAML content is not valid: {{error}}": "Provided YAML content is not valid: {{error}}",
-  "Query {{queryName}} error. {{err.message}}": "Query {{queryName}} error. {{err.message}}",
-  "Query {{queryName}} error. {{error.message}}": "Query {{queryName}} error. {{error.message}}",
-  "Query {{queryName}} find error. {{err.message}}.": "Query {{queryName}} find error. {{err.message}}.",
-  "resourcesCount encountered an error. {{error.message}}": "resourcesCount encountered an error. {{error.message}}",
-  "Subscription { uuid: \"{{uuid}}\", org_id:{{org_id}} } not found.": "Subscription { uuid: \"{{uuid}}\", org_id:{{org_id}} } not found.",
-  "Subscription { uuid: \"{{uuid}}\", orgId:{{orgId}} } not found.": "Subscription { uuid: \"{{uuid}}\", orgId:{{orgId}} } not found.",
-  "Subscription uuid \"{{uuid}}\" not found.": "Subscription uuid \"{{uuid}}\" not found.",
-  "The channel name {{name}} already exists.": "The channel name {{name}} already exists.",
-  "The group name {{name}} already exists.": "The group name {{name}} already exists.",
-  "The version name {{name}} already exists": "The version name {{name}} already exists",
-  "Too many channel version are registered under {{channel_uuid}}.": "Too many channel version are registered under {{channel_uuid}}.",
-  "Too many channels are registered under {{org_id}}.": "Too many channels are registered under {{org_id}}.",
-  "Too many subscriptions are registered under {{org_id}}.": "Too many subscriptions are registered under {{org_id}}.",
-  "version uuid \"{{uuid}}\" not found": "version uuid \"{{uuid}}\" not found",
-  "version uuid \"{{version_uuid}}\" not found": "version uuid \"{{version_uuid}}\" not found",
-  "Version uuid \"{{version_uuid}}\" not found.": "Version uuid \"{{version_uuid}}\" not found.",
-  "versionObj \"{{uuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "versionObj \"{{uuid}}\" is not found for {{channel.name}}:{{channel.uuid}}",
-  "versionObj \"{{versionUuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "versionObj \"{{versionUuid}}\" is not found for {{channel.name}}:{{channel.uuid}}",
-  "versionObj.location=\"{{versionObj.location}}\" not implemented yet": "versionObj.location=\"{{versionObj.location}}\" not implemented yet",
-  "YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb": "YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb",
-  "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.": "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.",
-  "You are not allowed to access this resource due to missing cluster group permission.": "You are not allowed to access this resource due to missing cluster group permission.",
-  "You are not allowed to access this resource due to missing cluster tag permission.": "You are not allowed to access this resource due to missing cluster tag permission.",
-  "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.": "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.",
-  "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "You are not allowed to read resources due to missing permissions on subscription group {{group}}.",
-  "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.",
-  "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "You are not allowed to set subscription for all of {{subscription.groups}} groups.",
-  "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "You have exceeded the maximum amount of clusters for this org - {{org_id}}",
-  "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}."
+
+  "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} clusters dependem deste grupo. Atualize/remova o grupo dos clusters.",
+
+  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} assinaturas dependem deste canal. Atualize-as ou as remova antes de remover este canal.",
+
+  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} assinaturas dependem desta versão do canal. Atualize-as ou as remova antes de remover esta versão do canal.",
+
+  "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} assinaturas dependem deste grupo de clusters. Atualize-as ou as remova antes de remover este grupo.",
+
+  "A \"channel_uuid\" must be specified": "Um \"channel_uuid\" deve ser especificado",
+
+  "A \"file\" or \"content\" must be specified": "Um \"file\" ou \"content\" deve ser especificado",
+
+  "A \"name\" must be specified": "Um \"name\" deve ser especificado",
+
+  "A \"type\" of application/yaml must be specified": "Um \"type\" de aplicativo/YAML deve ser especificado",
+
+  "A cluster name is not defined in the registration data": "Não há um nome de cluster definido nos dados de registro",
+
+  "Another cluster already exists with the same registration name {{registration.name}}": "Outro cluster já existe com o mesmo nome de registro {{registration.name}}",
+
+  "channel uuid \"{{channel_uuid}}\" not found": "UUID do canal \"{{channel_uuid}}\" não localizado",
+
+  "Channel uuid \"{{channel_uuid}}\" not found.": "UUID do canal \"{{channel_uuid}}\" não localizado.",
+
+  "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "UUID do canal \"{{subscription.channel_uuid}}\" não localizado.",
+
+  "channel uuid \"{{uuid}}\" not found": "UUID do canal \"{{uuid}}\" não localizado",
+
+  "commonResourceSearch encountered an error. {{error.message}}": "commonResourceSearch encontrou um erro. {{error.message}}",
+
+  "commonResourcesSearch encountered an error. {{error.message}}": "commonResourcesSearch encontrou um erro. {{error.message}}",
+
+  "Could not find all the cluster groups {{groups}} in the groups database, please create them first.": "Não foi possível localizar todos os grupos de clusters {{groups}} no banco de dados de grupos. Crie-os primeiro.",
+
+  "could not find group with name {{name}}.": "não foi possível localizar o grupo com o nome {{name}}.",
+
+  "could not find group with uuid {{uuid}}.": "não foi possível localizar o grupo com o UUID {{uuid}}.",
+
+  "Could not find subscriptions.": "Não foi possível localizar assinaturas.",
+
+  "Could not find the channel with name {{name}}.": "Não foi possível localizar o canal com o nome {{name}}.",
+
+  "Could not find the channel with uuid {{uuid}}.": "Não foi possível localizar o canal com o UUID {{uuid}}.",
+
+  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "Não foi possível localizar o canal com o UUID/nome {{channel_uuid}}/channelName.",
+
+  "Could not find the cluster for the cluster id {{cluster_id}}.": "Não foi possível localizar o cluster para o ID de cluster {{cluster_id}}.",
+
+  "Could not find the cluster with Id {{clusterId}}.": "Não foi possível localizar o cluster com o ID {{clusterId}}.",
+
+  "Could not find the cluster with name {{clusterName}}.": "Não foi possível localizar o cluster com o nome {{clusterName}}.",
+
+  "Could not find the organization with ID {{org_id}}.": "Não foi possível localizar a organização com o ID {{org_id}}.",
+
+  "Could not find the subscription for the subscription id {{subscription_id}}.": "Não foi possível localizar a assinatura para o ID de assinatura {{subscription_id}}.",
+
+  "Could not find the subscription.": "Não foi possível localizar a assinatura.",
+
+  "Could not locate the cluster with cluster_id {{cluster_id}}": "Não foi possível localizar o cluster com o cluster_id {{cluster_id}}",
+
+  "Could not locate the cluster with clusterName {{clusterName}}": "Não foi possível localizar o cluster com o clusterName {{clusterName}}",
+
+  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "Não foi localizada uma versão implementável para {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.",
+
+  "Error retrieving data from s3 bucket. {{error.message}}": "Erro ao recuperar dados do depósito s3. {{error.message}}",
+
+  "Failed to Publish resource notification, please reload the page.": "Falha ao publicar a notificação de recurso. Recarregue a página.",
+
+  "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Falha ao publicar a notificação de recurso. Pubsub ainda não está pronto. Tente novamente mais tarde.",
+
+  "Failed to Publish subscription notification to clusters, please retry.": "Falha ao publicar a notificação de assinatura nos clusters. Tente novamente.",
+
+  "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.": "Falha ao publicar a notificação de assinatura nos clusters. Pubsub ainda não está pronto. Tente novamente.",
+
+  "group name \"{{name}}\" not found": "Nome do grupo \"{{name}}\" não localizado",
+
+  "group uuid \"{{uuid}}\" not found": "UUID do grupo \"{{uuid}}\" não localizado",
+
+  "hist _id \"{{histId}}\" not found": "hist_id \"{{histId}}\" não localizado",
+
+  "Invalid razee-org-key was submitted for {{queryName}}": "Razee-org-key inválida enviada para {{queryName}}",
+
+  "No org was found for the org key.": "Nenhuma organização foi localizada para a chave de organização.",
+
+  "No razee-org-key was supplied.": "Nenhuma razee-org-key foi fornecida.",
+
+  "None of the passed group uuids were found": "Nenhum dos UUIDs do grupo aprovado foi localizado",
+
+  "One or more of the passed group uuids were not found": "Um ou mais dos UUIDs do grupo aprovado não foram localizados",
+
+  "org id was not found": "o ID da organização não foi localizado",
+
+  "Provided YAML content is not valid: {{error}}": "O conteúdo do YAML fornecido não é válido: {{error}}",
+
+  "Query {{queryName}} error. {{err.message}}": "Erro na consulta {{queryName}}. {{err.message}}",
+
+  "Query {{queryName}} error. {{error.message}}": "Erro na consulta {{queryName}}. {{error.message}}",
+
+  "Query {{queryName}} find error. {{err.message}}.": "Erro de localização na consulta {{queryName}}. {{err.message}}.",
+
+  "resourcesCount encountered an error. {{error.message}}": "resourcesCount encontrou um erro. {{error.message}}",
+
+  "Subscription { uuid: \"{{uuid}}\", org_id:{{org_id}} } not found.": "Assinatura { uuid: \"{{uuid}}\", org_id:{{org_id}} } não localizada.",
+
+  "Subscription { uuid: \"{{uuid}}\", orgId:{{orgId}} } not found.": "Assinatura { uuid: \"{{uuid}}\", orgId:{{orgId}} } não localizada.",
+
+  "Subscription uuid \"{{uuid}}\" not found.": "UUID de assinatura \"{{uuid}}\" não localizado.",
+
+  "The channel name {{name}} already exists.": "O nome do canal {{name}} já existe.",
+
+  "The group name {{name}} already exists.": "O nome do grupo {{name}} já existe.",
+
+  "The version name {{name}} already exists": "O nome da versão {{name}} já existe",
+
+  "Too many channel version are registered under {{channel_uuid}}.": "Muitas versões de canal estão registradas em {{channel_uuid}}.",
+
+  "Too many channels are registered under {{org_id}}.": "Muitos canais estão registrados em {{org_id}}.",
+
+  "Too many subscriptions are registered under {{org_id}}.": "Muitas assinaturas estão registradas em {{org_id}}.",
+
+  "version uuid \"{{uuid}}\" not found": "UUID da versão \"{{uuid}}\" não localizado",
+
+  "version uuid \"{{version_uuid}}\" not found": "UUID da versão \"{{version_uuid}}\" não localizado",
+
+  "Version uuid \"{{version_uuid}}\" not found.": "UUID da versão \"{{version_uuid}}\" não localizado.",
+
+  "versionObj \"{{uuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "versionObj \"{{uuid}}\" não foi localizado para {{channel.name}}:{{channel.uuid}}",
+
+  "versionObj \"{{versionUuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "versionObj \"{{versionUuid}}\" não foi localizado para {{channel.name}}:{{channel.uuid}}",
+
+  "versionObj.location=\"{{versionObj.location}}\" not implemented yet": "versionObj.location=\"{{versionObj.location}}\" ainda não foi implementado",
+
+  "YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb": "O arquivo YAML não deve ter um tamanho maior que {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}} MB",
+
+  "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.": "Você não tem permissão para {{action}} em {{type}} na organização {{org_id}} para a consulta {{queryName}}.",
+
+  "You are not allowed to access this resource due to missing cluster group permission.": "Você não tem a permissão de grupo de clusters necessária para acessar este recurso.",
+
+  "You are not allowed to access this resource due to missing cluster tag permission.": "Você não tem a permissão de tag de cluster necessária para acessar este recurso.",
+
+  "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.": "Você não tem as permissões necessárias no grupo de clusters {{group.name}} para ler recursos.",
+
+  "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "Você não tem as permissões necessárias no grupo de assinaturas {{group}} para ler recursos.",
+
+  "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "Você não tem as permissões necessárias no grupo de clusters {{group.name}} para ler assinaturas.",
+
+  "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "Você não tem permissão para configurar a assinatura para todos os grupos {{subscription.groups}}.",
+
+  "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "Você excedeu a quantidade máxima de clusters para esta organização - {{org_id}}",
+
+  "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "Você excedeu a quantidade máxima de clusters pendentes para esta organização - {{org_id}}."
+
 }
+
