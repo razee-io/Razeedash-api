@@ -24,7 +24,6 @@
     "markdownlint": "npx markdownlint README.md docs/",
     "jsonlint": "npx jsonlint --quiet build/viewTemplate.json",
     "shellcheck": "npx shellcheck build/*.sh",
-    "preinstall": "npx npm-force-resolutions",
     "i18n": "node gulpfile.js --namespace 'razee' --files './app/*(apollo)/**/*.*'"
   },
   "keywords": [],
@@ -36,8 +35,13 @@
   },
   "dependencies": {
     "apollo-metrics": "^1.0.1",
+
     "apollo-server": "^2.18.2",
+    "apollo-server-express": "^2.21.0",
+
+    "apollo-server": "^2.21.0",
     "apollo-server-express": "^2.18.2",
+
     "args": "^5.0.1",
     "aws-sdk": "^2.784.0",
     "axios": "^0.21.1",
@@ -91,7 +95,6 @@
     "mongoose": "^5.10.11",
     "mongoose-lean-virtuals": "^0.7.2",
     "mustache": "^4.0.1",
-    "npm-force-resolutions": "0.0.3",
     "object-hash": "^2.0.3",
     "object-path": "^0.11.5",
     "p-limit": "^3.0.2",
@@ -119,7 +122,7 @@
     "mongodb-memory-server": "^6.9.2",
     "nock": "^13.0.4",
     "node-mocks-http": "^1.9.0",
-    "nodemon": "^2.0.6",
+    "nodemon": "^2.0.7",
     "npm-check-updates": "^9.2.4",
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
