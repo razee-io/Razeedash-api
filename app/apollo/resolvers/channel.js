@@ -58,7 +58,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new NotFoundError(context.req.t('Query {{queryName}} find error. {{err.message}}.', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channels;
     },
@@ -77,7 +77,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channel;
     },
@@ -96,7 +96,7 @@ const channelResolvers = {
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channel;
     },
@@ -116,7 +116,7 @@ const channelResolvers = {
 
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channels;
     },
@@ -183,7 +183,7 @@ const channelResolvers = {
         return deployableVersionObj;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }
   },
@@ -223,7 +223,7 @@ const channelResolvers = {
           throw err;
         }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     editChannel: async (parent, { orgId: org_id, uuid, name, tags=[] }, context)=>{
@@ -256,7 +256,7 @@ const channelResolvers = {
           throw err;
         }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
@@ -439,7 +439,7 @@ const channelResolvers = {
           throw err;
         }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     removeChannelVersion: async (parent, { orgId: org_id, uuid }, context)=>{
@@ -486,7 +486,7 @@ const channelResolvers = {
           throw err;
         }
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
   },
