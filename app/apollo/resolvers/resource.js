@@ -28,10 +28,11 @@ const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
+var { decryptStrUsingOrgEncKey } = require('../../utils/orgs');
 
 // Filters out the namespaces you dont have access to. has to get all the resources first.
 const filterNamespaces = async (data, me, orgId, queryName, context) => {
-  
+
   if (data.resources.length === 0) return data;
   const namespaces = data.resources.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
   const deleteArray = await Promise.all(namespaces.map(async n => {
@@ -45,7 +46,7 @@ const filterNamespaces = async (data, me, orgId, queryName, context) => {
     const findInArray = deleteArray.filter(del => del === d.searchableData.namespace).filter(x => x)[0];
     if (!findInArray) filteredData.push(data.resources[i]);
   });
-  
+
   return {
     count: filteredData.length,
     totalCount: filteredData.length,
@@ -72,8 +73,8 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
     };
   } catch (error) {
     logger.error(error, `commonResourcesSearch encountered an error for the request ${req_id}`);
-    throw new BasicRazeeError(context.req.t('commonResourcesSearch encountered an error. {{error.message}}', {'error.message':error.message}), context); 
-  }  
+    throw new BasicRazeeError(context.req.t('commonResourcesSearch encountered an error. {{error.message}}', {'error.message':error.message}), context);
+  }
 };
 
 const isLink = (s) => {
@@ -87,19 +88,29 @@ const s3IsDefined = () => {
 const getS3Data = async (s3Link, logger, context) => {
   try {
     const s3Client = new S3ClientClass(conf);
-    const link = url.parse(s3Link); 
+    const link = url.parse(s3Link);
     const paths = link.path.split('/');
     const bucket = paths[1];
     // we do not need to decode URL here because path[2] and path[3] are hash code
-    // path[2] stores keyHash , path[3] stores searchableDataHash 
+    // path[2] stores keyHash , path[3] stores searchableDataHash
     const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
     const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
     const yaml = await readS3File(s3stream);
     return yaml;
   } catch (error) {
     logger.error(error, 'Error retrieving data from s3 bucket');
-    throw new BasicRazeeError(context.req.t('Error retrieving data from s3 bucket. {{error.message}}', {'error.message':error.message}), context); 
+    throw new BasicRazeeError(context.req.t('Error retrieving data from s3 bucket. {{error.message}}', {'error.message':error.message}), context);
   }
+};
+
+const decryptIfNeeded = async({ org, data, fingerprint })=>{
+  if(!fingerprint){
+    return data;
+  }
+  return await decryptStrUsingOrgEncKey({
+    org,
+    encryptedObj: { fingerprint, data },
+  });
 };
 
 const readS3File = async (readable) => {
@@ -115,15 +126,23 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
   const { models, me, req_id, logger } = context;
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
+    const org = await models.Organization.findOne({ _id: org_id });
 
     searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
 
     if (!resource) return resource;
 
-    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = await getS3Data(resource.data, logger);
-      resource.data = yaml;
+    if (queryFields['data'] && resource.data) {
+      if(isLink(resource.data) && s3IsDefined()) {
+        const yaml = await getS3Data(resource.data, logger);
+        resource.data = yaml;
+      }
+      resource.data = await decryptIfNeeded({
+        org,
+        data: resource.data,
+        fingerprint: resource.fingerprint,
+      });
     }
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
@@ -141,9 +160,9 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     }
 
     return resource;
-  } catch (error) {
+  } catch (error) {console.log(3333, error)
     logger.error(error, `commonResourceSearch encountered an error for the request ${req_id}`);
-    throw new BasicRazeeError(context.req.t('commonResourceSearch encountered an error. {{error.message}}', {'error.message':error.message}), context); 
+    throw new BasicRazeeError(context.req.t('commonResourceSearch encountered an error. {{error.message}}', {'error.message':error.message}), context);
   }
 };
 
@@ -161,7 +180,7 @@ const resourceResolvers = {
     resourcesCount: async (parent, { orgId: org_id }, context) => {
       const queryName = 'resourcesCount';
       const { models, me, req_id, logger } = context;
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);    
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       let count = 0;
@@ -273,6 +292,8 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
+      const org = await models.Organization.findOne({ _id: org_id });
+
       const searchFilter = { org_id, _id: ObjectId(_id) };
       var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
       if(!resource){
@@ -285,9 +306,16 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
-        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = await getS3Data(resource.data, logger);
-          resource.data = yaml;
+        if (queryFields['data'] && resource.data){
+          if(isLink(resource.data) && s3IsDefined()) {
+            const yaml = await getS3Data(resource.data, logger);
+            resource.data = yaml;
+          }
+          resource.data = await decryptIfNeeded({
+            org,
+            data: resource.data,
+            fingerprint: resource.fingerprint,
+          });
         }
         resource.updated = resourceYamlHistObj.updated;
       }
@@ -330,9 +358,9 @@ const resourceResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
       const {  me, models, req_id, logger } = context;
-  
+
       logger.debug( {req_id, user: whoIs(me), orgId, subscription_id, queryFields}, `${queryName} enter`);
-  
+
       const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {
         // if some tag of the sub does not in user's tag list, throws an error
@@ -413,11 +441,20 @@ const resourceResolvers = {
         return null;
       }
 
+      const org = await models.Organization.findOne({ _id: org_id });
+
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
-        if ( content && isLink(content) && s3IsDefined()) {
-          const yaml = await getS3Data(content, logger);
-          content = yaml;
+        if(content){
+          if (isLink(content) && s3IsDefined()) {
+            const yaml = await getS3Data(content, logger);
+            content = yaml;
+          }
+          content = await decryptIfNeeded({
+            org,
+            data: content,
+            fingerprint: resource.fingerprint,
+          });
         }
         return {
           id: resource._id,
@@ -433,9 +470,16 @@ const resourceResolvers = {
       }
 
       var content = await getContent(obj);
-      if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = await getS3Data(content, logger);
-        content = yaml;
+      if(content){
+        if (isLink(content) && s3IsDefined()) {
+          const yaml = await getS3Data(content, logger);
+          content = yaml;
+        }
+        content = await decryptIfNeeded({
+          org,
+          data: content,
+          fingerprint: resource.fingerprint,
+        });
       }
 
       return {
@@ -468,7 +512,7 @@ const resourceResolvers = {
         async (parent, args, context) => {
           const queryName = 'subscribe: withFilter';
           const { me, req_id, logger } = context;
-          logger.debug( {req_id, user: whoIs(me), args }, 
+          logger.debug( {req_id, user: whoIs(me), args },
             `${queryName}: context.keys: [${Object.keys(context)}]`,
           );
           await validAuth(me, args.orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context);

@@ -33,6 +33,9 @@ const ResourceYamlHistSchema = new mongoose.Schema({
   yamlStr: {
     type: String,
   },
+  fingerprint: {
+    type: String,
+  },
   updated: {
     type: Date,
     default: Date.now,

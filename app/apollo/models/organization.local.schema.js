@@ -35,6 +35,16 @@ const OrganizationLocalSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  encKeys: [
+    {
+      _id: false,
+      pubKey: String,
+      privKey: String,
+      fingerprint: String,
+      creationTime: Date,
+      deleted: Boolean,
+    },
+  ],
   type: {
     type: String,
     required: false,
@@ -61,7 +71,7 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   }
   return {
     url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
-  }; 
+  };
 };
 
 OrganizationLocalSchema.statics.createLocalOrg = async function(args) {

@@ -25,12 +25,32 @@ const organizationSchema = gql`
     id: ID!
     name: String!
   }
+  
+  type OrgCreateEncKeyResponse {
+    fingerprint: String!
+    creationTime: Date!
+  }
+  type OrgDeleteEncKeyResponse {
+    success: Boolean!
+  }
 
   extend type Query {
     """
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
+  }
+  
+  extend type Mutation {
+    """
+    Creates a new pub/priv key pair for encryption purposes
+    """
+    createOrgEncKey(orgId: String! @sv): OrgCreateEncKeyResponse!
+
+    """
+    Deletes the pub/priv key pair with the given fingerprint
+    """
+    deleteOrgEncKey(orgId: String! @sv, fingerprint: String! @sv): OrgDeleteEncKeyResponse!
   }
 `;
 

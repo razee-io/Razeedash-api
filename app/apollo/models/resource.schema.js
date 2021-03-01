@@ -39,6 +39,9 @@ const ResourceSchema = new mongoose.Schema({
   data: {
     type: String,
   },
+  fingerprint: {
+    type: String,
+  },
   deleted: {
     type: Boolean,
     default: false,

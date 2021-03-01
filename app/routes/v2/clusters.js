@@ -40,6 +40,7 @@ const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../a
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
+var { encryptStrUsingOrgEncKey } = require('../../utils/orgs');
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -71,7 +72,7 @@ const addUpdateCluster = async (req, res, next) => {
         res.status(205).send('Please resync');
       }
       else {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, 
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
           { $set: { metadata, reg_state, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
@@ -235,10 +236,10 @@ const updateClusterResources = async (req, res, next) => {
                 {$set: {'searchableData.subscription_id': subscription_id},$currentDate: { updated: true }}, {});
             }
           }
-          const rrSearchKey =  { 
-            org_id: req.org._id, 
+          const rrSearchKey =  {
+            org_id: req.org._id,
             cluster_id: req.params.cluster_id,
-            'searchableData.kind': 'RemoteResource', 
+            'searchableData.kind': 'RemoteResource',
             'searchableData.children': selfLink,
             deleted: false
           };
@@ -246,12 +247,24 @@ const updateClusterResources = async (req, res, next) => {
           if(remoteResource) {
             searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
             searchableDataObj['searchableExpression'] = searchableDataObj['searchableExpression'] + ':' + searchableDataObj['subscription_id'];
-          } 
+          }
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
 
           const currentResource = await Resources.findOne(key);
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
+
+          // encrypts (only if we need to save this)
+          let fingerprint = null;
+          if(!currentResource || currentResource.hash != resourceHash || hasSearchableDataChanges){
+            const encrypted = await encryptStrUsingOrgEncKey({
+              str: dataStr,
+              org: req.org,
+            });
+            fingerprint = encrypted.fingerprint;
+            dataStr = encrypted.data;
+          }
+
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
           }
@@ -267,10 +280,10 @@ const updateClusterResources = async (req, res, next) => {
               };
             }
             else{
-              const toSet = { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
+              const toSet = { deleted: false, hash: resourceHash, fingerprint, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
               if(hasSearchableDataChanges) {
                 // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
-                const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+                const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
                 toSet['histId'] = histId;
               }
               // if obj in db and theres changes to save
@@ -283,7 +296,7 @@ const updateClusterResources = async (req, res, next) => {
           }
           else{
             // adds the yaml hist item too
-            const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+            const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
 
             // if obj not in db, then adds it
             const total = await Resources.count({org_id:  req.org._id, deleted: false});
@@ -304,7 +317,7 @@ const updateClusterResources = async (req, res, next) => {
           // publish notification to graphql
           if (result) {
             let resourceId = null;
-            let resourceCreated = Date.now; 
+            let resourceCreated = Date.now;
             if (result.upsertedId) {
               resourceId = result.upsertedId._id;
             } else if (currentResource) {
@@ -314,7 +327,7 @@ const updateClusterResources = async (req, res, next) => {
             if (resourceId) {
               pubSub.resourceChangedFunc(
                 {_id: resourceId, data: dataStr, created: resourceCreated,
-                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, 
+                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
           }
@@ -348,7 +361,7 @@ const updateClusterResources = async (req, res, next) => {
                 ...pushCmd
               }
             );
-            await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
+            await addResourceYamlHistObj(req, req.org, clusterId, selfLink, '');
             pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
           }
           break;
@@ -365,15 +378,16 @@ const updateClusterResources = async (req, res, next) => {
   }
 };
 
-var addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
+var addResourceYamlHistObj = async(req, org, clusterId, resourceSelfLink, yamlStr, fingerprint)=>{
   var ResourceYamlHist = req.db.collection('resourceYamlHist');
   var id = uuid();
   var obj = {
     _id: id,
-    org_id: orgId,
+    org_id: org._id,
     cluster_id: clusterId,
     resourceSelfLink,
     yamlStr,
+    fingerprint,
     updated: new Date(),
   };
   await ResourceYamlHist.insertOne(obj);
@@ -458,7 +472,7 @@ const deleteCluster = async (req, res, next) => {
     next();
   } catch (error) {
     req.log.error(error.message);
-    return res.status(500).json({ status: 'error', message: error.message }); 
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
