@@ -94,11 +94,11 @@
 
   "Provided YAML content is not valid: {{error}}": "所提供的 YAML 內容無效：{{error}}",
 
-  "Query {{queryName}} error. {{err.message}}": "查詢 {{queryName}} 錯誤。{{err.message}}",
-
   "Query {{queryName}} error. {{error.message}}": "查詢 {{queryName}} 錯誤。{{error.message}}",
 
-  "Query {{queryName}} find error. {{err.message}}.": "查詢 {{queryName}} 發現錯誤。{{err.message}}.",
+  "Query {{queryName}} error. MessageID: {{req_id}}.": "查詢 {{queryName}} 錯誤。MessageID：{{req_id}}。",
+
+  "Query {{queryName}} find error. MessageID: {{req_id}}.": "查詢 {{queryName}} 發現錯誤。MessageID：{{req_id}}。",
 
   "resourcesCount encountered an error. {{error.message}}": "resourcesCount 遇到錯誤。{{error.message}}",
 

@@ -94,11 +94,11 @@
 
   "Provided YAML content is not valid: {{error}}": "提供的 YAML 内容无效：{{error}}",
 
-  "Query {{queryName}} error. {{err.message}}": "查询 {{queryName}} 错误。{{err.message}}",
-
   "Query {{queryName}} error. {{error.message}}": "查询 {{queryName}} 错误。{{error.message}}",
 
-  "Query {{queryName}} find error. {{err.message}}.": "查询 {{queryName}} 发现错误。{{err.message}}.",
+  "Query {{queryName}} error. MessageID: {{req_id}}.": "查询 {{queryName}} 错误。消息标识：{{req_id}}。",
+
+  "Query {{queryName}} find error. MessageID: {{req_id}}.": "查询 {{queryName}} 发现错误。消息标识：{{req_id}}。",
 
   "resourcesCount encountered an error. {{error.message}}": "resourcesCount 遇到错误。{{error.message}}",
 
