@@ -29,7 +29,7 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   try {
     await require('../../apollo/models').models.Organization.findOne({});
   } catch (err) {
-    logger.error(err, 'razeedash-api is liveness probe failed due to a mongo connection issue');
+    logger.error(err, 'razeedash-api liveness probe failed due to a mongo connection issue');
     return res.sendStatus(503);
   }
 
