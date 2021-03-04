@@ -26,7 +26,12 @@ const timeInterval = 300000; //5 mintues
 // /kube/liveness
 const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   // does a db call to make sure we didnt disconnect
-  await require('../../apollo/models').models.Cluster.find({}, { _id:1 }, { limit:1 });
+  try {
+    await require('../../apollo/models').models.Organization.findOne({});
+  } catch (err) {
+    logger.error(err, 'razeedash-api is down due to a mongo connection issue');
+    return res.sendStatus(503);
+  }
 
   // TODO: not real pub-sub liveness test yet, will add later
   if (pubSub.initRetries > 5) {
