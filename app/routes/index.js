@@ -137,6 +137,10 @@ async function initialize(){
           keys: { org_id: 1 },
           options: { name: 'org_id', }
         },
+        { 
+          keys: { org_id: 1, 'registration.location' : 1 },
+          options: { name: 'org_id.registration_text', }
+        },
         {
           keys: { org_id: 1, cluster_id: 1 },
           options: { name: 'org_id.cluster_id'}
@@ -170,6 +174,10 @@ async function initialize(){
         { 
           keys: { org_id: 1 },
           options: { name: 'org_id', }
+        },
+        { 
+          keys: { org_id: 1, deleted: 1 },
+          options: { name: 'org_id.deleted', }
         },
         { 
           keys: { org_id: 1, cluster_id: 1, selfLink: 1 },
