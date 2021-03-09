@@ -1,18 +1,18 @@
 {
 
-  "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} clusters dépendent de ce groupe. Veuillez mettre à jour/supprimer le groupe des clusters.",
+  "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} clusters dépendent de ce groupe. Mettez à jour ou retirez le groupe des clusters.",
 
-  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} abonnement(s) dépend(ent) de ce canal. Veuillez le(s) mettre à jour/supprimer avant de supprimer ce canal.",
+  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} abonnement(s) dépend(ent) de ce canal. Mettez-les à jour ou retirez-les avant de retirer ce canal.",
 
-  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} abonnements dépendent de cette version de canal. Veuillez les mettre à jour/supprimer avant de supprimer cette version de canal.",
+  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} abonnements dépendent de cette version de canal. Mettez-les à jour ou retirez-les avant de retirer cette version de canal.",
 
-  "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} abonnements dépendent de ce groupe de clusters. Veuillez les mettre à jour/supprimer avant de supprimer ce groupe.",
+  "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} abonnements dépendent de ce groupe de clusters. Mettez-les à jour ou retirez-les avant de retirer ce groupe.",
 
   "A \"channel_uuid\" must be specified": "Un \"channel_uuid\" doit être spécifié",
 
   "A \"file\" or \"content\" must be specified": "Un \"file\" ou \"content\" doit être spécifié",
 
-  "A \"name\" must be specified": "Un \"name\" doit être spécifié",
+  "A \"name\" must be specified": "Un \"name\"  doit être spécifié",
 
   "A \"type\" of application/yaml must be specified": "Un \"type\" d'application/yaml doit être spécifié",
 
@@ -24,7 +24,7 @@
 
   "Channel uuid \"{{channel_uuid}}\" not found.": "Identificateur unique universel de canal \"{{channel_uuid}}\" introuvable.",
 
-  "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "Identificateur unique universel de canal \"{{subscription.channel_uuid}}\" introuvable.",
+  "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "Identificateur unique universel de canal  \"{{subscription.channel_uuid}}\" introuvable.",
 
   "channel uuid \"{{uuid}}\" not found": "Identificateur unique universel de canal \"{{uuid}}\" introuvable",
 
@@ -68,9 +68,9 @@
 
   "Failed to Publish resource notification, please reload the page.": "Echec de publication de la notification de ressource, veuillez recharger la page.",
 
-  "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Echec de publication de la notification de ressource, pubsub n'est pas prêt, veuillez réessayer plus tard.",
+  "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Echec de publication de la notification de ressource, pubsub n'est pas encore prêt, veuillez réessayer plus tard.",
 
-  "Failed to Publish subscription notification to clusters, please retry.": "Echec de publication de la notification d'abonnement sur les clusters, veuillez réessayer,",
+  "Failed to Publish subscription notification to clusters, please retry.": "Echec de publication de la notification d'abonnement sur les clusters, veuillez réessayer.",
 
   "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.": "Echec de publication de la notification d'abonnement sur les clusters, pubsub n'est pas encore prêt, veuillez réessayer.",
 
@@ -94,11 +94,11 @@
 
   "Provided YAML content is not valid: {{error}}": "Contenu YAML fourni incorrect : {{error}}",
 
+  "Query {{queryName}} error. {{err.message}}": "Erreur concernant la requête {{queryName}}. {{err.message}}",
+
   "Query {{queryName}} error. {{error.message}}": "Erreur concernant la requête {{queryName}}. {{error.message}}",
 
-  "Query {{queryName}} error. MessageID: {{req_id}}.": "Erreur concernant la requête {{queryName}}. ID message : {{req_id}}.",
-
-  "Query {{queryName}} find error. MessageID: {{req_id}}.": "Erreur de recherche de la requête {{queryName}}. ID message : {{req_id}}.",
+  "Query {{queryName}} find error. {{err.message}}.": "Erreur de recherche de la requête {{queryName}}. {{err.message}}.",
 
   "resourcesCount encountered an error. {{error.message}}": "resourcesCount a rencontré une erreur. {{error.message}}",
 
@@ -136,19 +136,19 @@
 
   "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.": "Vous n'êtes pas autorisé à {{action}} sur {{type}} sous l'organisation {{org_id}} pour la requête {{queryName}}.",
 
-  "You are not allowed to access this resource due to missing cluster group permission.": "Vous n'êtes pas autorisé à accéder à cette ressource car vous n'avez pas d'autorisation sur le groupe de clusters",
+  "You are not allowed to access this resource due to missing cluster group permission.": "Vous n'êtes pas autorisé à accéder à cette ressource car vous n'avez pas d'autorisation sur le groupe de clusters.",
 
-  "You are not allowed to access this resource due to missing cluster tag permission.": "Vous n'êtes pas autorisé à accéder à cette ressource car vous n'avez pas d'autorisation sur la balise de cluster",
+  "You are not allowed to access this resource due to missing cluster tag permission.": "Vous n'êtes pas autorisé à accéder à cette ressource car vous n'avez pas d'autorisation sur la balise de cluster.",
 
   "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.": "Vous n'êtes pas autorisé à lire des ressources car vous n'avez pas d'autorisation sur le groupe de clusters {{group.name}}.",
 
-  "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "Vous n'êtes pas autorisé à lire des ressources car vous n'avez pas d'autorisation sur le groupe d'abonnements {{group}}",
+  "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "Vous n'êtes pas autorisé à lire des ressources car vous n'avez pas d'autorisation sur le groupe d'abonnements {{group}}.",
 
   "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "Vous n'êtes pas autorisé à lire des abonnements car vous n'avez pas d'autorisations sur le groupe de clusters {{group.name}}.",
 
   "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "Vous n'êtes pas autorisé à définir un abonnement pour tous les groupes {{subscription.groups}}.",
 
-  "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "Vous avez dépassé la quantité maximal de clusters pour cette org - {{org_id}}",
+  "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "Vous avez dépassé la quantité maximale de clusters pour cette org - {{org_id}}",
 
   "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "Vous avez dépassé le nombre maximal de clusters en attente pour cette - {{org_id}}."
 
