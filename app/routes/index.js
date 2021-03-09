@@ -184,8 +184,8 @@ async function initialize(){
           options: { name: 'org_id.cluster_id.selfLink', }
         },
         {
-          keys: { cluster_id: 1, },
-          options: { name: 'cluster_id', }
+          keys: { cluster_id: 1, deleted: 1 },
+          options: { name: 'cluster_id.deleted', }
         },
         {
           keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
