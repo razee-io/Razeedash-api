@@ -247,7 +247,7 @@ const updateClusterResources = async (req, res, next) => {
             'searchableData.children': selfLink,
             deleted: false
           };
-          start = Date.now();
+          let start = Date.now();
           const remoteResource = await Resources.findOne(rrSearchKey);
           req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.remoteResource', 'data': rrSearchKey}, 'satcon-performance');
           if(remoteResource) {
@@ -262,7 +262,7 @@ const updateClusterResources = async (req, res, next) => {
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
-            start = Date.now();
+            let start = Date.now();
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3', 'data': key}, 'satcon-performance');
           }
@@ -281,7 +281,7 @@ const updateClusterResources = async (req, res, next) => {
               const toSet = { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
               if(hasSearchableDataChanges) {
                 // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
-                start = Date.now();
+                let start = Date.now();
                 const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
                 req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:hasSearchableDataChanges', 'data': clusterId}, 'satcon-performance');
                 toSet['histId'] = histId;
@@ -296,7 +296,7 @@ const updateClusterResources = async (req, res, next) => {
           }
           else{
             // adds the yaml hist item too
-            start = Date.now();
+            let start = Date.now();
             const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
 
