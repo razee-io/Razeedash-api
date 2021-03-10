@@ -94,11 +94,11 @@
 
   "Provided YAML content is not valid: {{error}}": "El contenido de YAML proporcionado no es válido: {{error}}",
 
-  "Query {{queryName}} error. {{err.message}}": "Error de consulta {{queryName}}. {{err.message}}",
-
   "Query {{queryName}} error. {{error.message}}": "Error de consulta {{queryName}}. {{error.message}}",
 
-  "Query {{queryName}} find error. {{err.message}}.": "La consulta {{queryName}} ha encontrado un error. {{err.message}}.",
+  "Query {{queryName}} error. MessageID: {{req_id}}.": "Error de consulta {{queryName}}. MessageID: {{req_id}}.",
+
+  "Query {{queryName}} find error. MessageID: {{req_id}}.": "La consulta {{queryName}} ha encontrado un error. MessageID: {{req_id}}.",
 
   "resourcesCount encountered an error. {{error.message}}": "resourcesCount ha encontrado error. {{error.message}}",
 

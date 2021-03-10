@@ -162,7 +162,7 @@ const subscriptionResolvers = {
         return subscription;
       }catch(err){
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
 
       }
     },
@@ -345,7 +345,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null }, context)=>{
@@ -400,7 +400,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     setSubscription: async (parent, { orgId: org_id, uuid, versionUuid: version_uuid }, context)=>{
@@ -461,7 +461,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
@@ -494,7 +494,7 @@ const subscriptionResolvers = {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{err.message}}', {'queryName':queryName, 'err.message':err.message}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return {
         uuid, success,
