@@ -70,7 +70,7 @@ const decryptOrgData = (orgKey, data) => {
 
 
 const encryptStrUsingOrgEncKey = async({ str, org })=>{
-  if(org._id != 'abc'){
+  if(!org.enableResourceEncryption){
     return { data: str }; // lazy feature flag for now
   }
   // finds the first non-deleted key in org.encKeys
@@ -81,38 +81,43 @@ const encryptStrUsingOrgEncKey = async({ str, org })=>{
     throw new Error(`no encKey found`);
   }
   var { pubKey, fingerprint } = key;
-  var pubKeyPgp = (await openpgp.key.readArmored(pubKey)).keys;
-  var encryptedObj = await openpgp.encrypt({
-    message: openpgp.message.fromText(str),
-    publicKeys: pubKeyPgp,
-  });
+  console.log(55555, str, key)
+  var encryptedStr = rsaEncrypt(str, key.pubKey);
+  return { fingerprint, encryptedStr };
+  // var pubKeyPgp = (await openpgp.key.readArmored(pubKey)).keys;
+  // var encryptedObj = await openpgp.encrypt({
+  //   message: openpgp.message.fromText(str),
+  //   publicKeys: pubKeyPgp,
+  // });
   // encryptedObj now holds { data, fingerprint }
   return {
     fingerprint,
     ...encryptedObj,
   };
 };
-const decryptStrUsingOrgEncKey = async({ encryptedObj, org })=>{
-  if(!encryptedObj.data || !encryptedObj.fingerprint){
-    throw new Error(`encryptedObj needs { data, fingerprint } properties`);
+const decryptStrUsingOrgEncKey = async({ encryptedStr, fingerprint, org })=>{
+  if(!encryptedStr || !fingerprint || !org){
+    throw new Error(`needs { encryptedStr, fingerprint, org } properties`);
   }
   var key = _.find(org.encKeys||[], (encKey)=>{
-    console.log(encKey.fingerprint, encryptedObj.fingerprint)
-    return (encKey.fingerprint == encryptedObj.fingerprint);
+    console.log(encKey.fingerprint, fingerprint)
+    return (encKey.fingerprint == fingerprint);
   });
   if(!key){
     throw new Error(`no matching encKey found`);
   }
-  var { privKey } = key;
-  var privKeyPgp = (await openpgp.key.readArmored(privKey)).keys;
-  var decryptedObj = await openpgp.decrypt({
-    message: await openpgp.message.readArmored(encryptedObj.data),
-    privateKeys: privKeyPgp,
-  });
-  return decryptedObj.data;
+  console.log(111111, key, encryptedStr)
+  return rsaDecrypt(encryptedStr, key.privKey);
+  // var { privKey } = key;
+  // var privKeyPgp = (await openpgp.key.readArmored(privKey)).keys;
+  // var decryptedObj = await openpgp.decrypt({
+  //   message: await openpgp.message.readArmored(encryptedObj.data),
+  //   privateKeys: privKeyPgp,
+  // });
+  // return decryptedObj.data;
 };
 
-const crypto = require("crypto");
+const crypto = require('crypto');
 var bluebird = require('bluebird');
 
 var genKeys = ()=>{
@@ -126,51 +131,65 @@ var genKeys = ()=>{
     pubKey, privKey, fingerprint,
   };
 };
-var encrypt = (str, pubKey)=>{
+var rsaEncrypt = (str, pubKey)=>{
   // var pub = crypto.createPublicKey(pubKey);
-  var encryptedData = crypto.publicEncrypt(
+  var encryptedStr = crypto.publicEncrypt(
     {
       key: pubKey,
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: "sha256",
+      oaepHash: 'sha256',
     },
-    // We convert the data string to a buffer using `Buffer.from`
     Buffer.from(str)
   ).toString('base64');
-  // console.log(3333, encryptedData)
-  return encryptedData;
+  return encryptedStr;
 };
 
-var decrypt = (encryptedStr, privKey)=>{
+var rsaDecrypt = (encryptedStr, privKey)=>{
   var s = Date.now();
   // var priv = crypto.createPrivateKey(privKey);
   // console.log(5555, priv)
-  const decryptedData = crypto.privateDecrypt(
+  const decryptedStr = crypto.privateDecrypt(
     {
       key: privKey,
       // In order to decrypt the data, we need to specify the
       // same hashing function and padding scheme that we used to
       // encrypt the data in the previous step
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: "sha256",
+      oaepHash: 'sha256',
     },
     Buffer.from(encryptedStr, 'base64')
   ).toString();
-  return decryptedData;
+  return decryptedStr;
 };
 
 setTimeout(async()=>{
-  var { pubKey, privKey } = await genKeys();
+  var org = {
+    enableResourceEncryption: true,
+    encKeys: [
+      await genKeys()
+    ],
+  };
 
   var s = Date.now();
   var results = await bluebird.all(bluebird.map(_.times(1), async()=>{
-    var encryptedObj = await encrypt('asdf', pubKey);
+    var str = 'asdf';
+    var encryptedObj = await encryptStrUsingOrgEncKey({ str, org });
     console.log(6666, encryptedObj)
-    var decryptedObj = await decrypt(encryptedObj, privKey);
+    var decryptedObj = await decryptStrUsingOrgEncKey({ ...encryptedObj, org });
     console.log(33333, decryptedObj)
     return decryptedObj;
   }, {concurrency:10}));
   console.log(5555, results, Date.now()-s)
+
+  // var s = Date.now();
+  // var results = await bluebird.all(bluebird.map(_.times(1), async()=>{
+  //   var encryptedObj = await encrypt('asdf', pubKey);
+  //   console.log(6666, encryptedObj)
+  //   var decryptedObj = await decrypt(encryptedObj, privKey);
+  //   console.log(33333, decryptedObj)
+  //   return decryptedObj;
+  // }, {concurrency:10}));
+  // console.log(5555, results, Date.now()-s)
 },1);
 
 // setTimeout(async()=>{
