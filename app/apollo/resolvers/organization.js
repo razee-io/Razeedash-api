@@ -51,17 +51,7 @@ const organizationResolvers = {
 
       const { fingerprint, pubKey, privKey } = genKeys();
 
-      // const keyUserName = me.email || me.id;
-      // const result = await openpgp.generateKey({
-      //   rsaBits: 4096,
-      //   userIds: [ { name: keyUserName } ],
-      // });
-      // const fingerprint = Buffer.from(result.key.keyPacket.getFingerprintBytes()).toString('base64');
-      // const pubKey = result.publicKeyArmored;
-      // const privKey = result.privateKeyArmored;
-
       const creationTime = new Date();
-
       const obj = {
         pubKey,
         privKey,
