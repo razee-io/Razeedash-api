@@ -105,11 +105,11 @@ const getS3Data = async (s3Link, logger, context) => {
 
 const decryptIfNeeded = async({ org, data, fingerprint })=>{
   if(!fingerprint){
-    return data;
+    return encryptedStr;
   }
   return await decryptStrUsingOrgEncKey({
     org,
-    encryptedObj: { fingerprint, data },
+    encryptedObj: { fingerprint, encryptedStr: data },
   });
 };
 

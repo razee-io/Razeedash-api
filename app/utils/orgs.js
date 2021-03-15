@@ -16,7 +16,8 @@
 
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
-const openpgp = require('openpgp');
+// const openpgp = require('openpgp');
+const crypto = require('crypto');
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -69,8 +70,8 @@ const decryptOrgData = (orgKey, data) => {
 };
 
 
-const encryptStrUsingOrgEncKey = async({ str, org })=>{
-  if(!org.enableResourceEncryption){
+const encryptStrUsingOrgEncKey = ({ str, org })=>{
+  if(!org.enableResourceEncryption || (org.encKeys||[]).length < 1){
     return { data: str }; // lazy feature flag for now
   }
   // finds the first non-deleted key in org.encKeys
@@ -81,44 +82,22 @@ const encryptStrUsingOrgEncKey = async({ str, org })=>{
     throw new Error(`no encKey found`);
   }
   var { pubKey, fingerprint } = key;
-  console.log(55555, str, key)
-  var encryptedStr = rsaEncrypt(str, key.pubKey);
-  return { fingerprint, encryptedStr };
-  // var pubKeyPgp = (await openpgp.key.readArmored(pubKey)).keys;
-  // var encryptedObj = await openpgp.encrypt({
-  //   message: openpgp.message.fromText(str),
-  //   publicKeys: pubKeyPgp,
-  // });
-  // encryptedObj now holds { data, fingerprint }
-  return {
-    fingerprint,
-    ...encryptedObj,
-  };
+  var data = rsaEncrypt(str, pubKey);
+  return { fingerprint, data };
 };
-const decryptStrUsingOrgEncKey = async({ encryptedStr, fingerprint, org })=>{
-  if(!encryptedStr || !fingerprint || !org){
-    throw new Error(`needs { encryptedStr, fingerprint, org } properties`);
+
+const decryptStrUsingOrgEncKey = ({ data, fingerprint, org })=>{
+  if(!data || !fingerprint || !org){
+    throw new Error(`needs { data, fingerprint, org } properties`);
   }
   var key = _.find(org.encKeys||[], (encKey)=>{
-    console.log(encKey.fingerprint, fingerprint)
     return (encKey.fingerprint == fingerprint);
   });
   if(!key){
     throw new Error(`no matching encKey found`);
   }
-  console.log(111111, key, encryptedStr)
-  return rsaDecrypt(encryptedStr, key.privKey);
-  // var { privKey } = key;
-  // var privKeyPgp = (await openpgp.key.readArmored(privKey)).keys;
-  // var decryptedObj = await openpgp.decrypt({
-  //   message: await openpgp.message.readArmored(encryptedObj.data),
-  //   privateKeys: privKeyPgp,
-  // });
-  // return decryptedObj.data;
+  return rsaDecrypt(data, key.privKey);
 };
-
-const crypto = require('crypto');
-var bluebird = require('bluebird');
 
 var genKeys = ()=>{
   const keys = crypto.generateKeyPairSync('rsa', {
@@ -131,8 +110,8 @@ var genKeys = ()=>{
     pubKey, privKey, fingerprint,
   };
 };
+
 var rsaEncrypt = (str, pubKey)=>{
-  // var pub = crypto.createPublicKey(pubKey);
   var encryptedStr = crypto.publicEncrypt(
     {
       key: pubKey,
@@ -145,15 +124,9 @@ var rsaEncrypt = (str, pubKey)=>{
 };
 
 var rsaDecrypt = (encryptedStr, privKey)=>{
-  var s = Date.now();
-  // var priv = crypto.createPrivateKey(privKey);
-  // console.log(5555, priv)
   const decryptedStr = crypto.privateDecrypt(
     {
       key: privKey,
-      // In order to decrypt the data, we need to specify the
-      // same hashing function and padding scheme that we used to
-      // encrypt the data in the previous step
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
       oaepHash: 'sha256',
     },
@@ -163,6 +136,8 @@ var rsaDecrypt = (encryptedStr, privKey)=>{
 };
 
 setTimeout(async()=>{
+  var bluebird = require('bluebird');
+
   var org = {
     enableResourceEncryption: true,
     encKeys: [
@@ -180,16 +155,6 @@ setTimeout(async()=>{
     return decryptedObj;
   }, {concurrency:10}));
   console.log(5555, results, Date.now()-s)
-
-  // var s = Date.now();
-  // var results = await bluebird.all(bluebird.map(_.times(1), async()=>{
-  //   var encryptedObj = await encrypt('asdf', pubKey);
-  //   console.log(6666, encryptedObj)
-  //   var decryptedObj = await decrypt(encryptedObj, privKey);
-  //   console.log(33333, decryptedObj)
-  //   return decryptedObj;
-  // }, {concurrency:10}));
-  // console.log(5555, results, Date.now()-s)
 },1);
 
 // setTimeout(async()=>{
@@ -220,4 +185,4 @@ setTimeout(async()=>{
 //   }
 // },5000)
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey };
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKeys };

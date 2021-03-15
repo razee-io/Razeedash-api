@@ -22,6 +22,7 @@ const {
 const { ACTIONS, TYPES } = require('../models/const');
 const openpgp = require('openpgp');
 const _ = require('lodash');
+var { genKeys, decryptStrUsingOrgEncKey } = require('../../utils/orgs');
 
 const organizationResolvers = {
   Query: {
@@ -51,14 +52,17 @@ const organizationResolvers = {
         throw new BasicRazeeError(context.req.t('This org has too many encryption keys. Remove some before adding any new ones'), context);
       }
 
-      const keyUserName = me.email || me.id;
-      const result = await openpgp.generateKey({
-        rsaBits: 4096,
-        userIds: [ { name: keyUserName } ],
-      });
-      const fingerprint = Buffer.from(result.key.keyPacket.getFingerprintBytes()).toString('base64');
-      const pubKey = result.publicKeyArmored;
-      const privKey = result.privateKeyArmored;
+      const { fingerprint, pubKey, privKey } = genKeys();
+
+      // const keyUserName = me.email || me.id;
+      // const result = await openpgp.generateKey({
+      //   rsaBits: 4096,
+      //   userIds: [ { name: keyUserName } ],
+      // });
+      // const fingerprint = Buffer.from(result.key.keyPacket.getFingerprintBytes()).toString('base64');
+      // const pubKey = result.publicKeyArmored;
+      // const privKey = result.privateKeyArmored;
+
       const creationTime = new Date();
 
       const obj = {
