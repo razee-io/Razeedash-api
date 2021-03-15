@@ -204,6 +204,7 @@ const updateClusterResources = async (req, res, next) => {
         case 'POLLED':
         case 'MODIFIED':
         case 'ADDED': {
+          let beginTime = Date.now();
           const resourceHash = buildHashForResource(resource.object, req.org);
           let dataStr = JSON.stringify(resource.object);
           let selfLink;
@@ -228,12 +229,16 @@ const updateClusterResources = async (req, res, next) => {
               'searchableData.subscription_id': {$exists: false},
               deleted: false
             };
+            let start = Date.now();
             const childResource = await Resources.findOne(childSearchKey);
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.childResource', 'data': childSearchKey }, 'satcon-performance');
             if (childResource) {
               const subscription_id = searchableDataObj['annotations["deploy_razee_io_clustersubscription"]'];
               req.log.debug({key, subscription_id}, `Updating children's subscription_id to ${subscription_id} for parent key.`);
+              var childStart = Date.now();
               Resources.updateMany( childSearchKey,
                 {$set: {'searchableData.subscription_id': subscription_id},$currentDate: { updated: true }}, {});
+              req.log.info({ 'milliseconds': Date.now() - childStart, 'operation': 'updateClusterResources:Resources.updateMany', 'data': childSearchKey }, 'satcon-performance');
             }
           }
           const rrSearchKey =  {
@@ -243,14 +248,18 @@ const updateClusterResources = async (req, res, next) => {
             'searchableData.children': selfLink,
             deleted: false
           };
+          let start = Date.now();
           const remoteResource = await Resources.findOne(rrSearchKey);
+          req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.remoteResource', 'data': rrSearchKey}, 'satcon-performance');
           if(remoteResource) {
             searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
             searchableDataObj['searchableExpression'] = searchableDataObj['searchableExpression'] + ':' + searchableDataObj['subscription_id'];
           }
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
 
+          start = Date.now();
           const currentResource = await Resources.findOne(key);
+          req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.currentResource', 'data': key}, 'satcon-performance');
           const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
@@ -266,7 +275,9 @@ const updateClusterResources = async (req, res, next) => {
           }
 
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
+            let start = Date.now();
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3', 'data': key}, 'satcon-performance');
           }
           var changes = null;
           var options = {};
@@ -283,7 +294,9 @@ const updateClusterResources = async (req, res, next) => {
               const toSet = { deleted: false, hash: resourceHash, fingerprint, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
               if(hasSearchableDataChanges) {
                 // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
+                let start = Date.now();
                 const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
+                req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:hasSearchableDataChanges', 'data': clusterId}, 'satcon-performance');
                 toSet['histId'] = histId;
               }
               // if obj in db and theres changes to save
@@ -296,7 +309,9 @@ const updateClusterResources = async (req, res, next) => {
           }
           else{
             // adds the yaml hist item too
+            let start = Date.now();
             const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
 
             // if obj not in db, then adds it
             const total = await Resources.count({org_id:  req.org._id, deleted: false});
@@ -310,10 +325,14 @@ const updateClusterResources = async (req, res, next) => {
               ...pushCmd
             };
             options = { upsert: true };
+            start = Date.now();
             Stats.updateOne({ org_id: req.org._id }, { $inc: { deploymentCount: 1 } }, { upsert: true });
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Stats.updateOne', 'data': req.org._id}, 'satcon-performance');
           }
 
+          start = Date.now();
           const result = await Resources.updateOne(key, changes, options);
+          req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.newResource', 'data': key}, 'satcon-performance');
           // publish notification to graphql
           if (result) {
             let resourceId = null;
@@ -331,9 +350,11 @@ const updateClusterResources = async (req, res, next) => {
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
           }
+          req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'POLLED,MODIFIED,ADDED' }, 'satcon-performance');
           break;
         }
         case 'DELETED': {
+          let beginTime = Date.now();
           let selfLink;
           if(resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink){
             selfLink = resource.object.metadata.annotations.selfLink;
@@ -351,9 +372,12 @@ const updateClusterResources = async (req, res, next) => {
           const currentResource = await Resources.findOne(key);
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
           if (req.s3) {
+            let start = Date.now();
             dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3:Deleted', 'data': key}, 'satcon-performance');
           }
           if (currentResource) {
+            let start = Date.now();
             await Resources.updateOne(
               key, {
                 $set: { deleted: true, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
@@ -361,9 +385,11 @@ const updateClusterResources = async (req, res, next) => {
                 ...pushCmd
               }
             );
+            req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
             await addResourceYamlHistObj(req, req.org, clusterId, selfLink, '');
             pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
           }
+          req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'DELETED' }, 'satcon-performance');
           break;
         }
         default: {

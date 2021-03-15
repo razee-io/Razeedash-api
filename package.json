@@ -37,8 +37,16 @@
     "apollo-metrics": "^1.0.1",
     "apollo-server": "^2.21.0",
     "apollo-server-express": "^2.18.2",
+
+
+
+    "aws-sdk": "^2.839.0",
+
+
+
     "args": "^5.0.1",
     "aws-sdk": "^2.784.0",
+
     "axios": "^0.21.1",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
@@ -46,7 +54,7 @@
     "chai": "^4.2.0",
     "clone": "^2.1.2",
     "compression": "^1.7.4",
-    "config": "^3.3.2",
+    "config": "^3.3.3",
     "cors": "^2.8.5",
     "crypto-js": "^4.0.0",
     "del": "^6.0.0",
@@ -60,7 +68,7 @@
     "form-data": "^3.0.0",
     "fs-readfile-promise": "^3.0.1",
     "glob": "^7.1.6",
-    "glob-promise": "^3.4.0",
+    "glob-promise": "^4.1.0",
     "graphql": "^14.6.0",
     "graphql-fields": "^2.0.3",
     "graphql-iso-date": "^3.6.1",
@@ -68,7 +76,7 @@
     "graphql-redis-subscriptions": "^2.3.1",
     "graphql-resolvers": "^0.4.2",
     "graphql-tag": "^2.10.3",
-    "graphql-tools": "^7.0.1",
+    "graphql-tools": "^7.0.4",
     "graphql-type-json": "^0.3.2",
     "gulp": "^4.0.2",
     "gulp-if": "^3.0.0",
@@ -86,8 +94,8 @@
     "lodash": "^4.17.20",
     "mock-aws-s3": "^4.0.1",
     "moment": "^2.29.1",
-    "mongodb": "^3.6.2",
-    "mongoose": "^5.10.11",
+    "mongodb": "^3.6.4",
+    "mongoose": "^5.11.18",
     "mongoose-lean-virtuals": "^0.7.2",
     "mustache": "^4.0.1",
     "object-hash": "^2.0.3",
@@ -95,14 +103,14 @@
     "p-limit": "^3.0.2",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
-    "prom-client": "^12.0.0",
+    "prom-client": "^13.1.0",
     "stream-buffers": "^3.0.2",
     "stream-to-string": "^1.2.0",
     "subscriptions-transport-ws": "^0.9.18",
     "swagger-ui-express": "^4.1.4",
-    "uuid": "^8.3.1",
+    "uuid": "^8.3.2",
     "validator": "^13.1.17",
-    "ws": "^7.3.0"
+    "ws": "^7.4.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -116,7 +124,7 @@
     "mongo-mock": "^4.0.0",
     "mongodb-memory-server": "^6.9.2",
     "nock": "^13.0.4",
-    "node-mocks-http": "^1.9.0",
+    "node-mocks-http": "^1.10.1",
     "nodemon": "^2.0.7",
     "npm-check-updates": "^9.2.4",
     "npm-run-all": "^4.1.5",
