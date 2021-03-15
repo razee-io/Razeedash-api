@@ -15,14 +15,11 @@
  */
 
 const {
-  whoIs, validAuth, validClusterAuth,
-  getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
-  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
+  whoIs, validAuth, BasicRazeeError, RazeeValidationError,
 } = require ('./common');
 const { ACTIONS, TYPES } = require('../models/const');
-const openpgp = require('openpgp');
 const _ = require('lodash');
-var { genKeys, decryptStrUsingOrgEncKey } = require('../../utils/orgs');
+var { genKeys } = require('../../utils/orgs');
 
 const organizationResolvers = {
   Query: {

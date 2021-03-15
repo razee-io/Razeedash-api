@@ -8,6 +8,7 @@
   "A \"name\" must be specified": "Ein \"name\" muss angegeben werden. ",
   "A \"type\" of application/yaml must be specified": "Ein \"type\" für die Anwendung/YAML muss angegeben werden. ",
   "A cluster name is not defined in the registration data": "In den Registrierungsdaten ist kein Clustername definiert. ",
+  "An encryption key with this fingerprint was not found.": "An encryption key with this fingerprint was not found.",
   "Another cluster already exists with the same registration name {{registration.name}}": "Es ist bereits ein anderer Cluster mit demselben eingetragenen Namen {{registration.name}} vorhanden.",
   "channel uuid \"{{channel_uuid}}\" not found": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden",
   "Channel uuid \"{{channel_uuid}}\" not found.": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden.",
@@ -56,6 +57,7 @@
   "The channel name {{name}} already exists.": "Der Kanalname {{name}} ist bereits vorhanden.",
   "The group name {{name}} already exists.": "Der Gruppenname {{name}} ist bereits vorhanden.",
   "The version name {{name}} already exists": "Der Versionsname {{name}} ist bereits vorhanden.",
+  "This org has too many encryption keys. Remove some before adding any new ones": "This org has too many encryption keys. Remove some before adding any new ones",
   "Too many channel version are registered under {{channel_uuid}}.": "Unter {{channel_uuid}} sind zu viele Kanalversionen registriert.",
   "Too many channels are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Kanäle registriert.",
   "Too many subscriptions are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Subskriptionen registriert.",
@@ -73,6 +75,7 @@
   "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "Sie dürfen Ressourcen nicht lesen, da die Berechtigungen für die Subskriptionsgruppe {{group}} fehlen.",
   "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "Sie dürfen Subskriptionen nicht lesen, da Berechtigungen für die Clustergruppe {{group.name}} fehlen.",
   "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "Sie dürfen keine Subskription für alle {{subscription.groups}}-Gruppen festlegen. ",
+  "You cant delete the last encryption key for an org.": "You cant delete the last encryption key for an org.",
   "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "Sie haben den Maximalwert an Clustern für diese Organisation {{org_id}} überschritten.",
   "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "Sie haben den Maximalwert an anstehenden Clustern für diese Organisation {{org_id}} überschritten."
 }

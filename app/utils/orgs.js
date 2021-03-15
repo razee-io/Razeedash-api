@@ -79,7 +79,7 @@ const encryptStrUsingOrgEncKey = ({ str, org })=>{
     return !encKey.deleted;
   });
   if(!key){
-    throw new Error(`no encKey found`);
+    throw new Error('no encKey found');
   }
   var { pubKey, fingerprint } = key;
   var data = rsaEncrypt(str, pubKey);
@@ -88,13 +88,13 @@ const encryptStrUsingOrgEncKey = ({ str, org })=>{
 
 const decryptStrUsingOrgEncKey = ({ data, fingerprint, org })=>{
   if(!data || !fingerprint || !org){
-    throw new Error(`needs { data, fingerprint, org } properties`);
+    throw new Error('needs { data, fingerprint, org } properties');
   }
   var key = _.find(org.encKeys||[], (encKey)=>{
     return (encKey.fingerprint == fingerprint);
   });
   if(!key){
-    throw new Error(`no matching encKey found`);
+    throw new Error('no matching encKey found');
   }
   return rsaDecrypt(data, key.privKey);
 };

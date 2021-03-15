@@ -105,7 +105,7 @@ const getS3Data = async (s3Link, logger, context) => {
 
 const decryptIfNeeded = async({ org, data, fingerprint })=>{
   if(!fingerprint){
-    return encryptedStr;
+    return data;
   }
   return await decryptStrUsingOrgEncKey({
     org,
@@ -160,7 +160,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     }
 
     return resource;
-  } catch (error) {console.log(3333, error)
+  } catch (error) {
     logger.error(error, `commonResourceSearch encountered an error for the request ${req_id}`);
     throw new BasicRazeeError(context.req.t('commonResourceSearch encountered an error. {{error.message}}', {'error.message':error.message}), context);
   }
