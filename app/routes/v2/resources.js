@@ -17,12 +17,9 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const _ = require('lodash');
 
-router.use(ebl(getBunyanConfig('razeedash-api/resources')));
 
 const getResources = async (req, res, next) => {
   try {
@@ -30,11 +27,11 @@ const getResources = async (req, res, next) => {
     const orgId = req.org._id + '';
 
     const query = { 'org_id': orgId };
-    if(req.query && req.query.kind) { 
+    if(req.query && req.query.kind) {
       query['searchableData.kind'] = req.query.kind;
-    } 
-    if(req.query && req.query.name) { 
-      query['searchableData.name'] = {$regex: req.query.name, $options: 'i',}; 
+    }
+    if(req.query && req.query.name) {
+      query['searchableData.name'] = {$regex: req.query.name, $options: 'i',};
     }
     if(req.query && req.query.cluster_id){
       query['cluster_id'] = req.query.cluster_id;
@@ -42,7 +39,7 @@ const getResources = async (req, res, next) => {
 
     var limit = 25;
     var skip = 0;
-    if(req.query && req.query.skip) { 
+    if(req.query && req.query.skip) {
       skip = parseInt(req.query.skip);
     }
     if(req.query && req.query.limit){
