@@ -7,7 +7,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
-const url = require('url');
+//const url = require('url');
 const { models } = require('../models');
 
 const logger = '';
@@ -67,7 +67,7 @@ const updateResourceFromCOS = async (resource) => {
   //## and save to db with the new fingerprint field. 
   //
   /// TODO: add fingerprint and orgkey somewhere in here
-  await resaveToCOS(yaml, orgkey, bucketName, path)
+  await resaveToCOS(yaml, orgkey, bucketName, path);
 
   //## and maybe delete the old COS item if it exists
   await s3Client.deleteObject(bucketName, path);
@@ -82,7 +82,7 @@ const resources = models.Resource.find({ fingerprint: { $exists: false } }, { $l
 if (!resources) throw new Error('no resources found.');
 
 // run my encrypt func
-const resourcesUpdated = ''; //await ryansMagicalScript();
+const resourcesUpdated = ''; //await encryptStrUsingOrgEncKey();
 
 // assuming whats returned is an array of resources that have been encrypted,
 // update COS
