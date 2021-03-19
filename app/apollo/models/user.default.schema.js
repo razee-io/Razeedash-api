@@ -22,7 +22,7 @@ const { getBunyanConfig } = require('../../utils/bunyan');
 const _ = require('lodash');
 
 const logger = bunyan.createLogger(
-  getBunyanConfig('apollo/models/user.default.schema'),
+  getBunyanConfig('razeedash-api/apollo/models/user.default.schema'),
 );
 
 const UserDefaultSchema = new mongoose.Schema({

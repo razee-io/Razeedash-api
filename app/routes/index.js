@@ -20,7 +20,7 @@ const asyncHandler = require('express-async-handler');
 
 const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
 const bunyan = require('bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('/'));
+const logger = bunyan.createLogger(getBunyanConfig('razeedash-api'));
 const ebl = require('express-bunyan-logger');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
