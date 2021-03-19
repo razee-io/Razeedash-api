@@ -19,11 +19,9 @@ const app = express();
 const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
-const ebl = require('express-bunyan-logger');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').log;
-const getBunyanConfig = require('./utils/bunyan.js').getBunyanConfig;
 const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
@@ -38,8 +36,6 @@ const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-router.use(ebl(getBunyanConfig('razeedash-api')));
 
 app.set('trust proxy', true);
 app.use(addRequestId);

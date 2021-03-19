@@ -23,7 +23,7 @@ const { APOLLO_STREAM_SHARDING } = require('../models/const');
 const { RazeeQueryError } = require('../resolvers/common');
 const { getBunyanConfig } = require('../../utils/bunyan');
 
-const logger = bunyan.createLogger(getBunyanConfig('apollo/subscription'));
+const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/apollo/subscription'));
 
 const EVENTS = {
   RESOURCE: {
@@ -43,14 +43,14 @@ function getStreamingTopic(prefix, org_id) {
     if (org_id) {
       const last2 = org_id.slice(-2);
       return `${prefix}_${last2}`;
-    } 
+    }
     return `${prefix}_00`;
   }
   return prefix;
 }
 
 class PubSubImpl {
-  
+
   constructor(params) {
     this.initRetries = 0;
     this.lastPubSubMessage = null;
@@ -64,7 +64,7 @@ class PubSubImpl {
     );
     this.init();
   }
-    
+
   async init() {
     const url = new URL(this.redisUrl);
 
@@ -118,7 +118,7 @@ class PubSubImpl {
       this.pubSub.redisSubscriber.subscribe(topic);
       setInterval( () => {
         message = {
-          time: Date.now(), 
+          time: Date.now(),
           message : 'liveness check'
         };
         this.pubSub.redisPublisher.publish(topic, JSON.stringify(message));
@@ -133,11 +133,11 @@ class PubSubImpl {
         logger.info({ data, topic }, 'Publishing channel subscription update');
         await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
       } catch (error) {
-        logger.error(error, 'Channel subscription publish error');        throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, please retry.'), context);  
+        logger.error(error, 'Channel subscription publish error');        throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, please retry.'), context);
       }
     } else {
       logger.warn( { data, topic }, 'Failed to Publish subscription update, since pubsub is not ready.');
-      throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.'), context);  
+      throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.'), context);
     }
     return data;
   }
@@ -156,11 +156,11 @@ class PubSubImpl {
         });
       } catch (error) {
         logger.error(error, 'Resource publish error');
-        throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, please reload the page.'), context);  
+        throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, please reload the page.'), context);
       }
     } else {
       logger.warn( { resource, topic }, 'Failed to Publish resource update, since pubsub is not ready.');
-      throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, pubsub is not ready yet, please retry later.'), context);  
+      throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, pubsub is not ready yet, please retry later.'), context);
     }
     return resource;
   }
@@ -179,7 +179,7 @@ var GraphqlPubSub = (function() {
       if (singleton && singleton.enabled) {
         singleton.pubSub.close();
         singleton = undefined;
-      }      
+      }
     }
   };
 })();

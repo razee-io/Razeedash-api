@@ -19,7 +19,6 @@ const { v4: uuid } = require('uuid');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
 const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
@@ -29,7 +28,6 @@ var fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const getCluster = require('../../utils/cluster.js').getCluster;
 const deleteResource = require('../../utils/resources.js').deleteResource;
 const buildSearchableDataForResource = require('../../utils/cluster.js').buildSearchableDataForResource;
@@ -71,7 +69,7 @@ const addUpdateCluster = async (req, res, next) => {
         res.status(205).send('Please resync');
       }
       else {
-        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id }, 
+        await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
           { $set: { metadata, reg_state, updated: new Date() } });
         res.status(200).send('Thanks for the update');
       }
@@ -240,10 +238,10 @@ const updateClusterResources = async (req, res, next) => {
               req.log.info({ 'milliseconds': Date.now() - childStart, 'operation': 'updateClusterResources:Resources.updateMany', 'data': childSearchKey }, 'satcon-performance');
             }
           }
-          const rrSearchKey =  { 
-            org_id: req.org._id, 
+          const rrSearchKey =  {
+            org_id: req.org._id,
             cluster_id: req.params.cluster_id,
-            'searchableData.kind': 'RemoteResource', 
+            'searchableData.kind': 'RemoteResource',
             'searchableData.children': selfLink,
             deleted: false
           };
@@ -253,7 +251,7 @@ const updateClusterResources = async (req, res, next) => {
           if(remoteResource) {
             searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
             searchableDataObj['searchableExpression'] = searchableDataObj['searchableExpression'] + ':' + searchableDataObj['subscription_id'];
-          } 
+          }
           const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
 
           start = Date.now();
@@ -323,7 +321,7 @@ const updateClusterResources = async (req, res, next) => {
           // publish notification to graphql
           if (result) {
             let resourceId = null;
-            let resourceCreated = Date.now; 
+            let resourceCreated = Date.now;
             if (result.upsertedId) {
               resourceId = result.upsertedId._id;
             } else if (currentResource) {
@@ -333,7 +331,7 @@ const updateClusterResources = async (req, res, next) => {
             if (resourceId) {
               pubSub.resourceChangedFunc(
                 {_id: resourceId, data: dataStr, created: resourceCreated,
-                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, 
+                  deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
                   hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
           }
@@ -484,11 +482,9 @@ const deleteCluster = async (req, res, next) => {
     next();
   } catch (error) {
     req.log.error(error.message);
-    return res.status(500).json({ status: 'error', message: error.message }); 
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
-router.use(ebl(getBunyanConfig('razeedash-api/clusters')));
 
 // /api/v2/clusters/:cluster_id
 router.post('/:cluster_id', mongoSanitize({ replaceWith: '_' }), asyncHandler(addUpdateCluster));

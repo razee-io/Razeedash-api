@@ -17,23 +17,18 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
 const _ = require('lodash');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const { v4: uuid } = require('uuid');
 
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
-
-router.use(ebl(getBunyanConfig('razeedash-api/orgs')));
-
 const createOrg = async(req, res) => {
   const orgName = (req.body && req.body.name) ? req.body.name.trim() : null;
-  
+
   if(!orgName) {
     req.log.warn(`An org name was not specified on route ${req.url}`);
     return res.status(400).send( 'An org name is required' );
   }
-  
+
   try {
     const Orgs = req.db.collection('orgs');
     const foundOrg = await Orgs.findOne({'name': orgName});
@@ -65,10 +60,10 @@ const createOrg = async(req, res) => {
 
 const getOrgs = async(req, res) => {
   try {
-    const Orgs = req.db.collection('orgs'); 
-  
+    const Orgs = req.db.collection('orgs');
+
     let orgsQuery = {};
-    if(req.query && req.query.name) { 
+    if(req.query && req.query.name) {
       let orgsToSearch = [];
       if(_.isArray(req.query.name)) {
         orgsToSearch = req.query.name;     // GET api/v2/orgs?name=org1&name=org2
@@ -76,7 +71,7 @@ const getOrgs = async(req, res) => {
         orgsToSearch.push(req.query.name); // GET api/v2/orgs?name=org1
       }
       orgsQuery.name = { $in: orgsToSearch };
-    } 
+    }
 
     const foundOrgs = await Orgs.find(orgsQuery).toArray();
     return res.status(200).send( foundOrgs );
@@ -89,12 +84,12 @@ const getOrgs = async(req, res) => {
 const updateOrg = async(req, res) => {
   const existingOrgId = req.params.id;
   const updates = req.body;
-  
+
   if (!updates || _.isEmpty(updates)) {
     req.log.error('no message body was provided');
     return res.status(400).send('Missing message body');
   }
-  
+
   try {
     const Orgs = req.db.collection('orgs');
     const foundOrg = await Orgs.findOne({'_id': existingOrgId});
