@@ -17,13 +17,9 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
 const jkValidate = require('json-key-validate');
 
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { WEBHOOK_TRIGGER_CLUSTER, WEBHOOK_TRIGGER_IMAGE, insertClusterBadge, insertImageBadge } = require('../../utils/webhook.js');
-
-router.use(ebl(getBunyanConfig('razeedash-api/webhooks')));
 
 // Callback from triggered webhook
 const addCallbackResult = async (req, res, next) => {

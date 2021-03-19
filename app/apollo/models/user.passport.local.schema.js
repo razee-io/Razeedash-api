@@ -29,7 +29,7 @@ const { getBunyanConfig } = require('../../utils/bunyan');
 const SECRET = require('./const').SECRET;
 
 const logger = bunyan.createLogger(
-  getBunyanConfig('apollo/models/user.passport.local.schema'),
+  getBunyanConfig('razeedash-api/apollo/models/user.passport.local.schema'),
 );
 
 const UserPassportLocalSchema = new mongoose.Schema({
