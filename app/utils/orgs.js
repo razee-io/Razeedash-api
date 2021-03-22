@@ -17,7 +17,6 @@
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
 const openpgp = require('openpgp');
-const crypto = require('crypto');
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -84,7 +83,6 @@ const encryptStrUsingOrgEncKey = async({ str, org })=>{
 
   var { pubKey, fingerprint } = key;
   var data = await gpgEncrypt(str, pubKey);
-  console.log(333333, key, fingerprint, data)
   return { fingerprint, data };
 };
 
@@ -134,31 +132,5 @@ var gpgDecrypt = async(encryptedStr, privKey)=>{
   });
   return decryptedObj.data;
 };
-
-
-setTimeout(async()=>{
-  var bluebird = require('bluebird');
-
-  console.log(1111, await genKeys({ keyUserName: 'asdf@asdf.com' }));
-
-  var org = {
-    enableResourceEncryption: true,
-    encKeys: [
-      await genKeys({keyUserName:'rmgraham@us.ibm.com'}),
-    ],
-  };
-
-
-  var s = Date.now();
-  var results = await bluebird.all(bluebird.map(_.times(1), async()=>{
-    var str = 'asdf';
-    var encryptedObj = await encryptStrUsingOrgEncKey({ str, org });
-    console.log(6666, encryptedObj)
-    var decryptedObj = await decryptStrUsingOrgEncKey({ ...encryptedObj, org });
-    console.log(33333, decryptedObj)
-    return decryptedObj;
-  }, {concurrency:10}));
-  console.log(5555, results, Date.now()-s)
-},1);
 
 module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKeys };
