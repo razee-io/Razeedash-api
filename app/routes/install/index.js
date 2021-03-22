@@ -17,15 +17,10 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
 const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
 const axios = require('axios');
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
-
-router.use(ebl(getBunyanConfig('/api/install')));
-
 
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args = req.query.args ? req.query.args : [];
@@ -42,7 +37,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
       // populate registration data into --razeedash-cluster-metadata64
       const Clusters = req.db.collection('clusters');
       const preUpdatedCluster = await Clusters.findOneAndUpdate(
-        {org_id: req.org._id, cluster_id: req.query.clusterId, reg_state: CLUSTER_REG_STATES.REGISTERING}, 
+        {org_id: req.org._id, cluster_id: req.query.clusterId, reg_state: CLUSTER_REG_STATES.REGISTERING},
         {$set: {reg_state: CLUSTER_REG_STATES.PENDING}});
       if (preUpdatedCluster && preUpdatedCluster.value) {
         req.log.debug(`preUpdatedCluster = ${JSON.stringify(preUpdatedCluster)}`);
