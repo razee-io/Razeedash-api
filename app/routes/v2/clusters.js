@@ -266,12 +266,12 @@ const updateClusterResources = async (req, res, next) => {
           // encrypts (only if we need to save this)
           let fingerprint = null;
           if(!currentResource || currentResource.hash != resourceHash || hasSearchableDataChanges){
-            const encrypted = await encryptStrUsingOrgEncKey({
+            const encryptedObj = await encryptStrUsingOrgEncKey({
               str: dataStr,
               org: req.org,
             });
-            fingerprint = encrypted.fingerprint;
-            dataStr = encrypted.data;
+            fingerprint = encryptedObj.fingerprint;
+            dataStr = encryptedObj.data;
           }
 
           if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
@@ -320,7 +320,7 @@ const updateClusterResources = async (req, res, next) => {
               return;
             }
             changes = {
-              $set: { deleted: false, hash: resourceHash, histId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+              $set: { deleted: false, hash: resourceHash, histId, fingerprint, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
               $currentDate: { created: true, updated: true, lastModified: true },
               ...pushCmd
             };

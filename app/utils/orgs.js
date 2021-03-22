@@ -16,7 +16,7 @@
 
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
-// const openpgp = require('openpgp');
+const openpgp = require('openpgp');
 const crypto = require('crypto');
 
 const getOrg = async(req, res, next) => {
@@ -70,7 +70,7 @@ const decryptOrgData = (orgKey, data) => {
 };
 
 
-const encryptStrUsingOrgEncKey = ({ str, org })=>{
+const encryptStrUsingOrgEncKey = async({ str, org })=>{
   if(!org.enableResourceEncryption || (org.encKeys||[]).length < 1){
     return { data: str }; // lazy feature flag for now
   }
@@ -81,12 +81,14 @@ const encryptStrUsingOrgEncKey = ({ str, org })=>{
   if(!key){
     throw new Error('no encKey found');
   }
+
   var { pubKey, fingerprint } = key;
-  var data = rsaEncrypt(str, pubKey);
+  var data = await gpgEncrypt(str, pubKey);
+  console.log(333333, key, fingerprint, data)
   return { fingerprint, data };
 };
 
-const decryptStrUsingOrgEncKey = ({ data, fingerprint, org })=>{
+const decryptStrUsingOrgEncKey = async({ data, fingerprint, org })=>{
   if(!data || !fingerprint || !org){
     throw new Error('needs { data, fingerprint, org } properties');
   }
@@ -96,43 +98,67 @@ const decryptStrUsingOrgEncKey = ({ data, fingerprint, org })=>{
   if(!key){
     throw new Error('no matching encKey found');
   }
-  return rsaDecrypt(data, key.privKey);
+  return await gpgDecrypt(data, key.privKey);
 };
 
-var genKeys = ()=>{
-  const keys = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 4096,
+var genKeys = async({ keyUserName })=>{
+  const result = await openpgp.generateKey({
+    rsaBits: 4096,
+    userIds: [ { name: keyUserName } ],
   });
-  var pubKey = keys.publicKey.export({ type:'pkcs1', format:'pem' });
-  var privKey = keys.privateKey.export({ type:'pkcs1', format:'pem' });
-  var fingerprint = crypto.createHash('sha256').update(pubKey).digest('base64');
+  const pubKey = result.publicKeyArmored;
+  const privKey = result.privateKeyArmored;
+  const fingerprint = Buffer.from(result.key.keyPacket.getFingerprintBytes()).toString('base64');
   return {
     pubKey, privKey, fingerprint,
   };
 };
 
-var rsaEncrypt = (str, pubKey)=>{
-  var encryptedStr = crypto.publicEncrypt(
-    {
-      key: pubKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha256',
-    },
-    Buffer.from(str)
-  ).toString('base64');
+var gpgEncrypt = async(str, pubKey)=>{
+  var pubKeyPgp = await openpgp.readKey({ armoredKey: pubKey });
+  var encryptedStr = await openpgp.encrypt({
+    message: openpgp.Message.fromText(str),
+    publicKeys: pubKeyPgp,
+  });
   return encryptedStr;
 };
 
-var rsaDecrypt = (encryptedStr, privKey)=>{
-  const decryptedStr = crypto.privateDecrypt(
-    {
-      key: privKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha256',
-    },
-    Buffer.from(encryptedStr, 'base64')
-  ).toString();
-  return decryptedStr;
+var gpgDecrypt = async(encryptedStr, privKey)=>{
+  var privKeyPgp = await openpgp.readKey({ armoredKey: privKey });
+  var message = await openpgp.readMessage({
+    armoredMessage: encryptedStr,
+  });
+  var decryptedObj = await openpgp.decrypt({
+    message,
+    privateKeys: privKeyPgp,
+  });
+  return decryptedObj.data;
 };
+
+
+setTimeout(async()=>{
+  var bluebird = require('bluebird');
+
+  console.log(1111, await genKeys({ keyUserName: 'asdf@asdf.com' }));
+
+  var org = {
+    enableResourceEncryption: true,
+    encKeys: [
+      await genKeys({keyUserName:'rmgraham@us.ibm.com'}),
+    ],
+  };
+
+
+  var s = Date.now();
+  var results = await bluebird.all(bluebird.map(_.times(1), async()=>{
+    var str = 'asdf';
+    var encryptedObj = await encryptStrUsingOrgEncKey({ str, org });
+    console.log(6666, encryptedObj)
+    var decryptedObj = await decryptStrUsingOrgEncKey({ ...encryptedObj, org });
+    console.log(33333, decryptedObj)
+    return decryptedObj;
+  }, {concurrency:10}));
+  console.log(5555, results, Date.now()-s)
+},1);
 
 module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKeys };

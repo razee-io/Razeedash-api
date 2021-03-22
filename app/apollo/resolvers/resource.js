@@ -108,8 +108,9 @@ const decryptIfNeeded = async({ org, data, fingerprint })=>{
     return data;
   }
   return await decryptStrUsingOrgEncKey({
+    data,
+    fingerprint,
     org,
-    encryptedObj: { fingerprint, encryptedStr: data },
   });
 };
 

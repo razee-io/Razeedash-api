@@ -49,7 +49,8 @@ const organizationResolvers = {
         throw new BasicRazeeError(context.req.t('This org has too many encryption keys. Remove some before adding any new ones'), context);
       }
 
-      const { fingerprint, pubKey, privKey } = genKeys();
+      const keyUserName = me.email || me.id;
+      const { fingerprint, pubKey, privKey } = await genKeys({ keyUserName });
 
       const creationTime = new Date();
       const obj = {
