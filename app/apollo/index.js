@@ -28,7 +28,7 @@ const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
 const { models, connectDb } = require('./models');
-const bunyanConfig = getBunyanConfig('apollo');
+const bunyanConfig = getBunyanConfig('razeedash-api/apollo');
 const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
@@ -203,7 +203,7 @@ const apollo = async (options = {}) => {
   try {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
-    router.use(ebl(getBunyanConfig('apollo')));
+    app.use(ebl(getBunyanConfig('razeedash-api/apollo')));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {
       logger.info('Enabled playground route with authorization enforcement.');
       app.get(GRAPHQL_PATH, initModule.playgroundAuth);
