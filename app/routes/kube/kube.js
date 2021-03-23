@@ -24,7 +24,7 @@ const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/kube/liveness'
 const timeInterval = 300000; //5 mintues
 
 // /kube/liveness
-const kube = router.get('/liveness', asyncHandler(async(req, res) => {
+router.get('/liveness', asyncHandler(async(req, res) => {
   // does a db call to make sure we didnt disconnect
   try {
     await require('../../apollo/models').models.Organization.findOne({});
@@ -49,4 +49,4 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   return res.sendStatus(200);
 }));
 
-module.exports = kube;
+module.exports = router;
