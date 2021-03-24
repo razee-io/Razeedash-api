@@ -89,16 +89,16 @@ const updateResourceFromCOS = async (org, resource) => {
   }
 
   // run my encrypt func
-  const { fingerprint, data } = await encryptStrUsingOrgEncKey({ str, org });
+  const { encKeyId, data } = await encryptStrUsingOrgEncKey({ str, org });
 
   //## and do a save COS, 
   //## and save to db with the new fingerprint field. 
   //
-  await resaveToCOS(data, fingerprint, bucketName, path);
+  await resaveToCOS(data, encKeyId, bucketName, path);
 
   //## and maybe delete the old COS item if it exists
   //await s3Client.deleteObject(bucketName, path);
-  return fingerprint;
+  return encKeyId;
 };
 
 
@@ -130,9 +130,9 @@ if (didGenKeys) {
     $push: { enableResourceEncryption: true },
   });
   resources.map(r => {
-    const fingerprint = updateResourceFromCOS(org, r);
+    const encKeyId = updateResourceFromCOS(org, r);
     models.Resources.updateOne({ _id: r._id }, {
-      $push: { fingerprint },
+      $push: { encKeyId },
     });
   });
 
