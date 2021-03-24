@@ -26,6 +26,7 @@ const axios = require('axios');
 var glob = require('glob-promise');
 var fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
+const pLimit = require('p-limit');
 
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const getCluster = require('../../utils/cluster.js').getCluster;
@@ -195,7 +196,9 @@ const updateClusterResources = async (req, res, next) => {
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
-    for (let resource of resources) {
+    const limit = pLimit(10);
+    await Promise.all(resources.map(async (resource) => {
+     return limit(async () => {
       const type = resource['type'] || 'other';
       switch (type.toUpperCase()) {
         case 'POLLED':
@@ -381,7 +384,9 @@ const updateClusterResources = async (req, res, next) => {
           throw new Error(`Unsupported event ${resource.type}`);
         }
       }
-    }
+      });
+    }));
+
     res.status(200).send('Thanks');
   } catch (err) {
     req.log.error(err.message);
