@@ -112,6 +112,9 @@ const loadCustomPlugins =  () => {
   return [];
 };
 
+var SIGTERM = false;
+process.on('SIGTERM', () => SIGTERM = true);
+
 const createApolloServer = () => {
   const customPlugins = loadCustomPlugins();
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
@@ -212,14 +215,14 @@ const apollo = async (options = {}) => {
     server.applyMiddleware({
       app,
       path: GRAPHQL_PATH,
-      onHealthCheck: () => {
-        return new Promise((resolve, reject) => {
-          if (pubSub.enabled) {
-            resolve();
-          } else {
-            reject();
-          }
-        });
+      onHealthCheck: async () => {
+        if (SIGTERM) {
+          throw 'SIGTERM received. Not accepting additional requests';
+        } else if (!pubSub.enabled){
+          throw '!pubSub.enabled';
+        } else {
+          return 200;
+        }
       }
     });
 
