@@ -36,7 +36,7 @@
   "dependencies": {
     "apollo-metrics": "^1.0.1",
     "apollo-server": "^2.21.2",
-    "apollo-server-express": "^2.21.2",
+    "apollo-server-express": "^2.22.1",
     "args": "^5.0.1",
     "aws-sdk": "^2.870.0",
     "axios": "^0.21.1",
