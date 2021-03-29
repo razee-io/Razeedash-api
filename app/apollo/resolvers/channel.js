@@ -303,7 +303,7 @@ const channelResolvers = {
       // validate the number of total configuration channel versions are under the limit
       const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
-        throw new RazeeValidationError(context.req.t('Too many configuration channel version are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
+        throw new RazeeValidationError(context.req.t('Too many configuration channel versions are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
       }
 
       try {
@@ -453,7 +453,7 @@ const channelResolvers = {
         }
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
-          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
+          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel versions. Please update/remove them before removing this configuration channel versions.', {'subCount':subCount}), context);
         }
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
