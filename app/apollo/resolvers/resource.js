@@ -450,7 +450,7 @@ const resourceResolvers = {
     resourceUpdated: {
       resolve: (parent, { orgID: org_id, filter }, { models, me, req_id, logger }) => {
         logger.debug(
-          { modelKeys: Object.keys(models), org_id, filter, me, req_id },
+          { modelKeys: Object.keys(models), org_id, filter, req_id },
           'Subscription.resourceUpdated.resolve',
         );
         const { resourceUpdated } = parent;
@@ -461,7 +461,7 @@ const resourceResolvers = {
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.orgId);
-          context.logger.debug({args, me: context.me, topic}, 'withFilter asyncIteratorFn');
+          context.logger.debug({args, topic}, 'withFilter asyncIteratorFn');
           // TODO: in future probably we should valid authorization here
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },

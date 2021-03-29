@@ -290,7 +290,7 @@ UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, ob
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
-    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'passport.local isAuthorizedBatch exit..');
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type'},'passport.local isAuthorizedBatch exit..');
     var result = false;
     if(await models.User.isValidOrgKey(models, me)){
       result = true;
@@ -313,7 +313,7 @@ UserPassportLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, ob
     logger.debug({ req_id, orgId, results, me },'passport.local isAuthorizedBatch exit..');
     return results;
   }
-  logger.debug({ req_id, orgId, me, orgMeta, AUTH_MODEL }, 'passport.local isAuthorizedBatch exit..');
+  logger.debug({ req_id, orgId, orgMeta, AUTH_MODEL }, 'passport.local isAuthorizedBatch exit..');
   return new Array(objectArray.length).fill(false);
 };
 
@@ -323,7 +323,7 @@ UserPassportLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId
 
 UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
-  logger.debug({req_id}, `passport.local isAuthorized ${me} ${action} ${type} ${attributes}`);
+  logger.debug({req_id}, `passport.local isAuthorized ${action} ${type} ${attributes}`);
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api

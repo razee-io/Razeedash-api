@@ -174,7 +174,7 @@ UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
       type: me.type,
       id: me._id,
       email: me.email,
-      identifier: me.identifier,
+      identifier: .identifier,
       orgId: me.org_id,
       role: me.role,
       meta: me.meta,
@@ -277,7 +277,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
-    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'local isAuthorizedBatch exit..');
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type'},'local isAuthorizedBatch exit..');
     var result = false;
     if(await models.User.isValidOrgKey(models, me)){
       result = true;
@@ -297,7 +297,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
         return orgMeta.role === 'ADMIN';
       }
     });
-    logger.debug({ req_id, orgId, results, me },'local isAuthorizedBatch exit..');
+    logger.debug({ req_id, orgId, results},'local isAuthorizedBatch exit..');
     return results;
   }
   logger.debug({ req_id, orgId, me, orgMeta, AUTH_MODEL }, 'local isAuthorizedBatch exit..');
@@ -310,7 +310,7 @@ UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action
 
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
-  logger.debug({ req_id },`local isAuthorized ${me} ${action} ${type} ${attributes}`);
+  logger.debug({ req_id },`local isAuthorized ${action} ${type} ${attributes}`);
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
