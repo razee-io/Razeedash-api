@@ -453,7 +453,7 @@ const channelResolvers = {
         }
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
-          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel versions. Please update/remove them before removing this configuration channel versions.', {'subCount':subCount}), context);
+          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
         }
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
