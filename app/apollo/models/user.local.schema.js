@@ -174,7 +174,7 @@ UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
       type: me.type,
       id: me._id,
       email: me.email,
-      identifier: .identifier,
+      identifier: me.identifier,
       orgId: me.org_id,
       role: me.role,
       meta: me.meta,
