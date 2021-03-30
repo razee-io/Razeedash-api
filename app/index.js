@@ -75,9 +75,9 @@ i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   keySeparator: '#|#'
 });
 app.use(i18nextMiddleware.handle(i18next));
-app.get('/metrics', function (request, response) {
+app.get('/metrics', async function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
-  response.end(promClient.register.metrics());
+  response.end(await promClient.register.metrics());
 });
 
 const server = http.createServer(app);

@@ -18,7 +18,7 @@ const responseCodeMapper = (status, err, meta) => {
   if (meta['req-headers'] && meta['req-headers']['authorization']) {
     meta['req-headers']['authorization'] = 'Bearer [HIDDEN]';
     meta['req-headers']['x-auth-refresh-token'] = 'Bearer [HIDDEN]';
-  } 
+  }
   if (meta.method === 'OPTIONS' && status === 204) {
     // skip OPTION request 204 response
     return 'trace';
@@ -37,16 +37,21 @@ const responseCodeMapper = (status, err, meta) => {
 };
 
 const getBunyanConfig = (route) => {
-  return {
+  const result = {
     name: route,
     parseUA: false,
-    excludes: ['referer', 'url', 'short-body', 'user-agent', 'req', 'res'],
+    excludes: ['referer', 'body', 'short-body'],
     levelFn: responseCodeMapper,
+    obfuscate: ['req.headers.razee-org-key'],
+    genReqId: function (req) {
+      return req.request_id;
+    },
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
       stream: process.stdout
-    }]      
+    }]
   };
+  return result;
 };
 
 module.exports = { getBunyanConfig };
