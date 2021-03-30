@@ -169,7 +169,7 @@ const createApolloServer = () => {
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
 
-        logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
+        logger.debug({}, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
           throw Error(
             'Can not find the session for this subscription request.',
