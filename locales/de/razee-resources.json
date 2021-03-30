@@ -8,7 +8,7 @@
   "A \"name\" must be specified": "Ein \"name\" muss angegeben werden.",
   "A \"type\" of application/yaml must be specified": "Ein \"type\" für die Anwendung/YAML muss angegeben werden.",
   "A cluster name is not defined in the registration data": "In den Registrierungsdaten ist kein Clustername definiert.",
-  "An encryption key with this fingerprint was not found.": "An encryption key with this fingerprint was not found.",
+  "An encryption key with this encKeyId was not found.": "An encryption key with this encKeyId was not found.",
   "Another cluster already exists with the same registration name {{registration.name}}": "Es ist bereits ein anderer Cluster mit demselben eingetragenen Namen {{registration.name}} vorhanden.",
   "channel uuid \"{{channel_uuid}}\" not found": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden",
   "Channel uuid \"{{channel_uuid}}\" not found.": "Kanal-UUID \"{{channel_uuid}}\" nicht gefunden.",

@@ -16,7 +16,6 @@
 
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
-const openpgp = require('openpgp');
 const crypto = require('crypto');
 const { v4: uuid } = require('uuid');
 
@@ -84,7 +83,6 @@ const encryptStrUsingOrgEncKey = ({ str, org })=>{
   }
 
   var encKeyId = encKey.id;
-  console.log(33333, str, encKey, encKeyId)
   var data = tokenCrypt.encrypt(str, encKey.key);
   return { encKeyId, data };
 };
@@ -119,29 +117,5 @@ var genKey = ()=>{
     id, key, creationTime, deleted,
   };
 };
-
-// setTimeout(async()=>{
-//   var s = Date.now();
-//   var encKey = genKey();
-//   console.log(33333, Date.now()-s, encKey);
-//   var org = {
-//     enableResourceEncryption: true,
-//     encKeys: [ encKey ],
-//   };
-//   var str = _.padStart('', 5000, 'B');
-//   var encrypted = encryptStrUsingOrgEncKey({ str, org });
-//   console.log(22222, Date.now()-s);
-//   var decrypted = decryptStrUsingOrgEncKey({ ...encrypted, org });
-//   console.log(22222, Date.now()-s);
-//
-//   var s = Date.now();
-//   var str = _.padStart('', 100000, 'C');
-//   console.log(44441, Date.now()-s)
-//   var e = tokenCrypt.encrypt(str, encKey.key);
-//   console.log(44442, Date.now()-s)
-//   var d = tokenCrypt.decrypt(e, encKey.key);
-//   console.log(44443, Date.now()-s)
-// },1);
-
 
 module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey };

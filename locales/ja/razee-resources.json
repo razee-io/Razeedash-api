@@ -8,7 +8,7 @@
   "A \"name\" must be specified": "\"name\" を指定する必要があります",
   "A \"type\" of application/yaml must be specified": "application/yaml の \"type\" を指定する必要があります",
   "A cluster name is not defined in the registration data": "クラスター名が登録データに定義されていません",
-  "An encryption key with this fingerprint was not found.": "An encryption key with this fingerprint was not found.",
+  "An encryption key with this encKeyId was not found.": "An encryption key with this encKeyId was not found.",
   "Another cluster already exists with the same registration name {{registration.name}}": "同じ登録名 {{registration.name}} の別のクラスターが既に存在します",
   "channel uuid \"{{channel_uuid}}\" not found": "チャネル uuid \"{{channel_uuid}}\" が見つかりません",
   "Channel uuid \"{{channel_uuid}}\" not found.": "チャネル uuid \"{{channel_uuid}}\" が見つかりません。",

@@ -8,7 +8,7 @@
   "A \"name\" must be specified": "\"이름\"을 지정해야 함",
   "A \"type\" of application/yaml must be specified": "애플리케이션/yaml의 \"유형\"을 지정해야 함",
   "A cluster name is not defined in the registration data": "등록 데이터에 클러스터 이름이 정의되지 않음",
-  "An encryption key with this fingerprint was not found.": "An encryption key with this fingerprint was not found.",
+  "An encryption key with this encKeyId was not found.": "An encryption key with this encKeyId was not found.",
   "Another cluster already exists with the same registration name {{registration.name}}": "동일한 등록 이름 {{registration.name}}을(를) 사용하는 다른 클러스터가 이미 있음",
   "channel uuid \"{{channel_uuid}}\" not found": "채널 uuid \"{{channel_uuid}}\"을(를) 찾을 수 없음",
   "Channel uuid \"{{channel_uuid}}\" not found.": "채널 uuid \"{{channel_uuid}}\"을(를) 찾을 수 없습니다.",

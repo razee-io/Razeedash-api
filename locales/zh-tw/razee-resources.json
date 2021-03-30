@@ -8,7 +8,7 @@
   "A \"name\" must be specified": "必須指定 \"name\"",
   "A \"type\" of application/yaml must be specified": "必須指定應用程式/yaml 的 \"type\"",
   "A cluster name is not defined in the registration data": "登錄資料中未定義叢集名稱",
-  "An encryption key with this fingerprint was not found.": "An encryption key with this fingerprint was not found.",
+  "An encryption key with this encKeyId was not found.": "An encryption key with this encKeyId was not found.",
   "Another cluster already exists with the same registration name {{registration.name}}": "已存在具有相同登錄名稱 {{registration.name}} 的另一個叢集",
   "channel uuid \"{{channel_uuid}}\" not found": "找不到通道 UUID \"{{channel_uuid}}\"",
   "Channel uuid \"{{channel_uuid}}\" not found.": "找不到通道 UUID \"{{channel_uuid}}\"。",
