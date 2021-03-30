@@ -39,7 +39,7 @@ const ResourceSchema = new mongoose.Schema({
   data: {
     type: String,
   },
-  fingerprint: {
+  encKeyId: {
     type: String,
   },
   deleted: {

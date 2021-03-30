@@ -33,7 +33,7 @@ const ResourceYamlHistSchema = new mongoose.Schema({
   yamlStr: {
     type: String,
   },
-  fingerprint: {
+  encKeyId: {
     type: String,
   },
   updated: {

@@ -17,6 +17,8 @@
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
 const openpgp = require('openpgp');
+const crypto = require('crypto');
+const { v4: uuid } = require('uuid');
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -69,68 +71,77 @@ const decryptOrgData = (orgKey, data) => {
 };
 
 
-const encryptStrUsingOrgEncKey = async({ str, org })=>{
+const encryptStrUsingOrgEncKey = ({ str, org })=>{
   if(!org.enableResourceEncryption || (org.encKeys||[]).length < 1){
     return { data: str }; // lazy feature flag for now
   }
   // finds the first non-deleted key in org.encKeys
-  var key = _.find(org.encKeys||[], (encKey)=>{
+  var encKey = _.find(org.encKeys||[], (encKey)=>{
     return !encKey.deleted;
   });
-  if(!key){
+  if(!encKey){
     throw new Error('no encKey found');
   }
 
-  var { pubKey, fingerprint } = key;
-  var data = await gpgEncrypt(str, pubKey);
-  return { fingerprint, data };
+  var encKeyId = encKey.id;
+  console.log(33333, str, encKey, encKeyId)
+  var data = tokenCrypt.encrypt(str, encKey.key);
+  return { encKeyId, data };
 };
 
-const decryptStrUsingOrgEncKey = async({ data, fingerprint, org })=>{
-  if(!data || !fingerprint || !org){
-    throw new Error('needs { data, fingerprint, org } properties');
+const decryptStrUsingOrgEncKey = ({ data, encKeyId, org })=>{
+  if(!data || !encKeyId || !org){
+    throw new Error('needs { data, encKeyId, org } properties');
   }
-  var key = _.find(org.encKeys||[], (encKey)=>{
-    return (encKey.fingerprint == fingerprint);
+  var encKey = _.find(org.encKeys||[], (e)=>{
+    return (e.id == encKeyId);
   });
-  if(!key){
+  if(!encKey){
     throw new Error('no matching encKey found');
   }
-  return await gpgDecrypt(data, key.privKey);
+  return tokenCrypt.decrypt(data, encKey.key);
 };
 
-var genKeys = async({ keyUserName })=>{
-  const result = await openpgp.generateKey({
-    rsaBits: 4096,
-    userIds: [ { name: keyUserName } ],
-  });
-  const pubKey = result.publicKeyArmored;
-  const privKey = result.privateKeyArmored;
-  const fingerprint = Buffer.from(result.key.keyPacket.getFingerprintBytes()).toString('base64');
+var genKey = ()=>{
+  var bytes = 32;
+  var randBuff = crypto.randomBytes(bytes);
+  if(!randBuff[0]){
+    randBuff[0] = _.random(1, 255);
+  }
+  if(!randBuff[bytes - 1]){
+    randBuff[bytes - 1] = _.random(1, 255);
+  }
+  var key = randBuff.toString('base64');
+  var id = uuid();
+  var creationTime = Date.now();
+  var deleted = false;
   return {
-    pubKey, privKey, fingerprint,
+    id, key, creationTime, deleted,
   };
 };
 
-var gpgEncrypt = async(str, pubKey)=>{
-  var pubKeyPgp = await openpgp.readKey({ armoredKey: pubKey });
-  var encryptedStr = await openpgp.encrypt({
-    message: openpgp.Message.fromText(str),
-    publicKeys: pubKeyPgp,
-  });
-  return encryptedStr;
-};
+// setTimeout(async()=>{
+//   var s = Date.now();
+//   var encKey = genKey();
+//   console.log(33333, Date.now()-s, encKey);
+//   var org = {
+//     enableResourceEncryption: true,
+//     encKeys: [ encKey ],
+//   };
+//   var str = _.padStart('', 5000, 'B');
+//   var encrypted = encryptStrUsingOrgEncKey({ str, org });
+//   console.log(22222, Date.now()-s);
+//   var decrypted = decryptStrUsingOrgEncKey({ ...encrypted, org });
+//   console.log(22222, Date.now()-s);
+//
+//   var s = Date.now();
+//   var str = _.padStart('', 100000, 'C');
+//   console.log(44441, Date.now()-s)
+//   var e = tokenCrypt.encrypt(str, encKey.key);
+//   console.log(44442, Date.now()-s)
+//   var d = tokenCrypt.decrypt(e, encKey.key);
+//   console.log(44443, Date.now()-s)
+// },1);
 
-var gpgDecrypt = async(encryptedStr, privKey)=>{
-  var privKeyPgp = await openpgp.readKey({ armoredKey: privKey });
-  var message = await openpgp.readMessage({
-    armoredMessage: encryptedStr,
-  });
-  var decryptedObj = await openpgp.decrypt({
-    message,
-    privateKeys: privKeyPgp,
-  });
-  return decryptedObj.data;
-};
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKeys };
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey };

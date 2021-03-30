@@ -103,13 +103,13 @@ const getS3Data = async (s3Link, logger, context) => {
   }
 };
 
-const decryptIfNeeded = async({ org, data, fingerprint })=>{
-  if(!fingerprint){
+const decryptIfNeeded = async({ org, data, encKeyId })=>{
+  if(!encKeyId){
     return data;
   }
   return await decryptStrUsingOrgEncKey({
     data,
-    fingerprint,
+    encKeyId,
     org,
   });
 };
@@ -142,7 +142,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
       resource.data = await decryptIfNeeded({
         org,
         data: resource.data,
-        fingerprint: resource.fingerprint,
+        encKeyId: resource.encKeyId,
       });
     }
 
@@ -315,7 +315,7 @@ const resourceResolvers = {
           resource.data = await decryptIfNeeded({
             org,
             data: resource.data,
-            fingerprint: resource.fingerprint,
+            encKeyId: resource.encKeyId,
           });
         }
         resource.updated = resourceYamlHistObj.updated;
@@ -454,7 +454,7 @@ const resourceResolvers = {
           content = await decryptIfNeeded({
             org,
             data: content,
-            fingerprint: resource.fingerprint,
+            encKeyId: resource.encKeyId,
           });
         }
         return {
@@ -479,7 +479,7 @@ const resourceResolvers = {
         content = await decryptIfNeeded({
           org,
           data: content,
-          fingerprint: resource.fingerprint,
+          encKeyId: resource.encKeyId,
         });
       }
 

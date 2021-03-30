@@ -262,13 +262,13 @@ const updateClusterResources = async (req, res, next) => {
           const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
 
           // encrypts (only if we need to save this)
-          let fingerprint = null;
+          let encKeyId = null;
           if(!currentResource || currentResource.hash != resourceHash || hasSearchableDataChanges){
             const encryptedObj = await encryptStrUsingOrgEncKey({
               str: dataStr,
               org: req.org,
             });
-            fingerprint = encryptedObj.fingerprint;
+            encKeyId = encryptedObj.encKeyId;
             dataStr = encryptedObj.data;
           }
 
@@ -289,11 +289,11 @@ const updateClusterResources = async (req, res, next) => {
               };
             }
             else{
-              const toSet = { deleted: false, hash: resourceHash, fingerprint, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
+              const toSet = { deleted: false, hash: resourceHash, encKeyId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
               if(hasSearchableDataChanges) {
                 // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
                 let start = Date.now();
-                const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
+                const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, encKeyId);
                 req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:hasSearchableDataChanges', 'data': clusterId}, 'satcon-performance');
                 toSet['histId'] = histId;
               }
@@ -308,7 +308,7 @@ const updateClusterResources = async (req, res, next) => {
           else{
             // adds the yaml hist item too
             let start = Date.now();
-            const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, fingerprint);
+            const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, encKeyId);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
 
             // if obj not in db, then adds it
@@ -318,7 +318,7 @@ const updateClusterResources = async (req, res, next) => {
               return;
             }
             changes = {
-              $set: { deleted: false, hash: resourceHash, histId, fingerprint, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+              $set: { deleted: false, hash: resourceHash, histId, encKeyId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
               $currentDate: { created: true, updated: true, lastModified: true },
               ...pushCmd
             };
@@ -402,7 +402,7 @@ const updateClusterResources = async (req, res, next) => {
   }
 };
 
-var addResourceYamlHistObj = async(req, org, clusterId, resourceSelfLink, yamlStr, fingerprint)=>{
+var addResourceYamlHistObj = async(req, org, clusterId, resourceSelfLink, yamlStr, encKeyId)=>{
   var ResourceYamlHist = req.db.collection('resourceYamlHist');
   var id = uuid();
   var obj = {
@@ -411,7 +411,7 @@ var addResourceYamlHistObj = async(req, org, clusterId, resourceSelfLink, yamlSt
     cluster_id: clusterId,
     resourceSelfLink,
     yamlStr,
-    fingerprint,
+    encKeyId,
     updated: new Date(),
   };
   await ResourceYamlHist.insertOne(obj);

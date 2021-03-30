@@ -19,7 +19,7 @@ const {
 } = require ('./common');
 const { ACTIONS, TYPES } = require('../models/const');
 const _ = require('lodash');
-var { genKeys } = require('../../utils/orgs');
+var { genKey } = require('../../utils/orgs');
 
 const organizationResolvers = {
   Query: {
@@ -49,29 +49,17 @@ const organizationResolvers = {
         throw new BasicRazeeError(context.req.t('This org has too many encryption keys. Remove some before adding any new ones'), context);
       }
 
-      const keyUserName = me.email || me.id;
-      const { fingerprint, pubKey, privKey } = await genKeys({ keyUserName });
+      const encKey = await genKey();
 
-      const creationTime = new Date();
-      const obj = {
-        pubKey,
-        privKey,
-        fingerprint,
-        creationTime,
-        deleted: false,
-      };
       const search = { _id: org._id };
       const updates = {
-        $push: { encKeys: obj },
+        $push: { encKeys: encKey },
       };
       await models.Organization.updateOne(search, updates);
 
-      return {
-        fingerprint,
-        creationTime,
-      };
+      return _.omit(encKey, ['key']);
     },
-    deleteOrgEncKey: async (parent, { orgId, fingerprint }, context)=>{
+    deleteOrgEncKey: async (parent, { orgId, encKeyId }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'createOrgEncryptionKey';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -83,14 +71,14 @@ const organizationResolvers = {
       }
 
       const matchingEncKey = _.find(org.encKeys, (encKey)=>{
-        return (encKey.fingerprint == fingerprint);
+        return (encKey.id == encKeyId);
       });
       if(!matchingEncKey){
-        throw new BasicRazeeError(context.req.t('An encryption key with this fingerprint was not found.'), context);
+        throw new BasicRazeeError(context.req.t('An encryption key with this encKeyId was not found.'), context);
       }
 
       const otherLiveKeys = _.filter(org.encKeys||[], (encKey)=>{
-        return !encKey.deleted && (encKey.fingerprint != fingerprint);
+        return !encKey.deleted && (encKey.id != encKeyId);
       });
       if(otherLiveKeys.length < 1){
         throw new BasicRazeeError(context.req.t('You cant delete the last encryption key for an org.'), context);
@@ -107,7 +95,7 @@ const organizationResolvers = {
       var options = {
         arrayFilters: [
           {
-            'element.fingerprint': fingerprint,
+            'element.id': encKeyId,
           },
         ],
       };

@@ -27,7 +27,7 @@ const organizationSchema = gql`
   }
   
   type OrgCreateEncKeyResponse {
-    fingerprint: String!
+    id: String!
     creationTime: Date!
   }
   type OrgDeleteEncKeyResponse {
@@ -43,14 +43,14 @@ const organizationSchema = gql`
   
   extend type Mutation {
     """
-    Creates a new pub/priv key pair for encryption purposes
+    Creates a new encKey for encryption purposes
     """
     createOrgEncKey(orgId: String! @sv): OrgCreateEncKeyResponse!
 
     """
-    Deletes the pub/priv key pair with the given fingerprint
+    Deletes the encKey with the given id
     """
-    deleteOrgEncKey(orgId: String! @sv, fingerprint: String! @sv): OrgDeleteEncKeyResponse!
+    deleteOrgEncKey(orgId: String! @sv, encKeyId: String! @sv): OrgDeleteEncKeyResponse!
   }
 `;
 

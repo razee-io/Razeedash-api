@@ -42,9 +42,8 @@ const OrganizationDefaultSchema = new mongoose.Schema({
   encKeys: [
     {
       _id: false,
-      pubKey: String,
-      privKey: String,
-      fingerprint: String,
+      id: String,
+      key: String,
       creationTime: Date,
       deleted: Boolean,
     },
