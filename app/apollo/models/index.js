@@ -39,7 +39,7 @@ const connectDb = mongoUrl => {
   if (process.env.NODE_ENV === 'production') {
     mongooseOptions = {
       autoIndex: false,
-      connectTimeoutMS: 1000,
+      connectTimeoutMS: 10000,
       socketTimeoutMS: 5000,
       poolSize: 15,
       useNewUrlParser: true,
