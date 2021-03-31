@@ -196,7 +196,7 @@ const updateClusterResources = async (req, res, next) => {
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
-    const limit = pLimit(20);
+    const limit = pLimit(10);
     await Promise.all(resources.map(async (resource) => {
       return limit(async () => {
         const type = resource['type'] || 'other';
