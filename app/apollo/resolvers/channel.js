@@ -145,7 +145,11 @@ const channelResolvers = {
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
         const channel = await models.Channel.findOne(channelFilter);
         if(!channel){
+
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channel_uuid}}/channelName.', {'channel_uuid':channel_uuid}), context);
+
+          throw new NotFoundError(context.req.t('Could not find the channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
+
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
