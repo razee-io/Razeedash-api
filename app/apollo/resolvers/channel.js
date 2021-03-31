@@ -156,7 +156,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
-
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
         if (!deployableVersionObj) {
           throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.', {'channel.name':channel.name, 'channel.uuid':channel.uuid, 'versionObj.name':versionObj.name, 'versionObj.uuid':versionObj.uuid}), context);
@@ -240,9 +239,10 @@ const channelResolvers = {
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags } });
 
         // find any subscriptions for this channel and update channelName in those subs
-        await models.Subscription.updateMany(
-          { org_id: org_id, channel_uuid: uuid },
-          { $set: { channelName: name } }
+        await models.DeployableVersion.updateMany(
+          { org_id: org_id, channel_id: uuid },
+          { $set: { channel_name: name } }
+          
         );
 
         return {
