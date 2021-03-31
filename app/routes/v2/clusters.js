@@ -121,14 +121,22 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-const pushToS3 = async (req, key, searchableDataHash, dataStr) => {
+async function pushToS3(req, key, searchableDataHash, dataStr) {
+  const rsp = pushToS3Sync(req, key, searchableDataHash, dataStr);
+  await rsp.promise;
+  return rsp.url;
+}
+
+function pushToS3Sync(req, key, searchableDataHash, dataStr){
   //if its a new or changed resource, write the data out to an S3 object
+  const result={};
   const bucket = conf.s3.resourceBucket;
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  await req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
-  return `https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
-};
+  result.promise=req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
+  result.url=`https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+  return result;
+}
 
 var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
   const Resources = req.db.collection('resources');
@@ -207,6 +215,7 @@ const updateClusterResources = async (req, res, next) => {
             let beginTime = Date.now();
             const resourceHash = buildHashForResource(resource.object, req.org);
             let dataStr = JSON.stringify(resource.object);
+            let s3UploadSyncResponse;
             let selfLink;
             if(resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink){
               selfLink = resource.object.metadata.annotations.selfLink;
@@ -264,8 +273,9 @@ const updateClusterResources = async (req, res, next) => {
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
               let start = Date.now();
-              dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
-              req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3', 'data': key}, 'satcon-performance');
+              s3UploadSyncResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
+              dataStr=s3UploadSyncResponse.url;
+              s3UploadSyncResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
             var changes = null;
             var options = {};
@@ -337,6 +347,10 @@ const updateClusterResources = async (req, res, next) => {
                     deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
                     hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
               }
+            }
+            if(s3UploadSyncResponse!==undefined){
+              await s3UploadSyncResponse.promise;
+              s3UploadSyncResponse.log();
             }
             req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'POLLED,MODIFIED,ADDED' }, 'satcon-performance');
             break;
