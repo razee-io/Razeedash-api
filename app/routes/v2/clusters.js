@@ -350,7 +350,7 @@ const updateClusterResources = async (req, res, next) => {
             }
             if(s3UploadWithPromiseResponse!==undefined){
               await s3UploadWithPromiseResponse.promise;
-              s3UploadWithPromiseResponse.log();
+              s3UploadWithPromiseResponse.logUploadDuration();
             }
             req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'POLLED,MODIFIED,ADDED' }, 'satcon-performance');
             break;
