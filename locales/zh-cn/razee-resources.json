@@ -21,7 +21,7 @@
   "Could not find subscriptions.": "找不到订阅。",
   "Could not find the channel with name {{name}}.": "找不到名称为 {{name}} 的通道。",
   "Could not find the channel with uuid {{uuid}}.": "找不到 uuid 为 {{uuid}} 的通道。",
-  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "找不到 uuid/名称为 {{channel_uuid}}/channelName 的通道。",
+  "Could not find the channel with uuid/name {{channelUuid}}/channelName.": "Could not find the channel with uuid/name {{channelUuid}}/channelName.",
   "Could not find the cluster for the cluster id {{cluster_id}}.": "找不到集群标识为 {{cluster_id}} 的集群。",
   "Could not find the cluster with Id {{clusterId}}.": "找不到标识为 {{clusterId}} 的集群。",
   "Could not find the cluster with name {{clusterName}}.": "找不到名称为 {{clusterName}} 的集群。",

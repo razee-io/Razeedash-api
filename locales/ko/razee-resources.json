@@ -21,7 +21,7 @@
   "Could not find subscriptions.": "구독을 찾을 수 없습니다.",
   "Could not find the channel with name {{name}}.": "이름이 {{name}}인 채널을 찾을 수 없습니다.",
   "Could not find the channel with uuid {{uuid}}.": "uuid가 {{uuid}}인 채널을 찾을 수 없습니다.",
-  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "uuid/이름이 {{channel_uuid}}/channelName인 채널을 찾을 수 없습니다.",
+  "Could not find the channel with uuid/name {{channelUuid}}/channelName.": "Could not find the channel with uuid/name {{channelUuid}}/channelName.",
   "Could not find the cluster for the cluster id {{cluster_id}}.": "클러스터 ID가 {{cluster_id}}인 클러스터를 찾을 수 없습니다.",
   "Could not find the cluster with Id {{clusterId}}.": "ID가 {{clusterId}}인 클러스터를 찾을 수 없습니다.",
   "Could not find the cluster with name {{clusterName}}.": "이름이 {{clusterName}}인 클러스터를 찾을 수 없습니다.",
