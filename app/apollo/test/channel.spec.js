@@ -565,7 +565,7 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 1234.78}',
         description: `${channel_01_name}:v.0.6`
       });
-      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many configuration channels version are registered under ${channel_01_uuid}.`);
+      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many configuration channels versions are registered under ${channel_01_uuid}.`);
 
       // step 4: remove the channel version by an adminToken
       const {
