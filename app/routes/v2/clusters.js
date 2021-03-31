@@ -215,7 +215,7 @@ const updateClusterResources = async (req, res, next) => {
             let beginTime = Date.now();
             const resourceHash = buildHashForResource(resource.object, req.org);
             let dataStr = JSON.stringify(resource.object);
-            let s3UploadSyncResponse;
+            let s3UploadWithPromiseResponse;
             let selfLink;
             if(resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink){
               selfLink = resource.object.metadata.annotations.selfLink;
@@ -273,9 +273,9 @@ const updateClusterResources = async (req, res, next) => {
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
               let start = Date.now();
-              s3UploadSyncResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
-              dataStr=s3UploadSyncResponse.url;
-              s3UploadSyncResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
+              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
+              dataStr=s3UploadWithPromiseResponse.url;
+              s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
             var changes = null;
             var options = {};
@@ -348,9 +348,9 @@ const updateClusterResources = async (req, res, next) => {
                     hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
               }
             }
-            if(s3UploadSyncResponse!==undefined){
-              await s3UploadSyncResponse.promise;
-              s3UploadSyncResponse.log();
+            if(s3UploadWithPromiseResponse!==undefined){
+              await s3UploadWithPromiseResponse.promise;
+              s3UploadWithPromiseResponse.log();
             }
             req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'POLLED,MODIFIED,ADDED' }, 'satcon-performance');
             break;
