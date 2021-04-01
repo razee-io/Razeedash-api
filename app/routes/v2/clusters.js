@@ -357,6 +357,7 @@ const updateClusterResources = async (req, res, next) => {
           }
           case 'DELETED': {
             let beginTime = Date.now();
+            let s3UploadWithPromiseResponse;
             let selfLink;
             if(resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink){
               selfLink = resource.object.metadata.annotations.selfLink;
@@ -375,8 +376,9 @@ const updateClusterResources = async (req, res, next) => {
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (req.s3) {
               let start = Date.now();
-              dataStr = await pushToS3(req, key, searchableDataHash, dataStr);
-              req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3:Deleted', 'data': key}, 'satcon-performance');
+              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
+              dataStr = s3UploadWithPromiseResponse.url;
+              s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
             }
             if (currentResource) {
               let start = Date.now();
@@ -390,6 +392,10 @@ const updateClusterResources = async (req, res, next) => {
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
               pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+            }
+            if (s3UploadWithPromiseResponse !== undefined) {
+              await s3UploadWithPromiseResponse.promise;
+              s3UploadWithPromiseResponse.logUploadDuration();
             }
             req.log.info({ 'milliseconds': Date.now() - beginTime, 'operation': 'updateClusterResources', 'data': 'DELETED' }, 'satcon-performance');
             break;
