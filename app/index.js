@@ -17,6 +17,8 @@
 const express = require('express');
 const app = express();
 const http = require('http');
+const delay = require('delay');
+const stoppable = require('stoppable');
 const compression = require('compression');
 const body_parser = require('body-parser');
 const addRequestId = require('express-request-id')();
@@ -80,12 +82,13 @@ app.get('/metrics', async function (request, response) {
   response.end(await promClient.register.metrics());
 });
 
-const server = http.createServer(app);
+const server = stoppable(http.createServer(app));
 
 server.on('ready', onReady);
 server.on('error', onError);
 server.on('listening', onListening);
 server.on('connection', onConnection);
+server.on('close', onServerClose);
 
 initialize().then((db) => {
   app.set('db', db);
@@ -94,7 +97,13 @@ initialize().then((db) => {
 
 
 async function onReady() {
-  await apollo({app, httpServer: server});
+  const apolloInstance = await apollo({app, httpServer: server});
+  process.on('SIGTERM', async () => {
+    apolloInstance.terminating();
+    await delay(20*1000); //Wait 20s (readiness probe interval *2)
+    await apolloInstance.stop();
+    server.stop();
+  });
   server.listen(port);
 }
 
@@ -133,4 +142,14 @@ function onConnection(){
     //console.log('Number of concurrent connections to the server : ' + count);
     connections.set(count);
   });
+}
+
+function onServerClose(err){
+  if(err){
+    log.error(err,'Error closing server.');
+    process.exit(1);
+  } else {
+    log.info('Server closed.');
+    process.exit(0);
+  }
 }

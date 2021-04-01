@@ -112,8 +112,7 @@ const loadCustomPlugins =  () => {
   return [];
 };
 
-var SIGTERM = false;
-process.on('SIGTERM', () => SIGTERM = true);
+var TERMINATING = false;
 
 const createApolloServer = () => {
   const customPlugins = loadCustomPlugins();
@@ -191,12 +190,17 @@ const createApolloServer = () => {
 };
 
 const stop = async (apollo) => {
+  terminating();
   await apollo.db.connection.close();
   await apollo.server.stop();
   await apollo.httpServer.close(() => {
     console.log('🏄 Apollo Server closed.');
   });
 };
+
+function terminating(){
+  TERMINATING=true;
+}
 
 const apollo = async (options = {}) => {
 
@@ -216,8 +220,8 @@ const apollo = async (options = {}) => {
       app,
       path: GRAPHQL_PATH,
       onHealthCheck: async () => {
-        if (SIGTERM) {
-          throw 'SIGTERM received. Not accepting additional requests';
+        if (TERMINATING) {
+          throw 'Terminate signal received. Not accepting additional requests';
         } else if (!pubSub.enabled){
           throw '!pubSub.enabled';
         } else {
@@ -243,7 +247,7 @@ const apollo = async (options = {}) => {
       }
       httpServer.listen({ port });
     }
-    return { db, server, httpServer, stop};
+    return { db, server, httpServer, stop, terminating};
   } catch (err) {
     logger.error(err, 'Apollo api error');
     process.exit(1);
