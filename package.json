@@ -96,6 +96,7 @@
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "prom-client": "^13.1.0",
+    "stoppable": "^1.1.0",
     "stream-buffers": "^3.0.2",
     "stream-to-string": "^1.2.0",
     "subscriptions-transport-ws": "^0.9.18",
