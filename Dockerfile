@@ -45,4 +45,4 @@ ENV BUILD_ID=${BUILD_ID}
 COPY --chown=node --from=buildImg /home/node /home/node
 
 EXPOSE 3333
-CMD ["npm", "start"]
+CMD ["node", "app/index.js"]
