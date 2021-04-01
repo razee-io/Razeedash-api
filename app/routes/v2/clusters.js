@@ -121,6 +121,7 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
+// eslint-disable-next-line no-unused-vars
 async function pushToS3(req, key, searchableDataHash, dataStr) {
   const rsp = pushToS3Sync(req, key, searchableDataHash, dataStr);
   await rsp.promise;
