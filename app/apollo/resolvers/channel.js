@@ -239,6 +239,11 @@ const channelResolvers = {
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags } });
 
         // find any subscriptions for this channel and update channelName in those subs
+        await models.Subscription.updateMany(
+          { org_id: org_id, channel_uuid: uuid },
+          { $set: { channelName: name } }
+        );
+        //update the channelName
         await models.DeployableVersion.updateMany(
           { org_id: org_id, channel_id: uuid },
           { $set: { channel_name: name } }
