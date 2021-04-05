@@ -124,7 +124,45 @@ const createApolloServer = () => {
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
-    plugins: customPlugins,
+    plugins: [{
+      customPlugins, requestDidStart(requestContext) {
+        // console.log('requestContext0', requestContext);
+        /* Within this returned object, define functions that respond
+           to request-specific lifecycle events. */
+        return {
+
+          /* The `parsingDidStart` request lifecycle event fires
+             when parsing begins. The event is scoped within an
+             associated `requestDidStart` server lifecycle event. */
+          executionDidStart(executionRequestContext) {
+            return {
+              willResolveField({ source, args, context, info }) {
+                //if('password' in args){
+                //args.password='****';
+                //console.log
+                // console.log('willResolveField-args', args);
+                //}
+                console.log('source', source);
+                console.log('args', args);
+                console.log('context', context);
+                console.log('info', info);
+
+                return (error, result) => {
+                  const end = process.hrtime.bigint();
+                  //console.log(`Field ${info.parentType.name}.${info.fieldName} took ${end - start}ns`);
+                  if (error) {
+                    console.log(`It failed with ${error}`);
+                  } else {
+                    console.log(`It returned ${result}`);
+                  }
+                };
+
+              }
+            };
+          }
+        };
+      }
+    }],
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'false',
     typeDefs,
