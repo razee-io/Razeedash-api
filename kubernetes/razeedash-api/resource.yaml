@@ -105,22 +105,21 @@ items:
                   path: /api/kube/liveness
                   port: 3333
                 initialDelaySeconds: 5
-                periodSeconds: 30
-                timeoutSeconds: 10
+                periodSeconds: 20
+                timeoutSeconds: 2
               readinessProbe:
-                httpGet:
-                  path: /.well-known/apollo/server-health
-                  port: 3333
+                exec:
+                  command: ["npm", "run", "wait-mongo"]
                 initialDelaySeconds: 5
-                periodSeconds: 30
+                periodSeconds: 15
                 timeoutSeconds: 10
               resources:
                 requests:
-                  cpu: 500m
-                  memory: 512Mi
+                  cpu: 100m
+                  memory: 80Mi
                 limits:
-                  cpu: 2000m
-                  memory: 1Gi
+                  cpu: 500m
+                  memory: 256Mi
               volumeMounts:
                 - name: add-cluster-webhook-headers-vol
                   mountPath: /var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers

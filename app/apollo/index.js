@@ -112,9 +112,6 @@ const loadCustomPlugins =  () => {
   return [];
 };
 
-var SIGTERM = false;
-process.on('SIGTERM', () => SIGTERM = true);
-
 const createApolloServer = () => {
   const customPlugins = loadCustomPlugins();
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
@@ -169,7 +166,7 @@ const createApolloServer = () => {
         logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
         const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
 
-        logger.debug({}, 'subscriptions:onConnect upgradeReq getMe');
+        logger.debug({ me }, 'subscriptions:onConnect upgradeReq getMe');
         if (me === undefined) {
           throw Error(
             'Can not find the session for this subscription request.',
@@ -215,14 +212,14 @@ const apollo = async (options = {}) => {
     server.applyMiddleware({
       app,
       path: GRAPHQL_PATH,
-      onHealthCheck: async () => {
-        if (SIGTERM) {
-          throw 'SIGTERM received. Not accepting additional requests';
-        } else if (!pubSub.enabled){
-          throw '!pubSub.enabled';
-        } else {
-          return 200;
-        }
+      onHealthCheck: () => {
+        return new Promise((resolve, reject) => {
+          if (pubSub.enabled) {
+            resolve();
+          } else {
+            reject();
+          }
+        });
       }
     });
 

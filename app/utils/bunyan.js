@@ -33,9 +33,6 @@ const getBunyanConfig = (route) => {
     excludes: ['referer', 'body', 'short-body'],
     levelFn: responseCodeMapper,
     obfuscate: ['req.headers.razee-org-key'],
-    genReqId: function (req) {
-      return req.request_id;
-    },
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
       stream: process.stdout
