@@ -21,7 +21,7 @@
   "Could not find subscriptions.": "Abonnements introuvables.",
   "Could not find the channel with name {{name}}.": "Impossible de trouver le canal {{name}}.",
   "Could not find the channel with uuid {{uuid}}.": "Impossible de trouver le canal ayant l'identificateur unique universel {{uuid}}.",
-  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "Impossible de trouver le canal ayant l'identificateur unique universel/nom {{channel_uuid}}/channelName.",
+  "Could not find the channel with uuid/name {{channelUuid}}/channelName.": "Could not find the channel with uuid/name {{channelUuid}}/channelName.",
   "Could not find the cluster for the cluster id {{cluster_id}}.": "Impossible de trouver le cluster pour l'ID de cluster {{cluster_id}}.",
   "Could not find the cluster with Id {{clusterId}}.": "Impossible de trouver le cluster avec l'ID {{clusterId}}.",
   "Could not find the cluster with name {{clusterName}}.": "Impossible de trouver le cluster nommé {{clusterName}}.",
