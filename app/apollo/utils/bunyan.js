@@ -42,7 +42,7 @@ const getBunyanConfig = (route) => {
     parseUA: false,
     excludes: ['referer', 'short-body'],
     levelFn: responseCodeMapper,
-    obfuscate: ['req.headers.razee-org-key', 'req.body.variables.login', 'req.body.variables.password', 'req.body.variables.email', 'req.body.variables.name'],
+    obfuscate: ['req.headers.razee-org-key', 'req.headers.x-api-key', 'req.body.variables.login', 'req.body.variables.password', 'req.body.variables.email', 'req.body.variables.name'],
     genReqId: function (req) {
       return req.request_id;
     },
