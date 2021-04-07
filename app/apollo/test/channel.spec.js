@@ -298,7 +298,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: 'a_random_name2',
       });
-      expect(addChannel2.data.errors[0].message).to.equal(`Too many channels are registered under ${org01._id}.`);
+      expect(addChannel2.data.errors[0].message).to.equal(`Too many configuration channels are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -565,7 +565,7 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 1234.78}',
         description: `${channel_01_name}:v.0.6`
       });
-      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many channel version are registered under ${channel_01_uuid}.`);
+      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many configuration channel versions are registered under ${channel_01_uuid}.`);
 
       // step 4: remove the channel version by an adminToken
       const {
