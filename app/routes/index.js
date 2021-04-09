@@ -34,6 +34,7 @@ const getOrg = require ('../utils/orgs').getOrg;
 
 const Kube = require('./kube/kube.js');
 const Install = require('./install');
+const Cron = require('./cron');
 const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
@@ -69,6 +70,7 @@ router.use(asyncHandler(async (req, res, next) => {
 // the orgs routes should be above the razee-org-key checks since the user
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
+router.use('/cron', Cron);
 
 router.use((req, res, next) => {
   let orgKey = req.get('razee-org-key');

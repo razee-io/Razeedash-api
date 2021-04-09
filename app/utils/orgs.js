@@ -111,11 +111,122 @@ var genKey = ()=>{
   }
   var key = randBuff.toString('base64');
   var id = uuid();
-  var creationTime = Date.now();
+  var creationTime = new Date();
   var deleted = false;
   return {
     id, key, creationTime, deleted,
   };
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey };
+var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
+  var now = Date.now();
+  var orgsToAddEncKeys= await db.collection('orgs').find({
+    $or: [
+      {
+        encKeys: { $exists: false } // encKeys doesnt exist
+      },
+      {
+        encKeys: { $size: 0 } // encKeys is blank
+      },
+      // todo: maybe in future add check for when all encKeys are deleted:true
+    ]
+  }).toArray();
+  var orgsToDeleteEncKeys = await db.collection('orgs').find({
+    $or: [
+      {
+        // encKeys that are expired but not yet deleted
+        encKeys: {
+          $elemMatch: {
+            creationTime: { $lt: new Date(now - maxAge) },
+            deleted: false,
+          },
+        },
+      },
+    ],
+  }).toArray();
+
+  var buildAddEncKeyOpForOrg = ({ org })=>{
+    if(!org._id){
+      throw new Error('missing org._id');
+    }
+    return {
+      updateOne: {
+        filter: {
+          _id: org._id,
+        },
+        update: {
+          $push: {
+            encKeys: genKey(),
+          },
+        },
+      }
+    };
+  };
+
+  var buildRemoveEncKeyOpForOrg = ({ org, encKeysToRemove })=>{
+    var encKeysToRemoveIds = _.map(encKeysToRemove, 'id');
+    return {
+      updateOne: {
+        filter: {
+          _id: org._id,
+        },
+        arrayFilters: [
+          {
+            'elem.id': { $in: encKeysToRemoveIds },
+          },
+        ],
+        update: {
+          $set:{
+            'encKeys.$[elem].deleted': true,
+          },
+        },
+      },
+    };
+  };
+
+  var ops = [];
+  // adds encKeys
+  for(var org of orgsToAddEncKeys){
+    ops.push(buildAddEncKeyOpForOrg({ org }));
+  }
+  // removes encKeys
+  for(var org of orgsToDeleteEncKeys){
+    // finds which encKeys to remove
+    var encKeysToRemove = _.filter(org.encKeys||[], (encKey)=>{
+      return (!encKey.deleted && encKey.creationTime < now - maxAge);
+    });
+    if(encKeysToRemove.length < 1){
+      continue;
+    }
+    var encKeysToRemoveIds = _.map(encKeysToRemove, 'id');
+    // finds keys that are not yet deleted and also wont be deleted in this call
+    var undeletedEncKeyIds = _.filter(org.encKeys, (encKey)=>{
+      return (!encKey.deleted && !_.includes(encKeysToRemoveIds, encKey.id));
+    });
+    if(undeletedEncKeyIds.length < 1){
+      // if we're deleting all keys, then adds a new one to rotate to
+      ops.push(buildAddEncKeyOpForOrg({ org }));
+    }
+    // marks old keys as deleted
+    ops.push(buildRemoveEncKeyOpForOrg({ org, encKeysToRemove }));
+  }
+  // processes all ops
+  if(ops.length < 1){
+    return true;
+  }
+  await db.collection('orgs').bulkWrite(ops, { ordered: true });
+};
+
+// setTimeout(async()=> {
+//   var db = await getDb();
+//   await cronRotateEncKeys({ db });
+// },1);
+
+var getDb = async()=>{
+  const MongoClientClass = require('../mongo/mongoClient.js');
+  const conf = require('../conf.js').conf;
+  const MongoClient = new MongoClientClass(conf);
+  return await MongoClient.getClient({});
+};
+
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey, cronRotateEncKeys };
