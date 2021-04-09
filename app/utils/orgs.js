@@ -186,11 +186,11 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
 
   var ops = [];
   // adds encKeys
-  for(var org of orgsToAddEncKeys){
+  for(let org of orgsToAddEncKeys){
     ops.push(buildAddEncKeyOpForOrg({ org }));
   }
   // removes encKeys
-  for(var org of orgsToDeleteEncKeys){
+  for(let org of orgsToDeleteEncKeys){
     // finds which encKeys to remove
     var encKeysToRemove = _.filter(org.encKeys||[], (encKey)=>{
       return (!encKey.deleted && encKey.creationTime < now - maxAge);
@@ -215,18 +215,6 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
     return true;
   }
   await db.collection('orgs').bulkWrite(ops, { ordered: true });
-};
-
-// setTimeout(async()=> {
-//   var db = await getDb();
-//   await cronRotateEncKeys({ db });
-// },1);
-
-var getDb = async()=>{
-  const MongoClientClass = require('../mongo/mongoClient.js');
-  const conf = require('../conf.js').conf;
-  const MongoClient = new MongoClientClass(conf);
-  return await MongoClient.getClient({});
 };
 
 module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey, cronRotateEncKeys };
