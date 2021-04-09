@@ -35,10 +35,6 @@ const OrganizationLocalSchema = new mongoose.Schema({
       type: String,
     },
   ],
-  enableResourceEncryption: {
-    type: Boolean,
-    required: false,
-  },
   encKeys: [
     {
       _id: false,

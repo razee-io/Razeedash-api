@@ -71,7 +71,7 @@ const decryptOrgData = (orgKey, data) => {
 
 
 const encryptStrUsingOrgEncKey = ({ str, org })=>{
-  if(!org.enableResourceEncryption || (org.encKeys||[]).length < 1){
+  if((org.encKeys||[]).length < 1){
     return { data: str }; // lazy feature flag for now
   }
   // finds the first non-deleted key in org.encKeys
