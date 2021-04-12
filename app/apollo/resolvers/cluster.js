@@ -169,7 +169,7 @@ const clusterResolvers = {
       context,
       fullQuery
     ) => {
-      var { orgId, limit, startingAfter, clusterId=''} = args;
+      var { orgId, limit, startingAfter, clusterId=null} = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
