@@ -21,7 +21,7 @@
   "Could not find subscriptions.": "No se han podido encontrar suscripciones.",
   "Could not find the channel with name {{name}}.": "No se ha podido encontrar el canal con el nombre {{name}}.",
   "Could not find the channel with uuid {{uuid}}.": "No se ha podido encontrar el canal con el uuid {{uuid}}.",
-  "Could not find the channel with uuid/name {{channelUuid}}/channelName.": "Could not find the channel with uuid/name {{channelUuid}}/channelName.",
+  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "No se ha podido encontrar el canal con uuid/nombre {{channel_uuid}}/channelName.",
   "Could not find the cluster for the cluster id {{cluster_id}}.": "No se ha podido encontrar el clúster para el ID de clúster {{cluster_id}}.",
   "Could not find the cluster with Id {{clusterId}}.": "No se ha podido encontrar el clúster con el ID {{clusterId}}.",
   "Could not find the cluster with name {{clusterName}}.": "No se ha podido encontrar el clúster con el nombre {{clusterName}}.",
