@@ -99,6 +99,7 @@ const clusterSchema = gql`
     """
     clustersByOrgId(
       orgId: String! @sv
+      mongoQuery: JSON
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
