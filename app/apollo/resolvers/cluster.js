@@ -169,7 +169,7 @@ const clusterResolvers = {
       context,
       fullQuery
     ) => {
-      var { orgId, limit, startingAfter } = args;
+      var { orgId, limit, startingAfter, mongoQuery={}} = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
@@ -177,8 +177,13 @@ const clusterResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
-
-      const searchFilter = { org_id: orgId, ...conditions };
+      const searchFilter={ $and: [ 
+        { org_id: orgId },
+        {$or: [
+          mongoQuery 
+        ]}
+      ], ...conditions};
+     
       const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
