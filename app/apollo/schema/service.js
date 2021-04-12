@@ -16,10 +16,8 @@
 
  const { gql } = require('apollo-server-express');
 
- const subscriptionSchema = gql`
+ const serviceSchema = gql`
 
- extend type Query {
- }
  extend type Mutation {
     """
     Adds a service subscription and returns new subscription uuid: 
