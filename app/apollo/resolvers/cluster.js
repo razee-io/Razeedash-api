@@ -169,7 +169,7 @@ const clusterResolvers = {
       context,
       fullQuery
     ) => {
-      var { orgId, limit, startingAfter, mongoQuery={}} = args;
+      var { orgId, limit, startingAfter, clusterId=''} = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
@@ -180,7 +180,7 @@ const clusterResolvers = {
       const searchFilter={ $and: [ 
         { org_id: orgId },
         {$or: [
-          mongoQuery 
+          {'registration.clusterId': clusterId}
         ]}
       ], ...conditions};
      
