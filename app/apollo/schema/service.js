@@ -18,39 +18,53 @@
 
  const serviceSchema = gql`
 
+ type ServiceSubscription {
+    ssid: String!
+    orgId: String!
+    name: String!
+    clusterId: String!
+    channelUuid: String!
+    channelName: String!
+    version: String!
+    versionUuid: String!
+    created: Date!
+    updated: Date!
+  }
+
+
  extend type Mutation {
     """
-    Adds a service subscription and returns new subscription uuid: 
+    Adds a service subscription and returns new service subscription unique id: 
         orgId - user orgId
         name - service subscription name
         clusterId - target service cluster_id from different orgId
         channelUuid - user config uuid
         versionUuid - user config version uuid
     """
-    addServiceSubscription(orgId: String! @sv, name: String! @sv, clusterId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): AddChannelSubscriptionReply!
+    addServiceSubscription(orgId: String! @sv, name: String! @sv, clusterId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
     
     """
     Edits a service subscription
-        uuid - subscription uuid (returned back in the response)
+        ssid - unique service subscription id
         name - service subscription name
         clusterId - target service cluster_id from different orgId
         channelUuid - user config uuid
         versionUuid - user config version uuid
     """
-    editServiceSubscription(uuid: String! @sv, name: String! @sv, clusterId: String  @sv, channelUuid: String! @sv, versionUuid: String! @sv): EditChannelSubscriptionReply!
+    editServiceSubscription(ssid: String! @sv, name: String! @sv, clusterId: String  @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
     
     """
     Set a configurationVersion
-        uuid - subscription uuid (returned back in the response)
+        ssid - subscription id
         versionUuid - user config version uuid
     """
-    setServiceSubscription(uuid: String! @sv, versionUuid: String! @sv ): SetSubscriptionReply!
+    setServiceSubscription(ssid: String! @sv, versionUuid: String! @sv ): ID
     
     """
     Removes a service subscription
-        uuid - subscription uuid (returned back in the response)
+        ssid - service subscription id
     """
-    removeServiceSubscription(uuid: String! @sv): RemoveChannelSubscriptionReply
+    removeServiceSubscription(ssid: ID! @sv): ID
  }
 `;
 

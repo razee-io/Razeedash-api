@@ -17,17 +17,14 @@
 const mongoose = require('mongoose');
 
 const ServiceSubscriptionSchema = new mongoose.Schema({
-  // _id: {
-  //   type: String,
-  // },
+  _id: {
+    type: String,
+  },
   org_id: {
     type: String,
     alias: 'orgId',
   },
   name: {
-    type: String,
-  },
-  uuid: {
     type: String,
   },
   clusterId: {
@@ -66,6 +63,6 @@ const ServiceSubscriptionSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-ServiceSubscriptionSchema.index({ org_id: 1 });
+// ServiceSubscriptionSchema.index({ org_id: 1 });
 
 module.exports = ServiceSubscriptionSchema;

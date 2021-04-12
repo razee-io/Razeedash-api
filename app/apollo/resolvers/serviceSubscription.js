@@ -17,7 +17,7 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { withFilter } = require('apollo-server');
-const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
+const { ACTIONS, TYPES, SERVICE_SUBSCRIPTION_LIMITS } = require('../models/const');
 const {
   whoIs, validAuth, validClusterAuth,
   getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
@@ -36,14 +36,14 @@ const serviceResolvers = {
     addServiceSubscription: async (parent, { orgId, name, clusterId, channelUuid, versionUuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addServiceSubscription';
-      logger.debug({req_id, user: whoIs(me), orgId: orgId }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
       await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         // validate the number of total subscriptions are under the limit
         const total = await models.ServiceSubscription.count({orgId});
-        if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
-          throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{orgId}}.', {'orgId':orgId}), context);
+        if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
+          throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', {'orgId':orgId}), context);
         } 
 
         // loads the channel
@@ -62,23 +62,17 @@ const serviceResolvers = {
 
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
 
-        const uuid = UUID();
+        const ssid = UUID();
 
         await models.ServiceSubscription.create({
-          uuid, orgId, name, owner: me._id, clusterId,
+          _id: ssid, orgId, name, owner: me._id, clusterId,
           channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
           kubeOwnerName
         });
 
-        return {
-          uuid: uuid
-        };
-
         pubSub.channelSubChangedFunc({orgId: orgId}, context);
 
-        return {
-          uuid,
-        };
+        return ssid;
       }
       catch(err){
         if (err instanceof BasicRazeeError) {
