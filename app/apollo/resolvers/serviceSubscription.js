@@ -74,13 +74,41 @@ const serviceResolvers = {
 
         return ssid;
       }
-      catch(err){
+      catch (err) {
         if (err instanceof BasicRazeeError) {
           throw err;
         }
         logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id }), context);
       }
+    },
+
+    removeServiceSubscription: async (parent, { ssid }, context)=>{
+      const { models, me, req_id, logger } = context;
+      const queryName = 'removeServiceSubscription';
+      logger.debug({req_id, user: whoIs(me)}, `${queryName} enter`);
+
+      try {
+
+        const subscription = await models.ServiceSubscription.findById(ssid);
+        if (!subscription) {
+          throw new NotFoundError(context.req.t('Service Subscription ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
+        }
+
+        const orgId = subscription.orgId;
+
+        await subscription.deleteOne();
+
+        pubSub.channelSubChangedFunc({ org_id: orgId }, context);
+
+      } catch (err) {
+        if (err instanceof BasicRazeeError) {
+          throw err;
+        }
+        logger.error(err);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id }), context);
+      }
+      return ssid;
     }
   }
 };
