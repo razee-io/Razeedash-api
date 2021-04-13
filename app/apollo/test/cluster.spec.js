@@ -451,7 +451,7 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         limit: 2,
       });
-      
+
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(2);
       expect(clustersByOrgId[0].clusterId).to.equal('cluster_04');
@@ -466,7 +466,7 @@ describe('cluster graphql test suite', () => {
       }
       throw error;
     }
-    
+
     try {
       const {
         data: {
