@@ -18,7 +18,7 @@ const BaseAuth = require('./auth_base');
 const { models } = require('../apollo/models');
 const { TYPES } = require('./auth.consts');
 
-const whoIs = me => { 
+const whoIs = me => {
   if (me === null || me === undefined) return 'null';
   if (me.email) return me.email;
   if (me.identifier) return me.identifier;
@@ -30,7 +30,7 @@ module.exports = class LocalAuth extends BaseAuth  {
   constructor() {
     super({name: 'Local RBAC'});
   }
-      
+
   rbac(action, type) {
     return async(req, res, next) => {
       const req_id = req.id;
@@ -38,31 +38,31 @@ module.exports = class LocalAuth extends BaseAuth  {
 
       const context = {req_id, models, logger: req.log };
       const me = await models.User.getMeFromRequest(req, context);
-    
+
       if (!me) {
         res.status(403).send('could not locate the user.');
         return;
       }
-    
+
       context.me = me;
       const org_id = req.org._id;
       var attributes = null;
-    
+
       if (type === TYPES.CHANNEL && req.params.channelName) {
         attributes = {channelName: req.params.channelName};
-      } 
+      }
       if (type === TYPES.SUBSCRIPTION && req.params.id) {
         attributes = {subscriptionId: req.params.id};
-      } 
-      
-      // compose a context object 
+      }
+
+      // compose a context object
       if (!(await models.User.isAuthorized(me, org_id, action, type, attributes, context))) {
         req.log.debug({name: this._name, req_id, me: whoIs(me), org_id, action, type, attributes}, 'rbacAuth permission denied - 401');
         res.status(401).send('Permission denied.');
       }
-    
+
       req.log.debug({name: this._name, action, type, req_id, attributes}, 'rbacAuth permission granted - 200');
-    
+
       next();
     };
   }

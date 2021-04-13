@@ -304,7 +304,7 @@ const subscriptionResolvers = {
         const total = await models.Subscription.count({org_id});
         if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
           throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', {'org_id':org_id}), context);
-        } 
+        }
 
         const uuid = UUID();
 
@@ -357,7 +357,7 @@ const subscriptionResolvers = {
         const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), orgId, conditions }, `${queryName} group conditions are...`);
         var subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
-    
+
         if(!subscription){
           throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", orgId:{{orgId}} } not found.', {'uuid':uuid, 'orgId':orgId}), context);
         }
@@ -414,7 +414,7 @@ const subscriptionResolvers = {
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
         var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
-  
+
         if(!subscription){
           throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }

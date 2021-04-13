@@ -91,7 +91,7 @@ const clusterResolvers = {
       }).lean({ virtuals: true });
 
       if(!cluster){
-        throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context); 
+        throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
       }
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
@@ -179,7 +179,7 @@ const clusterResolvers = {
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
       var searchFilter={};
       if(clusterId){
-        searchFilter={ $and: [ 
+        searchFilter={ $and: [
           { org_id: orgId },
           {$or: [
             {'registration.clusterId': clusterId}
@@ -189,7 +189,7 @@ const clusterResolvers = {
       else{
         searchFilter = { org_id: orgId, ...conditions };
       }
-     
+
       const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
@@ -328,15 +328,15 @@ const clusterResolvers = {
           cluster_id});
 
         //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag. 
+        // clean up S3 contents based on deleted flag.
         const deletedResources = await models.Resource.updateMany({ org_id, cluster_id },
           {$set: { deleted: true }}, { upsert: false });
 
         logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
 
-        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0, 
+        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0,
           deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-        
+
       } catch (error) {
         logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
@@ -358,20 +358,20 @@ const clusterResolvers = {
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
 
         //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag. 
-        const deletedResources = await models.Resource.updateMany({ org_id }, 
+        // clean up S3 contents based on deleted flag.
+        const deletedResources = await models.Resource.updateMany({ org_id },
           {$set: { deleted: true }}, { upsert: false });
 
         logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
 
-        return {deletedClusterCount: deletedClusters.deletedCount, 
+        return {deletedClusterCount: deletedClusters.deletedCount,
           deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-        
+
       } catch (error) {
         logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
-    }, // end delete cluster by org_id 
+    }, // end delete cluster by org_id
 
     registerCluster: async (parent, { orgId: org_id, registration }, context) => {
       const queryName = 'registerCluster';
@@ -388,19 +388,19 @@ const clusterResolvers = {
         // validate the number of total clusters are under the limit
         const total = await models.Cluster.count({org_id});
         if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {  // *** shoud be just >
-          throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);               
+          throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
         }
 
         // validate the number of pending clusters are under the limit
         const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
         if (total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
-          throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);         
+          throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
         }
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
 
         if (await models.Cluster.findOne(
-          { $and: [ 
+          { $and: [
             { org_id: org_id },
             {$or: [
               {'registration.name': registration.name },
@@ -413,7 +413,7 @@ const clusterResolvers = {
         const cluster_id = UUID();
         const reg_state = CLUSTER_REG_STATES.REGISTERING;
         await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
-        
+
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
@@ -431,7 +431,7 @@ const clusterResolvers = {
         logger.error({ req_id, user: whoIs(me), org_id, error }, `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
-    }, // end registerCluster 
+    }, // end registerCluster
 
     enableRegistrationUrl: async (parent, { orgId: org_id, clusterId: cluster_id }, context) => {
       const queryName = 'enableRegistrationUrl';
