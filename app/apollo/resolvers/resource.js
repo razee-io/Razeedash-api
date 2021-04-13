@@ -61,7 +61,7 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
       .sort(sort)
       .limit(limit)
       .skip(skip)
-      .lean({ virtuals: true })
+      .lean({ virtuals: true, defaults: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
     var totalCount = await models.Resource.find({ org_id: orgId, deleted: false }).count();
