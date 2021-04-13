@@ -61,7 +61,7 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
       .sort(sort)
       .limit(limit)
       .skip(skip)
-      .lean({ virtuals: true })
+      .lean({ virtuals: true, defaults: true })
     ;
     var count = await models.Resource.find(searchFilter).count();
     var totalCount = await models.Resource.find({ org_id: orgId, deleted: false }).count();
@@ -117,7 +117,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     searchFilter['deleted'] = false;
-    let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true });
+    let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true, defaults: true });
 
     if (!resource) return resource;
 
