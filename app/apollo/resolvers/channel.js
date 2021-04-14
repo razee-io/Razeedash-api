@@ -247,7 +247,7 @@ const channelResolvers = {
         await models.DeployableVersion.updateMany(
           { org_id: org_id, channel_id: uuid },
           { $set: { channel_name: name } }
-          
+
         );
 
         return {

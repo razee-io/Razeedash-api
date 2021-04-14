@@ -91,8 +91,8 @@ const updateResourceFromCOS = async (org, resource) => {
   // run my encrypt func
   const { encKeyId, data } = await encryptStrUsingOrgEncKey({ str, org });
 
-  //## and do a save COS, 
-  //## and save to db with the new fingerprint field. 
+  //## and do a save COS,
+  //## and save to db with the new fingerprint field.
   //
   await resaveToCOS(data, encKeyId, bucketName, path);
 
@@ -121,7 +121,7 @@ const resources = models.Resource.find({ org_id: org._id, fingerprint: { $exists
 if (!resources) throw new Error(`no resources found for ${org.name}`);
 
 
-// run the createOrgEncKey graphql endpoint on your org. 
+// run the createOrgEncKey graphql endpoint on your org.
 const didGenKeys = generateEncKeyFromGQL({ org_id: org._id });
 
 // then add a enableResourceEncryption:true attribute to your org in the db.

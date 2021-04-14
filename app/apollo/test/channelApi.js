@@ -159,7 +159,7 @@ const channelFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const addChannelVersion = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -278,7 +278,7 @@ const channelFunc = grahqlUrl => {
     removeChannel
   };
 };
-    
+
 module.exports = channelFunc;
 
 
