@@ -25,6 +25,7 @@ const {
   NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
 } = require ('./common');
 const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
+const getServiceSubscriptionUrls = require('../../utils/serviceSubscriptions.js').getServiceSubscriptionUrls;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
@@ -101,6 +102,8 @@ const subscriptionResolvers = {
         if(foundSubscriptions && foundSubscriptions.length > 0 ) {
           urls = await getSubscriptionUrls(org_id, foundSubscriptions, cluster);
         }
+        const serviceUrls = await getServiceSubscriptionUrls(cluster);
+        urls = urls.concat(serviceUrls);  // add service subscriptions
       } catch (error) {
         logger.error(error, `There was an error getting ${query} from mongo`);
       }
