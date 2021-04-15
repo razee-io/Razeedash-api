@@ -32,6 +32,45 @@ const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields')
 const pubSub = GraphqlPubSub.getInstance();
 
 const serviceResolvers = {
+
+  Query: {
+
+    serviceSubscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
+      const { models, me, req_id, logger } = context;
+      const queryName = 'serviceSubscriptions';
+      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+
+      try{
+        var serviceSubscriptions = await models.ServiceSubscription.find({org_id}).lean({ virtuals: true });
+      }catch(err){
+        logger.error(err);
+        throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
+      }
+
+      serviceSubscriptions.forEach(i => i.ssid = i.uuid);
+
+      // render owner information if users ask for
+      if(queryFields.owner && serviceSubscriptions) {
+        const ownerIds = _.map(serviceSubscriptions, 'owner');
+        const owners = await models.User.getBasicUsersByIds(ownerIds);
+
+        serviceSubscriptions = serviceSubscriptions.map((sub)=>{
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
+          }
+          sub.owner = owners[sub.owner];
+          return sub;
+        });
+      }
+
+      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId: org_id }, context);
+
+    return serviceSubscriptions;
+    },
+
+  },
+
   Mutation: {
     addServiceSubscription: async (parent, { orgId, name, clusterId, channelUuid, versionUuid }, context)=>{
       const { models, me, req_id, logger } = context;
@@ -49,7 +88,7 @@ const serviceResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid });
         if(!channel){
-          throw new NotFoundError(context.req.t('channel uuid "{{channel_uuid}}" not found', {'channel_uuid':channelUuid}), context);
+          throw new NotFoundError(context.req.t('channel uuid "{{channelUuid}}" not found', {'channelUuid':channelUuid}), context);
         }
 
         // loads the version
@@ -57,17 +96,21 @@ const serviceResolvers = {
           return (version.uuid == versionUuid);
         });
         if(!version){
-          throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':versionUuid}), context);
+          throw  new NotFoundError(context.req.t('version uuid "{{versionUuid}}" not found', {'versionUuid':versionUuid}), context);
         }
+
+        // TODO: check if clusterId belongs to the caller's orgId
 
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
 
         const ssid = UUID();
 
         await models.ServiceSubscription.create({
-          _id: ssid, orgId, name, owner: me._id, clusterId,
+          _id: ssid,
+          uuid: ssid, org_id: orgId, name, groups: [], owner: me._id,
           channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
-          kubeOwnerName
+          clusterId,
+          kubeOwnerName,
         });
 
         pubSub.channelSubChangedFunc({orgId: orgId}, context);
@@ -90,16 +133,16 @@ const serviceResolvers = {
 
       try {
 
-        const subscription = await models.ServiceSubscription.findById(ssid);
-        if (!subscription) {
+        const serviceSubscription = await models.ServiceSubscription.findById(ssid);
+        if (!serviceSubscription) {
           throw new NotFoundError(context.req.t('Service Subscription ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
         }
 
-        const orgId = subscription.orgId;
+        const org_id = serviceSubscription.org_id;
 
-        await subscription.deleteOne();
+        await serviceSubscription.deleteOne();
 
-        pubSub.channelSubChangedFunc({ org_id: orgId }, context);
+        pubSub.channelSubChangedFunc({ org_id }, context);
 
       } catch (err) {
         if (err instanceof BasicRazeeError) {

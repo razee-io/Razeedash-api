@@ -27,6 +27,14 @@ const ServiceSubscriptionSchema = new mongoose.Schema({
   name: {
     type: String,
   },
+  uuid: {
+    type: String,
+  },
+  groups: [
+    {
+      type: String,
+    }
+  ],
   clusterId: {
     type: String,
   },

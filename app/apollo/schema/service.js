@@ -18,21 +18,34 @@
 
  const serviceSchema = gql`
 
- type ServiceSubscription {
+  type ServiceSubscription {
     ssid: String!
     orgId: String!
     name: String!
     clusterId: String!
     channelUuid: String!
     channelName: String!
+    channel: Channel
     version: String!
     versionUuid: String!
+    owner: BasicUser!
+    kubeOwnerName: String
+    resources: [Resource!]
     created: Date!
     updated: Date!
+    remoteResources: [Resource!]
+    rolloutStatus: RolloutStatus
+    groupObjs: [GroupDetail!]
   }
 
+extend type Query {
+    """
+    Gets all service subscriptions for user orgId
+    """
+    serviceSubscriptions(orgId: String! @sv): [ServiceSubscription]
+}
 
- extend type Mutation {
+extend type Mutation {
     """
     Adds a service subscription and returns new service subscription unique id: 
         orgId - user orgId
