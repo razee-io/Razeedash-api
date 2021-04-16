@@ -35,6 +35,21 @@ const serviceResolvers = {
 
   Query: {
 
+    subscriptionType: async(parent, { id }, context) => {
+      try{
+        var subscription = await models.ServiceSubscription.find({id}).lean();
+        if (!subscription) {
+          subscription = await models.Subscription.findOne({ uuid }, {}).lean();
+        }
+      }catch(err){
+        logger.error(err);
+        throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
+      }
+      if(!subscription){
+        throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}" } not found.', {'uuid':id}), context);
+      }
+    },
+
     serviceSubscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
