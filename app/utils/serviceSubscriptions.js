@@ -15,7 +15,7 @@ const getServiceSubscriptionUrls = async(cluster) => {
       subscriptionName: subscription.name,
       subscriptionChannel: subscription.channelName,
       subscriptionVersion: subscription.version,
-      subscriptionUuid: subscription._id,
+      subscriptionUuid: subscription.uuid,
       url: url,
       kubeOwnerName,
     };
