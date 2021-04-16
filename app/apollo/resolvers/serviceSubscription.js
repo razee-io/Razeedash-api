@@ -36,18 +36,22 @@ const serviceResolvers = {
   Query: {
 
     subscriptionType: async(parent, { id }, context) => {
+      const { models, logger } = context;
       try{
-        var subscription = await models.ServiceSubscription.find({id}).lean();
-        if (!subscription) {
-          subscription = await models.Subscription.findOne({ uuid }, {}).lean();
+        var subscription = await models.ServiceSubscription.find({ uuid: id }).lean();
+        if (subscription.length >0) {
+          return "SERVICE";
+        } else {
+          subscription = await models.Subscription.findOne({ uuid: id }, {}).lean();
+          if (subscription) {
+            return "USER";
+          }
         }
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
       }
-      if(!subscription){
-        throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}" } not found.', {'uuid':id}), context);
-      }
+      throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}" } not found.', {'uuid':id}), context);
     },
 
     serviceSubscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {

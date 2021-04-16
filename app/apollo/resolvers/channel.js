@@ -415,9 +415,13 @@ const channelResolvers = {
         const channel_uuid = channel.uuid;
 
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
-
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.', {'subCount':subCount}), context);
+        }
+
+        const serSubCount = await models.ServiceSubscription.count({ channel_uuid });
+        if(serSubCount > 0){
+          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please have tem updated/removed before removing this channel.', {'serSubCount':serSubCount}), context);
         }
 
         // deletes the linked deployableVersions in s3
@@ -456,10 +460,16 @@ const channelResolvers = {
         if(!deployableVersionObj){
           throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
+
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.', {'subCount':subCount}), context);
         }
+        const serSubCount = await models.ServiceSubscription.count({ version_uuid: uuid });
+        if(serSubCount > 0){
+          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
+        }
+
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         if(!channel){
