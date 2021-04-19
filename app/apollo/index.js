@@ -1,47 +1,3 @@
-
-Skip to content
-Pull requests
-Issues
-Marketplace
-Explore
-@tasneem067
-razee-io /
-Razeedash-api
-
-3
-5
-
-    22
-
-Code
-Issues 6
-Pull requests 14
-Actions
-Projects
-Wiki
-Security 1
-Insights
-
-    Settings
-
-Razeedash-api/app/apollo/index.js /
-@tasneem067
-tasneem067 fix: Don't log "me" object
-Latest commit ea2849d 21 days ago
-History
-8 contributors
-@dalehille
-@yingwang-us
-@tasneem067
-@adamkingit
-@rmgraham
-@mckaymic
-@worksmartAmy
-@pawan-chawdhary
-We found potential security vulnerabilities in your dependencies.
-
-You can see this message because you have been granted access to Dependabot alerts for this repository.
-253 lines (234 sloc) 8.25 KB
 /**
  * Copyright 2020 IBM Corp. All Rights Reserved.
  *
@@ -295,19 +251,3 @@ const apollo = async (options = {}) => {
 };
 
 module.exports = apollo;
-
-    © 2021 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-Loading complete
