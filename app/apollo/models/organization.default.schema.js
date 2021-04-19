@@ -61,7 +61,7 @@ OrganizationDefaultSchema.statics.getRegistrationUrl = async function(org_id, co
   }
   return {
     url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
-  }; 
+  };
 };
 
 OrganizationDefaultSchema.statics.createLocalOrg = async function(args) {
