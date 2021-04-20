@@ -41,6 +41,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     const targetedClusters = serviceSubscriptions.map(i => i.clusterId);
     const ourClusters = await Clusters.find({ org_id: orgId, cluster_id: { $in: targetedClusters }, reg_state: "registered" }).toArray();
     if (ourClusters.length >0) {
+      req.log.debug(`Targer service clusters for version_uuid ${versionId} are ${ourClusters.map(i => i.cluster_id)}`);
       orgId = serviceSubscriptions[0].org_id; // all service subscriptions pushing the same version_uuid will have the same org_id
       orgKey = (await Orgs.findOne({ _id: orgId })).orgKeys[0];
       deployable = await Channels.findOne({ org_id: orgId, name: channelName});
