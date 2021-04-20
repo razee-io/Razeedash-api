@@ -63,7 +63,7 @@ const createUsers = async () => {
 
   user02Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user02.json`, 
+      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user02.json`,
       'utf8'
     )
   );
@@ -124,7 +124,7 @@ describe('user graphql', () => {
     it('returns a user after user sign in', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        
+
 
         const result1 = await api.me(token);
         console.log(JSON.stringify(result1.data));
@@ -140,14 +140,14 @@ describe('user graphql', () => {
     it('sign up a new user and org', async () => {
       try {
         token = await signUpUser(models, api, user02Data);
-        
-       
+
+
         const {
           data: {
             data: { me },
           },
         } = await api.me(token);
-       
+
         expect(me.id).to.be.a('string');
         expect(me.email).to.be.a('string');
         expect(me.orgId).to.be.a('string');

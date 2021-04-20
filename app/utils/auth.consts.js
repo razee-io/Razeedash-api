@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-// This module defines common verbs and types of objects for both 
-// graphql API and REST API. APIs use these actions and types to 
+// This module defines common verbs and types of objects for both
+// graphql API and REST API. APIs use these actions and types to
 // describe themselves. Such as an API is about `read` `resource`s, or
-// an API is about `manage` a `channel`, etc. 
+// an API is about `manage` a `channel`, etc.
 
 // We avoid to define specific RBAC roles required for APIs here.
-// This is because providers would have more flexibility to decide 
+// This is because providers would have more flexibility to decide
 // which role is required for a given API call.
 
-// Each Authorization provider translates these actions and types to 
+// Each Authorization provider translates these actions and types to
 // its own RBAC API calls to validate users permission on a given API.
- 
-// The default Auth provider rbac.js just logs the action and type of 
+
+// The default Auth provider rbac.js just logs the action and type of
 // the object and validate user api key without actually invoke any
-// backend RBAC API. It totally depends on each Authorization providers 
+// backend RBAC API. It totally depends on each Authorization providers
 // to define their own RBAC policies and logic.
 
 const ACTIONS = {
@@ -45,7 +45,7 @@ const ACTIONS = {
   MANAGEVERSION: 'manageversion',
   SETVERSION: 'setversion',
 };
-    
+
 const TYPES = {
   RESOURCE: 'resource',
   CLUSTER: 'cluster',
@@ -70,7 +70,7 @@ const AUTH_MODEL = process.env.AUTH_MODEL || AUTH_MODELS.DEFAULT;
 
 // for given model above, if AUTH_MODEL_CLASS variable is defined, we
 // will load the class from the class variable, else the class name  will
-// be derived from AUTH_MODEL. 
+// be derived from AUTH_MODEL.
 const AUTH_MODEL_CLASS = process.env.AUTH_MODEL_CLASS || `./auth_${AUTH_MODEL}`;
 
 module.exports = { ACTIONS, TYPES, AUTH_MODEL, AUTH_MODEL_CLASS, AUTH_MODELS };

@@ -71,7 +71,7 @@ const channelResolvers = {
       try{
         var channel = await models.Channel.findOne({org_id: orgId, uuid });
         if (!channel) {
-          throw new NotFoundError(context.req.t('Could not find the channel with uuid {{uuid}}.', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
@@ -90,7 +90,7 @@ const channelResolvers = {
       try{
         var channel = await models.Channel.findOne({ org_id: orgId, name });
         if (!channel) {
-          throw new NotFoundError(context.req.t('Could not find the channel with name {{name}}.', {'name':name}), context);
+          throw new NotFoundError(context.req.t('Could not find the configuration channel with name {{name}}.', {'name':name}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
@@ -145,7 +145,7 @@ const channelResolvers = {
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
         const channel = await models.Channel.findOne(channelFilter);
         if(!channel){
-          throw new NotFoundError(context.req.t('Could not find the channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
+          throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
@@ -197,13 +197,13 @@ const channelResolvers = {
         // might not necessary with uunique index. Worth to check to return error better.
         const channel = await models.Channel.findOne({ name, org_id });
         if(channel){
-          throw new RazeeValidationError(context.req.t('The channel name {{name}} already exists.', {'name':name}), context);
+          throw new RazeeValidationError(context.req.t('The configuration channel name {{name}} already exists.', {'name':name}), context);
         }
 
         // validate the number of total channels are under the limit
         const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
-          throw new RazeeValidationError(context.req.t('Too many channels are registered under {{org_id}}.', {'org_id':org_id}), context);
+          throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
         const uuid = UUID();
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
@@ -238,7 +238,7 @@ const channelResolvers = {
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags } });
 
-        // find any subscriptions for this channel and update channelName in those subs
+        // find any subscriptions for this configuration channel and update channelName in those subs
         await models.Subscription.updateMany(
           { org_id: org_id, channel_uuid: uuid },
           { $set: { channelName: name } }
@@ -247,7 +247,7 @@ const channelResolvers = {
         await models.DeployableVersion.updateMany(
           { org_id: org_id, channel_id: uuid },
           { $set: { channel_name: name } }
-          
+
         );
 
         return {
@@ -305,10 +305,10 @@ const channelResolvers = {
       if(versionNameExists) {
         throw new RazeeValidationError(context.req.t('The version name {{name}} already exists', {'name':name}), context);
       }
-      // validate the number of total channel versions are under the limit
+      // validate the number of total configuration channel versions are under the limit
       const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
-        throw new RazeeValidationError(context.req.t('Too many channel version are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
+        throw new RazeeValidationError(context.req.t('Too many configuration channel versions are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
       }
 
       try {
@@ -417,7 +417,7 @@ const channelResolvers = {
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
 
         if(subCount > 0){
-          throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.', {'subCount':subCount}), context);
+          throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.', {'subCount':subCount}), context);
         }
 
         // deletes the linked deployableVersions in s3
@@ -432,7 +432,7 @@ const channelResolvers = {
         // deletes the linked deployableVersions in db
         await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
 
-        // deletes the channel
+        // deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
 
         return {
@@ -458,7 +458,7 @@ const channelResolvers = {
         }
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
-          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.', {'subCount':subCount}), context);
+          throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
         }
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
