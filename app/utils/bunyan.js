@@ -27,23 +27,15 @@ const responseCodeMapper = (status) => {
 };
 
 const getBunyanConfig = (route) => {
-  if (route === 'apollo') {
-    return {
-      name: route,
-      parseUA: false,
-      excludes: ['referer', 'url', 'short-body', 'user-agent', 'req', 'res'],
-      levelFn: responseCodeMapper,
-      streams: [{
-        level: process.env.LOG_LEVEL || 'info',
-        stream: process.stdout
-      }]      
-    };
-  }
-  let result = {
+  const result = {
     name: route,
     parseUA: false,
-    excludes: ['referer', 'url', 'body', 'short-body'],
+    excludes: ['referer', 'body', 'short-body'],
     levelFn: responseCodeMapper,
+    obfuscate: ['req.headers.razee-org-key'],
+    genReqId: function (req) {
+      return req.request_id;
+    },
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
       stream: process.stdout

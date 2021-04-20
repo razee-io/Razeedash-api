@@ -22,7 +22,7 @@ const { getBunyanConfig } = require('../../utils/bunyan');
 const _ = require('lodash');
 
 const logger = bunyan.createLogger(
-  getBunyanConfig('apollo/models/user.default.schema'),
+  getBunyanConfig('razeedash-api/apollo/models/user.default.schema'),
 );
 
 const UserDefaultSchema = new mongoose.Schema({
@@ -110,7 +110,7 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
 
   if (!me || me === null || me.type === 'cluster') {
     // say no for if it is cluster facing api
-    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type', me },'default isAuthorizedBatch exit..');
+    logger.debug({ req_id, orgId, reason: 'me is empty or cluster type'},'default isAuthorizedBatch exit..');
     var result = false;
     if(await models.User.isValidOrgKey(models, me)){
       result = true;

@@ -21,14 +21,14 @@ const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
 async function prepareOrganization(models, orgData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     return await models.Organization.createLocalOrg(orgData);
-  } 
+  }
   return null;
 }
 
 async function prepareUser (models, userData) {
   if (AUTH_MODEL === AUTH_MODELS.LOCAL) {
     return await models.User.createUser(models, userData);
-  } 
+  }
   return null;
 }
 
@@ -40,7 +40,7 @@ async function signInUser (models, api, userData) {
     });
     console.log(JSON.stringify(result0.data));
     return result0.data.data.signIn.token;
-  } 
+  }
   return null;
 }
 

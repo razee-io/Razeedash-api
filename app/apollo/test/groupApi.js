@@ -49,7 +49,7 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const group = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -105,7 +105,7 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const addGroup = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -125,7 +125,7 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const removeGroup = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -146,7 +146,7 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const removeGroupByName = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -258,5 +258,5 @@ const groupFunc = grahqlUrl => {
     unassignClusterGroups,
   };
 };
-        
+
 module.exports = groupFunc;

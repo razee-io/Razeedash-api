@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const ebl = require('express-bunyan-logger');
-const getBunyanConfig = require('../../utils/bunyan.js').getBunyanConfig;
 const mongoConf = require('../../conf.js').conf;
 const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
@@ -14,8 +12,6 @@ const tokenCrypt = require('../../utils/crypt');
 const algorithm = 'aes-256-cbc';
 
 const getOrg = require('../../utils/orgs.js').getOrg;
-
-router.use(ebl(getBunyanConfig('razee-api/v1Channels')));
 
 router.use(asyncHandler(async (req, res, next) => {
   req.db = await MongoClient.getClient();
@@ -38,7 +34,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     res.status(404).send({status: 'error', message: `channel "${channelName}" not found for this org`});
     return;
   }
-  
+
   var deployableVersion = await DeployableVersions.findOne({ org_id: orgId, channel_id: deployable.uuid, uuid: versionId });
   if(!deployableVersion){
     res.status(404).send({status: 'error', message: `versionId "${versionId}" not found`});
@@ -49,7 +45,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     if (conf.s3.endpoint) {
       try {
         const s3Client = new S3ClientClass(conf);
-        const link = url.parse(deployableVersion.content); 
+        const link = url.parse(deployableVersion.content);
         const iv = Buffer.from(deployableVersion.iv, 'base64');
         const paths = link.path.split('/');
         const bucket = paths[1];
@@ -59,7 +55,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
         const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
         s3stream.on('error', function(error) {
           req.log.error(error);
-          return res.status(403).json({ status: 'error', message: error.message}); 
+          return res.status(403).json({ status: 'error', message: error.message});
         });
         s3stream.pipe(decipher).pipe(res);
         s3stream.on('httpError', (error) => {
@@ -71,10 +67,10 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
           }
         });
       } catch (error) {
-        return res.status(403).json({ status: 'error', message: error.message}); 
+        return res.status(403).json({ status: 'error', message: error.message});
       }
     } else {
-      return res.status(403).json({ status: 'error', message: 'An endpoint must be configured for the S3 client'}); 
+      return res.status(403).json({ status: 'error', message: 'An endpoint must be configured for the S3 client'});
     }
   } else {
     // in this case the resource was stored directly in mongo rather than in COS
@@ -83,7 +79,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
       res.set('Content-Type', deployableVersion.type);
       res.status(200).send(data);
     } catch (error) {
-      return res.status(500).json({ status: 'error', message: error }); 
+      return res.status(500).json({ status: 'error', message: error });
     }
   }
 }));

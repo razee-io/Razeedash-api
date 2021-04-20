@@ -29,7 +29,7 @@ const resourceSchema = gql`
     clusterId: String!
     cluster: Cluster
     histId: String!
-    selfLink: String!
+    selfLink: String
     hash: String
     data: String
     deleted: Boolean

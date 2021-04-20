@@ -26,7 +26,7 @@ const deleteResource = async (req, res) => {
     res.status(200).send('cluster resources removed');
   } catch (error) {
     req.log.error(error.message);
-    return res.status(500).json({ status: 'error', message: error.message }); 
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
