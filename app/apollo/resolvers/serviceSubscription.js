@@ -95,7 +95,6 @@ const serviceResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addServiceSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
       try{
         // validate the number of total subscriptions are under the limit
@@ -117,8 +116,6 @@ const serviceResolvers = {
         if(!version){
           throw  new NotFoundError(context.req.t('version uuid "{{versionUuid}}" not found', {'versionUuid':versionUuid}), context);
         }
-
-        // TODO: check if clusterId belongs to the caller's orgId
 
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
 
