@@ -11,7 +11,7 @@ const requireAuth = async(req, res, next) => {
 
   const Users = req.db.collection('users');
   const user = await Users.findOne({ _id: userId, apiKey: apiKey });
-  
+
   if (!user) {
     res.sendStatus(403);
     return;

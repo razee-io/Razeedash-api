@@ -98,7 +98,7 @@ const createOrganizations = async () => {
   );
   org77 = await prepareOrganization(models, org77Data);
 };
-  
+
 const createUsers = async () => {
   user01Data = JSON.parse(
     fs.readFileSync(
@@ -123,7 +123,7 @@ const createUsers = async () => {
   await prepareUser(models, userRootData);
   return {};
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetOrgs = async () => {
   presetOrgs = await models.Organization.find();
@@ -132,7 +132,7 @@ const getPresetOrgs = async () => {
   });
   console.log(`presetOrgs=${JSON.stringify(presetOrgs)}`);
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetUsers = async () => {
   presetUsers = await models.User.find();
@@ -141,7 +141,7 @@ const getPresetUsers = async () => {
   });
   console.log(`presetUsers=${JSON.stringify(presetUsers)}`);
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetClusters = async () => {
   presetClusters = await models.Cluster.find();
@@ -150,7 +150,7 @@ const getPresetClusters = async () => {
   });
   console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
 };
-  
+
 const createChannels = async () => {
   await models.Channel.create({
     _id: 'fake_ch_id_1',
@@ -279,12 +279,12 @@ const createClusters = async () => {
 
 const groupClusters = async () => {
   await models.Cluster.updateMany({
-    org_id: org01._id, 
+    org_id: org01._id,
     cluster_id: {$in: 'cluster_01'}
   },
   {$push: {
     groups: {
-      uuid: 'uuid', 
+      uuid: 'uuid',
       name: 'dev'
     },
   }});
@@ -296,12 +296,12 @@ describe('subscription graphql test suite', () => {
     mongoServer = new MongoMemoryServer();
     const mongoUrl = await mongoServer.getConnectionString();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
-  
+
     myApollo = await apollo({
       mongo_url: mongoUrl,
       graphql_port: graphqlPort,
     });
-  
+
     await createOrganizations();
     await createUsers();
     await createGroups();
@@ -313,11 +313,11 @@ describe('subscription graphql test suite', () => {
     // await getPresetOrgs();
     // await getPresetUsers();
     // await getPresetClusters();
-  
+
     token = await signInUser(models, resourceApi, user01Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
-  
+
   after(async () => {
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();
@@ -499,7 +499,7 @@ describe('subscription graphql test suite', () => {
 
   it('set a subscription configurationVersion', async () => {
     try {
-      //step1, edit the subscription's configurationVerision 
+      //step1, edit the subscription's configurationVerision
       const {
         data: {
           data: { setSubscription },
@@ -521,7 +521,7 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_02_uuid,
       });
       expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
-      
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -555,7 +555,7 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_01_uuid,
       });
       expect(subscription).to.equal(null);
-      
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

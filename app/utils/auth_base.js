@@ -18,7 +18,7 @@ module.exports = class BaseAuth {
   constructor(params) {
     this._name = params.name;
   }
-      
+
   rbac(action, type) {
     throw new Error(`You have to implement rbac (${action}, ${type}}) method for <${this._name}> auth model.`);
   }

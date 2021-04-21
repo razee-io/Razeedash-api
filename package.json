@@ -35,10 +35,15 @@
   },
   "dependencies": {
     "apollo-metrics": "^1.0.1",
+
     "apollo-server": "^2.22.2",
     "apollo-server-express": "^2.21.2",
+
+    "apollo-server": "^2.21.2",
+    "apollo-server-express": "^2.22.2",
+
     "args": "^5.0.1",
-    "aws-sdk": "^2.870.0",
+    "aws-sdk": "^2.879.0",
     "axios": "^0.21.1",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.0",
@@ -74,11 +79,11 @@
     "gulp-if": "^3.0.0",
     "gulp-json-editor": "^2.5.4",
     "i18next": "^20.0.0",
-    "i18next-fs-backend": "^1.1.0",
+    "i18next-fs-backend": "^1.1.1",
     "i18next-http-middleware": "^3.1.0",
     "i18next-parser": "^3.7.0",
     "i18next-sync-fs-backend": "^1.1.1",
-    "ioredis": "^4.24.4",
+    "ioredis": "^4.26.0",
     "is-port-reachable": "^3.0.0",
     "js-yaml": "^3.14.0",
     "json-key-validate": "^1.0.2",
@@ -88,6 +93,7 @@
     "moment": "^2.29.1",
     "mongodb": "^3.6.5",
     "mongoose": "^5.12.2",
+    "mongoose-lean-defaults": "^1.0.1",
     "mongoose-lean-virtuals": "^0.7.6",
     "mustache": "^4.1.0",
     "object-hash": "^2.1.1",

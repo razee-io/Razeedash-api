@@ -49,7 +49,7 @@ describe('orgs', () => {
       assert.equal(response.statusCode, 400);
     });
     it('should retun 400 if the org already exists', async () => {
-      await db.collection('orgs').insertOne({ 
+      await db.collection('orgs').insertOne({
         '_id': '1',
         'name': 'testorg',
         'orgKeys' : [ 'test123'],
@@ -58,12 +58,12 @@ describe('orgs', () => {
       });
 
       const createOrg = v2.__get__('createOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'POST', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
         body: { name: 'testorg' },
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -74,12 +74,12 @@ describe('orgs', () => {
 
     it('should retun 200 if the org was created', async () => {
       const createOrg = v2.__get__('createOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'POST', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
         body: { name: 'testorg2' },
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -90,14 +90,14 @@ describe('orgs', () => {
 
     it('should retun 500 if the org could not be created', async () => {
       const createOrg = v2.__get__('createOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'POST', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
         body: { name: 'testorg2' },
         log: log
       });
       request.db = {
-        collection: () => { throw new Error('oops'); }, 
+        collection: () => { throw new Error('oops'); },
         close: () => { }
       };
 
@@ -112,7 +112,7 @@ describe('orgs', () => {
   describe('getOrgs', () => {
 
     it('should retun 200 if there were no errors ', async () => {
-      await db.collection('orgs').insertOne({ 
+      await db.collection('orgs').insertOne({
         '_id': uuid(),
         'name': 'existingOrg',
         'orgKeys' : [ 'test123'],
@@ -120,12 +120,12 @@ describe('orgs', () => {
         'updated': new Date()
       });
       const getOrgs = v2.__get__('getOrgs');
-      const request = httpMocks.createRequest({ 
-        method: 'POST', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'POST',
+        url: '/',
         params: { name: 'existingOrg'},
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -136,14 +136,14 @@ describe('orgs', () => {
 
     it('should retun 500 if an error was thrown', async () => {
       const getOrgs = v2.__get__('getOrgs');
-      const request = httpMocks.createRequest({ 
-        method: 'GET', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'GET',
+        url: '/',
         body: { name: 'testorg2' },
         log: log
       });
       request.db = {
-        collection: () => { throw new Error('oops'); }, 
+        collection: () => { throw new Error('oops'); },
         close: () => { }
       };
 
@@ -158,7 +158,7 @@ describe('orgs', () => {
   describe('deleteOrg', () => {
 
     it('should retun 200 if the org was deleted', async () => {
-      await db.collection('orgs').insertOne({ 
+      await db.collection('orgs').insertOne({
         '_id': '00001',
         'name': 'orgToDelete',
         'orgKeys' : [ 'test123'],
@@ -166,12 +166,12 @@ describe('orgs', () => {
         'updated': new Date()
       });
       const deleteOrg = v2.__get__('deleteOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'DELETE', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'DELETE',
+        url: '/',
         params: { id: '00001'},
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -184,7 +184,7 @@ describe('orgs', () => {
       const deleteOrg = v2.__get__('deleteOrg');
       const request = httpMocks.createRequest({ method: 'DELETE', url: '/', log: log });
       request.db = {
-        collection: () => { throw new Error('oops'); }, 
+        collection: () => { throw new Error('oops'); },
         close: () => { }
       };
 
@@ -199,7 +199,7 @@ describe('orgs', () => {
   describe('updateOrg', () => {
 
     it('should retun 200 if the org was updated', async () => {
-      await db.collection('orgs').insertOne({ 
+      await db.collection('orgs').insertOne({
         '_id': '00001',
         'name': 'orgToUpdate',
         'orgKeys' : [ 'test123'],
@@ -207,13 +207,13 @@ describe('orgs', () => {
         'updated': new Date()
       });
       const updateOrg= v2.__get__('updateOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'PUT', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'PUT',
+        url: '/',
         params: { id: '00001'},
         body: { 'name': 'newOrgName' },
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -224,14 +224,14 @@ describe('orgs', () => {
 
     it('should retun 500 if an error was thrown', async () => {
       const updateOrg = v2.__get__('updateOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'PUT', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'PUT',
+        url: '/',
         body: { name: 'blahblah' },
-        log: log 
+        log: log
       });
       request.db = {
-        collection: () => { throw new Error('oops'); }, 
+        collection: () => { throw new Error('oops'); },
         close: () => { }
       };
 
@@ -243,13 +243,13 @@ describe('orgs', () => {
 
     it('should retun 400 the existing org was not found', async () => {
       const updateOrg = v2.__get__('updateOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'PUT', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'PUT',
+        url: '/',
         db: db,
         body: { name: 'blahblah' },
         params: { id: 'badId001'},
-        log: log 
+        log: log
       });
 
       const response = httpMocks.createResponse();
@@ -260,12 +260,12 @@ describe('orgs', () => {
 
     it('should retun 400 if no message body was provided', async () => {
       const updateOrg = v2.__get__('updateOrg');
-      const request = httpMocks.createRequest({ 
-        method: 'PUT', 
-        url: '/', 
+      const request = httpMocks.createRequest({
+        method: 'PUT',
+        url: '/',
         db: db,
         params: { id: 'badId001'},
-        log: log 
+        log: log
       });
 
       const response = httpMocks.createResponse();
