@@ -83,7 +83,7 @@ const serviceResolvers = {
         });
       }
 
-      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId: org_id }, context);
+      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId: org_id, servSub: true }, context);
 
     return serviceSubscriptions;
     },
