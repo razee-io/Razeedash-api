@@ -53,6 +53,11 @@ extend type Query {
     Gets all service subscriptions for user orgId
     """
     serviceSubscriptions(orgId: String! @sv): [ServiceSubscription]
+
+    """
+    Get a single service subscription
+    """
+    serviceSubscription(ssid: String! @sv): ServiceSubscription
 }
 
 extend type Mutation {
@@ -70,18 +75,10 @@ extend type Mutation {
     Edits a service subscription
         ssid - unique service subscription id
         name - service subscription name
-        clusterId - target service cluster_id from different orgId
         channelUuid - user config uuid
         versionUuid - user config version uuid
     """
-    editServiceSubscription(ssid: String! @sv, name: String! @sv, clusterId: String  @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
-    
-    """
-    Set a configurationVersion
-        ssid - subscription id
-        versionUuid - user config version uuid
-    """
-    setServiceSubscription(ssid: String! @sv, versionUuid: String! @sv ): ID
+    editServiceSubscription(ssid: String! @sv, name: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
     
     """
     Removes a service subscription

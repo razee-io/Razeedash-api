@@ -54,14 +54,14 @@ const serviceResolvers = {
       throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}" } not found.', {'uuid':id}), context);
     },
 
-    serviceSubscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
+    serviceSubscriptions: async(parent, { orgId }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscriptions';
-      logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
       try{
-        var serviceSubscriptions = await models.ServiceSubscription.find({org_id}).lean({ virtuals: true });
+        var serviceSubscriptions = await models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true });
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
@@ -73,21 +73,42 @@ const serviceResolvers = {
       if(queryFields.owner && serviceSubscriptions) {
         const ownerIds = _.map(serviceSubscriptions, 'owner');
         const owners = await models.User.getBasicUsersByIds(ownerIds);
-
         serviceSubscriptions = serviceSubscriptions.map((sub)=>{
-          if(_.isUndefined(sub.channelName)){
-            sub.channelName = sub.channel;
-          }
           sub.owner = owners[sub.owner];
           return sub;
         });
       }
 
-      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId: org_id, servSub: true }, context);
+      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
 
-    return serviceSubscriptions;
+      return serviceSubscriptions;
     },
 
+    serviceSubscription: async (parent, { ssid }, context, fullQuery) => {
+      const queryFields = GraphqlFields(fullQuery);
+      const { models, me, req_id, logger } = context;
+      const queryName = 'serviceSubscription';
+      logger.debug({ req_id, user: whoIs(me), ssid }, `${queryName} enter`);
+
+      try{
+        var serviceSubscription = await models.ServiceSubscription.findById(ssid).lean({ virtuals: true });
+      }catch(err){
+        logger.error(err);
+        throw new NotFoundError(context.req.t('Failed to retrieve service subscription.'), context);
+      }
+
+      serviceSubscription.ssid = serviceSubscription.uuid;
+      const orgId = serviceSubscription.org_id;
+
+      if (queryFields.owner) {
+        const owners = await models.User.getBasicUsersByIds([serviceSubscription.owner]);
+        serviceSubscription.owner = owners[serviceSubscription.owner];
+      }
+      
+      await applyQueryFieldsToSubscriptions([serviceSubscription], queryFields, { orgId, servSub: true }, context);
+
+      return serviceSubscription;
+    }
   },
 
   Mutation: {
