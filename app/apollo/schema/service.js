@@ -35,7 +35,6 @@
     updated: Date!
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
-    groupObjs: [GroupDetail!]
   }
 
   enum SubscriptionType {
