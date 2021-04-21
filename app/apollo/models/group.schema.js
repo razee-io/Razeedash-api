@@ -52,7 +52,7 @@ GroupSchema.statics.findOrCreateList = async (models, orgId, groups, context) =>
       {org_id: orgId, name: group},
       {
         $setOnInsert: {_id: UUID(), uuid: UUID(), org_id: orgId, name: group, owner: me._id ? me._id : 'undefined' }
-      }, 
+      },
       {new: true, upsert: true, setDefaultsOnInsert: true, useFindAndModify: false}).lean();
   }));
 

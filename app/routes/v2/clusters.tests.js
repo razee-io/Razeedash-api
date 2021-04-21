@@ -121,7 +121,7 @@ describe('clusters', () => {
 
       assert.equal(response.statusCode, 200);
       assert.equal(response._getData(), 'Welcome to Razee');
-  
+
     });
 
     it('should return 200 if cluster does not exist and not dirty', async () => {
@@ -237,7 +237,7 @@ describe('clusters', () => {
         object: data,
       });
       var response = httpMocks.createResponse();
-      // Test 
+      // Test
       let nextCalled = false;
       let next = (err) => {
         assert.equal(err.message, 'Unsupported event FLIPPYCATS');
@@ -809,14 +809,14 @@ describe('clusters', () => {
       const Clusters = db.collection('clusters');
       await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
 
-      const request = httpMocks.createRequest({ 
-        method: 'DELETE', 
-        url: '/', 
-        params: { cluster_id: cluster_id }, 
-        org: { _id: org_id }, 
-        headers: { 'org-admin-key': 'goodKey123' }, 
-        log: log, 
-        db: db 
+      const request = httpMocks.createRequest({
+        method: 'DELETE',
+        url: '/',
+        params: { cluster_id: cluster_id },
+        org: { _id: org_id },
+        headers: { 'org-admin-key': 'goodKey123' },
+        log: log,
+        db: db
       });
       const response = httpMocks.createResponse();
 
@@ -830,14 +830,14 @@ describe('clusters', () => {
     it('should return 500 if req.org._id is missing', async () => {
       const cluster_id = 'testDeleteCluster';
 
-      const request = httpMocks.createRequest({ 
-        method: 'DELETE', 
-        url: '/', 
-        params: { cluster_id: cluster_id }, 
-        org: { }, 
-        headers: { 'org-admin-key': 'goodKey123' }, 
-        log: log, 
-        db: db 
+      const request = httpMocks.createRequest({
+        method: 'DELETE',
+        url: '/',
+        params: { cluster_id: cluster_id },
+        org: { },
+        headers: { 'org-admin-key': 'goodKey123' },
+        log: log,
+        db: db
       });
       const response = httpMocks.createResponse();
 
@@ -852,13 +852,13 @@ describe('clusters', () => {
     });
     it('should return 500 if cluster id is not passed as a parameter', async () => {
 
-      const request = httpMocks.createRequest({ 
-        method: 'DELETE', 
-        url: '/', 
-        org: { _id: '1' }, 
-        headers: { 'org-admin-key': 'goodKey123' }, 
-        log: log, 
-        db: db 
+      const request = httpMocks.createRequest({
+        method: 'DELETE',
+        url: '/',
+        org: { _id: '1' },
+        headers: { 'org-admin-key': 'goodKey123' },
+        log: log,
+        db: db
       });
 
       const response = httpMocks.createResponse();
@@ -897,13 +897,13 @@ describe('clusters', () => {
       const Clusters = db.collection('clusters');
       await Clusters.insertOne( { org_id: org_id, cluster_id: cluster_id });
 
-      const request = httpMocks.createRequest({ 
-        method: 'GET', 
-        url: '/', 
-        org: { _id: org_id }, 
-        headers: { 'org-admin-key': 'goodKey123' }, 
-        log: log, 
-        db: db 
+      const request = httpMocks.createRequest({
+        method: 'GET',
+        url: '/',
+        org: { _id: org_id },
+        headers: { 'org-admin-key': 'goodKey123' },
+        log: log,
+        db: db
       });
       const response = httpMocks.createResponse();
 
@@ -926,14 +926,14 @@ describe('clusters', () => {
       const cluster_id = 'testCluster';
       const org_id = '1';
 
-      const request = httpMocks.createRequest({ 
-        method: 'GET', 
-        url: '/', 
-        org: { _id: org_id }, 
-        headers: { 'org-admin-key': 'goodKey123' }, 
+      const request = httpMocks.createRequest({
+        method: 'GET',
+        url: '/',
+        org: { _id: org_id },
+        headers: { 'org-admin-key': 'goodKey123' },
         cluster: cluster_id,
-        log: log, 
-        db: db 
+        log: log,
+        db: db
       });
       const response = httpMocks.createResponse();
 
@@ -949,11 +949,11 @@ describe('clusters', () => {
     });
     it('should return status 404 for a missing cluster', async () => {
 
-      const request = httpMocks.createRequest({ 
-        method: 'GET', 
-        url: '/', 
-        log: log, 
-        db: db 
+      const request = httpMocks.createRequest({
+        method: 'GET',
+        url: '/',
+        log: log,
+        db: db
       });
       const response = httpMocks.createResponse();
 

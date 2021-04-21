@@ -52,7 +52,7 @@ const groupResolvers = {
       const queryName = 'group';
       logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
       // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
-  
+
       try{
         let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
         if (!group) {
@@ -73,7 +73,7 @@ const groupResolvers = {
       const queryName = 'groupByName';
       logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
       // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
-  
+
       try{
         let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
@@ -88,7 +88,7 @@ const groupResolvers = {
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
       }
-    },    
+    },
   },
   Mutation: {
     addGroup: async (parent, { orgId: org_id, name }, context)=>{
@@ -96,7 +96,7 @@ const groupResolvers = {
       const queryName = 'addGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-    
+
       try {
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
@@ -125,20 +125,20 @@ const groupResolvers = {
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-  
+
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
         if(!group){
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
-  
+
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
-  
+
         if(subCount > 0){
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
-        
+
         const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterIds && clusterIds.length > 0) {
           await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
@@ -147,7 +147,7 @@ const groupResolvers = {
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-  
+
         return {
           uuid: group.uuid,
           success: true,
@@ -163,7 +163,7 @@ const groupResolvers = {
       const queryName = 'removeGroupByName';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-  
+
       try{
         const group = await models.Group.findOne({ name, org_id: org_id }).lean();
         if(!group){
@@ -171,7 +171,7 @@ const groupResolvers = {
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-  
+
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
@@ -182,16 +182,16 @@ const groupResolvers = {
         if(clusterIds && clusterIds.length > 0) {
           await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
         }
-        
+
         const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
         if(clusterCount > 0){
           throw new ValidationError(context.req.t('{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.', {'clusterCount':clusterCount}));
-        }      
+        }
 
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-  
+
         return {
           uuid: group.uuid,
           success: true,
@@ -369,7 +369,7 @@ const groupResolvers = {
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
-  
+
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -394,13 +394,13 @@ const groupResolvers = {
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
-          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$in: [uuid]}}, 
+          {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$in: [uuid]}},
           {$pull: {groups: {uuid}}});
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
         return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
-  
+
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;

@@ -168,7 +168,7 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-  
+
   const subscriptionsForClusterByName = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -259,7 +259,7 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  
+
   const removeSubscriptions = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -294,5 +294,5 @@ const subscriptionsFunc = grahqlUrl => {
     removeSubscriptions
   };
 };
-    
+
 module.exports = subscriptionsFunc;
