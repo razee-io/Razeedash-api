@@ -129,7 +129,13 @@ const serviceResolvers = {
           kubeOwnerName,
         });
 
-        pubSub.channelSubChangedFunc({orgId: orgId}, context);
+        // Let the target cluster know it should re-fetch its subscriptions
+        const cluster = await models.Cluster.findOne({cluster_id: clusterId});
+        if(!version){
+          throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
+        }
+        const clusterOrgId = cluster.org_id;
+        pubSub.channelSubChangedFunc({org_id: clusterOrgId}, context);
 
         return ssid;
       }
@@ -154,11 +160,13 @@ const serviceResolvers = {
           throw new NotFoundError(context.req.t('Service Subscription ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
         }
 
-        const org_id = serviceSubscription.org_id;
-
+        const clusterId = serviceSubscription.clusterId;
         await serviceSubscription.deleteOne();
 
-        pubSub.channelSubChangedFunc({ org_id }, context);
+        // Let the target cluster know it should re-fetch its subscriptions
+        const cluster = await models.Cluster.findOne({cluster_id: clusterId});
+        const clusterOrgId = cluster.org_id;
+        pubSub.channelSubChangedFunc({ org_id: clusterOrgId }, context);
 
       } catch (err) {
         if (err instanceof BasicRazeeError) {
