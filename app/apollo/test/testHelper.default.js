@@ -19,7 +19,7 @@ const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
 async function prepareOrganization(models, orgData) {
   if (AUTH_MODEL === AUTH_MODELS.DEFAULT) {
     return await models.Organization.createLocalOrg(orgData);
-  } 
+  }
   return null;
 }
 

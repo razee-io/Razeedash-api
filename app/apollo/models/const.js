@@ -31,7 +31,7 @@ const SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SERVICE_SUBSCRIPTION_MA
 // Set Yaml file maximum size allowed in MB
 const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 2;
 
-// controls static args to be passed to reazeedeploy-job 
+// controls static args to be passed to reazeedeploy-job
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
 
 const CLUSTER_LIMITS = {
@@ -66,7 +66,7 @@ const CLUSTER_REG_STATES = {
 };
 
 const CLUSTER_STATUS = {
-  UNKNOWN: 'unknown', // really shouldn't happen 
+  UNKNOWN: 'unknown', // really shouldn't happen
   REGISTERED: 'registered',
   ACTIVE: 'active',
   INACTIVE: 'inactive'

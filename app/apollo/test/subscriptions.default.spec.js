@@ -25,7 +25,7 @@ const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { GraphqlPubSub } = require('../subscription');
 
-const { prepareOrganization } = require(`./testHelper.${AUTH_MODEL}`); 
+const { prepareOrganization } = require(`./testHelper.${AUTH_MODEL}`);
 let mongoServer;
 let myApollo;
 const graphqlPort = 18000;
@@ -178,7 +178,7 @@ describe('subscriptions graphql test suite', () => {
     mongoServer = new MongoMemoryServer();
     const mongoUrl = await mongoServer.getConnectionString();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
-  
+
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
 
     await createOrganizations();
@@ -187,7 +187,7 @@ describe('subscriptions graphql test suite', () => {
     await createSubscriptions();
     orgKey = await getOrgKey();
   }); // before
-  
+
   after(async () => {
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();

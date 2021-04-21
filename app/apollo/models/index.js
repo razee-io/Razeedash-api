@@ -60,7 +60,7 @@ const connectDb = mongoUrl => {
       useUnifiedTopology: true,
     };
   }
-  
+
   if(fs.existsSync(mongoConf.mongo.cert)) {
     mongooseOptions['tlsCAFile'] = mongoConf.mongo.cert;
   }
