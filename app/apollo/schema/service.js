@@ -42,6 +42,8 @@
     SERVICE
   }
 
+  union SubscriptionUnion = ChannelSubscription | ServiceSubscription
+
 extend type Query {
     """
     Returns type of the subscription
@@ -57,6 +59,11 @@ extend type Query {
     Get a single service subscription
     """
     serviceSubscription(ssid: String! @sv): ServiceSubscription
+
+    """
+    Get both subscriptions and serviceSubscriptions
+    """
+    allSubscriptions(orgId: String! @sv): [SubscriptionUnion]
 }
 
 extend type Mutation {

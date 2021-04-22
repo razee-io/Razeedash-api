@@ -28,10 +28,23 @@ const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscript
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
+const subscriptionResolvers = require('./subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
 
 const serviceResolvers = {
+
+  SubscriptionUnion: {
+    __resolveType(obj, context, info) {
+      if (obj.ssid) {
+        return 'ServiceSubscription';
+      }
+      if (obj.uuid) {
+        return 'ChannelSubscription';
+      }
+      return null;
+    }
+  },
 
   Query: {
 
@@ -108,6 +121,13 @@ const serviceResolvers = {
       await applyQueryFieldsToSubscriptions([serviceSubscription], queryFields, { orgId, servSub: true }, context);
 
       return serviceSubscription;
+    },
+
+    allSubscriptions: async (parent, { orgId }, context, fullQuery) => {
+      const subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, context, fullQuery);
+      const serviceSubscriptions = await serviceResolvers.Query.serviceSubscriptions(parent, { orgId }, context, fullQuery);
+      const union = subscriptions.concat(serviceSubscriptions);
+      return union;
     }
   },
 
