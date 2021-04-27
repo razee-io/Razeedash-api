@@ -48,7 +48,7 @@ extend type Query {
     """
     Returns type of the subscription
     """
-    subscriptionType(id: ID! @sv): SubscriptionType!
+    subscriptionType(orgId: String! @sv, id: ID! @sv): SubscriptionType!
 
     """
     Gets all service subscriptions for user orgId

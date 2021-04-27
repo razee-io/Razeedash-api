@@ -48,14 +48,18 @@ const serviceResolvers = {
 
   Query: {
 
-    subscriptionType: async(parent, { id }, context) => {
+    subscriptionType: async(parent, { orgId, id }, context) => {
       const { models, logger } = context;
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+
       try{
-        var subscription = await models.ServiceSubscription.find({ uuid: id }).lean();
-        if (subscription.length >0) {
+        var subscription = await models.ServiceSubscription.findOne({ uuid: id, org_id: orgId }).lean();
+        if (subscription) {
           return "SERVICE";
         } else {
-          subscription = await models.Subscription.findOne({ uuid: id }, {}).lean();
+          subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean();
           if (subscription) {
             return "USER";
           }
@@ -72,6 +76,8 @@ const serviceResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscriptions';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+      
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try{
         var serviceSubscriptions = await models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true });
@@ -110,6 +116,8 @@ const serviceResolvers = {
         throw new NotFoundError(context.req.t('Failed to retrieve service subscription.'), context);
       }
 
+      await validAuth(me, serviceSubscription.org_id, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
+
       serviceSubscription.ssid = serviceSubscription.uuid;
       const orgId = serviceSubscription.org_id;
 
@@ -136,6 +144,8 @@ const serviceResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addServiceSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+      
+      await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try{
         // validate the number of total subscriptions are under the limit
@@ -200,6 +210,9 @@ const serviceResolvers = {
           throw new NotFoundError(context.req.t('Service Subscription ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
         }
 
+        await validAuth(me, serviceSubscription.org_id, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context, 
+            [serviceSubscription.ssid, serviceSubscription.name]);
+
         // loads the channel
         var channel = await models.Channel.findOne({ org_id: serviceSubscription.org_id, uuid: channelUuid });
         if (!channel) {
@@ -243,6 +256,9 @@ const serviceResolvers = {
         if (!serviceSubscription) {
           throw new NotFoundError(context.req.t('Service Subscription ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
         }
+
+        await validAuth(me, serviceSubscription.org_id, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context, 
+            [serviceSubscription.ssid, serviceSubscription.name]);
 
         const clusterId = serviceSubscription.clusterId;
         await serviceSubscription.deleteOne();
