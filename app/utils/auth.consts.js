@@ -54,7 +54,6 @@ const TYPES = {
   GROUP: 'group',
   CHANNEL: 'channel',
   SUBSCRIPTION: 'subscription',
-  SERVICESUBSCRIPTION: 'servicesubscription',
 };
 
 const AUTH_MODELS = {
