@@ -82,11 +82,11 @@ const serviceResolvers = {
       try{
         const serviceSubscriptions = await models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true });
         // User is allowed to see a service subscription only if they have READ permission in the target cluster
-        serviceSubscriptions.forEach(ss => {
-          var cluster = await models.Cluster.findOne({cluster_id: ss.cluesterId});
+        for await (const ss of serviceSubscriptions) {
+          var cluster = await models.Cluster.findOne({cluster_id: ss.clusterId});
           var allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, [ss], context);
           allowedSerSubs = allowedSerSubs.concat(allowed);
-        })
+        }
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
