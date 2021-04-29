@@ -48,26 +48,24 @@ const serviceResolvers = {
 
   Query: {
 
-    subscriptionType: async(parent, { orgId, id }, context) => {
-      const { models, logger } = context;
+    subscriptionType: async (parent, { orgId, id }, context) => {
+      const { models, me, req_id, logger } = context;
+      const queryName = 'subscriptionType';
+      logger.debug({ req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      try{
-        var subscription = await models.ServiceSubscription.findOne({ uuid: id, org_id: orgId }).lean(); // search only in the user org
-        if (subscription) {
-          return "SERVICE";
-        } else {
-          subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean(); // search only in the user org
-          if (subscription) {
-            return "USER";
-          }
-        }
-      }catch(err){
-        logger.error(err);
-        throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
+      var subscription = await models.ServiceSubscription.findOne({ uuid: id, org_id: orgId }).lean(); // search only in the user org
+      if (subscription) {
+        return "SERVICE";
       }
-      throw  new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', {'id':id}), context);
+
+      subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean(); // search only in the user org
+      if (subscription) {
+        return "USER";
+      }
+
+      throw new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', { 'id': id }), context);
     },
 
     serviceSubscriptions: async(parent, { orgId }, context, fullQuery) => {
@@ -76,37 +74,36 @@ const serviceResolvers = {
       const queryName = 'serviceSubscriptions';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
       
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      var allowedSerSubs = [];
+      var serviceSubscriptions = [];
       try{
-        const serviceSubscriptions = await models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true });
-        // User is allowed to see a service subscription only if they have READ permission in the target cluster
-        for await (const ss of serviceSubscriptions) {
+        // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
+        for await (const ss of models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true })) {
           var cluster = await models.Cluster.findOne({cluster_id: ss.clusterId});
-          var allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, [ss], context);
-          allowedSerSubs = allowedSerSubs.concat(allowed);
+          var allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
+          serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
       }
 
-      allowedSerSubs.forEach(i => i.ssid = i.uuid);
+      serviceSubscriptions.forEach(i => i.ssid = i.uuid);
 
       // render owner information if users ask for
-      if(queryFields.owner && allowedSerSubs) {
-        const ownerIds = _.map(allowedSerSubs, 'owner');
+      if(queryFields.owner && serviceSubscriptions) {
+        const ownerIds = _.map(serviceSubscriptions, 'owner');
         const owners = await models.User.getBasicUsersByIds(ownerIds);
-        allowedSerSubs = allowedSerSubs.map((sub)=>{
+        serviceSubscriptions = serviceSubscriptions.map((sub)=>{
           sub.owner = owners[sub.owner];
           return sub;
         });
       }
 
-      await applyQueryFieldsToSubscriptions(allowedSerSubs, queryFields, { orgId, servSub: true }, context);
+      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
 
-      return allowedSerSubs;
+      return serviceSubscriptions;
     },
 
     serviceSubscription: async (parent, { orgId, ssid }, context, fullQuery) => {
@@ -115,16 +112,16 @@ const serviceResolvers = {
       const queryName = 'serviceSubscription';
       logger.debug({ req_id, user: whoIs(me), orgId, ssid }, `${queryName} enter`);
 
-      try{
-        const allServiceSubscriptions = await serviceResolvers.Query
-                  .serviceSubscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
-        return allServiceSubscriptions.find((sub)=>{
-          return (sub.ssid == ssid);
-        });
-      }catch(err){
-        logger.error(err);
-        throw new NotFoundError(context.req.t('Failed to retrieve service subscription.'), context);
+      const allServiceSubscriptions = await serviceResolvers.Query
+        .serviceSubscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
+
+      const serviceSubscription = allServiceSubscriptions.find((sub) => {
+        return (sub.ssid == ssid);
+      });
+      if (!serviceSubscription) { // does not exist or user does not have right to see it
+        throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
+      return serviceSubscription;
     },
 
     allSubscriptions: async (parent, { orgId }, context, fullQuery) => {
@@ -141,14 +138,14 @@ const serviceResolvers = {
       const queryName = 'addServiceSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
       
-      await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
       if(!cluster){
         throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
       }
 
-      await validAuth(me, cluster.org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, cluster.org_id, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try {
 
@@ -198,15 +195,15 @@ const serviceResolvers = {
       const queryName = 'editServiceSubscription';
       logger.debug({ req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      const serviceSubscription = await models.ServiceSubscription.findOne({ org_id: orgId, ssid }).lean({ virtuals: true });
+      const serviceSubscription = await models.ServiceSubscription.findOne({ uuid: ssid, org_id: orgId }).lean({ virtuals: true });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
 
       const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
-      await validAuth(me, cluster.org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, cluster.org_id, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try {
   
@@ -243,15 +240,15 @@ const serviceResolvers = {
       const queryName = 'removeServiceSubscription';
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      const serviceSubscription = await models.ServiceSubscription.findOne({ org_id: orgId, ssid }).lean({ virtuals: true });
+      const serviceSubscription = await models.ServiceSubscription.findOne({ uuid: ssid, org_id: orgId });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
 
       const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
-      await validAuth(me, cluster.org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
+      await validAuth(me, cluster.org_id, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try {
 

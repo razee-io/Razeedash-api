@@ -143,7 +143,7 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
 
   if(queryFields.cluster){
     var clusterIds = _.map(resources, 'clusterId');
-    var clusters = await models.Cluster.find({ org_id: orgId, cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
+    var clusters = await models.Cluster.find({ cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
     await applyQueryFieldsToClusters(clusters, queryFields.cluster, args, context);
 
     var clustersById = _.keyBy(clusters, 'clusterId');
