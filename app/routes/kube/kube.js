@@ -20,11 +20,11 @@ const router = express.Router();
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const { getBunyanConfig } = require('../../utils/bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('kube/liveness'));
+const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/kube/liveness'));
 const timeInterval = 300000; //5 mintues
 
 // /kube/liveness
-const kube = router.get('/liveness', asyncHandler(async(req, res) => {
+router.get('/liveness', asyncHandler(async(req, res) => {
   // does a db call to make sure we didnt disconnect
   try {
     await require('../../apollo/models').models.Organization.findOne({});
@@ -40,7 +40,7 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
     logger.error('Razeedash Api is down due to Redis pubsub connection issue, please check logs.');
     return res.sendStatus(503);
   }
-  
+
   if (pubSub.lastPubSubMessage !== null && Date.now()- pubSub.lastPubSubMessage.time > timeInterval) {
     // check if the most recent message received is within ${timeInterval/60000} minitue
     logger.error(`Razeedash Api is down, haven't received any published messages within ${timeInterval/60000} minitue, please check logs.`);
@@ -49,4 +49,4 @@ const kube = router.get('/liveness', asyncHandler(async(req, res) => {
   return res.sendStatus(200);
 }));
 
-module.exports = kube;
+module.exports = router;

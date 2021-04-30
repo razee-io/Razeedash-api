@@ -83,7 +83,7 @@ const createOrganizations = async () => {
   );
   org77 = await prepareOrganization(models, org77Data);
 };
-  
+
 const createUsers = async () => {
   user01Data = JSON.parse(
     fs.readFileSync(
@@ -108,7 +108,7 @@ const createUsers = async () => {
   await prepareUser(models, userRootData);
   return {};
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetOrgs = async () => {
   presetOrgs = await models.Organization.find();
@@ -117,7 +117,7 @@ const getPresetOrgs = async () => {
   });
   console.log(`presetOrgs=${JSON.stringify(presetOrgs)}`);
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetUsers = async () => {
   presetUsers = await models.User.find();
@@ -126,7 +126,7 @@ const getPresetUsers = async () => {
   });
   console.log(`presetUsers=${JSON.stringify(presetUsers)}`);
 };
-  
+
 // eslint-disable-next-line no-unused-vars
 const getPresetClusters = async () => {
   presetClusters = await models.Cluster.find();
@@ -135,7 +135,7 @@ const getPresetClusters = async () => {
   });
   console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
 };
-  
+
 const createChannels = async () => {
   await models.Channel.create({
     _id: 'fake_ch_id_1',
@@ -191,7 +191,7 @@ describe('channel graphql test suite', () => {
     mongoServer = new MongoMemoryServer();
     const mongoUrl = await mongoServer.getConnectionString();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
-  
+
     myApollo = await apollo({
       mongo_url: mongoUrl,
       graphql_port: graphqlPort,
@@ -200,16 +200,16 @@ describe('channel graphql test suite', () => {
     await createUsers();
     await createChannels();
     await createSubscriptions();
-  
+
     // Can be uncommented if you want to see the test data that was added to the DB
     //await getPresetOrgs();
     //await getPresetUsers();
     //await getPresetClusters();
-  
+
     token = await signInUser(models, resourceApi, user01Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
-  
+
   after(async () => {
     await myApollo.stop(myApollo);
     await mongoServer.stop();
@@ -225,7 +225,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         uuid: channel_01_uuid,
       });
-    
+
       expect(channels).to.have.length(3);
     } catch (error) {
       if (error.response) {
@@ -247,7 +247,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         uuid: channel_01_uuid,
       });
-    
+
       expect(channel.name).to.equal(channel_01_name);
     } catch (error) {
       if (error.response) {
@@ -269,7 +269,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: channel_01_name,
       });
-    
+
       expect(channelByName.uuid).to.equal(channel_01_uuid);
     } catch (error) {
       if (error.response) {
@@ -291,14 +291,14 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: 'a_random_name',
       });
-    
+
       expect(addChannel.uuid).to.be.an('string');
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
         name: 'a_random_name2',
       });
-      expect(addChannel2.data.errors[0].message).to.equal(`Too many channels are registered under ${org01._id}.`);
+      expect(addChannel2.data.errors[0].message).to.equal(`Too many configuration channels are registered under ${org01._id}.`);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -342,7 +342,7 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.1`
       });
-      
+
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
 
@@ -359,7 +359,7 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 456.78}',
         description: `${channel_01_name}:v.0.2`
       });
-    
+
       expect(addChannelVersion2.success).to.equal(true);
       expect(addChannelVersion2.versionUuid).to.be.an('string');
 
@@ -372,7 +372,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
-      });      
+      });
 
       expect(channelVersion.channelName).to.equal(channel_01_name);
       expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.1`);
@@ -388,7 +388,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelName: channel_01_name,
         versionName: `${channel_01_name}:v.0.2`,
-      });      
+      });
 
       expect(channelVersionByName.channelName).to.equal(channel_01_name);
       expect(channelVersionByName.name).to.equal(`${channel_01_name}:v.0.2`);
@@ -443,7 +443,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_02_uuid,
         name: `${channel_02_name}_new`
       });
-    
+
       expect(editChannel.success).to.equal(true);
       expect(editChannel.name).to.equal(`${channel_02_name}_new`);
 
@@ -457,7 +457,7 @@ describe('channel graphql test suite', () => {
         uuid: 'not_exit_uuid',
         name: `${channel_02_name}_new`
       });
-    
+
       expect(data).to.equal(null);
       // step 2 remove the channel
       const {
@@ -503,7 +503,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_04_uuid,
         name: `${channel_04_name}_new`
       });
-    
+
       expect(editChannel.success).to.equal(true);
       expect(editChannel.name).to.equal(`${channel_04_name}_new`);
       const result = await models.Subscription.findOne({ org_id: org01._id, channel_uuid: channel_04_uuid, });
@@ -565,7 +565,7 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 1234.78}',
         description: `${channel_01_name}:v.0.6`
       });
-      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many channel version are registered under ${channel_01_uuid}.`);
+      expect(addChannelVersion5.data.errors[0].message).to.equal(`Too many configuration channel versions are registered under ${channel_01_uuid}.`);
 
       // step 4: remove the channel version by an adminToken
       const {
@@ -576,7 +576,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
-      }); 
+      });
       expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.4`);
       expect(channelVersion.content).to.equal('{"n0": 123.45}');
       expect(channelVersion.created).to.be.an('string');
@@ -599,7 +599,7 @@ describe('channel graphql test suite', () => {
       } = await channelApi.channel(token, {
         orgId: org01._id,
         uuid: channel_01_uuid,
-      });  
+      });
       console.log(`channel read = ${JSON.stringify(channel.versions)}`);
       expect(channel.versions.length).to.equal(3);
     } catch (error) {

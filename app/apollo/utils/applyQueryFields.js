@@ -27,7 +27,7 @@ var loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
       search,
       _.get(args, 'mongoQueries.resources', {}),
     ],
-  }).limit(resourceLimit).lean({virtuals: true});
+  }).limit(resourceLimit).lean({virtuals: true, defaults: true });
 };
 
 

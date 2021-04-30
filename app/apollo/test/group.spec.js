@@ -354,20 +354,20 @@ const createSubscriptions = async () => {
 
 const groupClusters = async () => {
   await models.Cluster.updateMany({
-    org_id: org01._id, 
-    cluster_id: {$in: 'cluster_01'}, 
+    org_id: org01._id,
+    cluster_id: {$in: 'cluster_01'},
     'groups.uuid': {$nin: [group_01_uuid]}
   },
   {$push: {
     groups: {
-      uuid: group_01_uuid, 
+      uuid: group_01_uuid,
       name: 'group1'
     }
   }});
 
   await models.Cluster.updateMany({
-    org_id: org01._id, 
-    cluster_id: {$in: ['cluster_02','cluster_03']}, 
+    org_id: org01._id,
+    cluster_id: {$in: ['cluster_02','cluster_03']},
     'groups.uuid': {$nin: [group_02_uuid]}
   },
   {$push: {
@@ -378,13 +378,13 @@ const groupClusters = async () => {
   }});
 
   await models.Cluster.updateMany({
-    org_id: org77._id, 
-    cluster_id: {$in: 'cluster_a'}, 
+    org_id: org77._id,
+    cluster_id: {$in: 'cluster_a'},
     'groups.uuid': {$nin: [group_01_77_uuid]}
   },
   {$push: {
     groups: {
-      uuid: group_01_77_uuid, 
+      uuid: group_01_77_uuid,
       name: 'group1'
     }
   }});
@@ -396,12 +396,12 @@ describe('groups graphql test suite', () => {
     mongoServer = new MongoMemoryServer();
     const mongoUrl = await mongoServer.getConnectionString();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
-  
+
     myApollo = await apollo({
       mongo_url: mongoUrl,
       graphql_port: graphqlPort,
     });
-  
+
     await createOrganizations();
     await createUsers();
     await createClusters();
@@ -409,16 +409,16 @@ describe('groups graphql test suite', () => {
     await createChannels();
     await createSubscriptions();
     await groupClusters();
-    
+
     // Can be uncommented if you want to see the test data that was added to the DB
     // await getPresetOrgs();
     // await getPresetUsers();
     // await getPresetClusters();
-  
+
     token = await signInUser(models, resourceApi, user01Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
-  
+
   after(async () => {
     await myApollo.stop(myApollo);
     await mongoServer.stop();
@@ -470,7 +470,7 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
-  
+
   it('get group by id', async () => {
     try {
       const {
@@ -585,7 +585,7 @@ describe('groups graphql test suite', () => {
       expect(cluster1.groups).to.have.length(2);
       const cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
       expect(cluster4.groups).to.have.length(1);
-      
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -603,7 +603,7 @@ describe('groups graphql test suite', () => {
         uuid: group_02_uuid,
         clusters: ['cluster_01', 'cluster_04$']
       });
-      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');  
+      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -630,7 +630,7 @@ describe('groups graphql test suite', () => {
       expect(cluster1.groups).to.have.length(1);
       const cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
       expect(cluster4.groups).to.have.length(0);
-      
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

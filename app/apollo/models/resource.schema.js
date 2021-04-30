@@ -32,6 +32,7 @@ const ResourceSchema = new mongoose.Schema({
   },
   selfLink: {
     type: String,
+    default: '',
   },
   hash: {
     type: String,

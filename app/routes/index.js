@@ -20,7 +20,7 @@ const asyncHandler = require('express-async-handler');
 
 const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
 const bunyan = require('bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('/'));
+const logger = bunyan.createLogger(getBunyanConfig('razeedash-api'));
 const ebl = require('express-bunyan-logger');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
@@ -48,7 +48,7 @@ router.get('/v1/health', (req, res)=>{
 });
 
 router.use('/kube', Kube);
-router.use(ebl(getBunyanConfig('/api/v2/')));
+router.use(ebl(getBunyanConfig('razeedash-api/api')));
 
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
@@ -67,7 +67,7 @@ router.use(asyncHandler(async (req, res, next) => {
 }));
 
 // the orgs routes should be above the razee-org-key checks since the user
-// won't have a razee-org-key when creating an org for the first time. 
+// won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
 router.use((req, res, next) => {
@@ -92,17 +92,17 @@ async function initialize(){
   const options = {
     'collection-indexes': {
       externalApplications: [
-        { 
+        {
           keys: { org_id: 1 },
           options: { name: 'org_id', }
         },
       ],
       deployments: [
-        { 
+        {
           keys: { org_id: 1 },
           options: { name: 'org_id', }
         },
-        { 
+        {
           keys: { org_id: 1, 'containers.image': 1 },
           options: { name: 'org_id.containers.image', }
         }
@@ -127,15 +127,19 @@ async function initialize(){
         },
       ],
       orgs: [
-        { 
+        {
           keys: { orgKeys: 1 },
           options: { name: 'orgKeys', }
         }
       ],
       clusters: [
-        { 
+        {
           keys: { org_id: 1 },
           options: { name: 'org_id', }
+        },
+        {
+          keys: { org_id: 1, 'registration.location' : 1 },
+          options: { name: 'org_id.registration_text', }
         },
         {
           keys: { org_id: 1, cluster_id: 1 },
@@ -167,24 +171,36 @@ async function initialize(){
         }
       ],
       resources: [
-        { 
+        {
           keys: { org_id: 1 },
           options: { name: 'org_id', }
         },
-        { 
+        {
+          keys: { org_id: 1, deleted: 1 },
+          options: { name: 'org_id.deleted', }
+        },
+        {
           keys: { org_id: 1, cluster_id: 1, selfLink: 1 },
           options: { name: 'org_id.cluster_id.selfLink', }
         },
         {
-          keys: { cluster_id: 1, },
-          options: { name: 'cluster_id', }
+          keys: { org_id: 1, cluster_id: 1, selfLink: 1, 'searchableData.subscription_id': 1, deleted: 1 },
+          options: { name: 'org_id.cluster_id.subid.deleted', }
+        },
+        {
+          keys: { org_id: 1, cluster_id: 1, 'searchableData.kind': 1, 'searchableData.children': 1, deleted: 1 },
+          options: { name: 'org_id.cluster_id.subid.kind.children', }
+        },
+        {
+          keys: { cluster_id: 1, deleted: 1 },
+          options: { name: 'cluster_id.deleted', }
         },
         {
           keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
           options: { name: 'cluster_id_text_selfLink_text_searchableData.searchableExpression_text', }
         }
       ],
-      messages:[ 
+      messages:[
         {
           keys: { org_id: 1, cluster_id: 1 },
           options: { name: 'org_id.cluster_id', }
@@ -195,11 +211,11 @@ async function initialize(){
         }
       ],
       user_log: [
-        { 
+        {
           keys: { userid: 1 },
           options: { name: 'userid', }
         },
-        { 
+        {
           keys: { action: 1 },
           options: { name: 'action', }
         },

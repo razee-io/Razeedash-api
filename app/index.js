@@ -19,11 +19,9 @@ const app = express();
 const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
-const ebl = require('express-bunyan-logger');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').log;
-const getBunyanConfig = require('./utils/bunyan.js').getBunyanConfig;
 const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
@@ -38,8 +36,6 @@ const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-router.use(ebl(getBunyanConfig('razeedash-api')));
 
 app.set('trust proxy', true);
 app.use(addRequestId);
@@ -79,9 +75,9 @@ i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   keySeparator: '#|#'
 });
 app.use(i18nextMiddleware.handle(i18next));
-app.get('/metrics', function (request, response) {
+app.get('/metrics', async function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
-  response.end(promClient.register.metrics());
+  response.end(await promClient.register.metrics());
 });
 
 const server = http.createServer(app);
