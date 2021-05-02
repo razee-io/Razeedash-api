@@ -44,7 +44,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
       clusterId: { $in: ourClusterIds }
     });
     if (ourServiceSubscription) {  
-      req.log.debug(`Targer service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
+      req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
       orgId = ourServiceSubscription.org_id;
       orgKey = (await Orgs.findOne({ _id: orgId })).orgKeys[0];
       deployable = await Channels.findOne({ org_id: orgId, name: channelName});

@@ -289,7 +289,9 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     }
     return new Array(objectArray.length).fill(result);
   }
-
+  if (me.org_admin) {
+    return true;
+  }
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
