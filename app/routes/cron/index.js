@@ -19,10 +19,10 @@ const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const { getBunyanConfig } = require('../../utils/bunyan');
 const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/cron/index.js'));
-const { cronRotateEncKeys } = require('../../utils/orgs');
+const { cronRotateEncKeys, migrateResourcesToNewOrgKeysCron } = require('../../utils/orgs');
 
 // /cron/rotateEncKeys
-router.get('/rotateEncKeys', asyncHandler(async(req, res) => {
+router.get('/rotateEncKeys', asyncHandler(async(req, res)=>{
   try{
     logger.info('razeedash-api started rotateEncKeys');
     var db = req.db;
@@ -33,6 +33,22 @@ router.get('/rotateEncKeys', asyncHandler(async(req, res) => {
   }
   catch(err){
     logger.error(err, 'razeedash-api rotateEncKeys threw an error');
+    return res.sendStatus(503);
+  }
+}));
+
+// /cron/migrateResourcesToNewOrgKeys
+router.get('/migrateResourcesToNewOrgKeys', asyncHandler(async(req, res)=>{
+  try{
+    logger.info('razeedash-api started migrateResourcesToNewOrgKeys');
+    var { db, s3 } = req;
+    migrateResourcesToNewOrgKeysCron({ db, s3 }); // dont await
+    res.json({
+      started: true,
+    });
+  }
+  catch(err){
+    logger.error(err, 'razeedash-api migrateResourcesToNewOrgKeys threw an error');
     return res.sendStatus(503);
   }
 }));

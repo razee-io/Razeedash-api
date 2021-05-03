@@ -18,6 +18,10 @@ const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
 const crypto = require('crypto');
 const { v4: uuid } = require('uuid');
+const delay = require('delay');
+const pLimit = require('p-limit');
+const Url = require('url');
+const conf = require('../conf.js').conf;
 
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
@@ -217,4 +221,181 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
   await db.collection('orgs').bulkWrite(ops, { ordered: true });
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey, cronRotateEncKeys };
+const pullFromS3 = async({ s3, url })=>{
+  const parts = Url.parse(url);
+  const paths = parts.path.split('/');
+  const bucket = paths[1];
+  const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
+  return await s3.getObjectAsStr(bucket, resourceName);
+};
+
+const pushToS3 = async (s3, key, searchableDataHash, dataStr) => {
+  //if its a new or changed resource, write the data out to an S3 object
+  const bucket = conf.s3.resourceBucket;
+  const hash = crypto.createHash('sha256');
+  const keyHash = hash.update(JSON.stringify(key)).digest('hex');
+  await s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
+  return `https://${s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+};
+
+var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
+  if(migrateResourcesToNewOrgKeysCron.isRunning){
+    console.log(`migrateResourcesToNewOrgKeysCron is already running`);
+    return;
+  }
+  migrateResourcesToNewOrgKeysCron.isRunning = true;
+  console.log(`starting migrateResourcesToNewOrgKeysCron`);
+
+  var startTime = Date.now();
+
+  try{
+    for(var a=0;a<1000;a+=1){
+      if(Date.now() > startTime + 45 * 60 * 1000){
+        // if we've been running for 45mins, then breaks
+        break;
+      }
+
+      // takes a short break between loops
+      await delay(100);
+
+      // finds an org with a delete:true encKey
+      var org = await db.collection('orgs').findOne({
+        encKeys:{
+          $elemMatch: {
+            deleted: true,
+          },
+        }
+      });
+
+      // if no org found, we have nothing left to do
+      if(!org){
+        console.log(`no orgs left containing an encKey with deleted=true`);
+        break;
+      }
+
+      // find an encKey where deleted:true
+      var oldEncKey = _.find(org.encKeys||[], (encKey)=>{
+        return encKey.deleted;
+      });
+
+      // finds the newest encKey
+      var newEncKeys = _.filter(org.encKeys||[], (encKey)=>{
+        return encKey.deleted;
+      });
+      var newEncKey = _.first(_.sortBy(newEncKeys, (e)=>{
+        return -1 * e.creationTime;
+      }));
+
+      // checks for missing keys
+      if(!newEncKey){
+        throw new Error(`no new encKey found`);
+      }
+      if(!oldEncKey.id || !newEncKey.id){
+        throw new Error(`oldEncKey or newEncKey doesnt have a .id`);
+      }
+
+      // loads all resources created with the oldEncKey
+      var resources = await db.collection('resources').find(
+        { encKeyId: oldEncKey.id, deleted: false },
+        { limit: 100 }
+      ).toArray();
+
+      // if no resources with oldEncKey, we can remove oldEncKey
+      if(resources.length < 1){
+        await db.collection('orgs').updateOne(
+          { _id: org._id },
+          { $pull: { encKeys: { id: oldEncKey.id } } }
+        );
+        continue;
+      }
+
+      // updates all resources
+      var limit = pLimit(10);
+      await Promise.all(resources.map(async(resource)=>{
+        return limit(async()=>{
+          var oldContentEncrypted = resource.data;
+
+          var isInS3 = !!s3;
+          var isEncrypted = !!resource.encKeyId;
+
+          // pulls from s3 if necessary
+          if (isInS3) {
+            try {
+              oldContentEncrypted = await pullFromS3({
+                s3,
+                url: oldContentEncrypted,
+              });
+            }
+            catch(err){
+              // if it fails, it probably wasnt in s3. so uses the original data.
+              // we need to do nothing here
+            }
+          }
+
+          var content = oldContentEncrypted;
+
+          // decrypts (if encrypted)
+          if(isEncrypted){
+            content = await decryptStrUsingOrgEncKey({
+              data: oldContentEncrypted,
+              encKeyId: resource.encKeyId,
+              org,
+            });
+          }
+
+          // encrypts with new key
+          var result = encryptStrUsingOrgEncKey({ str: content, org });
+          var encKeyId = result.encKeyId;
+          var contentEncrypted = result.data;
+
+          // uploads to s3 if necessary
+          if(isInS3){
+            var key = {
+              org_id: org._id,
+              cluster_id: resource.cluster_id,
+              selfLink: resource.selfLink,
+            };
+            contentEncrypted = await pushToS3(s3, key, resource.searchableDataHash, contentEncrypted);
+          }
+
+          await db.collection('resources').updateOne(
+            { _id: resource._id },
+            {
+              $set: {
+                encKeyId,
+                data: contentEncrypted,
+              }
+            }
+          );
+        });
+      }));
+    }
+  }catch(err){
+    console.log(`err in migrateResourcesToNewOrgKeysCron`, err);
+  }
+  migrateResourcesToNewOrgKeysCron.isRunning = false;
+  console.log('exiting migrateResourcesToNewOrgKeysCron');
+};
+migrateResourcesToNewOrgKeysCron.isRunning = false;
+
+// setTimeout(async()=>{
+//   var getDb = async()=>{
+//     const MongoClientClass = require('../mongo/mongoClient.js');
+//
+//     const MongoClient = new MongoClientClass(conf);
+//     return await MongoClient.getClient({});
+//   };
+//   var getS3 = async()=>{
+//     const S3ClientClass = require('../s3/s3Client');
+//     return new S3ClientClass(require('../conf.js').conf);
+//   };
+//   var db = await getDb();
+//   var s3 = await getS3();
+//   // await cronRotateEncKeys({ db, maxAge:1000 })
+//   await migrateResourcesToNewOrgKeysCron({ db, s3 });
+// },1)
+
+module.exports = {
+  getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, encryptStrUsingOrgEncKey, decryptStrUsingOrgEncKey, genKey,
+  cronRotateEncKeys, migrateResourcesToNewOrgKeysCron,
+};
