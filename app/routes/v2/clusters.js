@@ -39,6 +39,7 @@ const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../a
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
+var { encryptStrUsingOrgEncKey } = require('../../utils/orgs');
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -272,6 +273,18 @@ const updateClusterResources = async (req, res, next) => {
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.currentResource', 'data': key}, 'satcon-performance');
             const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
+
+            // encrypts (only if we need to save this)
+            let encKeyId = null;
+            if(!currentResource || currentResource.hash != resourceHash || hasSearchableDataChanges){
+              const encryptedObj = await encryptStrUsingOrgEncKey({
+                str: dataStr,
+                org: req.org,
+              });
+              encKeyId = encryptedObj.encKeyId;
+              dataStr = encryptedObj.data;
+            }
+
             if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
               let start = Date.now();
               s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
@@ -290,11 +303,11 @@ const updateClusterResources = async (req, res, next) => {
                 };
               }
               else{
-                const toSet = { deleted: false, hash: resourceHash, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
+                const toSet = { deleted: false, hash: resourceHash, encKeyId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash };
                 if(hasSearchableDataChanges) {
                   // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
                   let start = Date.now();
-                  const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+                  const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, encKeyId);
                   req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:hasSearchableDataChanges', 'data': clusterId}, 'satcon-performance');
                   toSet['histId'] = histId;
                 }
@@ -309,7 +322,7 @@ const updateClusterResources = async (req, res, next) => {
             else{
               // adds the yaml hist item too
               let start = Date.now();
-              const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
+              const histId = await addResourceYamlHistObj(req, req.org, clusterId, selfLink, dataStr, encKeyId);
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
 
               // if obj not in db, then adds it
@@ -319,7 +332,7 @@ const updateClusterResources = async (req, res, next) => {
                 return;
               }
               changes = {
-                $set: { deleted: false, hash: resourceHash, histId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
+                $set: { deleted: false, hash: resourceHash, histId, encKeyId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
                 $currentDate: { created: true, updated: true, lastModified: true },
                 ...pushCmd
               };
@@ -391,7 +404,7 @@ const updateClusterResources = async (req, res, next) => {
                 }
               );
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
-              await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
+              await addResourceYamlHistObj(req, req.org, clusterId, selfLink, '');
               pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
             }
             if (s3UploadWithPromiseResponse !== undefined) {
@@ -415,15 +428,16 @@ const updateClusterResources = async (req, res, next) => {
   }
 };
 
-var addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
+var addResourceYamlHistObj = async(req, org, clusterId, resourceSelfLink, yamlStr, encKeyId)=>{
   var ResourceYamlHist = req.db.collection('resourceYamlHist');
   var id = uuid();
   var obj = {
     _id: id,
-    org_id: orgId,
+    org_id: org._id,
     cluster_id: clusterId,
     resourceSelfLink,
     yamlStr,
+    encKeyId,
     updated: new Date(),
   };
   await ResourceYamlHist.insertOne(obj);

@@ -28,6 +28,7 @@ const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 const conf = require('../../conf.js').conf;
 const S3ClientClass = require('../../s3/s3Client');
 const url = require('url');
+var { decryptStrUsingOrgEncKey } = require('../../utils/orgs');
 
 // Filters out the namespaces you dont have access to. has to get all the resources first.
 const filterNamespaces = async (data, me, orgId, queryName, context) => {
@@ -102,6 +103,17 @@ const getS3Data = async (s3Link, logger, context) => {
   }
 };
 
+const decryptIfNeeded = async({ org, data, encKeyId })=>{
+  if(!encKeyId){
+    return data;
+  }
+  return await decryptStrUsingOrgEncKey({
+    data,
+    encKeyId,
+    org,
+  });
+};
+
 const readS3File = async (readable) => {
   readable.setEncoding('utf8');
   let data = '';
@@ -115,15 +127,23 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
   const { models, me, req_id, logger } = context;
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
+    const org = await models.Organization.findOne({ _id: org_id });
 
     searchFilter['deleted'] = false;
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true, defaults: true });
 
     if (!resource) return resource;
 
-    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = await getS3Data(resource.data, logger);
-      resource.data = yaml;
+    if (queryFields['data'] && resource.data) {
+      if(isLink(resource.data) && s3IsDefined()) {
+        const yaml = await getS3Data(resource.data, logger);
+        resource.data = yaml;
+      }
+      resource.data = await decryptIfNeeded({
+        org,
+        data: resource.data,
+        encKeyId: resource.encKeyId,
+      });
     }
 
     let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id: resource.cluster_id, ...conditions}).lean({ virtuals: true });
@@ -273,6 +293,8 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
+      const org = await models.Organization.findOne({ _id: org_id });
+
       const searchFilter = { org_id, _id: ObjectId(_id) };
       var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
       if(!resource){
@@ -285,9 +307,16 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
-        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = await getS3Data(resource.data, logger);
-          resource.data = yaml;
+        if (queryFields['data'] && resource.data){
+          if(isLink(resource.data) && s3IsDefined()) {
+            const yaml = await getS3Data(resource.data, logger);
+            resource.data = yaml;
+          }
+          resource.data = await decryptIfNeeded({
+            org,
+            data: resource.data,
+            encKeyId: resource.encKeyId,
+          });
         }
         resource.updated = resourceYamlHistObj.updated;
       }
@@ -413,11 +442,20 @@ const resourceResolvers = {
         return null;
       }
 
+      const org = await models.Organization.findOne({ _id: org_id });
+
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
-        if ( content && isLink(content) && s3IsDefined()) {
-          const yaml = await getS3Data(content, logger);
-          content = yaml;
+        if(content){
+          if (isLink(content) && s3IsDefined()) {
+            const yaml = await getS3Data(content, logger);
+            content = yaml;
+          }
+          content = await decryptIfNeeded({
+            org,
+            data: content,
+            encKeyId: resource.encKeyId,
+          });
         }
         return {
           id: resource._id,
@@ -433,9 +471,16 @@ const resourceResolvers = {
       }
 
       var content = await getContent(obj);
-      if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = await getS3Data(content, logger);
-        content = yaml;
+      if(content){
+        if (isLink(content) && s3IsDefined()) {
+          const yaml = await getS3Data(content, logger);
+          content = yaml;
+        }
+        content = await decryptIfNeeded({
+          org,
+          data: content,
+          encKeyId: resource.encKeyId,
+        });
       }
 
       return {

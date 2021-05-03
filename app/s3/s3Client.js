@@ -64,6 +64,27 @@ module.exports = class S3Client {
     });
   }
 
+  async getObjectAsBuffer(bucketName, key){
+    return new Promise((resolve, reject)=>{
+      this.getObject(bucketName, key).send((err, data)=>{
+        if(err){
+          reject(err);
+        }
+        try {
+          resolve(data.Body);
+        }
+        catch(err){
+          reject(err);
+        }
+      });
+    });
+  }
+
+  async getObjectAsStr(bucketName, key){
+    var buff = await this.getObjectAsBuffer(bucketName, key);
+    return buff.toString('utf8');
+  }
+
   async deleteBucket(bucketName) {
     this.log.debug(`Deleting bucket ${bucketName}`);
     return this._aws.deleteBucket({

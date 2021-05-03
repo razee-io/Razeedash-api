@@ -35,6 +35,15 @@ const OrganizationDefaultSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  encKeys: [
+    {
+      _id: false,
+      id: String,
+      key: String,
+      creationTime: Date,
+      deleted: Boolean,
+    },
+  ],
   type: {
     type: String,
     required: false,

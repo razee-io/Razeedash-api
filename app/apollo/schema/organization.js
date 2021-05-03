@@ -25,12 +25,32 @@ const organizationSchema = gql`
     id: ID!
     name: String!
   }
+  
+  type OrgCreateEncKeyResponse {
+    id: String!
+    creationTime: Date!
+  }
+  type OrgDeleteEncKeyResponse {
+    success: Boolean!
+  }
 
   extend type Query {
     """
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
+  }
+  
+  extend type Mutation {
+    """
+    Creates a new encKey for encryption purposes
+    """
+    createOrgEncKey(orgId: String! @sv): OrgCreateEncKeyResponse!
+
+    """
+    Deletes the encKey with the given id
+    """
+    deleteOrgEncKey(orgId: String! @sv, encKeyId: String! @sv): OrgDeleteEncKeyResponse!
   }
 `;
 

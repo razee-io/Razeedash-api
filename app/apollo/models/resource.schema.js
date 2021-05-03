@@ -40,6 +40,9 @@ const ResourceSchema = new mongoose.Schema({
   data: {
     type: String,
   },
+  encKeyId: {
+    type: String,
+  },
   deleted: {
     type: Boolean,
     default: false,
