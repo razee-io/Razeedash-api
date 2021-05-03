@@ -208,7 +208,7 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   }
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
   if (storedAdminKey) {
-    user.org_admin = storedAdminKey === context.req.headers["org-admin-key"];
+    user.org_admin = storedAdminKey === context.req.headers['org-admin-key'];
   }
   return { token: models.User.createToken(user, secret, '240m') };
 };

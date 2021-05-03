@@ -277,9 +277,9 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   }
   if(queryFields.remoteResources || queryFields.rolloutStatus){
     const search = {
-        org_id: orgId,
-        'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
-        deleted: false
+      org_id: orgId,
+      'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
+      deleted: false
     };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
     var remoteResources = await loadResourcesWithSearchAndArgs({

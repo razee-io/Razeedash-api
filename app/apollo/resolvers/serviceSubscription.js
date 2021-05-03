@@ -16,16 +16,12 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const { withFilter } = require('apollo-server');
 const { ACTIONS, TYPES, SERVICE_SUBSCRIPTION_LIMITS } = require('../models/const');
 const {
-  whoIs, validAuth, validClusterAuth,
-  getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
-  getGroupConditionsIncludingEmpty,
-  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
+  whoIs, validAuth, filterSubscriptionsToAllowed,
+  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError
 } = require ('./common');
-const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
-const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
+const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
 const subscriptionResolvers = require('./subscription');
@@ -35,7 +31,7 @@ const pubSub = GraphqlPubSub.getInstance();
 const serviceResolvers = {
 
   SubscriptionUnion: {
-    __resolveType(obj, context, info) {
+    __resolveType(obj) {
       if (obj.ssid) {
         return 'ServiceSubscription';
       }
@@ -57,12 +53,12 @@ const serviceResolvers = {
 
       var subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
       if (subscription) {
-        return "SERVICE";
+        return 'SERVICE';
       }
 
       subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean(); // search only in the user org
       if (subscription) {
-        return "USER";
+        return 'USER';
       }
 
       throw new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', { 'id': id }), context);
@@ -73,7 +69,7 @@ const serviceResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscriptions';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      
+
       await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       var serviceSubscriptions = [];
@@ -107,7 +103,6 @@ const serviceResolvers = {
     },
 
     serviceSubscription: async (parent, { orgId, ssid }, context, fullQuery) => {
-      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscription';
       logger.debug({ req_id, user: whoIs(me), orgId, ssid }, `${queryName} enter`);
@@ -137,7 +132,7 @@ const serviceResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addServiceSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      
+
       await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
@@ -149,7 +144,7 @@ const serviceResolvers = {
 
       try {
 
-        const total = await models.ServiceSubscription.count({ org_id });
+        const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
           throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', { 'orgId': orgId }), context);
         }
@@ -206,7 +201,7 @@ const serviceResolvers = {
       await validAuth(me, cluster.org_id, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try {
-  
+
         var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
         if (!channel) {
           throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);

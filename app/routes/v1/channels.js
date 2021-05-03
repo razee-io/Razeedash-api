@@ -37,13 +37,13 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
   if (!deployable) {
     // If there are any service-subscriptions pushing this channel/version into any clusters owned by this org
     // then the request is legitimate even though requester's org does not own the channel/version.
-    const ourClusters = await Clusters.find({ org_id: orgId, reg_state: "registered" }).toArray();
+    const ourClusters = await Clusters.find({ org_id: orgId, reg_state: 'registered' }).toArray();
     const ourClusterIds = ourClusters.map(c => c.cluster_id);
     const ourServiceSubscription = await ServiceSubscriptions.findOne({
       version_uuid: versionId,
       clusterId: { $in: ourClusterIds }
     });
-    if (ourServiceSubscription) {  
+    if (ourServiceSubscription) {
       req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
       orgId = ourServiceSubscription.org_id;
       orgKey = (await Orgs.findOne({ _id: orgId })).orgKeys[0];

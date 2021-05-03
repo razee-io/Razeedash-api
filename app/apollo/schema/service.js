@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
- const { gql } = require('apollo-server-express');
+const { gql } = require('apollo-server-express');
 
- const serviceSchema = gql`
+const serviceSchema = gql`
 
   type ServiceSubscription {
     ssid: String!
@@ -96,4 +96,4 @@ extend type Mutation {
  }
 `;
 
- module.exports = serviceSchema;
+module.exports = serviceSchema;
