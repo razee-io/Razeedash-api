@@ -39,8 +39,8 @@ const connectDb = mongoUrl => {
   if (process.env.NODE_ENV === 'production') {
     mongooseOptions = {
       autoIndex: false,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 5000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 10000,
       poolSize: 15,
       useNewUrlParser: true,
       useFindAndModify: true,
@@ -50,8 +50,8 @@ const connectDb = mongoUrl => {
   } else {
     mongooseOptions = {
       autoIndex: true,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 5000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 10000,
       poolSize: 15,
       useNewUrlParser: true,
       useFindAndModify: true,
@@ -59,7 +59,7 @@ const connectDb = mongoUrl => {
       useUnifiedTopology: true,
     };
   }
-  
+
   if(fs.existsSync(mongoConf.mongo.cert)) {
     mongooseOptions['tlsCAFile'] = mongoConf.mongo.cert;
   }

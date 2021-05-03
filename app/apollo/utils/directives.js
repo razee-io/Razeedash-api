@@ -110,8 +110,8 @@ class JsonSanitizer extends Sanitizer {
 
   parseTree(parent, totalAllowed) {
     var hasNonLeafNodes = false;
-    var childCount = 0; 
-    var keylen = 0; 
+    var childCount = 0;
+    var keylen = 0;
     var valuelen = 0;
     if (totalAllowed <= 0) {
       throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);

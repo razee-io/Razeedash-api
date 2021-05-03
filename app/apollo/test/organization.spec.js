@@ -109,7 +109,7 @@ describe('organization graphql test suite', () => {
     it('a user should be able to get organizations associated with him.', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-        
+
 
         const orgsResult = await api.organizations(token);
         console.log(JSON.stringify(orgsResult.data));
