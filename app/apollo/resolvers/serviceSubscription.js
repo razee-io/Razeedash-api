@@ -55,7 +55,7 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      var subscription = await models.ServiceSubscription.findOne({ uuid: id, org_id: orgId }).lean(); // search only in the user org
+      var subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
       if (subscription) {
         return "SERVICE";
       }
@@ -149,7 +149,7 @@ const serviceResolvers = {
 
       try {
 
-        const total = await models.ServiceSubscription.count({ orgId });
+        const total = await models.ServiceSubscription.count({ org_id });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
           throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', { 'orgId': orgId }), context);
         }
@@ -197,7 +197,7 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      const serviceSubscription = await models.ServiceSubscription.findOne({ uuid: ssid, org_id: orgId }).lean({ virtuals: true });
+      const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId }).lean({ virtuals: true });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
@@ -242,7 +242,7 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      const serviceSubscription = await models.ServiceSubscription.findOne({ uuid: ssid, org_id: orgId });
+      const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }

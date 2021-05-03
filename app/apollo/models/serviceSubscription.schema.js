@@ -71,9 +71,7 @@ const ServiceSubscriptionSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-/*
-ServiceSubscriptionSchema.index({ uuid: 1 });
+ServiceSubscriptionSchema.index({ version_uuid: 1 });
 ServiceSubscriptionSchema.index({ org_id: 1 });
-ServiceSubscriptionSchema.index({ clusterId: 1 });
-*/
+
 module.exports = ServiceSubscriptionSchema;
