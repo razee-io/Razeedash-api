@@ -21,6 +21,7 @@ const Cluster = require('./cluster');
 const Organization = require('./organization');
 const Channel = require('./channel');
 const Subscription = require('./subscription');
+const ServiceSubscription = require('./serviceSubscription');
 const DeployableVersion = require('./deployableVersion');
 const ResourceYamlHist = require('./resourceYamlHist');
 const Group = require('./group');
@@ -77,6 +78,7 @@ const models = {
   Channel,
   Group,
   Subscription,
+  ServiceSubscription,
   DeployableVersion,
   ResourceYamlHist,
   dbConnections: []

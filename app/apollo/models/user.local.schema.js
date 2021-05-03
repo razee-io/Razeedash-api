@@ -153,6 +153,7 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
     role: user.meta.orgs[0].role,
     org_id: user.meta.orgs[0]._id,
     meta: user.meta,
+    org_admin: user.org_admin
   };
   return jwt.sign(claim, secret, {
     expiresIn,
@@ -204,6 +205,10 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
   if (!isValid) {
     logger.warn({ req_id: context.req_id }, 'Invalid password.');
     throw new AuthenticationError('Invalid password.');
+  }
+  const storedAdminKey = process.env.ORG_ADMIN_KEY;
+  if (storedAdminKey) {
+    user.org_admin = storedAdminKey === context.req.headers["org-admin-key"];
   }
   return { token: models.User.createToken(user, secret, '240m') };
 };
@@ -284,7 +289,9 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     }
     return new Array(objectArray.length).fill(result);
   }
-
+  if (me.org_admin) {
+    return new Array(objectArray.length).fill(true);
+  }
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
@@ -316,7 +323,9 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     // say no for if it is cluster facing api
     return false;
   }
-
+  if (me.org_admin) {
+    return true;
+  }
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
