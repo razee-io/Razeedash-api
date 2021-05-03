@@ -240,11 +240,11 @@ const pushToS3 = async (s3, key, searchableDataHash, dataStr) => {
 
 var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
   if(migrateResourcesToNewOrgKeysCron.isRunning){
-    console.log(`migrateResourcesToNewOrgKeysCron is already running`);
+    console.log('migrateResourcesToNewOrgKeysCron is already running');
     return;
   }
   migrateResourcesToNewOrgKeysCron.isRunning = true;
-  console.log(`starting migrateResourcesToNewOrgKeysCron`);
+  console.log('starting migrateResourcesToNewOrgKeysCron');
 
   var startTime = Date.now();
 
@@ -269,7 +269,7 @@ var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
 
       // if no org found, we have nothing left to do
       if(!org){
-        console.log(`no orgs left containing an encKey with deleted=true`);
+        console.log('no orgs left containing an encKey with deleted=true');
         break;
       }
 
@@ -288,10 +288,10 @@ var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
 
       // checks for missing keys
       if(!newEncKey){
-        throw new Error(`no new encKey found`);
+        throw new Error('no new encKey found');
       }
       if(!oldEncKey.id || !newEncKey.id){
-        throw new Error(`oldEncKey or newEncKey doesnt have a .id`);
+        throw new Error('oldEncKey or newEncKey doesnt have a .id');
       }
 
       // loads all resources created with the oldEncKey
@@ -371,7 +371,7 @@ var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
       }));
     }
   }catch(err){
-    console.log(`err in migrateResourcesToNewOrgKeysCron`, err);
+    console.log('err in migrateResourcesToNewOrgKeysCron', err);
   }
   migrateResourcesToNewOrgKeysCron.isRunning = false;
   console.log('exiting migrateResourcesToNewOrgKeysCron');
