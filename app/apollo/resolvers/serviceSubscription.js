@@ -51,7 +51,7 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      var subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
+      const subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
       if (subscription) {
         return 'SERVICE';
       }
@@ -72,12 +72,12 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      var serviceSubscriptions = [];
+      let serviceSubscriptions = [];
       try{
         // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
         for await (const ss of models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true })) {
-          var cluster = await models.Cluster.findOne({cluster_id: ss.clusterId});
-          var allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
+          const cluster = await models.Cluster.findOne({cluster_id: ss.clusterId});
+          const allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
           serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
       }catch(err){
@@ -149,12 +149,12 @@ const serviceResolvers = {
           throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', { 'orgId': orgId }), context);
         }
 
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
+        const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
         if (!channel) {
           throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
         }
 
-        var version = channel.versions.find((version) => {
+        const version = channel.versions.find((version) => {
           return (version.uuid == versionUuid);
         });
         if (!version) {
@@ -202,12 +202,12 @@ const serviceResolvers = {
 
       try {
 
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
+        const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
         if (!channel) {
           throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
         }
 
-        var version = channel.versions.find((version) => {
+        const version = channel.versions.find((version) => {
           return (version.uuid == versionUuid);
         });
         if (!version) {
