@@ -51,7 +51,7 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      const subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
+      let subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
       if (subscription) {
         return 'SERVICE';
       }
