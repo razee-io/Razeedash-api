@@ -200,34 +200,24 @@ const serviceResolvers = {
       const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
       await validAuth(me, cluster.org_id, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      try {
-
-        const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
-        if (!channel) {
-          throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
-        }
-
-        const version = channel.versions.find((version) => {
-          return (version.uuid == versionUuid);
-        });
-        if (!version) {
-          throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
-        }
-
-        const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid };
-        await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
-
-        pubSub.channelSubChangedFunc({ org_id: cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
-
-        return ssid;
+      const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
+      if (!channel) {
+        throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
       }
-      catch (err) {
-        if (err instanceof BasicRazeeError) {
-          throw err;
-        }
-        logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id }), context);
+
+      const version = channel.versions.find((version) => {
+        return (version.uuid == versionUuid);
+      });
+      if (!version) {
+        throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
       }
+
+      const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid };
+      await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
+
+      pubSub.channelSubChangedFunc({ org_id: cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
+
+      return ssid;
     },
 
     removeServiceSubscription: async (parent, { orgId, ssid }, context)=>{
@@ -245,19 +235,10 @@ const serviceResolvers = {
       const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
       await validAuth(me, cluster.org_id, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      try {
+      await serviceSubscription.deleteOne();
 
-        await serviceSubscription.deleteOne();
+      pubSub.channelSubChangedFunc({ org_id:  cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
 
-        pubSub.channelSubChangedFunc({ org_id:  cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
-
-      } catch (err) {
-        if (err instanceof BasicRazeeError) {
-          throw err;
-        }
-        logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id }), context);
-      }
       return ssid;
     }
   }

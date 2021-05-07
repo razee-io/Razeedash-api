@@ -97,9 +97,10 @@ const apiFunc = grahqlUrl => {
       variables,
     });
 
-  const signIn = async variables =>
-    axios.post(grahqlUrl, {
-      query: `
+  const signIn = async (variables, orgAdminKey) =>
+    axios.post(grahqlUrl,
+      {
+        query: `
         mutation($login: String! $password: String!) {
           signIn(
             login: $login
@@ -109,27 +110,12 @@ const apiFunc = grahqlUrl => {
           }
         }
       `,
-      variables,
-    });
-
-  /*
-  const upsertResource = async variables =>
-    axios.post(grahqlUrl, {
-      query: `
-        mutation ($r: JSON!) {
-          upsertResource(resource: $r) {
-            _id
-            org_id
-            cluster_id
-            selfLink
-            searchableData
-            created
-          }
-        }
-      `,
-      variables,
-    });
-  */
+        variables,
+      },
+      {
+        headers: { 'org-admin-key': `${orgAdminKey}` },
+      }
+    );
 
   const resource = async (token, variables) =>
     axios.post(
