@@ -30,6 +30,9 @@ const ChannelSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
+  data_location: {
+    type: String,
+  },
   ownerId: {
     type: String,
   },
