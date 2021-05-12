@@ -26,6 +26,7 @@ const ebl = require('express-bunyan-logger');
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
 const S3ClientClass = require('../s3/s3Client');
+const maintenanceMode = require('../utils/maintenance.js').maintenanceMode;
 
 const MongoClient = new MongoClientClass(conf);
 MongoClient.log=logger;
@@ -65,6 +66,18 @@ router.use(asyncHandler(async (req, res, next) => {
   req.s3 = s3Client;
   next();
 }));
+
+const disableWrites = async(req, res, next) => {
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
+    res.status(503).send( `The operation could not complete because the database is in maintenance mode.` );
+    return;
+  }
+  next();
+};
+
+if(maintenanceMode) {
+  router.use(disableWrites);
+}
 
 // the orgs routes should be above the razee-org-key checks since the user
 // won't have a razee-org-key when creating an org for the first time.

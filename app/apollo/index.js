@@ -33,6 +33,8 @@ const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
+const maintenanceMode = require('../utils/maintenance.js').maintenanceMode;
+const { apolloMaintenancePlugin } = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
 
@@ -121,6 +123,11 @@ const createApolloServer = () => {
     logger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
+  if(maintenanceMode) {
+    logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
+    customPlugins.push(apolloMaintenancePlugin);
+  }
+
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
