@@ -16,7 +16,7 @@
 
 const log = require('./log').log;
 
-const maintenanceMode = () => {
+const maintenanceMode = async () => {
   try {
     const { LDClient } = require('./apollo/launchdarkly');
     const ldClient = LDClient.getInstance();
@@ -25,7 +25,7 @@ const maintenanceMode = () => {
     return maintenanceModeEnabled;
   } catch (error) {
     log.info('A maintenance mode plugin was not loaded. All database write operations are enabled.');
-    return false
+    return false;
   }
 };
 

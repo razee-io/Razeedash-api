@@ -14,21 +14,21 @@
 * limitations under the License.
 */
 
- const maintenanceModePlugin = {
- 
-   requestDidStart(requestContext) {
-     console.log('requestDidStart-----------------------------------------')
-     if (requestContext.operation && requestContext.operation.operation === 'mutation' ) {
-       console.log('-------------------------mutation');
-       // return Graphql error ??
-       return {}
+const maintenanceModePlugin = {
 
-     } else {
-       console.log('-------------------------other');
-       return {}
-     }
+  requestDidStart(requestContext) {
+    console.log('requestDidStart-----------------------------------------');
+    if (requestContext.operation && requestContext.operation.operation === 'mutation' ) {
+      console.log('-------------------------mutation');
+      // return Graphql error ??
+      return {};
+
+    } else {
+      console.log('-------------------------other');
+      return {};
+    }
   },
 
- };
- 
- module.exports = maintenanceModePlugin;
+};
+
+module.exports = maintenanceModePlugin;

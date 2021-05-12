@@ -69,7 +69,7 @@ router.use(asyncHandler(async (req, res, next) => {
 
 const disableWrites = async(req, res, next) => {
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
-    res.status(503).send( `The operation could not complete because the database is in maintenance mode.` );
+    res.status(503).send('The operation could not complete because the database is in maintenance mode.');
     return;
   }
   next();
