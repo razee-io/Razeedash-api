@@ -22,7 +22,7 @@ const maintenanceMode = () => {
     const ldClient = LDClient.getInstance();
     const maintenanceModeEnabled = await ldClient.variation('maintenance', false); // need to fix this
     log.info(`Maintenance mode is set to: ${maintenanceModeEnabled}`);
-    return maintenanceModeEnabled ? true : false
+    return maintenanceModeEnabled;
   } catch (error) {
     log.info('A maintenance mode plugin was not loaded. All database write operations are enabled.');
     return false
