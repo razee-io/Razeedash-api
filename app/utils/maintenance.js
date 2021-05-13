@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-const log = require('./log').log;
+const log = require('../log').log;
 
 const maintenanceMode = async () => {
   try {
-    const { LDClient } = require('./apollo/launchdarkly');
+    const { LDClient } = require('../apollo/launchdarkly');
     const ldClient = LDClient.getInstance();
     const maintenanceModeEnabled = await ldClient.variation('maintenance', false); // need to fix this
     log.info(`Maintenance mode is set to: ${maintenanceModeEnabled}`);
