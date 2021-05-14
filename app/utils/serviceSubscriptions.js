@@ -1,4 +1,3 @@
-
 const { models } = require('../apollo/models');
 
 const _ = require('lodash');
@@ -8,9 +7,6 @@ const getServiceSubscriptionUrls = async(cluster) => {
   let urls = _.map(serviceSubscriptions, (subscription)=>{
     let url = `api/v1/channels/${subscription.channelName}/${subscription.version_uuid}`;
     let kubeOwnerName = null;
-    if(cluster.registration.location){
-      kubeOwnerName = subscription.kubeOwnerName;
-    }
     return {
       subscriptionName: subscription.name,
       subscriptionChannel: subscription.channelName,
