@@ -77,13 +77,13 @@ items:
                   valueFrom:
                     configMapKeyRef:
                       name: razeedash-config
-                      key: maintennce_flag
+                      key: maintenance_flag
                       optional: true
                 - name: MAINTENANCE_KEY
                   valueFrom:
                     configMapKeyRef:
                       name: razeedash-config
-                      key: maintennce_key
+                      key: maintenance_key
                       optional: true
                 - name: MONGO_URL
                   valueFrom:
