@@ -34,7 +34,7 @@ const conf = {
   maintenance: {
     flag: process.env.MAINTENANCE_FLAG,
     key: process.env.MAINTENANCE_KEY
-  } 
+  }
 };
 
 module.exports = {

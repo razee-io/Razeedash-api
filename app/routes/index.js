@@ -77,11 +77,11 @@ const maintenanceCheck = (flag, key) => {
       }
     }
     next();
-  }
+  };
 };
 
-if(conf.maintenance.flag && conf.maintenance.key) { 
-  logger.info('Adding maintenance check middleware to express routes')
+if(conf.maintenance.flag && conf.maintenance.key) {
+  logger.info('Adding maintenance check middleware to express routes');
   router.use(maintenanceCheck(conf.maintenance.flag, conf.maintenance.key));
 }
 

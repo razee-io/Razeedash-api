@@ -123,7 +123,7 @@ const createApolloServer = () => {
     logger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
-  if(conf.maintenance.flag && conf.maintenance.key) { 
+  if(conf.maintenance.flag && conf.maintenance.key) {
     logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
     customPlugins.push(apolloMaintenancePlugin);
   }

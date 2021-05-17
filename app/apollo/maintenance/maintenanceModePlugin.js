@@ -19,7 +19,7 @@ const { maintenanceMode, maintenanceMessage } = require('../../utils/maintenance
 const conf = require('../../conf.js').conf;
 
 const apolloMaintenancePlugin = {
-  requestDidStart(requestContext) {
+  requestDidStart() {
     return {
       // https://www.apollographql.com/docs/apollo-server/integrations/plugins/#responseforoperation
       // The responseForOperation event is fired immediately before GraphQL execution would take place.
@@ -29,10 +29,10 @@ const apolloMaintenancePlugin = {
           if(await maintenanceMode(conf.maintenance.flag, conf.maintenance.key)) {
             throw new RazeeMaintenanceMode(maintenanceMessage, context);
           }
-        } 
+        }
         return;
       }
-    }
+    };
   }
 };
 
