@@ -30,6 +30,10 @@ const conf = {
     s3ForcePathStyle: true,
     signatureVersion: 'v4',
     sslEnabled: !process.env.S3_DISABLE_SSL, //for local minio support
+  },
+  maintenance: {
+    flag: process.env.MAINTENANCE_FLAG,
+    key: process.env.MAINTENANCE_KEY
   }
 };
 
