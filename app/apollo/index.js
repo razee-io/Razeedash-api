@@ -33,10 +33,10 @@ const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
-const maintenanceMode = require('../utils/maintenance.js').maintenanceMode;
-const { apolloMaintenancePlugin } = require('./maintenance/maintenanceModePlugin.js');
+const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
+const conf = require('../conf.js').conf;
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -123,7 +123,7 @@ const createApolloServer = () => {
     logger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
-  if(maintenanceMode) {
+  if(conf.maintenance.flag && conf.maintenance.key) { 
     logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
     customPlugins.push(apolloMaintenancePlugin);
   }

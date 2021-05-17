@@ -26,7 +26,7 @@ const ebl = require('express-bunyan-logger');
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
 const S3ClientClass = require('../s3/s3Client');
-const maintenanceMode = require('../utils/maintenance.js').maintenanceMode;
+const { maintenanceMode, maintenanceMessage } = require('../utils/maintenance.js');
 
 const MongoClient = new MongoClientClass(conf);
 MongoClient.log=logger;
@@ -67,16 +67,22 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
-const disableWrites = async(req, res, next) => {
-  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
-    res.status(503).send('The operation could not complete because the database is in maintenance mode.');
-    return;
+const maintenanceCheck = (flag, key) => {
+  return async function(req, res, next) {
+    // allow mongo queries to continue but don't allow writes to the database
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
+      if(await maintenanceMode(flag, key)) {
+        res.status(503).send(maintenanceMessage);
+        return;
+      }
+    }
+    next();
   }
-  next();
 };
 
-if(maintenanceMode) {
-  router.use(disableWrites);
+if(conf.maintenance.flag && conf.maintenance.key) { 
+  logger.info('Adding maintenance check middleware to express routes')
+  router.use(maintenanceCheck(conf.maintenance.flag, conf.maintenance.key));
 }
 
 // the orgs routes should be above the razee-org-key checks since the user

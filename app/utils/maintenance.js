@@ -16,17 +16,33 @@
 
 const log = require('../log').log;
 
-const maintenanceMode = async () => {
-  try {
-    const { LDClient } = require('../apollo/launchdarkly');
-    const ldClient = LDClient.getInstance();
-    const maintenanceModeEnabled = await ldClient.variation('maintenance', false); // need to fix this
-    log.info(`Maintenance mode is set to: ${maintenanceModeEnabled}`);
-    return maintenanceModeEnabled;
-  } catch (error) {
-    log.info('A maintenance mode plugin was not loaded. All database write operations are enabled.');
-    return false;
-  }
-};
+let maintenanceMode = () => false;
 
-module.exports = { maintenanceMode };
+try {
+  const { FeatureFlagClient } = require('../featureflag');
+  const ffClient = FeatureFlagClient.getInstance();
+
+  maintenanceMode = async (flag, key) => {
+    if(!flag || !key) {
+      log.debug('Maintenance flag and key are not defined. All database write operations are enabled.');
+      return false;
+    } else {
+      try {
+        const maintenanceModeEnabled = await ffClient.variation(flag, {'key': key}, false);
+        log.debug(`Maintenance mode is set to: ${maintenanceModeEnabled} for flag ${flag} and user ${key}`);
+        return maintenanceModeEnabled;
+      } catch (error) {
+        log.error('There was a problem reading from launch darkly so maintenance mode will not be enabled');
+        log.error(error);
+        return false;
+      }
+    }
+  };
+} catch (error) {
+  log.debug('A maintenance mode plugin was not loaded. All database write operations are enabled.');
+  log.error(error);
+}
+
+const maintenanceMessage = 'The operation can not complete because the database is in maintenance mode';
+
+module.exports = { maintenanceMode, maintenanceMessage };

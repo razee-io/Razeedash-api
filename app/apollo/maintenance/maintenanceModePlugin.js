@@ -14,21 +14,26 @@
 * limitations under the License.
 */
 
-const maintenanceModePlugin = {
+const { RazeeMaintenanceMode } = require ('../resolvers/common');
+const { maintenanceMode, maintenanceMessage } = require('../../utils/maintenance');
+const conf = require('../../conf.js').conf;
 
+const apolloMaintenancePlugin = {
   requestDidStart(requestContext) {
-    console.log('requestDidStart-----------------------------------------');
-    if (requestContext.operation && requestContext.operation.operation === 'mutation' ) {
-      console.log('-------------------------mutation');
-      // return Graphql error ??
-      return {};
-
-    } else {
-      console.log('-------------------------other');
-      return {};
+    return {
+      // https://www.apollographql.com/docs/apollo-server/integrations/plugins/#responseforoperation
+      // The responseForOperation event is fired immediately before GraphQL execution would take place.
+      // If its return value resolves to a non-null GraphQLResponse, that result is used instead of executing the query.
+      async responseForOperation(context) {
+        if(context.operation && context.operation.operation && context.operation.operation === 'mutation') {
+          if(await maintenanceMode(conf.maintenance.flag, conf.maintenance.key)) {
+            throw new RazeeMaintenanceMode(maintenanceMessage, context);
+          }
+        } 
+        return;
+      }
     }
-  },
-
+  }
 };
 
-module.exports = maintenanceModePlugin;
+module.exports = apolloMaintenancePlugin;

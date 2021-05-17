@@ -73,6 +73,18 @@ items:
                       name: razeedash-config
                       key: s3_resource_bucket
                       optional: true
+                - name: MAINTENANCE_FLAG
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: maintennce_flag
+                      optional: true
+                - name: MAINTENANCE_KEY
+                  valueFrom:
+                    configMapKeyRef:
+                      name: razeedash-config
+                      key: maintennce_key
+                      optional: true
                 - name: MONGO_URL
                   valueFrom:
                     secretKeyRef:
@@ -91,6 +103,12 @@ items:
                     secretKeyRef:
                       name: razeedash-secret
                       key: add_cluster_webhook_url
+                      optional: true
+                - name: LAUNCH_DARKLY_SDK_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: razeedash-secret
+                      key: launch_darkly_sdk_key
                       optional: true
                 - name: REDIS_PUBSUB_URL
                   value: 'redis://redis-service:6379/0'
