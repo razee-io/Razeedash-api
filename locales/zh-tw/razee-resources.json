@@ -1,156 +1,78 @@
 {
-
   "{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.": "{{clusterCount}} 個叢集相依於這個群組。請在叢集中更新/移除群組。",
-
-  "{{subCount}} subscription(s) depend on this channel. Please update/remove them before removing this channel.": "{{subCount}} 項訂閱相依於這個通道。在移除這個通道之前，請先更新/移除它們。",
-
-  "{{subCount}} subscriptions depend on this channel version. Please update/remove them before removing this channel version.": "{{subCount}} 項訂閱相依於這個通道版本。在移除這個通道版本之前，請先更新/移除它們。",
-
+  "{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.": "{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.",
   "{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.": "{{subCount}} 項訂閱相依於這個叢集群組。在移除這個群組之前，請先更新/移除它們。",
-
+  "{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.": "{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.",
   "A \"channel_uuid\" must be specified": "必須指定 \"channel_uuid\"",
-
   "A \"file\" or \"content\" must be specified": "必須指定 \"file\" 或 \"content\"",
-
   "A \"name\" must be specified": "必須指定 \"name\"",
-
   "A \"type\" of application/yaml must be specified": "必須指定應用程式/yaml 的 \"type\"",
-
   "A cluster name is not defined in the registration data": "登錄資料中未定義叢集名稱",
-
   "Another cluster already exists with the same registration name {{registration.name}}": "已存在具有相同登錄名稱 {{registration.name}} 的另一個叢集",
-
   "channel uuid \"{{channel_uuid}}\" not found": "找不到通道 UUID \"{{channel_uuid}}\"",
-
   "Channel uuid \"{{channel_uuid}}\" not found.": "找不到通道 UUID \"{{channel_uuid}}\"。",
-
   "Channel uuid \"{{subscription.channel_uuid}}\" not found.": "找不到通道 UUID \"{{subscription.channel_uuid}}\"。",
-
   "channel uuid \"{{uuid}}\" not found": "找不到通道 UUID \"{{uuid}}\"",
-
   "commonResourceSearch encountered an error. {{error.message}}": "commonResourceSearch 遇到錯誤。{{error.message}}",
-
   "commonResourcesSearch encountered an error. {{error.message}}": "commonResourcesSearch 遇到錯誤。{{error.message}}",
-
   "Could not find all the cluster groups {{groups}} in the groups database, please create them first.": "在群組資料庫中找不到所有叢集群組 {{groups}}，請先建立它們。",
-
   "could not find group with name {{name}}.": "找不到名稱為 {{name}} 的群組。",
-
   "could not find group with uuid {{uuid}}.": "找不到 UUID 為 {{uuid}} 的群組。",
-
   "Could not find subscriptions.": "找不到訂閱。",
-
-  "Could not find the channel with name {{name}}.": "找不到名稱為 {{name}} 的通道。",
-
-  "Could not find the channel with uuid {{uuid}}.": "找不到 UUID 為 {{uuid}} 的通道。",
-
-  "Could not find the channel with uuid/name {{channel_uuid}}/channelName.": "找不到 UUID/名稱為 {{channel_uuid}}/channelName 的通道。",
-
   "Could not find the cluster for the cluster id {{cluster_id}}.": "找不到叢集 ID {{cluster_id}} 的叢集。",
-
   "Could not find the cluster with Id {{clusterId}}.": "找不到 ID 為 {{clusterId}} 的叢集。",
-
   "Could not find the cluster with name {{clusterName}}.": "找不到名稱為 {{clusterName}} 的叢集。",
-
+  "Could not find the configuration channel with name {{name}}.": "Could not find the configuration channel with name {{name}}.",
+  "Could not find the configuration channel with uuid {{uuid}}.": "Could not find the configuration channel with uuid {{uuid}}.",
+  "Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.": "Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.",
   "Could not find the organization with ID {{org_id}}.": "找不到 ID 為 {{org_id}} 的組織。",
-
   "Could not find the subscription for the subscription id {{subscription_id}}.": "找不到訂閱 ID {{subscription_id}} 的訂閱。",
-
   "Could not find the subscription.": "找不到訂閱。",
-
   "Could not locate the cluster with cluster_id {{cluster_id}}": "找不到 cluster_id 為 {{cluster_id}} 的叢集",
-
   "Could not locate the cluster with clusterName {{clusterName}}": "找不到 clusterName 為 {{clusterName}} 的叢集",
-
   "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "找不到 {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}} 的 DeployableVersion。",
-
   "Error retrieving data from s3 bucket. {{error.message}}": "從 s3 儲存區擷取資料時發生錯誤。{{error.message}}",
-
   "Failed to Publish resource notification, please reload the page.": "無法發佈資源通知，請重新載入頁面。",
-
   "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "無法發佈資源通知，發佈/訂閱尚未備妥，請稍後重試。",
-
   "Failed to Publish subscription notification to clusters, please retry.": "無法發佈訂閱通知至叢集，請重試。",
-
   "Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.": "無法發佈訂閱通知至叢集，發佈/訂閱尚未備妥，請重試。",
-
   "group name \"{{name}}\" not found": "找不到群組名稱 \"{{name}}\"",
-
   "group uuid \"{{uuid}}\" not found": "找不到群組 UUID \"{{uuid}}\"",
-
   "hist _id \"{{histId}}\" not found": "找不到 hist_id \"{{histId}}\"",
-
   "Invalid razee-org-key was submitted for {{queryName}}": "提交給 {{queryName}} 的 razee-org-key 無效",
-
   "No org was found for the org key.": "找不到組織金鑰的組織。",
-
   "No razee-org-key was supplied.": "未提供 razee-org-key。",
-
   "None of the passed group uuids were found": "找不到任何所傳遞的群組 UUID",
-
   "One or more of the passed group uuids were not found": "找不到一或多個所傳遞的群組 UUID",
-
   "org id was not found": "找不到組織 ID",
-
   "Provided YAML content is not valid: {{error}}": "所提供的 YAML 內容無效：{{error}}",
-
   "Query {{queryName}} error. {{error.message}}": "查詢 {{queryName}} 錯誤。{{error.message}}",
-
   "Query {{queryName}} error. MessageID: {{req_id}}.": "查詢 {{queryName}} 錯誤。MessageID：{{req_id}}。",
-
   "Query {{queryName}} find error. MessageID: {{req_id}}.": "查詢 {{queryName}} 發現錯誤。MessageID：{{req_id}}。",
-
   "resourcesCount encountered an error. {{error.message}}": "resourcesCount 遇到錯誤。{{error.message}}",
-
   "Subscription { uuid: \"{{uuid}}\", org_id:{{org_id}} } not found.": "找不到訂閱 { uuid：\"{{uuid}}\"，org_id：{{org_id}} }。",
-
   "Subscription { uuid: \"{{uuid}}\", orgId:{{orgId}} } not found.": "找不到訂閱 { uuid：\"{{uuid}}\"，orgId：{{orgId}} }。",
-
   "Subscription uuid \"{{uuid}}\" not found.": "找不到訂閱 UUID \"{{uuid}}\"。",
-
-  "The channel name {{name}} already exists.": "通道名稱 {{name}} 已存在。",
-
+  "The configuration channel name {{name}} already exists.": "The configuration channel name {{name}} already exists.",
   "The group name {{name}} already exists.": "群組名稱 {{name}} 已存在。",
-
   "The version name {{name}} already exists": "版本名稱 {{name}} 已存在",
-
-  "Too many channel version are registered under {{channel_uuid}}.": "登錄在 {{channel_uuid}} 之下的通道版本太多。",
-
-  "Too many channels are registered under {{org_id}}.": "登錄在 {{org_id}} 之下的通道太多。",
-
+  "Too many configuration channel versions are registered under {{channel_uuid}}.": "Too many configuration channel versions are registered under {{channel_uuid}}.",
+  "Too many configuration channels are registered under {{org_id}}.": "Too many configuration channels are registered under {{org_id}}.",
   "Too many subscriptions are registered under {{org_id}}.": "登錄在 {{org_id}} 之下的訂閱太多。",
-
   "version uuid \"{{uuid}}\" not found": "找不到版本 UUID \"{{uuid}}\"",
-
   "version uuid \"{{version_uuid}}\" not found": "找不到版本 UUID \"{{version_uuid}}\"",
-
   "Version uuid \"{{version_uuid}}\" not found.": "找不到版本 UUID \"{{version_uuid}}\"。",
-
   "versionObj \"{{uuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "找不到 {{channel.name}}:{{channel.uuid}} 的 versionObj \"{{uuid}}\"",
-
   "versionObj \"{{versionUuid}}\" is not found for {{channel.name}}:{{channel.uuid}}": "找不到 {{channel.name}}:{{channel.uuid}} 的 versionObj \"{{versionUuid}}\"",
-
   "versionObj.location=\"{{versionObj.location}}\" not implemented yet": "versionObj.location=\"{{versionObj.location}}\" 尚未實作",
-
   "YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb": "YAML 檔案大小不應超過 {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}MB",
-
   "You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.": "對於查詢 {{queryName}}，不容許您對組織 {{org_id}} 之下的 {{type}} 執行 {{action}}。",
-
   "You are not allowed to access this resource due to missing cluster group permission.": "由於缺少叢集群組許可權，不容許您存取此資源。",
-
   "You are not allowed to access this resource due to missing cluster tag permission.": "由於缺少叢集標籤許可權，不容許您存取此資源。",
-
   "You are not allowed to read resources due to missing permissions on cluster group {{group.name}}.": "由於缺少叢集群組 {{group.name}} 的許可權，不容許您讀取資源。",
-
   "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "由於缺少訂閱群組 {{group}} 的許可權，不容許您讀取資源。",
-
   "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "由於缺少叢集群組 {{group.name}} 的許可權，不容許您讀取訂閱。",
-
   "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "不容許您設定所有 {{subscription.groups}} 群組的訂閱。",
-
   "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "您已超出這個組織 {{org_id}} 的叢集數上限",
-
   "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "您已超出這個組織 {{org_id}} 的擱置叢集數上限。"
-
 }
-
