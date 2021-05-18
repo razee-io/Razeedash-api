@@ -143,7 +143,7 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
 
   if(queryFields.cluster){
     var clusterIds = _.map(resources, 'clusterId');
-    var clusters = await models.Cluster.find({ org_id: orgId, cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
+    var clusters = await models.Cluster.find({ cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
     await applyQueryFieldsToClusters(clusters, queryFields.cluster, args, context);
 
     var clustersById = _.keyBy(clusters, 'clusterId');
@@ -224,7 +224,7 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
 
 const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, context)=>{ // eslint-disable-line
   var { me, models } = context;
-  var { orgId } = args;
+  var { orgId, servSub } = args;
 
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channelName)){
@@ -249,8 +249,10 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     });
   }
   if(queryFields.resources){
+    const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids } };
+    if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
     var resources = await loadResourcesWithSearchAndArgs({
-      search: { org_id: orgId, 'searchableData.subscription_id' : { $in: subUuids } },
+      search,
       args,
       context,
     });
@@ -274,12 +276,14 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     });
   }
   if(queryFields.remoteResources || queryFields.rolloutStatus){
+    const search = {
+      org_id: orgId,
+      'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
+      deleted: false
+    };
+    if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
     var remoteResources = await loadResourcesWithSearchAndArgs({
-      search: {
-        org_id: orgId,
-        'searchableData.annotations["deploy_razee_io_clustersubscription"]': { $in: subUuids },
-        deleted: false,
-      },
+      search,
       args,
       context,
     });

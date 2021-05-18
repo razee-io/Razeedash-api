@@ -238,7 +238,17 @@ async function initialize(){
           keys: { action: 1 },
           options: { name: 'action', }
         },
-      ]
+      ],
+      serviceSubscriptions: [
+        {
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+        {
+          keys: { version_uuid: 1 },
+          options: { name: 'version_uuid', }
+        }
+      ],
     },
     views: [{
       name: 'clusterStatsView',

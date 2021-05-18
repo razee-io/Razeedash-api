@@ -22,6 +22,7 @@ const groupSchema = require('./group');
 const clusterSchema = require('./cluster');
 const channelSchema = require('./channel');
 const subscriptionSchema = require('./subscription');
+const serviceSchema = require('./service');
 const organizationSchema = require('./organization');
 
 const linkSchema = gql`
@@ -72,6 +73,7 @@ const schemas = [ linkSchema,
   groupSchema,
   clusterSchema,
   channelSchema,
-  subscriptionSchema];
+  subscriptionSchema,
+  serviceSchema];
 
 module.exports = schemas;

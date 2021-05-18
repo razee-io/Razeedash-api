@@ -133,7 +133,7 @@ const createApolloServer = () => {
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'false',
+    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
     typeDefs,
     resolvers,
     schemaDirectives: {
