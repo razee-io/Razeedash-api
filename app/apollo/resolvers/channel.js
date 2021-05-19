@@ -187,7 +187,7 @@ const channelResolvers = {
     }
   },
   Mutation: {
-    addChannel: async (parent, { orgId: org_id, name, tags=[] }, context)=>{
+    addChannel: async (parent, { orgId: org_id, name, data_location, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -211,6 +211,7 @@ const channelResolvers = {
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
+          data_location,
           ownerId: me._id,
           kubeOwnerName,
         });
@@ -225,7 +226,7 @@ const channelResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
-    editChannel: async (parent, { orgId: org_id, uuid, name, tags=[] }, context)=>{
+    editChannel: async (parent, { orgId: org_id, uuid, name, data_location, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
@@ -236,7 +237,7 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('channel uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags } });
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location } }, {omitUndefined:true});
 
         // find any subscriptions for this configuration channel and update channelName in those subs
         await models.Subscription.updateMany(
@@ -415,9 +416,13 @@ const channelResolvers = {
         const channel_uuid = channel.uuid;
 
         const subCount = await models.Subscription.count({ org_id, channel_uuid });
-
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.', {'subCount':subCount}), context);
+        }
+
+        const serSubCount = await models.ServiceSubscription.count({ channel_uuid });
+        if(serSubCount > 0){
+          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please have tem updated/removed before removing this channel.', {'serSubCount':serSubCount}), context);
         }
 
         // deletes the linked deployableVersions in s3
@@ -456,10 +461,16 @@ const channelResolvers = {
         if(!deployableVersionObj){
           throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
+
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
         }
+        const serSubCount = await models.ServiceSubscription.count({ version_uuid: uuid });
+        if(serSubCount > 0){
+          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
+        }
+
         const channel_uuid = deployableVersionObj.channel_id;
         const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
         if(!channel){

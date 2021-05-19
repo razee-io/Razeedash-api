@@ -24,15 +24,34 @@ router.use(asyncHandler(async (req, res, next) => {
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
 router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next)=>{
   var orgId = req.org._id;
+  var orgKey = req.orgKey;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
   var Channels = req.db.collection('channels');
+  var ServiceSubscriptions = req.db.collection('serviceSubscriptions');
+  var Clusters = req.db.collection('clusters');
+  var Orgs = req.db.collection('orgs');
   var DeployableVersions = req.db.collection('deployableVersions');
 
   var deployable = await Channels.findOne({ org_id: orgId, name: channelName});
-  if(!deployable){
-    res.status(404).send({status: 'error', message: `channel "${channelName}" not found for this org`});
-    return;
+  if (!deployable) {
+    // If there are any service-subscriptions pushing this channel/version into any clusters owned by this org
+    // then the request is legitimate even though requester's org does not own the channel/version.
+    const ourClusters = await Clusters.find({ org_id: orgId, reg_state: 'registered' }).toArray();
+    const ourClusterIds = ourClusters.map(c => c.cluster_id);
+    const ourServiceSubscription = await ServiceSubscriptions.findOne({
+      version_uuid: versionId,
+      clusterId: { $in: ourClusterIds }
+    });
+    if (ourServiceSubscription) {
+      req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
+      orgId = ourServiceSubscription.org_id;
+      orgKey = (await Orgs.findOne({ _id: orgId })).orgKeys[0];
+      deployable = await Channels.findOne({ org_id: orgId, name: channelName});
+    } else {
+      res.status(404).send({ status: 'error', message: `channel "${channelName}" not found for this org` });
+      return;
+    }
   }
 
   var deployableVersion = await DeployableVersions.findOne({ org_id: orgId, channel_id: deployable.uuid, uuid: versionId });
@@ -50,7 +69,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
         const paths = link.path.split('/');
         const bucket = paths[1];
         const resourceName = decodeURI(paths[2]);
-        const key = Buffer.concat([Buffer.from(req.orgKey)], 32);
+        const key = Buffer.concat([Buffer.from(orgKey)], 32);
         const decipher = crypto.createDecipheriv(algorithm, key, iv);
         const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
         s3stream.on('error', function(error) {
@@ -75,7 +94,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
   } else {
     // in this case the resource was stored directly in mongo rather than in COS
     try {
-      const data = tokenCrypt.decrypt(deployableVersion.content, req.orgKey);
+      const data = tokenCrypt.decrypt(deployableVersion.content, orgKey);
       res.set('Content-Type', deployableVersion.type);
       res.status(200).send(data);
     } catch (error) {

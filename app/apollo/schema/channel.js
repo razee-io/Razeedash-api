@@ -107,12 +107,12 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, tags: [String!]): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!]): AddChannelReply!
      
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, tags: [String!]): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!]): EditChannelReply!
      
      """
      Adds a yaml version to this channel

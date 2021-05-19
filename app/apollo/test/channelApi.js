@@ -207,8 +207,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!,$name: String!) {
-            addChannel(orgId: $orgId name: $name) {
+          mutation($orgId: String!,$name: String!, $data_location: String) {
+            addChannel(orgId: $orgId name: $name, data_location: $data_location) {
               uuid
           }
         }

@@ -16,7 +16,7 @@
 
 const mongoose = require('mongoose');
 
-const ChannelSchema = new mongoose.Schema({
+const ServiceSubscriptionSchema = new mongoose.Schema({
   _id: {
     type: String,
   },
@@ -24,16 +24,38 @@ const ChannelSchema = new mongoose.Schema({
     type: String,
     alias: 'orgId',
   },
+  clusterOrgId: {
+    type: String,
+  },
   name: {
     type: String,
   },
   uuid: {
     type: String,
   },
-  data_location: {
+  groups: [
+    {
+      type: String,
+    }
+  ],
+  clusterId: {
     type: String,
   },
-  ownerId: {
+  channel_uuid: {
+    type: String,
+    alias: 'channelUuid',
+  },
+  channelName: {
+    type: String,
+  },
+  version: {
+    type: String,
+  },
+  version_uuid: {
+    type: String,
+    alias: 'versionUuid',
+  },
+  owner: {
     type: String,
   },
   kubeOwnerName: {
@@ -43,35 +65,16 @@ const ChannelSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  versions: [
-    {
-      uuid: {
-        type: String,
-      },
-      name: {
-        type: String,
-      },
-      description: {
-        type: String,
-      },
-      location: {
-        type: String,
-      },
-      created: {
-        type: Date,
-        default: Date.now,
-      }
-    }
-  ],
-  tags: [
-    {
-      type: String,
-    }
-  ],
+  updated: {
+    type: Date,
+    default: Date.now,
+  },
 }, {
+  collection: 'serviceSubscriptions',
   strict:'throw',
 });
 
-ChannelSchema.index({ org_id: 1 }, { });
+ServiceSubscriptionSchema.index({ version_uuid: 1 });
+ServiceSubscriptionSchema.index({ org_id: 1 });
 
-module.exports = ChannelSchema;
+module.exports = ServiceSubscriptionSchema;
