@@ -126,6 +126,7 @@ const createTestData = async () => {
   const serSub1 = await models.ServiceSubscription.create({
     _id: ssid1,
     org_id: org01._id,
+    clusterOrgId: cluster2Data.org_id,
     uuid: ssid1,
     name: 'service_subscription_01_name',
     owner: user02._id,

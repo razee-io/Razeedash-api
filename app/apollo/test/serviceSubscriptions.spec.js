@@ -136,7 +136,7 @@ describe('Service subscription graphql test suite', () => {
       .find(i => i.ssid === testData.serSub1._id)).to.be.an('object');
   });
 
-  it('Get all subscriptions should return three items', async () => {
+  it('Get all subscriptions should return three items and correct resource data', async () => {
     const { data: result } =
       await queries.allSubscriptions(user02superUserToken, {
         orgId: testData.org01._id
@@ -159,6 +159,19 @@ describe('Service subscription graphql test suite', () => {
     expect(result.data.serviceSubscription.owner.name).to.equal('user02');
   });
 
+  it('Deleting cluster should not cause service subscriptions retrieval to fail', async () => {
+    const ss = await models.Cluster.findOneAndDelete({ cluster_id: testData.cluster2Data.cluster_id });
+    // get service subscriptions still should return two items
+    const { data: result } =
+      await queries.serviceSubscriptions(user02superUserToken, {
+        orgId: testData.org01._id
+      });
+    printResults(result);
+    expect(result.data.serviceSubscriptions.length).to.equal(2);
+  });
+
+  // Pre-defined cluster cluster2Data.cluster_id is now deleted, do not use it in the tests below
+
   it('Edit service subscription should update the object', async () => {
     const newName = 'updated service subscription';
     const { data: result } =
@@ -175,7 +188,7 @@ describe('Service subscription graphql test suite', () => {
     expect(ss.name).to.equal(newName);
   });
 
-  it('Remove service subscription should remove the object', async () => {
+  it('Remove service subscription should remove the object, even if it targets removed cluster', async () => {
     const { data: result } =
       await queries.removeServiceSubscription(user02superUserToken, {
         orgId: testData.org01._id,

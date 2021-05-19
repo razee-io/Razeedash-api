@@ -76,8 +76,7 @@ const serviceResolvers = {
       try{
         // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
         for await (const ss of models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true })) {
-          const cluster = await models.Cluster.findOne({cluster_id: ss.clusterId});
-          const allowed = await filterSubscriptionsToAllowed(me, cluster.org_id, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
+          const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
           serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
       }catch(err){
@@ -169,7 +168,7 @@ const serviceResolvers = {
           _id: ssid,
           uuid: ssid, org_id: orgId, name, groups: [], owner: me._id,
           channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
-          clusterId, kubeOwnerName,
+          clusterId, kubeOwnerName, clusterOrgId: cluster.org_id
         });
 
         pubSub.channelSubChangedFunc({org_id: cluster.org_id}, context); // notify cluster should re-fetch its subscriptions
@@ -197,8 +196,7 @@ const serviceResolvers = {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
 
-      const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
-      await validAuth(me, cluster.org_id, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
+      await validAuth(me, serviceSubscription.clusterOrgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
       if (!channel) {
@@ -215,7 +213,7 @@ const serviceResolvers = {
       const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid };
       await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
 
-      pubSub.channelSubChangedFunc({ org_id: cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
+      pubSub.channelSubChangedFunc({ org_id: serviceSubscription.clusterOrgId }, context); // notify cluster should re-fetch its subscriptions
 
       return ssid;
     },
@@ -232,12 +230,11 @@ const serviceResolvers = {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
       }
 
-      const cluster = await models.Cluster.findOne({ cluster_id: serviceSubscription.clusterId });
-      await validAuth(me, cluster.org_id, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
+      await validAuth(me, serviceSubscription.clusterOrgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       await serviceSubscription.deleteOne();
 
-      pubSub.channelSubChangedFunc({ org_id:  cluster.org_id }, context); // notify cluster should re-fetch its subscriptions
+      pubSub.channelSubChangedFunc({ org_id:  serviceSubscription.clusterOrgId }, context); // notify cluster should re-fetch its subscriptions
 
       return ssid;
     }
