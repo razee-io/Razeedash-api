@@ -229,9 +229,16 @@ class RazeeQueryError extends BasicRazeeError {
   }
 }
 
+class RazeeMaintenanceMode extends BasicRazeeError {
+  constructor(message, context) {
+    const name = 'MaintenanceMode';
+    super(message, context, name);
+  }
+}
+
 module.exports =  {
   whoIs, validAuth,
   getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
-  BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError,
+  BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
   validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
 };

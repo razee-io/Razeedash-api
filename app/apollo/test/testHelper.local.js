@@ -37,7 +37,7 @@ async function signInUser (models, api, userData) {
     const result0 = await api.signIn({
       login: userData.email,
       password: userData.password
-    });
+    }, userData.orgAdminKey);
     console.log(JSON.stringify(result0.data));
     return result0.data.data.signIn.token;
   }

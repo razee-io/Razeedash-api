@@ -33,8 +33,10 @@ const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
+const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
+const conf = require('../conf.js').conf;
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -121,12 +123,17 @@ const createApolloServer = () => {
     logger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
+  if(conf.maintenance.flag && conf.maintenance.key) {
+    logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
+    customPlugins.push(apolloMaintenancePlugin);
+  }
+
   logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
     tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'false',
+    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
     typeDefs,
     resolvers,
     schemaDirectives: {
