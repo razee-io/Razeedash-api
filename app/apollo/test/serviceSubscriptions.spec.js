@@ -161,6 +161,7 @@ describe('Service subscription graphql test suite', () => {
 
   it('Deleting cluster should not cause service subscriptions retrieval to fail', async () => {
     const ss = await models.Cluster.findOneAndDelete({ cluster_id: testData.cluster2Data.cluster_id });
+    expect(ss.cluster_id).to.equal(testData.cluster2Data.cluster_id); // make sure cluster is really deleted
     // get service subscriptions still should return two items
     const { data: result } =
       await queries.serviceSubscriptions(user02superUserToken, {
