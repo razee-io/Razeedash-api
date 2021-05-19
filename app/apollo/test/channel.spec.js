@@ -290,9 +290,13 @@ describe('channel graphql test suite', () => {
       } = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
+        data_location: 'dal'
       });
 
       expect(addChannel.uuid).to.be.an('string');
+
+      const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
+      expect(channel1.data_location).to.equal('dal');
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
