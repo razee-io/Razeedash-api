@@ -24,6 +24,9 @@ const ServiceSubscriptionSchema = new mongoose.Schema({
     type: String,
     alias: 'orgId',
   },
+  clusterOrgId: {
+    type: String,
+  },
   name: {
     type: String,
   },
