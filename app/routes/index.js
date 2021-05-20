@@ -207,6 +207,10 @@ async function initialize(){
           options: { name: 'org_id.cluster_id.subid.deleted', }
         },
         {
+          keys: { 'searchableData.subscription_id': 1},
+          options: { name: 'searchableData.subscription_id', }
+        },
+        {
           keys: { org_id: 1, cluster_id: 1, 'searchableData.kind': 1, 'searchableData.children': 1, deleted: 1 },
           options: { name: 'org_id.cluster_id.subid.kind.children', }
         },
