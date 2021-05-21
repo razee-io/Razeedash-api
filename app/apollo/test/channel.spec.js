@@ -290,9 +290,13 @@ describe('channel graphql test suite', () => {
       } = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
+        data_location: 'dal'
       });
 
       expect(addChannel.uuid).to.be.an('string');
+
+      const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
+      expect(channel1.data_location).to.equal('dal');
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
@@ -316,7 +320,25 @@ describe('channel graphql test suite', () => {
         name: 'a_illegal_char#',
       });
       console.log(`${JSON.stringify(data.data)}`);
-      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
+      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add a channel with illegal whitespace', async () => {
+    try {
+      const data = await channelApi.addChannel(adminToken, {
+        orgId: org01._id,
+        name: ' a_illegal_pad ',
+      });
+      console.log(`${JSON.stringify(data.data)}`);
+      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

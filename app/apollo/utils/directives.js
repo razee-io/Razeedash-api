@@ -72,7 +72,7 @@ class IdentifierSanitizer extends Sanitizer {
     }
     if (this.arg !== 'content') {
       if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
-        throw new ValidationError(`The ${this.arg}'s value '${value}' should only contain alphabets, numbers, underscore and hyphen`);
+        throw new ValidationError(`The ${this.arg}'s value '${value}' should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
       }
     }
   }
@@ -137,7 +137,7 @@ class JsonSanitizer extends Sanitizer {
           throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
         }
         if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
-          throw new ValidationError(`The ${this.arg} value ${parent[child]} should only contain alphabets, numbers, underscore and hyphen`);
+          throw new ValidationError(`The ${this.arg} value ${parent[child]} should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
         }
       }
     }

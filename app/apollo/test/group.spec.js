@@ -603,7 +603,7 @@ describe('groups graphql test suite', () => {
         uuid: group_02_uuid,
         clusters: ['cluster_01', 'cluster_04$']
       });
-      expect(data.data.errors[0].message).to.have.string('should only contain alphabets, numbers, underscore and hyphen');
+      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

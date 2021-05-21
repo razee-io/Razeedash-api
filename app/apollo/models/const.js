@@ -26,6 +26,7 @@ const RESOURCE_MAX_TOTAL_LIMIT = process.env.RESOURCE_MAX_TOTAL_LIMIT || 500000;
 const CHANNEL_MAX_TOTAL_LIMIT = process.env.CHANNEL_MAX_TOTAL_LIMIT || 1000;
 const CHANNEL_VERSION_MAX_TOTAL_LIMIT = process.env.CHANNEL_VERSION_MAX_TOTAL_LIMIT || 1000;
 const SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SUBSCRIPTION_MAX_TOTAL_LIMIT || 1000;
+const SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT || 100;
 
 // Set Yaml file maximum size allowed in MB
 const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 2;
@@ -54,6 +55,10 @@ const SUBSCRIPTION_LIMITS = {
   MAX_TOTAL: SUBSCRIPTION_MAX_TOTAL_LIMIT, // max total subscriptions allowed per account
 };
 
+const SERVICE_SUBSCRIPTION_LIMITS = {
+  MAX_TOTAL: SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT, // max total service subscriptions allowed per account
+};
+
 const CLUSTER_REG_STATES = {
   REGISTERING: 'registering', // cluster db entry is created
   PENDING: 'pending', // razeedeploy-job yaml is downloaded, maybe already applied to the target cluster
@@ -76,10 +81,19 @@ const DIRECTIVE_LIMITS = {
   MAX_JSON_ITEMS: config.has('directive_limits.max_json_items') ? config.get('directive_limits.max_json_items') : 128,
   MAX_CLUSTER_ARRAY_LENGTH: CLUSTER_MAX_TOTAL_LIMIT,
   MAX_GROUP_ARRAY_LENGTH: config.has('directive_limits.max_group_array_length') ? config.get('directive_limits.max_group_array_length') : 32,
-  INVALID_PATTERN: /[<>$%&!@()}{"#]{1,}/,
+  /*
+  A string is invalid if starts with whitespace, OR contains an invalid character from the list, OR ends with whitespace
+  Currently the same restriction is applied to all fields (see directives.js), but not all attributes need to restrict the characterset the same way.
+  Additional code refactoring would be required to explicitly test identifiers with different patterns than other fields.
+  The error messages emitted suggest only "alphabets, numbers, underscore and hyphen" are allowed, but this pattern does not accurately enforce that.
+  Consider adding '`\[\]\\\/*^. as additional invalid chars for identifiers, but until refactored thoroughly this will negatively affect other values.
+  E.g. ConfigurationVersion "type" attribute value "application/yaml" needs to contain a "/" and "description" attributes can be more freeform.
+  */
+  INVALID_PATTERN: /^\s|[<>$%&!@()}{"#\t\n\r]{1,}|\s$/,
 };
 
 // console.log('NODE_ENV: ' + config.util.getEnv('NODE_ENV') + `, DIRECTIVE_LIMITS: ${JSON.stringify(DIRECTIVE_LIMITS)}`);
 
 module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
-  CLUSTER_LIMITS, CLUSTER_REG_STATES, CLUSTER_STATUS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, DIRECTIVE_LIMITS};
+  CLUSTER_LIMITS, CLUSTER_REG_STATES, CLUSTER_STATUS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS,
+  SERVICE_SUBSCRIPTION_LIMITS, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, DIRECTIVE_LIMITS};

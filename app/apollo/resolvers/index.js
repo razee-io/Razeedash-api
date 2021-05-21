@@ -23,6 +23,7 @@ const groupResolvers = require('./group');
 const clusterResolvers = require('./cluster');
 const channelResolvers = require('./channel');
 const subscriptionResolvers = require('./subscription');
+const serviceResolvers = require('./serviceSubscription');
 const organizationResolvers = require('./organization');
 
 const customScalarResolver = {
@@ -38,6 +39,7 @@ const resolvers = [
   groupResolvers,
   clusterResolvers,
   subscriptionResolvers,
+  serviceResolvers,
   channelResolvers,
 ];
 

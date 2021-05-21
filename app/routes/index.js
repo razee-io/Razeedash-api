@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2021 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ const ebl = require('express-bunyan-logger');
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
 const S3ClientClass = require('../s3/s3Client');
+const { maintenanceMode, maintenanceMessage } = require('../utils/maintenance.js');
 
 const MongoClient = new MongoClientClass(conf);
 MongoClient.log=logger;
@@ -65,6 +66,24 @@ router.use(asyncHandler(async (req, res, next) => {
   req.s3 = s3Client;
   next();
 }));
+
+const maintenanceCheck = (flag, key) => {
+  return async function(req, res, next) {
+    // allow mongo queries to continue but don't allow writes to the database
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
+      if(await maintenanceMode(flag, key)) {
+        res.status(503).send(maintenanceMessage);
+        return;
+      }
+    }
+    next();
+  };
+};
+
+if(conf.maintenance.flag && conf.maintenance.key) {
+  logger.info('Adding maintenance check middleware to express routes');
+  router.use(maintenanceCheck(conf.maintenance.flag, conf.maintenance.key));
+}
 
 // the orgs routes should be above the razee-org-key checks since the user
 // won't have a razee-org-key when creating an org for the first time.
@@ -219,7 +238,17 @@ async function initialize(){
           keys: { action: 1 },
           options: { name: 'action', }
         },
-      ]
+      ],
+      serviceSubscriptions: [
+        {
+          keys: { org_id: 1 },
+          options: { name: 'org_id', }
+        },
+        {
+          keys: { version_uuid: 1 },
+          options: { name: 'version_uuid', }
+        }
+      ],
     },
     views: [{
       name: 'clusterStatsView',
