@@ -29,7 +29,7 @@ const SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SUBSCRIPTION_MAX_TOTAL_LIMIT ||
 const SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT || 100;
 
 // Set Yaml file maximum size allowed in MB
-const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 2;
+const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 3;
 
 // controls static args to be passed to reazeedeploy-job
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
