@@ -29,7 +29,7 @@ const SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SUBSCRIPTION_MAX_TOTAL_LIMIT ||
 const SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT || 100;
 
 // Set Yaml file maximum size allowed in MB
-const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 2;
+const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 3;
 
 // controls static args to be passed to reazeedeploy-job
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
@@ -75,7 +75,7 @@ const CLUSTER_STATUS = {
 const DIRECTIVE_LIMITS = {
   MAX_STRING_LENGTH: config.has('directive_limits.max_string_length') ? config.get('directive_limits.max_string_length') : 256,
   MIN_STRING_LENGTH: config.has('directive_limits.min_string_length') ? config.get('directive_limits.min_string_length') : 1,
-  MAX_CONTENT_LENGTH: config.has('directive_limits.max_content_length') ? config.get('directive_limits.max_content_length') : CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024,
+  MAX_CONTENT_LENGTH: config.has('directive_limits.max_content_length') ? config.get('directive_limits.max_content_length') : CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024 * 1024,
   MAX_JSON_KEY_LENGTH: config.has('directive_limits.max_json_key_length') ? config.get('directive_limits.max_json_key_length') : 256,
   MAX_JSON_VALUE_LENGTH: config.has('directive_limits.max_json_value_length') ? config.get('directive_limits.max_json_value_length') : 1000,
   MAX_JSON_ITEMS: config.has('directive_limits.max_json_items') ? config.get('directive_limits.max_json_items') : 128,
