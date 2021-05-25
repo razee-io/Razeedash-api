@@ -17,7 +17,7 @@
 const { gql } = require('apollo-server-express');
 
 const channelSchema = gql`
-  
+
   type ChannelVersion {
     uuid: String!
     name: String!
@@ -29,6 +29,7 @@ const channelSchema = gql`
     uuid: String!
     orgId: String!
     name: String!
+    data_location: String
     created: Date!
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
@@ -93,12 +94,12 @@ const channelSchema = gql`
      channelsByTags(orgId: String! @sv, tags: [String!]!): [Channel]!
 
      """
-     Gets a channel version info from this channel uuid and version uuid 
+     Gets a channel version info from this channel uuid and version uuid
      """
      channelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!
 
      """
-     Gets a channel version info from this channel name and version name 
+     Gets a channel version info from this channel name and version name
      """
      channelVersionByName(orgId: String! @sv, channelName: String! @sv, versionName: String! @sv): DeployableVersion!
   }
@@ -108,12 +109,12 @@ const channelSchema = gql`
      Adds a channel
      """
      addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!]): AddChannelReply!
-     
+
      """
      Edits a channel
      """
      editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!]): EditChannelReply!
-     
+
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload

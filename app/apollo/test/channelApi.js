@@ -27,6 +27,7 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
@@ -56,6 +57,7 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
@@ -85,6 +87,7 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
@@ -280,5 +283,3 @@ const channelFunc = grahqlUrl => {
 };
 
 module.exports = channelFunc;
-
-
