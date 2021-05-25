@@ -28,6 +28,10 @@ const s3legacyType = 's3legacy'; // legacy handler requires special treatment
 
 class StorageFactory {
   constructor() {
+    this.init();
+  }
+
+  init() {
     this.handlers = new Map();
     this.logInfo(`Loading storage handler implementations from ${configFileName} ...`);
     const configFile = fs.readFileSync(configFileName);
@@ -77,7 +81,6 @@ class StorageFactory {
   isLink(s) {
     return _.isString(s) && /^(http|https):\/\/?/.test(s);
   }
-
 }
 
 module.exports = new StorageFactory();

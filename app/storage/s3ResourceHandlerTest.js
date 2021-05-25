@@ -1,7 +1,7 @@
 'use strict';
 
 /*
-  Configure variables in .env file 
+  Configure variables in .env file
     S3_WDC_ENDPOINT
     S3_WDC_ACCESS_KEY_ID
     S3_WDC_SECRET_ACCESS_KEY
@@ -38,6 +38,10 @@ async function test() {
   const delHandler = storageFactory.deserialize(encodedResource);
   await delHandler.deleteData();
   const emptyEncodedResource = delHandler.serialize();
+
+  // Delete the bucket again - should not throw exceptions
+  const delHandlerToo = storageFactory.deserialize(encodedResource);
+  await delHandlerToo.deleteData();
 
   const emptyHandler = storageFactory.deserialize(emptyEncodedResource);
   try {

@@ -32,7 +32,6 @@ const channelFunc = grahqlUrl => {
                 uuid
                 name
                 description
-                location
               }
           }
         }
@@ -61,7 +60,6 @@ const channelFunc = grahqlUrl => {
                 uuid
                 name
                 description
-                location
               }
           }
         }
@@ -90,7 +88,6 @@ const channelFunc = grahqlUrl => {
                 uuid
                 name
                 description
-                location
               }
           }
         }

@@ -1,7 +1,7 @@
 'use strict';
 
 /*
-  Configure variables in .env file 
+  Configure variables in .env file
     S3_WDC_ENDPOINT
     S3_WDC_ACCESS_KEY_ID
     S3_WDC_SECRET_ACCESS_KEY

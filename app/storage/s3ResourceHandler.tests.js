@@ -17,16 +17,29 @@
 
 'use strict';
 
+/*
 process.env.S3_LOCATIONS = 'WDC LON';
 process.env.S3_DEFAULT_LOCATION = 'LON';
 process.env.S3_LON_ENDPOINT = 'lon.ibm.com';
 process.env.S3_WDC_ENDPOINT = 'wdc.ibm.com';
 process.env.COS_SDK = 'mock-aws-s3';
+*/
+
+const rewire = require('rewire');
+const expect = require('chai').expect;
 
 require('mock-aws-s3').config.basePath = '/tmp/buckets';
 
-const storageFactory = require('./storageFactory');
-const expect = require('chai').expect;
+const conf = require('./../conf.js').conf;
+conf.storage.defaultHandler = 's3';
+conf.storage.sdk = 'mock-aws-s3';
+const wdcConnection = { endpoint: 'wdc.ibm.com', locationConstraint: 'washington' };
+conf.storage.s3ConnectionMap.set('WDC', wdcConnection);
+const lonConnection = { endpoint: 'lon.ibm.com', locationConstraint: 'london' };
+conf.storage.s3ConnectionMap.set('LON', lonConnection);
+conf.storage.defaultLocation = 'LON';
+
+const storageFactory = rewire('./storageFactory');
 
 describe('s3ResourceHandler', () => {
   it('S3 resource upload with encryption and download with decryption', async () => {

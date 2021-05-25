@@ -1,7 +1,7 @@
 'use strict';
 
 /*
-  To run the test: 
+  To run the test:
     node app/storage/embeddedResourceHandlerTest.js
 */
 

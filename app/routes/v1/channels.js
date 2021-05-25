@@ -4,13 +4,7 @@ const asyncHandler = require('express-async-handler');
 const mongoConf = require('../../conf.js').conf;
 const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
-const conf = require('../../conf.js').conf;
-const S3ClientClass = require('../../s3/s3Client');
-const url = require('url');
-const crypto = require('crypto');
-const tokenCrypt = require('../../utils/crypt');
-const algorithm = 'aes-256-cbc';
-
+const storageFactory = require('./../../storage/storageFactory');
 const getOrg = require('../../utils/orgs.js').getOrg;
 
 router.use(asyncHandler(async (req, res, next) => {
@@ -22,7 +16,7 @@ router.use(asyncHandler(async (req, res, next) => {
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next)=>{
+router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res)=>{
   var orgId = req.org._id;
   var orgKey = req.orgKey;
   var channelName = req.params.channelName + '';
@@ -60,47 +54,16 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     return;
   }
 
-  if(deployableVersion.location === 's3') {
-    if (conf.s3.endpoint) {
-      try {
-        const s3Client = new S3ClientClass(conf);
-        const link = url.parse(deployableVersion.content);
-        const iv = Buffer.from(deployableVersion.iv, 'base64');
-        const paths = link.path.split('/');
-        const bucket = paths[1];
-        const resourceName = decodeURI(paths[2]);
-        const key = Buffer.concat([Buffer.from(orgKey)], 32);
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
-        s3stream.on('error', function(error) {
-          req.log.error(error);
-          return res.status(403).json({ status: 'error', message: error.message});
-        });
-        s3stream.pipe(decipher).pipe(res);
-        s3stream.on('httpError', (error) => {
-          req.log.error(error, 'Error GETting data using the S3 client');
-          if (!res.headersSent) {
-            res.status(error.statusCode || 500).json(error);
-          } else {
-            next(error);
-          }
-        });
-      } catch (error) {
-        return res.status(403).json({ status: 'error', message: error.message});
-      }
-    } else {
-      return res.status(403).json({ status: 'error', message: 'An endpoint must be configured for the S3 client'});
-    }
-  } else {
-    // in this case the resource was stored directly in mongo rather than in COS
-    try {
-      const data = tokenCrypt.decrypt(deployableVersion.content, orgKey);
-      res.set('Content-Type', deployableVersion.type);
-      res.status(200).send(data);
-    } catch (error) {
-      return res.status(500).json({ status: 'error', message: error });
-    }
+  try {
+    const handler = storageFactory.deserialize(deployableVersion.content);
+    const data = await handler.getDataAndDecrypt(orgKey, deployableVersion.iv);
+    res.set('Content-Type', deployableVersion.type);
+    res.status(200).send(data);
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).json({ status: 'error', message: error.message});
   }
+
 }));
 
 module.exports = router;
