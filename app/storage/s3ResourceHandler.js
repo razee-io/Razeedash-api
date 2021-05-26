@@ -26,7 +26,11 @@ class S3ResourceHandler {
   constructor(resourceKey, bucketName, location, endpoint) {
     this.resourceKey = resourceKey;
     this.bucketName = bucketName;
+
     this.location = location || conf.storage.defaultLocation;
+    if (this.location) {
+      this.location = this.location.toLowerCase();
+    }
 
     const locationConfig = conf.storage.s3ConnectionMap.get(this.location);
     if (!locationConfig) {

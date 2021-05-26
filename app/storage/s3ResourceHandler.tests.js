@@ -34,9 +34,9 @@ const conf = require('./../conf.js').conf;
 conf.storage.defaultHandler = 's3';
 conf.storage.sdk = 'mock-aws-s3';
 const wdcConnection = { endpoint: 'wdc.ibm.com', locationConstraint: 'washington' };
-conf.storage.s3ConnectionMap.set('WDC', wdcConnection);
+conf.storage.s3ConnectionMap.set('wdc', wdcConnection);
 const lonConnection = { endpoint: 'lon.ibm.com', locationConstraint: 'london' };
-conf.storage.s3ConnectionMap.set('LON', lonConnection);
+conf.storage.s3ConnectionMap.set('lon', lonConnection);
 conf.storage.defaultLocation = 'LON';
 
 const storageFactory = rewire('./storageFactory');
@@ -62,7 +62,7 @@ describe('s3ResourceHandler', () => {
     const encodedResource = handler.serialize();
     console.log(encodedResource, ivText);
     expect(encodedResource.metadata.type).to.equal('s3');
-    expect(encodedResource.data.location).to.equal('LON');
+    expect(encodedResource.data.location).to.equal('lon'); // must be lower case
     expect(encodedResource.data.endpoint).to.equal('lon.ibm.com');
 
     // Read resource from the bucket

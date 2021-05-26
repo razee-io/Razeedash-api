@@ -186,7 +186,7 @@ const createResources = async () => {
     selfLink: 'any_selfLink',
     hash: 'any_hash',
     deleted: false,
-    data: 'any_data',
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
     searchableData: { key01: 'any value 01', key02: 'any value 02' },
     searchableDataHash: 'some random hash.',
   });
@@ -197,7 +197,7 @@ const createResources = async () => {
     selfLink: '/mybla/selfLink',
     hash: 'any_hash',
     deleted: false,
-    data: 'any_data',
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
     searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
     searchableDataHash: 'some random hash.',
   });
@@ -209,7 +209,7 @@ const createResources = async () => {
     selfLink: '/mybla/cluster04/selfLink1',
     hash: 'any_hash',
     deleted: false,
-    data: 'any_data',
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
     updated: new Date(1400000000000),
     searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123', kind: 'Deployment', },
     searchableDataHash: 'some random hash.',
@@ -221,7 +221,7 @@ const createResources = async () => {
     selfLink: '/mybla/cluster04/selfLink2',
     hash: 'any_hash',
     deleted: false,
-    data: 'any_data',
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
     updated: new Date(1500000000000),
     searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123', kind: 'StatefulSet' },
     searchableDataHash: 'some random hash.',
@@ -233,7 +233,7 @@ const createResources = async () => {
     selfLink: '/mybla/selfLink/deleted',
     hash: 'any_hash',
     deleted: true,
-    data: 'any_data',
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
     searchableData: { key01: 'any value 01', key02: 'any value 02' },
     searchableDataHash: 'some random hash.',
   });
@@ -242,7 +242,7 @@ const createResources = async () => {
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     resourceSelfLink: '/mybla/selfLink',
-    yamlStr: 'YAML_HIST_DATA_01',
+    yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_01' },
     updated: new Date(),
   });
   await models.ResourceYamlHist.create({
@@ -250,7 +250,7 @@ const createResources = async () => {
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     resourceSelfLink: '/mybla/selfLink',
-    yamlStr: 'YAML_HIST_DATA_02',
+    yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_02' },
     updated: new Date(),
   });
 };

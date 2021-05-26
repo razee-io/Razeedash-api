@@ -30,9 +30,7 @@ const ResourceYamlHistSchema = new mongoose.Schema({
   resourceSelfLink: {
     type: String,
   },
-  yamlStr: {
-    type: String,
-  },
+  yamlStr: mongoose.Schema.Types.Mixed,
   updated: {
     type: Date,
     default: Date.now,

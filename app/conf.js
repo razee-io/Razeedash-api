@@ -22,6 +22,7 @@ const metroArr = metroList ? metroList.match(/\S+/g) : [];
 const s3ConnectionMap = new Map();
 
 for (let metro of metroArr) {
+  metro = metro.toUpperCase();
   const envVar = 'S3_' + metro + '_ENDPOINT';
   const endpoint = process.env[envVar]; // ex. S3_WDC_ENDPOINT
   if (endpoint) {
@@ -33,7 +34,7 @@ for (let metro of metroArr) {
     connection.signatureVersion = 'v4';
     connection.channelBucket = process.env['S3_' + metro + '_CHANNEL_BUCKET'] || process.env.S3_CHANNEL_BUCKET || 'razee';
     connection.resourceBucket = process.env['S3_' + metro + '_RESOURCE_BUCKET'] || process.env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
-    s3ConnectionMap.set(metro, connection);
+    s3ConnectionMap.set(metro.toLowerCase(), connection);
   } else {
     throw new Error(`S3 endpoint for location ${metro} is not defnied, possibly missing '${envVar}' env variable.`);
   }
