@@ -50,6 +50,15 @@ async function test() {
   } catch (error) {
     console.log(error.message);
   }
+
+  // Async write resource into bucket without encryption
+  const longString = 'x'.repeat(100*1024*1024);
+  const handler2 = storageFactory.newResourceHandler(path, bucketName, location);
+  const promise = handler2.setData(longString);
+  console.log('Waiting on promise...' + new Date());
+  await promise;
+  handler2.deleteData();
+  console.log('All done!');
 }
 
 test().catch(console.log);

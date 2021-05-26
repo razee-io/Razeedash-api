@@ -179,7 +179,7 @@ const channelResolvers = {
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
-          data_location,
+          data_location: data_location ? data_location : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerName,
         });
@@ -299,8 +299,7 @@ const channelResolvers = {
       }
 
       const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
-      const bucketName = `${conf.s3.channelBucket}`;
-
+      const bucketName = conf.storage.getChannelBucket(channel.data_location);
       const handler = storageFactory.newResourceHandler(path, bucketName, channel.data_location);
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();

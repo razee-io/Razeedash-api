@@ -42,10 +42,21 @@ for (let metro of metroArr) {
 
 const storage = {
   s3ConnectionMap,
-  defaultLocation,
+  defaultLocation: defaultLocation ? defaultLocation.toLowerCase() : undefined,
   defaultHandler: s3ConnectionMap.size > 0 ? 's3' : 'embedded',
   sdk: process.env.COS_SDK || 'aws-sdk', // also works with 'ibm-cos-sdk' and 'mock-aws-s3'
   sslEnabled: !process.env.S3_DISABLE_SSL, // for local minio support
+
+  getChannelBucket: (location) => {
+    location = location ? location.toLowerCase() : storage.defaultLocation;
+    const connection = storage.s3ConnectionMap.get(location);
+    return connection ? connection.channelBucket : undefined;
+  },
+  getResourceBucket: (location) => {
+    location = location ? location.toLowerCase() : storage.defaultLocation;
+    const connection = storage.s3ConnectionMap.get(location);
+    return connection ? connection.resourceBucket: undefined;
+  }
 };
 
 const conf = {
@@ -53,17 +64,6 @@ const conf = {
     url: process.env.MONGO_URL || 'mongodb://localhost:3001/meteor',
     dbName: process.env.MONGO_DB_NAME || 'meteor',
     cert: '/var/run/secrets/razeeio/razeedash-secret/mongo_cert'
-  },
-  s3: { // TODO: only used by the legacy code and should be deleted ASAP
-    endpoint: process.env.S3_ENDPOINT,
-    accessKeyId: process.env.S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    locationConstraint: process.env.S3_LOCATION_CONSTRAINT || 'us-standard',
-    channelBucket: process.env.S3_CHANNEL_BUCKET || 'razee',
-    resourceBucket: process.env.S3_RESOURCE_BUCKET || process.env.S3_CHANNEL_BUCKET || 'razee',
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4',
-    sslEnabled: !process.env.S3_DISABLE_SSL, //for local minio support
   },
   storage: storage,
   maintenance: {

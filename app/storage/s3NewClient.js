@@ -16,7 +16,7 @@
 
 'use strict';
 
-const conf = require('../conf.js').conf;
+const conf = require('./../conf').conf;
 const SDK = require(conf.storage.sdk);
 const logger = require('./../log').log;
 
@@ -87,22 +87,6 @@ module.exports = class S3NewClient {
       Key: key
     }).promise();
   }
-
-  /*
-  async createObject(bucketName, key, body) {
-    return this.s3.putObject({
-      Bucket: bucketName,
-      Key: key,
-      Body: body
-    }).promise();
-  }
-
-  async deleteBucket(bucketName) {
-    return this.s3.deleteBucket({
-      Bucket: bucketName
-    }).promise();
-  }
-  */
 
 };
 
