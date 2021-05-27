@@ -58,6 +58,7 @@
   "The version name {{name}} already exists": "버전 이름 {{name}}이(가) 이미 있습니다.",
   "Too many configuration channel versions are registered under {{channel_uuid}}.": "Too many configuration channel versions are registered under {{channel_uuid}}.",
   "Too many configuration channels are registered under {{org_id}}.": "Too many configuration channels are registered under {{org_id}}.",
+  "The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]": "The data_location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]",
   "Too many subscriptions are registered under {{org_id}}.": "{{org_id}}에 구독이 너무 많이 등록되었습니다.",
   "version uuid \"{{uuid}}\" not found": "버전 uuid \"{{uuid}}\"을(를) 찾을 수 없음",
   "version uuid \"{{version_uuid}}\" not found": "버전 uuid \"{{version_uuid}}\"을(를) 찾을 수 없음",

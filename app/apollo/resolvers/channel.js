@@ -162,6 +162,13 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
+        // if there is a list of valid data locations, validate the data_location (if provided) is in the list
+        if( Array.from(conf.storage.s3ConnectionMap.keys()).length > 0 ) {
+          if( data_location && !conf.storage.s3ConnectionMap.has( data_location.toLowerCase() ) ) {
+            throw new RazeeValidationError(context.req.t('The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]', {'data_location':data_location, 'valid_locations':Array.from(conf.storage.s3ConnectionMap.keys()).join(' ')}), context);
+          }
+        }
+
         // might not necessary with uunique index. Worth to check to return error better.
         const channel = await models.Channel.findOne({ name, org_id });
         if(channel){
@@ -173,13 +180,14 @@ const channelResolvers = {
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
+
         const uuid = UUID();
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
-          data_location: data_location ? data_location : conf.storage.defaultLocation,
+          data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerName,
         });
