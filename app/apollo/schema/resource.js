@@ -31,7 +31,7 @@ const resourceSchema = gql`
     histId: String!
     selfLink: String
     hash: String
-    data: String
+    data: JSON
     deleted: Boolean
     created: Date
     updated: Date
