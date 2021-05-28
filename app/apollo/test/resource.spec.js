@@ -564,6 +564,7 @@ describe('resource graphql test suite', () => {
         expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/selfLink',
         );
+        expect(result1.data.errors).to.be.undefined;
       } catch (error) {
         console.error('error response is ', error.response);
         // console.error('error response is ', JSON.stringify(error.response.data));

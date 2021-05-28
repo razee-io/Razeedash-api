@@ -257,6 +257,7 @@ const apiFunc = grahqlUrl => {
                   clusterId
                   name
                 }
+                data
               }
             }
           }

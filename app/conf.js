@@ -16,12 +16,9 @@
 
 'use strict';
 
-const defaultLocation = process.env.S3_DEFAULT_LOCATION || (process.env.S3_WDC_ENDPOINT ? 'WDC' : undefined);
-const metroList = process.env.S3_LOCATIONS || defaultLocation;
-const metroArr = metroList ? metroList.match(/\S+/g) : [];
+const metroArray = process.env.S3_LOCATIONS ? process.env.S3_LOCATIONS.match(/\S+/g) : [];
 const s3ConnectionMap = new Map();
-
-for (let metro of metroArr) {
+for (let metro of metroArray) {
   metro = metro.toUpperCase();
   const envVar = 'S3_' + metro + '_ENDPOINT';
   const endpoint = process.env[envVar]; // ex. S3_WDC_ENDPOINT
@@ -36,13 +33,15 @@ for (let metro of metroArr) {
     connection.resourceBucket = process.env['S3_' + metro + '_RESOURCE_BUCKET'] || process.env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
     s3ConnectionMap.set(metro.toLowerCase(), connection);
   } else {
-    throw new Error(`S3 endpoint for location ${metro} is not defnied, possibly missing '${envVar}' env variable.`);
+    throw new Error(`S3 endpoint for location '${metro}' is not defnied, possibly missing '${envVar}' env variable.`);
   }
 }
 
+const defaultLocation = s3ConnectionMap.size > 0 ? (process.env.S3_DEFAULT_LOCATION || metroArray[0].toLowerCase()) : undefined;
+
 const storage = {
   s3ConnectionMap,
-  defaultLocation: defaultLocation ? defaultLocation.toLowerCase() : undefined,
+  defaultLocation,
   defaultHandler: s3ConnectionMap.size > 0 ? 's3' : 'embedded',
   sdk: process.env.COS_SDK || 'aws-sdk', // also works with 'ibm-cos-sdk' and 'mock-aws-s3'
   sslEnabled: !process.env.S3_DISABLE_SSL, // for local minio support
