@@ -25,9 +25,7 @@ const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, No
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
-const conf = require('../../conf.js').conf;
-const S3ClientClass = require('../../s3/s3Client');
-const url = require('url');
+const storageFactory = require('./../../storage/storageFactory');
 
 // Filters out the namespaces you dont have access to. has to get all the resources first.
 const filterNamespaces = async (data, me, orgId, queryName, context) => {
@@ -76,41 +74,6 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
   }
 };
 
-const isLink = (s) => {
-  return /^(http|https):\/\/?/.test(s);
-};
-
-const s3IsDefined = () => {
-  return conf.s3.endpoint;
-};
-
-const getS3Data = async (s3Link, logger, context) => {
-  try {
-    const s3Client = new S3ClientClass(conf);
-    const link = url.parse(s3Link);
-    const paths = link.path.split('/');
-    const bucket = paths[1];
-    // we do not need to decode URL here because path[2] and path[3] are hash code
-    // path[2] stores keyHash , path[3] stores searchableDataHash
-    const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
-    const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
-    const yaml = await readS3File(s3stream);
-    return yaml;
-  } catch (error) {
-    logger.error(error, 'Error retrieving data from s3 bucket');
-    throw new BasicRazeeError(context.req.t('Error retrieving data from s3 bucket. {{error.message}}', {'error.message':error.message}), context);
-  }
-};
-
-const readS3File = async (readable) => {
-  readable.setEncoding('utf8');
-  let data = '';
-  for await (const chunk of readable) {
-    data += chunk;
-  }
-  return data;
-};
-
 const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
   const { models, me, req_id, logger } = context;
   try {
@@ -121,8 +84,9 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
 
     if (!resource) return resource;
 
-    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = await getS3Data(resource.data, logger);
+    if (queryFields['data'] && resource.data) {
+      const handler = storageFactory.deserialize(resource.data);
+      const yaml = await handler.getData();
       resource.data = yaml;
     }
 
@@ -285,8 +249,9 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
-        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = await getS3Data(resource.data, logger);
+        if (queryFields['data'] && resource.data) {
+          const handler = storageFactory.deserialize(resource.data);
+          const yaml = await handler.getData();
           resource.data = yaml;
         }
         resource.updated = resourceYamlHistObj.updated;
@@ -415,8 +380,9 @@ const resourceResolvers = {
 
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
-        if ( content && isLink(content) && s3IsDefined()) {
-          const yaml = await getS3Data(content, logger);
+        if ( content ) {
+          const handler = storageFactory.deserialize(content);
+          const yaml = await handler.getData();
           content = yaml;
         }
         return {
@@ -433,8 +399,9 @@ const resourceResolvers = {
       }
 
       var content = await getContent(obj);
-      if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = await getS3Data(content, logger);
+      if ( content ) {
+        const handler = storageFactory.deserialize(content);
+        const yaml = await handler.getData();
         content = yaml;
       }
 

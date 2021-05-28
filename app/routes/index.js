@@ -25,7 +25,6 @@ const ebl = require('express-bunyan-logger');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
-const S3ClientClass = require('../s3/s3Client');
 const { maintenanceMode, maintenanceMessage } = require('../utils/maintenance.js');
 
 const MongoClient = new MongoClientClass(conf);
@@ -54,16 +53,6 @@ router.use(ebl(getBunyanConfig('razeedash-api/api')));
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
   req.db = db;
-  next();
-}));
-
-router.use(asyncHandler(async (req, res, next) => {
-  let s3Client = null;
-  if (conf.s3.endpoint) {
-    s3Client = new S3ClientClass(conf);
-    s3Client.log=logger;
-  }
-  req.s3 = s3Client;
   next();
 }));
 

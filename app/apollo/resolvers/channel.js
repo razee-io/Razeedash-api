@@ -16,34 +16,16 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const crypto = require('crypto');
 const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
-const S3ClientClass = require('../../s3/s3Client');
-const { WritableStreamBuffer } = require('stream-buffers');
 const streamToString = require('stream-to-string');
-const stream = require('stream');
 const pLimit = require('p-limit');
 const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = require('../utils/applyQueryFields');
-
+const storageFactory = require('./../../storage/storageFactory');
 const yaml = require('js-yaml');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
-
-const { encryptOrgData, decryptOrgData} = require('../../utils/orgs');
-
-const deleteDeployableVersionFromS3 = async(deployableVersionObj)=>{
-  const url = deployableVersionObj.content;
-  const urlObj = new URL(url);
-  const fullPath = urlObj.pathname;
-  var parts = _.filter(_.split(fullPath, '/'));
-  var bucketName = parts.shift();
-  var path = `${parts.join('/')}`;
-
-  const s3Client = new S3ClientClass(conf);
-  return await s3Client.deleteObject(bucketName, path);
-};
 
 const channelResolvers = {
   Query: {
@@ -162,23 +144,9 @@ const channelResolvers = {
         }
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
-        if (versionObj.location === 'mongo') {
-          deployableVersionObj.content = await decryptOrgData(orgKey, deployableVersionObj.content);
-        }
-        else if(versionObj.location === 's3'){
-          const url = deployableVersionObj.content;
-          const urlObj = new URL(url);
-          const fullPath = urlObj.pathname;
-          var parts = _.filter(_.split(fullPath, '/'));
-          var bucketName = parts.shift();
-          var path = `${parts.join('/')}`;
+        const handler = storageFactory.deserialize(deployableVersionObj.content);
+        deployableVersionObj.content = await handler.getDataAndDecrypt(orgKey, deployableVersionObj.iv);
 
-          const s3Client = new S3ClientClass(conf);
-          deployableVersionObj.content = await s3Client.getAndDecryptFile(bucketName, decodeURIComponent(path), orgKey, deployableVersionObj.iv);
-        }
-        else {
-          throw new BasicRazeeError(context.req.t('versionObj.location="{{versionObj.location}}" not implemented yet', {'versionObj.location':versionObj.location}), context);
-        }
         return deployableVersionObj;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -194,6 +162,13 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
+        // if there is a list of valid data locations, validate the data_location (if provided) is in the list
+        if( Array.from(conf.storage.s3ConnectionMap.keys()).length > 0 ) {
+          if( data_location && !conf.storage.s3ConnectionMap.has( data_location.toLowerCase() ) ) {
+            throw new RazeeValidationError(context.req.t('The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]', {'data_location':data_location, 'valid_locations':Array.from(conf.storage.s3ConnectionMap.keys()).join(' ')}), context);
+          }
+        }
+
         // might not necessary with uunique index. Worth to check to return error better.
         const channel = await models.Channel.findOne({ name, org_id });
         if(channel){
@@ -205,13 +180,14 @@ const channelResolvers = {
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
+
         const uuid = UUID();
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
-          data_location,
+          data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerName,
         });
@@ -330,44 +306,11 @@ const channelResolvers = {
         throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
       }
 
-      var fileStream = stream.Readable.from([ content ]);
-      const iv = crypto.randomBytes(16);
-      const ivText = iv.toString('base64');
-
-      let location = 'mongo';
-      let data = null;
-
-      if(conf.s3.endpoint){
-        const resourceName = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
-        const bucketName = `${conf.s3.channelBucket}`;
-
-        const s3Client = new S3ClientClass(conf);
-
-        await s3Client.ensureBucketExists(bucketName);
-
-        //data is now the s3 hostpath to the resource
-        const result = await s3Client.encryptAndUploadFile(bucketName, resourceName, fileStream, orgKey, iv);
-        data = result.url;
-
-        location = 's3';
-      }
-      else{
-        var buf = new WritableStreamBuffer();
-        await new Promise((resolve, reject)=>{
-          return stream.pipeline(
-            fileStream,
-            buf,
-            (err)=>{
-              if(err){
-                reject(err);
-              }
-              resolve(err);
-            }
-          );
-        });
-        const content = buf.getContents().toString('utf8');
-        data = await encryptOrgData(orgKey, content);
-      }
+      const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
+      const bucketName = conf.storage.getChannelBucket(channel.data_location);
+      const handler = storageFactory.newResourceHandler(path, bucketName, channel.data_location);
+      const ivText = await handler.setDataAndEncrypt(content, orgKey);
+      const data = handler.serialize();
 
       const kubeOwnerName = await models.User.getKubeOwnerName(context);
       const deployableVersionObj = {
@@ -378,7 +321,6 @@ const channelResolvers = {
         channelName: channel.name,
         name,
         description,
-        location,
         content: data,
         iv: ivText,
         type,
@@ -389,7 +331,7 @@ const channelResolvers = {
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
       const versionObj = {
         uuid: deployableVersionObj.uuid,
-        name, description, location,
+        name, description,
         created: dObj.created
       };
 
@@ -428,9 +370,10 @@ const channelResolvers = {
         // deletes the linked deployableVersions in s3
         var versionsToDeleteFromS3 = await models.DeployableVersion.find({ org_id, channel_id: channel.uuid, location: 's3', });
         const limit = pLimit(5);
-        await Promise.all(_.map(versionsToDeleteFromS3, async(deployableVersionObj)=>{
-          return limit(async()=>{
-            return await deleteDeployableVersionFromS3(deployableVersionObj);
+        await Promise.all(_.map(versionsToDeleteFromS3, deployableVersionObj => {
+          return limit(async () => {
+            const handler = storageFactory.deserialize(deployableVersionObj.content);
+            await handler.deleteData();
           });
         }));
 
@@ -481,10 +424,11 @@ const channelResolvers = {
         if (!versionObj) {
           throw new NotFoundError(context.req.t('versionObj "{{uuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'uuid':uuid, 'channel.name':channel.name}), context);
         }
-        if(versionObj.location === 's3'){
-          await deleteDeployableVersionFromS3(deployableVersionObj);
-        }
-        await models.DeployableVersion.deleteOne({ org_id, uuid});
+
+        const handler = storageFactory.deserialize(deployableVersionObj.content);
+        await handler.deleteData();
+
+        await models.DeployableVersion.deleteOne({ org_id, uuid });
 
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);

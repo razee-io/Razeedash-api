@@ -41,9 +41,7 @@ const DeployableVersionSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
-  content: {
-    type: String,
-  },
+  content: mongoose.Schema.Types.Mixed,
   iv: {
     type: String,
   },

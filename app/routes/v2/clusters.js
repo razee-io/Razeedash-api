@@ -39,6 +39,7 @@ const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../a
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
+const storageFactory = require('./../../storage/storageFactory');
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -121,21 +122,15 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-// eslint-disable-next-line no-unused-vars
-async function pushToS3(req, key, searchableDataHash, dataStr) {
-  const rsp = pushToS3Sync(req, key, searchableDataHash, dataStr);
-  await rsp.promise;
-  return rsp.url;
-}
-
-function pushToS3Sync(req, key, searchableDataHash, dataStr){
+function pushToS3Sync(key, searchableDataHash, dataStr, data_location) {
   //if its a new or changed resource, write the data out to an S3 object
-  const result={};
-  const bucket = conf.s3.resourceBucket;
+  const result = {};
+  const bucket = conf.storage.getResourceBucket(data_location);
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  result.promise=req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
-  result.url=`https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+  const handler = storageFactory.newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
+  result.promise = handler.setData(dataStr);
+  result.encodedData = handler.serialize();
   return result;
 }
 
@@ -205,6 +200,9 @@ const updateClusterResources = async (req, res, next) => {
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
 
+    const cluster = await req.db.collection('clusters').findOne({ org_id: req.org._id, cluster_id: clusterId});
+    const data_location = cluster.registration.data_location;
+
     const limit = pLimit(10);
     await Promise.all(resources.map(async (resource) => {
       return limit(async () => {
@@ -272,10 +270,10 @@ const updateClusterResources = async (req, res, next) => {
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.currentResource', 'data': key}, 'satcon-performance');
             const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-            if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
+            if (!currentResource || resourceHash !== currentResource.hash) {
               let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
-              dataStr=s3UploadWithPromiseResponse.url;
+              s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location);
+              dataStr=s3UploadWithPromiseResponse.encodedData;
               s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
             var changes = null;
@@ -375,12 +373,10 @@ const updateClusterResources = async (req, res, next) => {
             const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
             const currentResource = await Resources.findOne(key);
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-            if (req.s3) {
-              let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
-              dataStr = s3UploadWithPromiseResponse.url;
-              s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
-            }
+            let start = Date.now();
+            s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location);
+            dataStr = s3UploadWithPromiseResponse.encodedData;
+            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
             if (currentResource) {
               let start = Date.now();
               await Resources.updateOne(
