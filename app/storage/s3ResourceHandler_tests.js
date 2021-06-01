@@ -30,7 +30,7 @@ const expect = require('chai').expect;
 
 require('mock-aws-s3').config.basePath = '/tmp/buckets';
 
-const conf = require('../conf.js').conf;
+const conf = require('./../conf.js').conf;
 conf.storage.defaultHandler = 's3';
 conf.storage.sdk = 'mock-aws-s3';
 const wdcConnection = { endpoint: 'wdc.ibm.com', locationConstraint: 'washington' };
