@@ -10,7 +10,7 @@ before_install:
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch; else npx audit-ci --low -a node-fetch || true; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch ws; else npx audit-ci --low -a node-fetch ws || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:default

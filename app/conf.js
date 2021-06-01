@@ -37,7 +37,7 @@ for (let metro of metroArray) {
   }
 }
 
-const defaultLocation = s3ConnectionMap.size > 0 ? (process.env.S3_DEFAULT_LOCATION || metroArray[0].toLowerCase()) : undefined;
+const defaultLocation = s3ConnectionMap.size > 0 ? (process.env.S3_DEFAULT_LOCATION || metroArray[0]).toLowerCase() : undefined;
 
 const storage = {
   s3ConnectionMap,
