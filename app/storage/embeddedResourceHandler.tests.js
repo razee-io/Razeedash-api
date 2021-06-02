@@ -17,61 +17,49 @@
 
 'use strict';
 
-/*
-process.env.S3_LOCATIONS = 'WDC LON';
-process.env.S3_DEFAULT_LOCATION = 'LON';
-process.env.S3_LON_ENDPOINT = 'lon.ibm.com';
-process.env.S3_WDC_ENDPOINT = 'wdc.ibm.com';
-process.env.COS_SDK = 'mock-aws-s3';
-*/
-
-const rewire = require('rewire');
 const expect = require('chai').expect;
 
-require('mock-aws-s3').config.basePath = '/tmp/buckets';
-
 const conf = require('./../conf.js').conf;
-conf.storage.defaultHandler = 's3';
-conf.storage.sdk = 'mock-aws-s3';
-const wdcConnection = { endpoint: 'wdc.ibm.com', locationConstraint: 'washington' };
-conf.storage.s3ConnectionMap.set('wdc', wdcConnection);
-const lonConnection = { endpoint: 'lon.ibm.com', locationConstraint: 'london' };
-conf.storage.s3ConnectionMap.set('lon', lonConnection);
-conf.storage.defaultLocation = 'LON';
+const StorageConfig = require('./storageConfig');
+const storageFactory = require('./storageFactory');
 
-const storageFactory = rewire('./storageFactory');
+describe('Embedded resource handler', () => {
+  let storageConf;
 
-describe('s3ResourceHandler', () => {
-  it('S3 resource upload with encryption and download with decryption', async () => {
+  const path = 'my-resource-name';
+  const bucketName = 'my-bucket-223432r32e';
+  const orgKey = 'orgApiKey-63fe2b3a-8c07-45ee-9b34-8eb5ecf27edf';
+  const location = undefined; // default will be used
 
-    const resource = 'my precious resource';
-    const path = 'my-resource-name';
-    const bucketName = 'my-bucket-223432r32e';
-    const orgKey = 'orgApiKey-63fe2b3a-8c07-45ee-9b34-8eb5ecf27edf';
-    const location = undefined; // default will be used
+  before(() => {
+    storageConf = conf.storage; // save
+    conf.storage = new StorageConfig({}); // resources will be embedded
+    storageFactory.init();
+  });
 
-    const s3ClientClass = require('./s3NewClient');
-    s3ClientClass.prototype.bucketExists = () => true; // because mock SDK does not have 'headBucket'
+  after(() => {
+    conf.storage = storageConf; // restore
+    storageFactory.init();
+  });
 
-    const s3Client = new s3ClientClass();
-    await s3Client.createBucket(bucketName);
+  it('Embedded resource upload with encryption and download with decryption', async () => {
+    let resource = 'my precious resource';
 
     // Write resource into bucket
     const handler = storageFactory.newResourceHandler(path, bucketName, location);
     const ivText = await handler.setDataAndEncrypt(resource, orgKey);
     const encodedResource = handler.serialize();
-    console.log(encodedResource, ivText);
-    expect(encodedResource.metadata.type).to.equal('s3');
-    expect(encodedResource.data.location).to.equal('lon'); // must be lower case
-    expect(encodedResource.data.endpoint).to.equal('lon.ibm.com');
+    console.log(encodedResource);
+    expect(encodedResource.metadata.type).to.equal('embedded');
+    expect(encodedResource.data).to.not.equal(resource);
 
     // Read resource from the bucket
     const getHandler = storageFactory.deserialize(encodedResource);
     const decryptedResource = await getHandler.getDataAndDecrypt(orgKey, ivText);
     console.log(decryptedResource);
-
     expect(resource).to.equal(decryptedResource);
 
+    // Now delete the bucket
     const delHandler = storageFactory.deserialize(encodedResource);
     await delHandler.deleteData();
     const emptyEncodedResource = delHandler.serialize();
@@ -81,9 +69,24 @@ describe('s3ResourceHandler', () => {
       await emptyHandler.getDataAndDecrypt(orgKey, ivText);
       expect.fail('should not reach this point');
     } catch (error) {
-      expect(error.message).include('specified key does not exist');
+      expect(error.message).include('Object data do not exist');
     }
+  });
 
+  it('Async write embedded resource into bucket without encryption', async () => {
+    const longString = 'x'.repeat(1 * 24 * 1024);
+
+    const handler = storageFactory.newResourceHandler(path, bucketName, 'wdc');
+    const promise = handler.setData(longString);
+    await promise;
+    const encodedData = handler.serialize();
+    expect(encodedData.data).to.equal(longString);
+
+    const handlerToo = storageFactory.deserialize(encodedData);
+    const longStringCopy = await handlerToo.getData();
+    expect(longStringCopy).to.equal(longString);
+
+    await handlerToo.deleteData();
   });
 
   it('Object factory must recognize invalid resource encodings', async () => {
