@@ -31,6 +31,11 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
     let kubeOwnerName = null;
     if(cluster.registration.location){
       kubeOwnerName = kubeOwnerIdsToNames[subscription.kubeOwnerId] || null;
+      if(!kubeOwnerName){
+        // for now, falls back to sub.kubeOwnerName if kubeOwnerId wasnt set (i.e. for old db objs that havent been migrated yet)
+        // todo: delete this if-statement once we're done migrating
+        kubeOwnerName = subscription.kubeOwnerName;
+      }
     }
     return {
       subscriptionName: subscription.name,
