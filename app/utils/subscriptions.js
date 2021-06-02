@@ -15,7 +15,7 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
   const kubeOwnerIds = _.uniq(_.map(matchingSubscriptions, 'kubeOwnerId'));
   let kubeOwnerIdsToNames = {};
   if(cluster.registration.location){
-    kubeOwnerIdsToNames = await models.User.convertKubeOwnerIdsToNames(kubeOwnerIds);
+    kubeOwnerIdsToNames = await models.User.buildKubeOwnerIdToNameMapping(kubeOwnerIds);
   }
 
   let urls = _.map(matchingSubscriptions, (subscription)=>{

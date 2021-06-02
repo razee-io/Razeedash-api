@@ -56,8 +56,8 @@ UserDefaultSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-l
   return null;
 };
 
-UserDefaultSchema.statics.convertKubeOwnerIdsToNames = async(ids)=> {
-  var out = {};
+UserDefaultSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
   _.each(ids, (id)=>{
     out[id] = null;
   });

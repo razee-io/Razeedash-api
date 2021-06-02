@@ -168,8 +168,8 @@ UserLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-lin
   return null;
 };
 
-UserLocalSchema.statics.convertKubeOwnerIdsToNames = async(ids)=> {
-  var out = {};
+UserLocalSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
   _.each(ids, (id)=>{
     out[id] = null;
   });

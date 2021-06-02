@@ -173,8 +173,8 @@ UserPassportLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-dis
   return null;
 };
 
-UserPassportLocalSchema.statics.convertKubeOwnerIdsToNames = async(ids)=> {
-  var out = {};
+UserPassportLocalSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
   _.each(ids, (id)=>{
     out[id] = null;
   });
