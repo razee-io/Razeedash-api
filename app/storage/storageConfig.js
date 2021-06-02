@@ -60,7 +60,7 @@ class StorageConfig {
     location = location ? location.toLowerCase() : this.defaultLocation;
     const connection = this.s3ConnectionMap.get(location);
     return connection ? connection.channelBucket : undefined;
-  };
+  }
 
   getResourceBucket(location) {
     location = location ? location.toLowerCase() : this.defaultLocation;
