@@ -276,7 +276,16 @@ const updateClusterResources = async (req, res, next) => {
 
             // encrypts (only if we need to save this)
             let encKeyId = null;
-            if(!currentResource || currentResource.hash != resourceHash || hasSearchableDataChanges){
+            if(
+              !currentResource
+              || currentResource.hash != resourceHash
+              || hasSearchableDataChanges
+              || (
+                currentResource.deleted
+                && currentResource.encKeyId
+                && !_.find(req.org.encKeys, (encKey)=>{ return encKey.id == currentResource.encKeyId && !encKey.deleted })  // if org no longer has the encKey
+              )
+            ){
               const encryptedObj = await encryptStrUsingOrgEncKey({
                 str: dataStr,
                 org: req.org,
@@ -285,7 +294,7 @@ const updateClusterResources = async (req, res, next) => {
               dataStr = encryptedObj.data;
             }
 
-            if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
+            if (req.s3 && (!currentResource || resourceHash !== currentResource.hash || encKeyId != currentResource.encKeyId)) {
               let start = Date.now();
               s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
               dataStr=s3UploadWithPromiseResponse.url;
@@ -295,7 +304,7 @@ const updateClusterResources = async (req, res, next) => {
             var options = {};
             if(currentResource){
               // if obj already in db
-              if (resourceHash === currentResource.hash && !hasSearchableDataChanges){
+              if (resourceHash === currentResource.hash && !hasSearchableDataChanges && encKeyId != currentResource.encKeyId){
                 // if obj in db and nothing has changed
                 changes = {
                   $set: { deleted: false },

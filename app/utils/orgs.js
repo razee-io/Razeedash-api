@@ -122,17 +122,47 @@ var genKey = ()=>{
   };
 };
 
-var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
+const pullFromS3 = async({ s3, url })=>{
+  const parts = Url.parse(url);
+  const paths = parts.path.split('/');
+  const bucket = paths[1];
+  const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
+  return await s3.getObjectAsStr(bucket, resourceName);
+};
+
+const pushToS3 = async (s3, key, searchableDataHash, dataStr) => {
+  //if its a new or changed resource, write the data out to an S3 object
+  const bucket = conf.s3.resourceBucket;
+  const hash = crypto.createHash('sha256');
+  const keyHash = hash.update(JSON.stringify(key)).digest('hex');
+  await s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
+  return `https://${s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+};
+
+var cronRotateEncKeys = async({ db, logger, maxAge=1000*60*60*24*365/2 })=>{
   var now = Date.now();
   var orgsToAddEncKeys= await db.collection('orgs').find({
     $or: [
       {
-        encKeys: { $exists: false } // encKeys doesnt exist
+        // when encKeys doesnt exist
+        encKeys: { $exists: false }
       },
       {
-        encKeys: { $size: 0 } // encKeys is blank
+        // when encKeys is blank
+        encKeys: { $size: 0 }
       },
-      // todo: maybe in future add check for when all encKeys are deleted:true
+      {
+        // when all encKeys are deleted:true
+        encKeys: {
+          $not: {
+            $elemMatch:{
+              deleted: {
+                $ne: true,
+              }
+            }
+          }
+        }
+      }
     ]
   }).toArray();
   var orgsToDeleteEncKeys = await db.collection('orgs').find({
@@ -153,6 +183,7 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
     if(!org._id){
       throw new Error('missing org._id');
     }
+    logger.info(`adding encKey for org id "${org._id}"`);
     return {
       updateOne: {
         filter: {
@@ -169,6 +200,7 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
 
   var buildRemoveEncKeyOpForOrg = ({ org, encKeysToRemove })=>{
     var encKeysToRemoveIds = _.map(encKeysToRemove, 'id');
+    logger.info(`marking encKeys ${JSON.stringify(encKeysToRemoveIds)} as deleted:true for org id "${org._id}"`);
     return {
       updateOne: {
         filter: {
@@ -221,30 +253,13 @@ var cronRotateEncKeys = async({ db, maxAge=1000*60*60*24*365/2 })=>{
   await db.collection('orgs').bulkWrite(ops, { ordered: true });
 };
 
-const pullFromS3 = async({ s3, url })=>{
-  const parts = Url.parse(url);
-  const paths = parts.path.split('/');
-  const bucket = paths[1];
-  const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
-  return await s3.getObjectAsStr(bucket, resourceName);
-};
-
-const pushToS3 = async (s3, key, searchableDataHash, dataStr) => {
-  //if its a new or changed resource, write the data out to an S3 object
-  const bucket = conf.s3.resourceBucket;
-  const hash = crypto.createHash('sha256');
-  const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  await s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
-  return `https://${s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
-};
-
-var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
+var migrateResourcesToNewOrgKeysCron = async({ db, s3, logger })=>{
   if(migrateResourcesToNewOrgKeysCron.isRunning){
-    console.log('migrateResourcesToNewOrgKeysCron is already running');
+    logger.info('migrateResourcesToNewOrgKeysCron is already running');
     return;
   }
   migrateResourcesToNewOrgKeysCron.isRunning = true;
-  console.log('starting migrateResourcesToNewOrgKeysCron');
+  logger.info('starting migrateResourcesToNewOrgKeysCron');
 
   var startTime = Date.now();
 
@@ -269,7 +284,7 @@ var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
 
       // if no org found, we have nothing left to do
       if(!org){
-        console.log('no orgs left containing an encKey with deleted=true');
+        logger.info('no orgs left containing an encKey with deleted=true');
         break;
       }
 
@@ -371,10 +386,10 @@ var migrateResourcesToNewOrgKeysCron = async({ db, s3 })=>{
       }));
     }
   }catch(err){
-    console.log('err in migrateResourcesToNewOrgKeysCron', err);
+    logger.error('err in migrateResourcesToNewOrgKeysCron', err);
   }
   migrateResourcesToNewOrgKeysCron.isRunning = false;
-  console.log('exiting migrateResourcesToNewOrgKeysCron');
+  logger.info('exiting migrateResourcesToNewOrgKeysCron');
 };
 migrateResourcesToNewOrgKeysCron.isRunning = false;
 

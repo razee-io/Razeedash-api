@@ -208,47 +208,73 @@ items:
           port: 3333
           targetPort: 3333
 
-#  - apiVersion: batch/v1beta1
-#    kind: CronJob
-#    metadata:
-#      name: razeedash-api-rotateenckeys-cron
-#    spec:
-#      schedule: "@daily"
-#      concurrencyPolicy: Forbid
-#      successfulJobsHistoryLimit: 1
-#      failedJobsHistoryLimit: 1
-#      jobTemplate:
-#        spec:
-#          template:
-#            spec:
-#              containers:
-#                - name: razeedash-api-rotateenckeys-cron
-#                  image: buildpack-deps:curl
-#                  args:
-#                    - /bin/sh
-#                    - -ec
-#                    - curl razeedash-api-local-service:3333/api/cron/rotateEncKeys
-#              restartPolicy: Never
-#
-#  - apiVersion: batch/v1beta1
-#    kind: CronJob
-#    metadata:
-#      name: razeedash-api-migrateresourcestoneworgkeys-cron
-#    spec:
-#      schedule: "@hourly"
-#      concurrencyPolicy: Forbid
-#      successfulJobsHistoryLimit: 1
-#      failedJobsHistoryLimit: 1
-#      jobTemplate:
-#        spec:
-#          template:
-#            spec:
-#              containers:
-#                - name: razeedash-api-migrateresourcestoneworgkeys-cron
-#                  image: buildpack-deps:curl
-#                  args:
-#                    - /bin/sh
-#                    - -ec
-#                    - curl razeedash-api-local-service:3333/api/cron/migrateResourcesToNewOrgKeys
-#              restartPolicy: Never
+
+
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: razeedash-api-rotateenckeys-cron
+    spec:
+      schedule: "@daily"
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 1
+      failedJobsHistoryLimit: 1
+      jobTemplate:
+        spec:
+          activeDeadlineSeconds: 3000 # 50*60 seconds = 50mins
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: razeedash-api-rotateenckeys-cron
+                  image: "quay.io/razee/razeedash-api:{{{TRAVIS_TAG}}}"
+                  command:
+                    - node
+                  args:
+                    - ./app/crons/rotateEncKeys/rotateEncKeys.js
+                  env:
+                    - name: S3_ENDPOINT
+                      valueFrom:
+                        configMapKeyRef:
+                          name: razeedash-config
+                          key: s3_endpoint
+                          optional: true
+                    - name: S3_LOCATION_CONSTRAINT
+                      valueFrom:
+                        configMapKeyRef:
+                          name: razeedash-config
+                          key: s3_location_constraint
+                          optional: true
+                    - name: S3_ACCESS_KEY_ID
+                      valueFrom:
+                        secretKeyRef:
+                          name: razeedash-secret
+                          key: s3_access_key_id
+                          optional: true
+                    - name: S3_SECRET_ACCESS_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: razeedash-secret
+                          key: s3_secret_access_key
+                          optional: true
+                    - name: S3_CHANNEL_BUCKET
+                      valueFrom:
+                        configMapKeyRef:
+                          name: razeedash-config
+                          key: s3_channel_bucket
+                          optional: true
+                    - name: S3_RESOURCE_BUCKET
+                      valueFrom:
+                        configMapKeyRef:
+                          name: razeedash-config
+                          key: s3_resource_bucket
+                          optional: true
+                    - name: MONGO_URL
+                      valueFrom:
+                        secretKeyRef:
+                          name: razeedash-secret
+                          key: mongo_url
+                    - name: MONGO_DB_NAME
+                      value: razeedash
+
 
