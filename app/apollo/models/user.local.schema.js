@@ -168,6 +168,14 @@ UserLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-lin
   return null;
 };
 
+UserLocalSchema.statics.convertKubeOwnerIdsToNames = async(ids)=> {
+  var out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
+};
+
 UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
   let data = me.meta.orgs[0];

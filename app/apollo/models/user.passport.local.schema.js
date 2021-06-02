@@ -173,6 +173,14 @@ UserPassportLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-dis
   return null;
 };
 
+UserPassportLocalSchema.statics.convertKubeOwnerIdsToNames = async(ids)=> {
+  var out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
+};
+
 UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
   let data = me.meta.orgs[0];

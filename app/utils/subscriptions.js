@@ -12,6 +12,12 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
 
   const matchingChannelsByName = _.keyBy(matchingChannels, 'name');
 
+  const kubeOwnerIds = _.uniq(_.map(matchingSubscriptions, 'kubeOwnerId'));
+  let kubeOwnerIdsToNames = {};
+  if(cluster.registration.location){
+    kubeOwnerIdsToNames = await models.User.convertKubeOwnerIdsToNames(kubeOwnerIds);
+  }
+
   let urls = _.map(matchingSubscriptions, (subscription)=>{
     const deployable = matchingChannelsByName[subscription.channelName];
     const foundVersion = deployable.versions.filter( (ver) => {
@@ -24,7 +30,7 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
     }
     let kubeOwnerName = null;
     if(cluster.registration.location){
-      kubeOwnerName = subscription.kubeOwnerName;
+      kubeOwnerName = kubeOwnerIdsToNames[subscription.kubeOwnerId] || null;
     }
     return {
       subscriptionName: subscription.name,
