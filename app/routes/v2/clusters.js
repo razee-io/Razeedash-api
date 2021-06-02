@@ -159,6 +159,7 @@ const syncClusterResources = async(req, res)=>{
   const Resources = req.db.collection('resources');
   const Stats = req.db.collection('resourceStats');
 
+  // Update all items to mark 'deleted:true' where 'updated' is greater than 1 hour old
   var result = await Resources.updateMany(
     { org_id: orgId, cluster_id: clusterId, updated: { $lt: new moment().subtract(1, 'hour').toDate() }, deleted: { $ne: true} },
     { $set: { deleted: true }, $currentDate: { updated: true } },
