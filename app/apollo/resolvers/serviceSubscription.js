@@ -161,6 +161,7 @@ const serviceResolvers = {
         }
 
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
         const ssid = UUID();
 
@@ -168,7 +169,7 @@ const serviceResolvers = {
           _id: ssid,
           uuid: ssid, org_id: orgId, name, groups: [], owner: me._id,
           channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
-          clusterId, kubeOwnerName, clusterOrgId: cluster.org_id
+          clusterId, kubeOwnerName, kubeOwnerId, clusterOrgId: cluster.org_id
         });
 
         pubSub.channelSubChangedFunc({org_id: cluster.org_id}, context); // notify cluster should re-fetch its subscriptions

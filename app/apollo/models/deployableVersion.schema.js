@@ -57,6 +57,9 @@ const DeployableVersionSchema = new mongoose.Schema({
   kubeOwnerName: {
     type: String,
   },
+  kubeOwnerId: {
+    type: String,
+  },
   created: {
     type: Date,
     default: Date.now,

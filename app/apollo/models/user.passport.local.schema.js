@@ -169,6 +169,10 @@ UserPassportLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-d
   return null;
 };
 
+UserPassportLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
+  return null;
+};
+
 UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
   let result = me;
   let data = me.meta.orgs[0];

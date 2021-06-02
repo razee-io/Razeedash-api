@@ -52,6 +52,10 @@ UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable
   return null;
 };
 
+UserDefaultSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
+  return null;
+};
+
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
   const {req_id, logger} = context;
   const apiKey = req.get('x-api-key');

@@ -329,12 +329,14 @@ const subscriptionResolvers = {
         }
 
         const kubeOwnerName = await models.User.getKubeOwnerName(context);
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
           kubeOwnerName,
+          kubeOwnerId,
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
