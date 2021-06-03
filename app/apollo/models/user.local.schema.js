@@ -160,8 +160,16 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
-UserLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+UserLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
+};
+
+UserLocalSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
 };
 
 UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {

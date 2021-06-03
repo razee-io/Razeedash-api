@@ -182,14 +182,14 @@ const channelResolvers = {
         }
 
         const uuid = UUID();
-        const kubeOwnerName = await models.User.getKubeOwnerName(context);
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
         await models.Channel.create({
           _id: UUID(),
           uuid, org_id, name, versions: [],
           tags,
           data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
-          kubeOwnerName,
+          kubeOwnerId,
         });
         return {
           uuid,
@@ -312,7 +312,7 @@ const channelResolvers = {
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
 
-      const kubeOwnerName = await models.User.getKubeOwnerName(context);
+      const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const deployableVersionObj = {
         _id: UUID(),
         org_id,
@@ -325,7 +325,7 @@ const channelResolvers = {
         iv: ivText,
         type,
         ownerId: me._id,
-        kubeOwnerName,
+        kubeOwnerId,
       };
 
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
