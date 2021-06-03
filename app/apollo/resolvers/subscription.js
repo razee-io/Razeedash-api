@@ -328,14 +328,12 @@ const subscriptionResolvers = {
           throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
         }
 
-        const kubeOwnerName = await models.User.getKubeOwnerName(context);
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
         await models.Subscription.create({
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
-          kubeOwnerName,
           kubeOwnerId,
         });
 
