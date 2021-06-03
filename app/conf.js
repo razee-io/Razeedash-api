@@ -17,6 +17,11 @@
 'use strict';
 
 const StorageConfig = require('./storage/storageConfig');
+const EventEmitter = require('events').EventEmitter;
+const _ = require('lodash');
+
+let storageConfig = new StorageConfig(process.env);
+const confEvents = new EventEmitter();
 
 const conf = {
   mongo: {
@@ -24,7 +29,16 @@ const conf = {
     dbName: process.env.MONGO_DB_NAME || 'meteor',
     cert: '/var/run/secrets/razeeio/razeedash-secret/mongo_cert'
   },
-  storage: new StorageConfig(process.env),
+  get storage() {
+    return _.cloneDeep(storageConfig);
+  },
+  set storage(storage) {
+    storageConfig = storage;
+    confEvents.emit('storage-config-reset');
+  },
+  on(event, eventHandler) {
+    confEvents.on(event, eventHandler);
+  },
   maintenance: {
     flag: process.env.MAINTENANCE_FLAG,
     key: process.env.MAINTENANCE_KEY

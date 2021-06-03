@@ -43,7 +43,6 @@ describe('Resource storage', () => {
   after(() => {
     conf.storage = storageConf; // restore
     s3ClientClass.prototype.bucketExists = bucketExistsPrototype; // restore
-    storageFactory.init();
   });
 
   it('Missing endpoint for a location must throw an error', async () => {
@@ -67,7 +66,6 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
       S3_LON_ENDPOINT: 'lon.ibm.com'
     });
-    storageFactory.init();
 
     const resource = 'my precious resource';
 
@@ -106,7 +104,6 @@ describe('Resource storage', () => {
       S3_LOCATIONS: ' WDC',
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
-    storageFactory.init();
 
     const longString = 'x'.repeat(1 * 24 * 1024);
 
@@ -127,7 +124,6 @@ describe('Resource storage', () => {
       S3_LOCATIONS: 'WDC  ',
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
-    storageFactory.init();
 
     const resource0 = { metadata: null, data: {} };
     expect(() => storageFactory.deserialize(resource0)).to.throw('Invalid metadata structure');
@@ -152,7 +148,6 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
       S3_WDC_CHANNEL_BUCKET: 'cos-razee'
     });
-    storageFactory.init();
 
     const channelBucket = conf.storage.getChannelBucket('wDc'); // case should not matter
     expect(channelBucket).to.equal('cos-razee');
@@ -160,7 +155,6 @@ describe('Resource storage', () => {
 
   it('Embedded resource upload with encryption and download with decryption', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
-    storageFactory.init();
 
     let resource = 'my precious resource';
 
@@ -194,7 +188,6 @@ describe('Resource storage', () => {
 
   it('Embedded async write resource into bucket without encryption', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
-    storageFactory.init();
 
     const longString = 'x'.repeat(1 * 24 * 1024);
 
@@ -213,7 +206,6 @@ describe('Resource storage', () => {
 
   it('Embedded resource driver must recognize invalid resource encodings', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
-    storageFactory.init();
 
     const resource0 = { metadata: null, data: {} };
     expect(() => storageFactory.deserialize(resource0)).to.throw('Invalid metadata structure');

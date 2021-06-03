@@ -29,6 +29,7 @@ const s3legacyType = 's3legacy'; // legacy handler requires special treatment
 class StorageFactory {
   constructor() {
     this.init();
+    conf.on('storage-config-reset', () => this.init());
   }
 
   init() {
