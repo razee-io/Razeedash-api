@@ -28,7 +28,7 @@ const serviceSchema = gql`
     channel: Channel
     version: String!
     versionUuid: String!
-    owner: BasicUser!
+    owner: BasicUser
     kubeOwnerName: String
     resources: [Resource!]
     created: Date!

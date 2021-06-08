@@ -6,7 +6,7 @@ const groupSchema = gql`
     uuid: String!
     orgId: String!
     name: String!
-    owner: BasicUser!
+    owner: BasicUser
     created: Date!
   }
 
@@ -14,7 +14,7 @@ const groupSchema = gql`
     uuid: String!
     orgId: String!
     name: String!
-    owner: BasicUser!
+    owner: BasicUser
     created: Date!
     clusterCount: Int!
     subscriptionCount: Int!
