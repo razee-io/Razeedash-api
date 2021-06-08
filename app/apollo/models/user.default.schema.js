@@ -48,8 +48,16 @@ const UserDefaultSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+UserDefaultSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
+};
+
+UserDefaultSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
 };
 
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
