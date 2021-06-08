@@ -18,8 +18,8 @@ const { gql } = require('apollo-server-express');
 
 const subscriptionSchema = gql`
   type BasicUser {
-    id: String!
-    name: String!
+    id: String
+    name: String
   }
   type RolloutStatus {
     successCount: Int
