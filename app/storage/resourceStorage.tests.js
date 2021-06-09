@@ -118,6 +118,18 @@ describe('Resource storage', () => {
     await handlerToo.deleteData();
   });
 
+  it('Both path and bucket name are mandatory', async () => {
+    conf.storage = new StorageConfig({
+      COS_SDK: 'mock-aws-s3',
+      S3_LOCATIONS: ' WDC',
+      S3_WDC_ENDPOINT: 'wdc.ibm.com',
+    });
+
+    const resource = 'my precious data';
+
+    expect(() => storageFactory.newResourceHandler(path, '')).to.throw('not specified');
+  });
+
   it('S3 object storage driver must recognize invalid resource encodings and invalid locations', async () => {
     conf.storage = new StorageConfig({
       COS_SDK: 'mock-aws-s3',
@@ -137,8 +149,12 @@ describe('Resource storage', () => {
     const resource3 = { metadata: { type: 'abcd' }, data: {} };
     expect(() => storageFactory.deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
 
-    const resource4 = { metadata: { type: 's3' }, data: { location: 'ABC' } };
-    expect(() => storageFactory.deserialize(resource4)).to.throw('Storage connection settings for \'abc\' location are not configured');
+    const resource4 = { metadata: { type: 's3' }, data: { path: 'path' } };
+    expect(() => storageFactory.deserialize(resource4)).to.throw('not specified');
+
+    const resource5 = { metadata: { type: 's3' }, data: { path: 'path', bucketName: 'my bucket', location: 'ABC' } };
+    expect(() => storageFactory.deserialize(resource5)).to.throw('Storage connection settings for \'abc\' location are not configured');
+
   });
 
   it('S3 channel bucket name', async () => {
@@ -201,6 +217,17 @@ describe('Resource storage', () => {
     const longStringCopy = await handlerToo.getData();
     expect(longStringCopy).to.equal(longString);
 
+    await handlerToo.deleteData();
+  });
+
+  it('Neither path nor bucket name are required', async () => {
+    conf.storage = new StorageConfig({}); // resources will be embedded
+    const resource = 'my precious data';
+    const handler = storageFactory.newResourceHandler()
+    await handler.setData(resource);
+    const handlerToo = storageFactory.deserialize(handler.serialize());
+    const resourceCopy = await handlerToo.getData();
+    expect(resourceCopy).to.equal(resource);
     await handlerToo.deleteData();
   });
 
