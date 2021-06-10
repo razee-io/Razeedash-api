@@ -125,8 +125,6 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
 
-    const resource = 'my precious data';
-
     expect(() => storageFactory.newResourceHandler(path, '')).to.throw('not specified');
   });
 
@@ -223,7 +221,7 @@ describe('Resource storage', () => {
   it('Neither path nor bucket name are required', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
     const resource = 'my precious data';
-    const handler = storageFactory.newResourceHandler()
+    const handler = storageFactory.newResourceHandler();
     await handler.setData(resource);
     const handlerToo = storageFactory.deserialize(handler.serialize());
     const resourceCopy = await handlerToo.getData();
