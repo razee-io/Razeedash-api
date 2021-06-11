@@ -30,7 +30,7 @@ class Sanitizer {
   }
 }
 
-// in schema add following: might require granphql-tools 4.0.3+
+// in schema add following: might require graphql-tools 4.0.3+
 // directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
 // addGroup(orgId: String! name: String! @identifier(min: 3, max: 32)): AddGroupReply!
 class IdentifierSanitizer extends Sanitizer {
