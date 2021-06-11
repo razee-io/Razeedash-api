@@ -17,13 +17,12 @@
 'use strict';
 
 const conf = require('./../conf').conf;
-const SDK = require(conf.storage.sdk);
 const logger = require('./../log').log;
 
 module.exports = class S3NewClient {
 
   constructor(config, locationConstraint) {
-    this.s3 = new SDK.S3(config);
+    this.s3 = new conf.storage.sdk.S3(config);
     this.locationConstraint = locationConstraint;
   }
 

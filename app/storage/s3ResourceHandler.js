@@ -24,6 +24,9 @@ const logger = require('./../log').log;
 class S3ResourceHandler {
 
   constructor(resourceKey, bucketName, location, endpoint) {
+    if (!resourceKey || !bucketName) {
+      throw new Error(`Path (${resourceKey}) and/or bucket name (${bucketName}) is not specified`);
+    }
     this.resourceKey = resourceKey;
     this.bucketName = bucketName;
 

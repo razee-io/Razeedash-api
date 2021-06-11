@@ -45,9 +45,6 @@ const DeployableVersionSchema = new mongoose.Schema({
   iv: {
     type: String,
   },
-  location: {
-    type: String,
-  },
   type: {
     type: String,
   },

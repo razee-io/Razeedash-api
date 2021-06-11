@@ -9,8 +9,8 @@ before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
 
 script:
-  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch ws; else npx audit-ci --low -a node-fetch ws || true; fi
+  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --config ./audit-ci.json; else npx audit-ci --config ./audit-ci.json || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:default
