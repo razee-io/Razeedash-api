@@ -125,14 +125,12 @@ const createChannels = async () => {
       {
         uuid: sub_01_version_uuid,
         name: sub_01_version,
-        description: 'test01',
-        location: 'mongo'
+        description: 'test01'
       },
       {
         uuid: sub_02_version_uuid,
         name: sub_02_version,
-        description: 'test02',
-        location: 'mongo'
+        description: 'test02'
       }
     ]
   });

@@ -1,7 +1,10 @@
 'use strict';
 
 /*
+  Real test to manually test COS storage type
+
   Configure variables in .env file
+    S3_LOCATIONS="WDC"
     S3_WDC_ENDPOINT
     S3_WDC_ACCESS_KEY_ID
     S3_WDC_SECRET_ACCESS_KEY
@@ -52,12 +55,13 @@ async function test() {
   }
 
   // Async write resource into bucket without encryption
-  const longString = 'x'.repeat(100*1024*1024);
+  const longString = 'x'.repeat(10*1024*1024);
   const handler2 = storageFactory.newResourceHandler(path, bucketName, location);
   const promise = handler2.setData(longString);
   console.log('Waiting on promise...' + new Date());
   await promise;
-  handler2.deleteData();
+  console.log('Promise settled ' + new Date());
+  await handler2.deleteData();
   console.log('All done!');
 }
 
