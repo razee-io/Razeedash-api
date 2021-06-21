@@ -22,14 +22,13 @@ const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 const { IdentifierDirective, JsonDirective } = require('./utils/directives');
-const { getBunyanConfig } = require('./utils/bunyan');
+const { getBunyanConfig, getExpressBunyanConfig } = require('../utils/bunyan');
+const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/apollo/index'));
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
 const { models, connectDb } = require('./models');
-const bunyanConfig = getBunyanConfig('razeedash-api/apollo');
-const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
@@ -37,7 +36,7 @@ const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js'
 const { GraphqlPubSub } = require('./subscription');
 const initModule = require(`./init.${AUTH_MODEL}`);
 const conf = require('../conf.js').conf;
-
+const { v4: uuid } = require('uuid');
 const pubSub = GraphqlPubSub.getInstance();
 
 const i18next = require('i18next');
@@ -77,25 +76,28 @@ const createDefaultApp = () => {
   return app;
 };
 
-const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
-  let context = await initModule.buildApolloContext({
-    models,
-    req,
-    res,
-    connection,
-    logger,
-  });
-  // populate req and req_id to apollo context
-  if (connection) {
-    const upgradeReq = connection.context.upgradeReq;
+const buildCommonApolloContext = async ({ models, req, res, connection }) => {
+  if (connection) { // Operation is a Subscription
+    const logger = connection.context.logger;
+    const req_id = connection.context.logger.fields.req_id;
+    const req = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
     const orgId = connection.context.orgId;
-    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, recoveryHintsMap, orgId, ...context };
-  } else if (req) {
-    context = { req, req_id: req.id, recoveryHintsMap, ...context };
+    const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
+    return { apiKey, req, req_id, userToken, recoveryHintsMap, orgId, ...context };
+  } else if (req) { // Operation is a Query/Mutation
+    const logger = req.log; // request context logger created by express-bunyan-logger
+    const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
+    if (context.me && context.me.orgKey) {
+      const org = await models.Organization.findOne({ orgKeys: context.me.orgKey });
+      logger.fields.org_id = org._id;
+    }
+    if (context.me && context.me.org_id) {
+      logger.fields.org_id = context.me.org_id;
+    }
+    return { req, req_id: logger.fields.req_id, recoveryHintsMap, ...context }; // req_id = req.id
   }
-  return context;
 };
 
 const loadCustomPlugins =  () => {
@@ -156,39 +158,36 @@ const createApolloServer = () => {
         models,
         req,
         res,
-        connection,
-        logger,
+        connection
       });
     },
     subscriptions: {
       path: GRAPHQL_PATH,
       keepAlive: 10000,
       onConnect: async (connectionParams, webSocket, context) => {
-        const req_id = webSocket.upgradeReq.id;
-
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
           const org = await models.Organization.findOne({ orgKeys: orgKey });
           orgId = org._id;
         }
-
-        logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
-        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
-
-        logger.debug({}, 'subscriptions:onConnect upgradeReq getMe');
+        const req_id = uuid();
+        const logger  = bunyan.createLogger({ req_id, org_id: orgId, ...getBunyanConfig('razeedash-api/subscription') });
+        
+        logger.debug('subscriptions:onConnect upgradeReq getMe');
+        
+        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, logger},);
         if (me === undefined) {
           throw Error(
             'Can not find the session for this subscription request.',
           );
         }
-
         // add original upgrade request to the context
         return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
       },
       onDisconnect: (webSocket, context) => {
         logger.debug(
-          { req_id: webSocket.upgradeReq.id, headers: context.request.headers },
+          { headers: context.request.headers },
           'subscriptions:onDisconnect upgradeReq getMe',
         );
       },
@@ -210,7 +209,7 @@ const apollo = async (options = {}) => {
   try {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
-    app.use(ebl(getBunyanConfig('razeedash-api/apollo')));
+    app.use(ebl(getExpressBunyanConfig('razeedash-api/apollo')));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {
       logger.info('Enabled playground route with authorization enforcement.');
       app.get(GRAPHQL_PATH, initModule.playgroundAuth);
