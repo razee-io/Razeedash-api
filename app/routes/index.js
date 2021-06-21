@@ -18,7 +18,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
+const { getBunyanConfig, getExpressBunyanConfig } = require('../utils/bunyan.js');
 const bunyan = require('bunyan');
 const logger = bunyan.createLogger(getBunyanConfig('razeedash-api'));
 const ebl = require('express-bunyan-logger');
@@ -48,7 +48,7 @@ router.get('/v1/health', (req, res)=>{
 });
 
 router.use('/kube', Kube);
-router.use(ebl(getBunyanConfig('razeedash-api/api')));
+router.use(ebl(getExpressBunyanConfig('razeedash-api/api')));
 
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
@@ -78,7 +78,7 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
-router.use((req, res, next) => {
+router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
     orgKey = req.query.orgKey;
@@ -86,9 +86,13 @@ router.use((req, res, next) => {
       return res.status(401).send( 'razee-org-key required' );
     }
   }
-  req.orgKey=orgKey;
+  req.orgKey = orgKey;
+  const orgDb = req.db.collection('orgs');
+  const org = await orgDb.findOne({ orgKeys: orgKey });
+  if (org) req.log.fields.org_id = org._id;
   next();
 });
+
 router.use(getOrg);
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
