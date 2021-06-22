@@ -18,10 +18,8 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const { getBunyanConfig, getExpressBunyanConfig } = require('../utils/bunyan.js');
-const bunyan = require('bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api'));
-const ebl = require('express-bunyan-logger');
+const { createLogger, createExpressLogger } = require('../utils/bunyan.js');
+const logger = createLogger('razeedash-api');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
@@ -48,7 +46,7 @@ router.get('/v1/health', (req, res)=>{
 });
 
 router.use('/kube', Kube);
-router.use(ebl(getExpressBunyanConfig('razeedash-api/api')));
+router.use(createExpressLogger('razeedash-api/api'));
 
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');

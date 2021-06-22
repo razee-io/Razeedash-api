@@ -344,7 +344,7 @@ const updateClusterResources = async (req, res, next) => {
                 pubSub.resourceChangedFunc(
                   {_id: resourceId, data: dataStr, created: resourceCreated,
                     deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
-                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
               }
             }
             if(s3UploadWithPromiseResponse!==undefined){
@@ -388,7 +388,8 @@ const updateClusterResources = async (req, res, next) => {
               );
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
-              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id,
+                cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
             }
             if (s3UploadWithPromiseResponse !== undefined) {
               await s3UploadWithPromiseResponse.promise;

@@ -16,11 +16,11 @@
  */
 const assert = require('assert');
 const rewire = require('rewire');
-const bunyan = rewire('./bunyan');
+const bunyan = rewire('./log');
 
 const responseCodeMapper = bunyan.__get__('responseCodeMapper');
 
-describe('utils', () => {
+describe.only('utils', () => {
   describe('bunyan', () => {
     describe('responseCodeMapper', () => {
       it('error', async () => {

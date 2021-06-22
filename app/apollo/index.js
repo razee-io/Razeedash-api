@@ -17,13 +17,11 @@
 const http = require('http');
 const express = require('express');
 const router = express.Router();
-const ebl = require('express-bunyan-logger');
-const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 const { IdentifierDirective, JsonDirective } = require('./utils/directives');
-const { getBunyanConfig, getExpressBunyanConfig } = require('../utils/bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/apollo/index'));
+const { createLogger, createExpressLogger } = require('../log');
+const initLogger = createLogger('razeedash-api/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
@@ -63,7 +61,7 @@ const createDefaultApp = () => {
   app.use(function errorHandler(err, req, res, next) {
     if (err) {
       if (req.log && req.log.error) req.log.error(err);
-      else logger.error(err);
+      else initLogger.error(err);
       if (!res.headersSent) {
         const statusCode = err.statusCode || 500;
         return res.status(statusCode).send();
@@ -105,11 +103,11 @@ const loadCustomPlugins =  () => {
     try {
       const pluginStrs = process.env.GRAPHQL_CUSTOM_PLUGINS.split(';');
       return pluginStrs.map( str => {
-        logger.info('Loading custom plugin: ' + str);
+        initLogger.info('Loading custom plugin: ' + str);
         return require(str);
       });
     } catch (err) {
-      logger.error(err, 'Error encountered when loading custom plugin.');
+      initLogger.error(err, 'Error encountered when loading custom plugin.');
       process.exit(1);
     }
   }
@@ -122,15 +120,15 @@ process.on('SIGTERM', () => SIGTERM = true);
 const createApolloServer = () => {
   const customPlugins = loadCustomPlugins();
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
-    logger.info('Adding metrics plugin: apollo-metrics');
+    initLogger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
   if(conf.maintenance.flag && conf.maintenance.key) {
-    logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
+    initLogger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
     customPlugins.push(apolloMaintenancePlugin);
   }
 
-  logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
+  initLogger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
@@ -172,7 +170,7 @@ const createApolloServer = () => {
           orgId = org._id;
         }
         const req_id = uuid();
-        const logger  = bunyan.createLogger({ req_id, org_id: orgId, ...getBunyanConfig('razeedash-api/subscription') });
+        const logger  = createLogger('razeedash-api/subscription', { req_id, org_id: orgId });
         
         logger.debug('subscriptions:onConnect upgradeReq getMe');
         
@@ -186,7 +184,7 @@ const createApolloServer = () => {
         return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
       },
       onDisconnect: (webSocket, context) => {
-        logger.debug(
+        initLogger.debug(
           { headers: context.request.headers },
           'subscriptions:onDisconnect upgradeReq getMe',
         );
@@ -209,13 +207,13 @@ const apollo = async (options = {}) => {
   try {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
-    app.use(ebl(getExpressBunyanConfig('razeedash-api/apollo')));
+    app.use(createExpressLogger('razeedash-api/apollo'));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {
-      logger.info('Enabled playground route with authorization enforcement.');
+      initLogger.info('Enabled playground route with authorization enforcement.');
       app.get(GRAPHQL_PATH, initModule.playgroundAuth);
     }
     app.use(GRAPHQL_PATH, router);
-    initModule.initApp(app, models, logger);
+    initModule.initApp(app, models, initLogger);
 
     const server = createApolloServer();
     server.applyMiddleware({
@@ -237,7 +235,7 @@ const apollo = async (options = {}) => {
     httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;
-      logger.info(
+      initLogger.info(
         `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}${GRAPHQL_PATH}`,
       );
     });
@@ -251,7 +249,7 @@ const apollo = async (options = {}) => {
     }
     return { db, server, httpServer, stop};
   } catch (err) {
-    logger.error(err, 'Apollo api error');
+    initLogger.error(err, 'Apollo api error');
     process.exit(1);
   }
 };

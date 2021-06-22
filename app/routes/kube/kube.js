@@ -19,8 +19,8 @@ const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
-const { getBunyanConfig } = require('../../utils/bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/kube/liveness'));
+const { createLogger } = require('../../log');
+const logger = createLogger('razeedash-api/kube/liveness');
 const timeInterval = 300000; //5 mintues
 
 // /kube/liveness
