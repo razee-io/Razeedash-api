@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const bunyan = require('bunyan');
 const fs = require('fs');
 const Redis = require('ioredis');
 const { RedisPubSub } = require('graphql-redis-subscriptions');

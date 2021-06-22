@@ -85,9 +85,10 @@ router.use(async (req, res, next) => {
     }
   }
   req.orgKey = orgKey;
+  const log = req.log;
   const orgDb = req.db.collection('orgs');
   const org = await orgDb.findOne({ orgKeys: orgKey });
-  if (org) req.log.fields.org_id = org._id;
+  if (org) log.fields.org_id = org._id;
   next();
 });
 

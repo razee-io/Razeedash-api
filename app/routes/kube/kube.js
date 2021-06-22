@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const bunyan = require('bunyan');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();

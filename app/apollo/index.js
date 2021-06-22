@@ -162,7 +162,7 @@ const createApolloServer = () => {
     subscriptions: {
       path: GRAPHQL_PATH,
       keepAlive: 10000,
-      onConnect: async (connectionParams, webSocket, context) => {
+      onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
@@ -171,9 +171,9 @@ const createApolloServer = () => {
         }
         const req_id = uuid();
         const logger  = createLogger('razeedash-api/subscription', { req_id, org_id: orgId });
-        
+
         logger.debug('subscriptions:onConnect upgradeReq getMe');
-        
+
         const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, logger},);
         if (me === undefined) {
           throw Error(
