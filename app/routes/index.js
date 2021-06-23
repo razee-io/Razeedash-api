@@ -18,7 +18,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const { createLogger, createExpressLogger } = require('../utils/bunyan.js');
+const { createLogger, createExpressLogger } = require('../log');
 const logger = createLogger('razeedash-api');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
