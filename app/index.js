@@ -21,7 +21,7 @@ const compression = require('compression');
 const body_parser = require('body-parser');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
-const log = require('./log').log;
+const log = require('./log').createLogger('razeedash-api/app/index');
 const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');

@@ -55,7 +55,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res)=>{
   }
 
   try {
-    const handler = storageFactory.deserialize(deployableVersion.content);
+    const handler = storageFactory(req.log).deserialize(deployableVersion.content);
     const data = await handler.getDataAndDecrypt(orgKey, deployableVersion.iv);
     res.set('Content-Type', deployableVersion.type);
     res.status(200).send(data);

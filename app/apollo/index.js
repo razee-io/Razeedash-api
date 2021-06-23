@@ -21,7 +21,7 @@ const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { createLogger, createExpressLogger } = require('../log');
-const initLogger = createLogger('razeedash-api/apollo/index');
+const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
@@ -170,7 +170,7 @@ const createApolloServer = () => {
           orgId = org._id;
         }
         const req_id = uuid();
-        const logger  = createLogger('razeedash-api/subscription', { req_id, org_id: orgId });
+        const logger  = createLogger('razeedash-api/app/apollo/subscription', { req_id, org_id: orgId });
 
         logger.debug('subscriptions:onConnect upgradeReq getMe');
 

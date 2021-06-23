@@ -144,7 +144,7 @@ const channelResolvers = {
         }
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
-        const handler = storageFactory.deserialize(deployableVersionObj.content);
+        const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
         deployableVersionObj.content = await handler.getDataAndDecrypt(orgKey, deployableVersionObj.iv);
 
         return deployableVersionObj;
@@ -308,7 +308,7 @@ const channelResolvers = {
 
       const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
       const bucketName = conf.storage.getChannelBucket(channel.data_location);
-      const handler = storageFactory.newResourceHandler(path, bucketName, channel.data_location);
+      const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
 
@@ -372,7 +372,7 @@ const channelResolvers = {
         const limit = pLimit(5);
         await Promise.all(_.map(versionsToDeleteFromS3, deployableVersionObj => {
           return limit(async () => {
-            const handler = storageFactory.deserialize(deployableVersionObj.content);
+            const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
             await handler.deleteData();
           });
         }));
@@ -425,7 +425,7 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('versionObj "{{uuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'uuid':uuid, 'channel.name':channel.name}), context);
         }
 
-        const handler = storageFactory.deserialize(deployableVersionObj.content);
+        const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
         await handler.deleteData();
 
         await models.DeployableVersion.deleteOne({ org_id, uuid });

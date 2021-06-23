@@ -72,6 +72,7 @@ const getBunyanConfig = (route) => {
 
 const createExpressLogger = (route) => ebl(getExpressBunyanConfig(route));
 const createLogger = (route, ids) => bunyan.createLogger({ ...getBunyanConfig(route), ...ids });
-const log = bunyan.createLogger(getBunyanConfig('razeedash-api-test')); // logger for unit-tests only
+
+const log = bunyan.createLogger(getBunyanConfig('razeedash-api-test')); // logger for unit-tests
 
 module.exports = { createLogger, createExpressLogger, log };

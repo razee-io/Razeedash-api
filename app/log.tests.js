@@ -20,7 +20,7 @@ const bunyan = rewire('./log');
 
 const responseCodeMapper = bunyan.__get__('responseCodeMapper');
 
-describe.only('utils', () => {
+describe('utils', () => {
   describe('bunyan', () => {
     describe('responseCodeMapper', () => {
       it('error', async () => {

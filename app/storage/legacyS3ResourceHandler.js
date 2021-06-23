@@ -19,12 +19,12 @@
 const conf = require('../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
-const logger = require('./../log').log;
 const _ = require('lodash');
 
 class S3LegacyResourceHandler {
 
-  constructor(resourceKey, bucketName, urlString) { // urlString is optional
+  constructor(logger, resourceKey, bucketName, urlString) { // urlString is optional
+    this.logger = logger;
     this.resourceKey = resourceKey;
     this.bucketName = bucketName;
     this.urlString = urlString;
@@ -48,7 +48,7 @@ class S3LegacyResourceHandler {
       sslEnabled: conf.storage.sslEnabled
     };
 
-    this.s3NewClient = new S3ClientClass(this.config, defaultConfig.locationConstraint);
+    this.s3NewClient = new S3ClientClass(this.logger, this.config, defaultConfig.locationConstraint);
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
@@ -86,26 +86,26 @@ class S3LegacyResourceHandler {
   }
 
   serialize() {
-    // return this.urlString;
+    // serialization is not allowed, throw error instead of return this.urlString;
     throw new Error('Legacy resource handler type instances should not be serialized');
   }
 
   logInfo(msg) {
-    logger.info(msg);
+    this.logger.info(msg);
   }
 }
 
-const constructor = (resourceKey, bucketName) => { // location parameter is not used
-  return new S3LegacyResourceHandler(resourceKey, bucketName);
+const constructor = (logger, resourceKey, bucketName) => { // location parameter is not used
+  return new S3LegacyResourceHandler(logger, resourceKey, bucketName);
 };
 
-const deserializer = (urlString) => {
+const deserializer = (logger, urlString) => {
   const urlObj = new URL(urlString);
   const fullPath = urlObj.pathname;
   const parts = _.filter(_.split(fullPath, '/'));
   const bucketName = parts.shift();
   const path = `${parts.join('/')}`;
-  return new S3LegacyResourceHandler(decodeURIComponent(path), bucketName, urlString); // endpoint from urlString is not used
+  return new S3LegacyResourceHandler(logger, decodeURIComponent(path), bucketName, urlString); // endpoint from urlString is not used
 };
 
 module.exports = { constructor, deserializer };
