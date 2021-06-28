@@ -42,6 +42,7 @@ const channelResolvers = {
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
+
       return channels;
     },
     channel: async(parent, { orgId, uuid }, context, fullQuery) => {
@@ -155,7 +156,7 @@ const channelResolvers = {
     }
   },
   Mutation: {
-    addChannel: async (parent, { orgId: org_id, name, data_location, tags=[] }, context)=>{
+    addChannel: async (parent, { orgId: org_id, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -190,6 +191,7 @@ const channelResolvers = {
           data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerId,
+          custom,
         });
         return {
           uuid,

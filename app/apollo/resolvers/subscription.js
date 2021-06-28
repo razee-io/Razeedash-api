@@ -335,7 +335,7 @@ const subscriptionResolvers = {
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
           kubeOwnerId,
-          custom 
+          custom
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);

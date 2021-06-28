@@ -34,6 +34,7 @@ const channelSchema = gql`
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
+    custom: String
     owner: BasicUser
     kubeOwnerName: String
   }
@@ -108,7 +109,7 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!]): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: String): AddChannelReply!
 
      """
      Edits a channel
