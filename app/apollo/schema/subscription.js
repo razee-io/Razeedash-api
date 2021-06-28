@@ -36,6 +36,7 @@ const subscriptionSchema = gql`
     versionUuid: String!
     created: Date!
     updated: Date!
+    custom: String
   }
   type ChannelSubscription {
     uuid: String!
@@ -56,6 +57,7 @@ const subscriptionSchema = gql`
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
     groupObjs: [GroupDetail!]
+    custom: String
   }
   type RemoveChannelSubscriptionReply {
     uuid: String!
@@ -115,7 +117,7 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, custom: String @sv): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
