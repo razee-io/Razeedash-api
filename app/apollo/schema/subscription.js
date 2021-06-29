@@ -25,6 +25,14 @@ const subscriptionSchema = gql`
     successCount: Int
     errorCount: Int
   }
+  input CustomSubscriptionDataInput {
+    key: String!
+    val: String
+  }
+  type CustomSubscriptionData {
+    key: String!
+    val: String
+  }
   type BasicChannelSubscription {
     uuid: String!
     orgId: String!
@@ -36,7 +44,7 @@ const subscriptionSchema = gql`
     versionUuid: String!
     created: Date!
     updated: Date!
-    custom: String
+    custom: [CustomSubscriptionData!] 
   }
   type ChannelSubscription {
     uuid: String!
@@ -57,7 +65,7 @@ const subscriptionSchema = gql`
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
     groupObjs: [GroupDetail!]
-    custom: String
+    custom: [CustomSubscriptionData!] 
   }
   type RemoveChannelSubscriptionReply {
     uuid: String!
@@ -117,12 +125,12 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, custom: String @sv): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, custom: [CustomSubscriptionDataInput!]): AddChannelSubscriptionReply!
      
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String  @sv, custom: String @sv): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String  @sv, custom: [CustomSubscriptionDataInput!]): EditChannelSubscriptionReply!
      
      """
      Set a configurationVersion
