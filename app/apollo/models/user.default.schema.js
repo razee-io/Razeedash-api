@@ -139,6 +139,19 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
   return new Array(objectArray.length).fill(true);
 };
 
+UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
+  logger.debug({ req_id: req_id },`default isAuthorized ${action} ${type} ${attributes}`);
+
+  const user = await this.findOne({ apiKey: me.apiKey }).lean();
+  if(!user) {
+    logger.error('A user was not found for this apiKey');
+    throw new ForbiddenError('user not found');
+  }
+  logger.debug('user found using apiKey', user);
+  return user;
+};
+
 UserDefaultSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
   const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
