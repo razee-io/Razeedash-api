@@ -114,7 +114,7 @@ const channelSchema = gql`
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!]): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: String): EditChannelReply!
 
      """
      Adds a yaml version to this channel
