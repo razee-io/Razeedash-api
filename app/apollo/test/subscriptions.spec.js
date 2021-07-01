@@ -39,6 +39,7 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const subscriptionApi = subscriptionFunc(graphqlUrl);
 let token;
+let token77;
 let adminToken;
 
 let org01Data;
@@ -291,12 +292,12 @@ const createSubscriptions = async () => {
     version_uuid: channelVersion_04_uuid,
     custom: [
       {
-        "key": "forEnv",
-        "val": "testing"
+        'key': 'forEnv',
+        'val': 'testing'
       },
       {
-        "key": "forType",
-        "val": "testing"
+        'key': 'forType',
+        'val': 'testing'
       }
     ],
   });
@@ -538,12 +539,12 @@ describe('subscription graphql test suite', () => {
         versionUuid: channelVersion_04_uuid,
         custom: [
           {
-            "key": "forEnv",
-            "val": "testing"
+            'key': 'forEnv',
+            'val': 'testing'
           },
           {
-            "key": "forType",
-            "val": "testing"
+            'key': 'forType',
+            'val': 'testing'
           }
         ],
       });
@@ -612,12 +613,12 @@ describe('subscription graphql test suite', () => {
         versionUuid: channelVersion_04_uuid,
         custom: [
           {
-            "key": "forEnv",
-            "val": "new"
+            'key': 'forEnv',
+            'val': 'new'
           },
           {
-            "key": "forType",
-            "val": "new"
+            'key': 'forType',
+            'val': 'new'
           }
         ],
       });
@@ -638,8 +639,8 @@ describe('subscription graphql test suite', () => {
         },
       } = result2;
       expect(subscription.name).to.equal('new-name');
-      expect(subscription.custom[0].val).to.equal("new");
-      expect(subscription.custom[1].val).to.equal("new");
+      expect(subscription.custom[0].val).to.equal('new');
+      expect(subscription.custom[1].val).to.equal('new');
 
     } catch (error) {
       if (error.response) {
