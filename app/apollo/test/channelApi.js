@@ -34,6 +34,10 @@ const channelFunc = grahqlUrl => {
                 name
                 description
               }
+              custom {
+                key
+                val
+              }
           }
         }
     `,
@@ -62,6 +66,10 @@ const channelFunc = grahqlUrl => {
                 uuid
                 name
                 description
+              }
+              custom {
+                key
+                val
               }
           }
         }
@@ -207,8 +215,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!,$name: String!, $data_location: String) {
-            addChannel(orgId: $orgId name: $name, data_location: $data_location) {
+          mutation($orgId: String!,$name: String!, $data_location: String, $custom: [CustomChannelDataInput!]) {
+            addChannel(orgId: $orgId name: $name, data_location: $data_location, custom: $custom) {
               uuid
           }
         }
@@ -227,8 +235,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!) {
-            editChannel(orgId: $orgId uuid: $uuid name: $name) {
+          mutation($orgId: String!, $uuid: String!, $name: String! $custom: [CustomChannelDataInput!]) {
+            editChannel(orgId: $orgId uuid: $uuid name: $name, custom: $custom) {
               uuid
               success
               name
