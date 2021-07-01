@@ -54,6 +54,12 @@ const sub_02_version = '0.0.1';
 const sub_02_version_uuid = 'fake_sub_02_verison_uuid';
 const sub_02_groups = 'prod';
 
+const sub_03_name = 'fake_sub_03';
+const sub_03_uuid = 'fake_sub_03_uuid';
+const sub_03_version = '0.0.1';
+const sub_03_version_uuid = 'fake_sub_03_verison_uuid';
+const sub_03_groups = 'prod';
+
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
@@ -131,7 +137,12 @@ const createChannels = async () => {
         uuid: sub_02_version_uuid,
         name: sub_02_version,
         description: 'test02'
-      }
+      },
+      {
+        uuid: sub_03_version_uuid,
+        name: sub_03_version,
+        description: 'test03'
+      },
     ]
   });
 
@@ -162,6 +173,29 @@ const createSubscriptions = async () => {
     version: sub_02_version,
     version_uuid: sub_02_version_uuid,
     owner: 'tester'
+  });
+
+  await models.Subscription.create({
+    _id: 'fake_sub_id_3',
+    org_id: org01._id,
+    name: sub_03_name,
+    uuid: sub_03_uuid,
+    groups: sub_03_groups,
+    channel_uuid: channel_01_uuid,
+    channelName: channel_01_name,
+    version: sub_03_version,
+    version_uuid: sub_03_version_uuid,
+    owner: 'tester',
+    custom: [
+      {
+        "key": "forEnv",
+        "val": "testing"
+      },
+      {
+        "key": "forType",
+        "val": "testing"
+      }
+    ]
   });
 };
 
