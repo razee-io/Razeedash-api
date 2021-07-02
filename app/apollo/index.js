@@ -58,18 +58,6 @@ const createDefaultApp = () => {
   const app = express();
   app.set('trust proxy', true);
   app.use(addRequestId);
-  app.use(function errorHandler(err, req, res, next) {
-    if (err) {
-      if (req.log && req.log.error) req.log.error(err);
-      else initLogger.error(err);
-      if (!res.headersSent) {
-        const statusCode = err.statusCode || 500;
-        return res.status(statusCode).send();
-      }
-      return next(err);
-    }
-    return next();
-  });
   app.use(i18nextMiddleware.handle(i18next));
   return app;
 };
