@@ -386,28 +386,13 @@ describe('subscription graphql test suite', () => {
         },
       } = result;
       expect(subscriptions).to.have.length(2);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
 
-  it('get subscriptions with custom attribute', async () => {
-    try {
-      const result = await subscriptionApi.subscriptions(token77, {
+      // get subscriptions with custom attribute
+      const result1 = await subscriptionApi.subscriptions(token77, {
         orgId: org77._id,
       });
-      const {
-        data: {
-          data: { subscriptions },
-        },
-      } = result;
-      expect(subscriptions).to.have.length(2);
-      expect(subscriptions[1].custom).to.have.length(2);
+      expect(result1.data.data.subscriptions).to.have.length(2);
+      expect(result1.data.data.subscriptions[1].custom).to.have.length(2);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -515,23 +500,9 @@ describe('subscription graphql test suite', () => {
         versionUuid: channelVersion_02_uuid,
       });
       expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
 
-  it('add a subscription with custom attribute', async () => {
-    try {
-      const {
-        data: {
-          data: { addSubscription },
-        },
-      } = await subscriptionApi.addSubscription(token77, {
+      // add subscription with custom attribute
+      const result = await subscriptionApi.addSubscription(token77, {
         orgId: org77._id,
         name: 'a_random_name3',
         groups:['dev'],
@@ -548,7 +519,7 @@ describe('subscription graphql test suite', () => {
           }
         ],
       });
-      expect(addSubscription.uuid).to.be.an('string');
+      expect(result.data.data.addSubscription.uuid).to.be.an('string');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -591,20 +562,8 @@ describe('subscription graphql test suite', () => {
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
 
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
-  it('edit a subscription with custom attribute', async () => {
-    try {
-      //step1, edit the subscription
-      const result = await subscriptionApi.editSubscription(token77, {
+      //step1, edit the subscription with custom attribute
+      const result3 = await subscriptionApi.editSubscription(token77, {
         orgId: org77._id,
         uuid: subscription_04_uuid,
         name: 'new-name',
@@ -622,25 +581,15 @@ describe('subscription graphql test suite', () => {
           }
         ],
       });
-      const {
-        data: {
-          data: { editSubscription },
-        },
-      } = result;
-      expect(editSubscription.uuid).to.be.an('string');
+      expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
-      const result2 = await subscriptionApi.subscription(token77, {
+      const result4 = await subscriptionApi.subscription(token77, {
         orgId: org77._id,
         uuid: subscription_04_uuid,
       });
-      const {
-        data: {
-          data: { subscription },
-        },
-      } = result2;
-      expect(subscription.name).to.equal('new-name');
-      expect(subscription.custom[0].val).to.equal('new');
-      expect(subscription.custom[1].val).to.equal('new');
+      expect(result4.data.data.subscription.name).to.equal('new-name');
+      expect(result4.data.data.subscription.custom[0].val).to.equal('new');
+      expect(result4.data.data.subscription.custom[1].val).to.equal('new');
 
     } catch (error) {
       if (error.response) {
