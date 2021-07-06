@@ -11,7 +11,7 @@
     "local": "export AUTH_MODEL=local; nodemon app/index.js | bunyan",
     "start:mon": "nodemon app/index.js | bunyan",
     "start:debug": "node --inspect-brk app/index.js",
-    "test": "export NODE_ENV=unit-test; export COS_SDK='mock-aws-s3'; nyc --all --exclude=**/*.tests.js --exclude=**/*.spec.js --exclude=app/apollo/**/*.js --exclude=coverage/* --reporter=html --reporter=text mocha **/*.tests.js",
+    "test": "export NODE_ENV=unit-test; export COS_SDK='mock-aws-s3'; nyc --all --exclude=**/*.tests.js --exclude=**/*.spec.js --exclude=app/apollo/**/*.js --exclude=coverage/* --reporter=html --reporter=text mocha '**/*.tests.js'",
     "test:apollo": "export NODE_ENV=test; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha --timeout 5000 --exit 'app/apollo/test/*.spec.js'",
     "test:apollo:default": "export AUTH_MODEL=default; export NODE_ENV=test; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha --timeout 5000 'app/apollo/test/*.default.spec.js'",
     "test:apollo:local": "export AUTH_MODEL=local; export NODE_ENV=test; export CHANNEL_MAX_TOTAL_LIMIT=4; export CHANNEL_VERSION_MAX_TOTAL_LIMIT=4; export CLUSTER_MAX_TOTAL_LIMIT=2; export SUBSCRIPTION_MAX_TOTAL_LIMIT=3; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha  --timeout 5000  'app/apollo/test/*.spec.js'",

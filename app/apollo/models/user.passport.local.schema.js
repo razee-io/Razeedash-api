@@ -15,7 +15,6 @@
  */
 
 const bcrypt = require('bcrypt');
-const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -25,12 +24,7 @@ const { AuthenticationError, ForbiddenError } = require('apollo-server');
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODEL } = require('./const');
-const { getBunyanConfig } = require('../../utils/bunyan');
 const SECRET = require('./const').SECRET;
-
-const logger = bunyan.createLogger(
-  getBunyanConfig('razeedash-api/apollo/models/user.passport.local.schema'),
-);
 
 const UserPassportLocalSchema = new mongoose.Schema({
   _id: {
@@ -200,7 +194,7 @@ UserPassportLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
 };
 
 UserPassportLocalSchema.statics.signUp = async (models, args, secret, context) => {
-  logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
+  context.logger.debug( { req_id: context.req_id }, `passport.local signUp: ${args}`);
 
   const user = await models.User.createUser(models, args);
   return { token: models.User.createToken(user, secret, '240m') };
@@ -219,7 +213,7 @@ UserPassportLocalSchema.statics.signIn = async (
     password,
   });
   if (!user) {
-    logger.warn({ req_id: context.req_id }, 'Authentication has failed');
+    context.logger.warn({ req_id: context.req_id }, 'Authentication has failed');
     throw new AuthenticationError('Authentication has failed');
   }
   return { token: models.User.createToken(user, secret, '240m') };
@@ -276,7 +270,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserPassportLocalSchema.statics.isValidOrgKey = async function(models, me) {
+UserPassportLocalSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
 
   const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();

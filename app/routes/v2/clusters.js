@@ -122,13 +122,13 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-function pushToS3Sync(key, searchableDataHash, dataStr, data_location) {
+function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
   //if its a new or changed resource, write the data out to an S3 object
   const result = {};
   const bucket = conf.storage.getResourceBucket(data_location);
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  const handler = storageFactory.newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
+  const handler = storageFactory(logger).newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
   result.promise = handler.setData(dataStr);
   result.encodedData = handler.serialize();
   return result;
@@ -272,7 +272,7 @@ const updateClusterResources = async (req, res, next) => {
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (!currentResource || resourceHash !== currentResource.hash) {
               let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location);
+              s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
               dataStr=s3UploadWithPromiseResponse.encodedData;
               s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
@@ -344,7 +344,7 @@ const updateClusterResources = async (req, res, next) => {
                 pubSub.resourceChangedFunc(
                   {_id: resourceId, data: dataStr, created: resourceCreated,
                     deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
-                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
               }
             }
             if(s3UploadWithPromiseResponse!==undefined){
@@ -374,7 +374,7 @@ const updateClusterResources = async (req, res, next) => {
             const currentResource = await Resources.findOne(key);
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             let start = Date.now();
-            s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location);
+            s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
             dataStr = s3UploadWithPromiseResponse.encodedData;
             s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
             if (currentResource) {
@@ -388,7 +388,8 @@ const updateClusterResources = async (req, res, next) => {
               );
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
-              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id,
+                cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
             }
             if (s3UploadWithPromiseResponse !== undefined) {
               await s3UploadWithPromiseResponse.promise;

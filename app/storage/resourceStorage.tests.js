@@ -70,7 +70,7 @@ describe('Resource storage', () => {
     const resource = 'my precious resource';
 
     // Write resource into bucket
-    const handler = storageFactory.newResourceHandler(path, bucketName);  // default location will be used
+    const handler = storageFactory().newResourceHandler(path, bucketName);  // default location will be used
     const ivText = await handler.setDataAndEncrypt(resource, orgKey);
     const encodedResource = handler.serialize();
     console.log(encodedResource, ivText);
@@ -79,17 +79,17 @@ describe('Resource storage', () => {
     expect(encodedResource.data.endpoint).to.equal('lon.ibm.com');
 
     // Read resource from the bucket
-    const getHandler = storageFactory.deserialize(encodedResource);
+    const getHandler = storageFactory().deserialize(encodedResource);
     const decryptedResource = await getHandler.getDataAndDecrypt(orgKey, ivText);
     console.log(decryptedResource);
 
     expect(resource).to.equal(decryptedResource);
 
-    const delHandler = storageFactory.deserialize(encodedResource);
+    const delHandler = storageFactory().deserialize(encodedResource);
     await delHandler.deleteData();
     const emptyEncodedResource = delHandler.serialize();
 
-    const emptyHandler = storageFactory.deserialize(emptyEncodedResource);
+    const emptyHandler = storageFactory().deserialize(emptyEncodedResource);
     try {
       await emptyHandler.getDataAndDecrypt(orgKey, ivText);
       expect.fail('should not reach this point');
@@ -107,11 +107,11 @@ describe('Resource storage', () => {
 
     const longString = 'x'.repeat(1 * 24 * 1024);
 
-    const handler = storageFactory.newResourceHandler(path, bucketName, 'WDC'); // upper case should be OK
+    const handler = storageFactory().newResourceHandler(path, bucketName, 'WDC'); // upper case should be OK
     const promise = handler.setData(longString);
     await promise;
 
-    const handlerToo = storageFactory.deserialize(handler.serialize());
+    const handlerToo = storageFactory().deserialize(handler.serialize());
     const longStringCopy = await handlerToo.getData();
     expect(longStringCopy).to.equal(longString);
 
@@ -125,7 +125,7 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
 
-    expect(() => storageFactory.newResourceHandler(path, '')).to.throw('not specified');
+    expect(() => storageFactory().newResourceHandler(path, '')).to.throw('not specified');
   });
 
   it('S3 object storage driver must recognize invalid resource encodings and invalid locations', async () => {
@@ -136,22 +136,22 @@ describe('Resource storage', () => {
     });
 
     const resource0 = { metadata: null, data: {} };
-    expect(() => storageFactory.deserialize(resource0)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource0)).to.throw('Invalid metadata structure');
 
     const resource1 = { metadata: {}, data: {} };
-    expect(() => storageFactory.deserialize(resource1)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource1)).to.throw('Invalid metadata structure');
 
     const resource2 = { metadata: { type: null }, data: {} };
-    expect(() => storageFactory.deserialize(resource2)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource2)).to.throw('Invalid metadata structure');
 
     const resource3 = { metadata: { type: 'abcd' }, data: {} };
-    expect(() => storageFactory.deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
+    expect(() => storageFactory().deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
 
     const resource4 = { metadata: { type: 's3' }, data: { path: 'path' } };
-    expect(() => storageFactory.deserialize(resource4)).to.throw('not specified');
+    expect(() => storageFactory().deserialize(resource4)).to.throw('not specified');
 
     const resource5 = { metadata: { type: 's3' }, data: { path: 'path', bucketName: 'my bucket', location: 'ABC' } };
-    expect(() => storageFactory.deserialize(resource5)).to.throw('Storage connection settings for \'abc\' location are not configured');
+    expect(() => storageFactory().deserialize(resource5)).to.throw('Storage connection settings for \'abc\' location are not configured');
 
   });
 
@@ -173,7 +173,7 @@ describe('Resource storage', () => {
     let resource = 'my precious resource';
 
     // Write resource into bucket
-    const handler = storageFactory.newResourceHandler(path, bucketName);
+    const handler = storageFactory().newResourceHandler(path, bucketName);
     const ivText = await handler.setDataAndEncrypt(resource, orgKey);
     const encodedResource = handler.serialize();
     console.log(encodedResource);
@@ -181,17 +181,17 @@ describe('Resource storage', () => {
     expect(encodedResource.data).to.not.equal(resource);
 
     // Read resource from the bucket
-    const getHandler = storageFactory.deserialize(encodedResource);
+    const getHandler = storageFactory().deserialize(encodedResource);
     const decryptedResource = await getHandler.getDataAndDecrypt(orgKey, ivText);
     console.log(decryptedResource);
     expect(resource).to.equal(decryptedResource);
 
     // Now delete the bucket
-    const delHandler = storageFactory.deserialize(encodedResource);
+    const delHandler = storageFactory().deserialize(encodedResource);
     await delHandler.deleteData();
     const emptyEncodedResource = delHandler.serialize();
 
-    const emptyHandler = storageFactory.deserialize(emptyEncodedResource);
+    const emptyHandler = storageFactory().deserialize(emptyEncodedResource);
     try {
       await emptyHandler.getDataAndDecrypt(orgKey, ivText);
       expect.fail('should not reach this point');
@@ -205,13 +205,13 @@ describe('Resource storage', () => {
 
     const longString = 'x'.repeat(1 * 24 * 1024);
 
-    const handler = storageFactory.newResourceHandler(path, bucketName, 'wdc');
+    const handler = storageFactory().newResourceHandler(path, bucketName, 'wdc');
     const promise = handler.setData(longString);
     await promise;
     const encodedData = handler.serialize();
     expect(encodedData.data).to.equal(longString);
 
-    const handlerToo = storageFactory.deserialize(encodedData);
+    const handlerToo = storageFactory().deserialize(encodedData);
     const longStringCopy = await handlerToo.getData();
     expect(longStringCopy).to.equal(longString);
 
@@ -221,9 +221,9 @@ describe('Resource storage', () => {
   it('Neither path nor bucket name are required', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
     const resource = 'my precious data';
-    const handler = storageFactory.newResourceHandler();
+    const handler = storageFactory().newResourceHandler();
     await handler.setData(resource);
-    const handlerToo = storageFactory.deserialize(handler.serialize());
+    const handlerToo = storageFactory().deserialize(handler.serialize());
     const resourceCopy = await handlerToo.getData();
     expect(resourceCopy).to.equal(resource);
     await handlerToo.deleteData();
@@ -233,16 +233,16 @@ describe('Resource storage', () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
 
     const resource0 = { metadata: null, data: {} };
-    expect(() => storageFactory.deserialize(resource0)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource0)).to.throw('Invalid metadata structure');
 
     const resource1 = { metadata: {}, data: {} };
-    expect(() => storageFactory.deserialize(resource1)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource1)).to.throw('Invalid metadata structure');
 
     const resource2 = { metadata: { type: null }, data: {} };
-    expect(() => storageFactory.deserialize(resource2)).to.throw('Invalid metadata structure');
+    expect(() => storageFactory().deserialize(resource2)).to.throw('Invalid metadata structure');
 
     const resource3 = { metadata: { type: 'abcd' }, data: {} };
-    expect(() => storageFactory.deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
+    expect(() => storageFactory().deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
   });
 
 });

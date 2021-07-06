@@ -19,11 +19,11 @@
 const conf = require('./../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
-const logger = require('./../log').log;
 
 class S3ResourceHandler {
 
-  constructor(resourceKey, bucketName, location, endpoint) {
+  constructor(logger, resourceKey, bucketName, location, endpoint) {
+    this.logger = logger;
     if (!resourceKey || !bucketName) {
       throw new Error(`Path (${resourceKey}) and/or bucket name (${bucketName}) is not specified`);
     }
@@ -49,7 +49,7 @@ class S3ResourceHandler {
       sslEnabled: conf.storage.sslEnabled
     };
 
-    this.s3NewClient = new S3ClientClass(this.config, locationConfig.locationConstraint);
+    this.s3NewClient = new S3ClientClass(this.logger, this.config, locationConfig.locationConstraint);
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
@@ -94,16 +94,16 @@ class S3ResourceHandler {
   }
 
   logInfo(msg) {
-    logger.info(msg);
+    this.logger.info(msg);
   }
 }
 
-const constructor = (resourceKey, bucketName, location) => {
-  return new S3ResourceHandler(resourceKey, bucketName, location);
+const constructor = (logger, resourceKey, bucketName, location) => {
+  return new S3ResourceHandler(logger, resourceKey, bucketName, location);
 };
 
-const deserializer = (data) => {
-  return new S3ResourceHandler(data.path, data.bucketName, data.location, data.endpoint);
+const deserializer = (logger, data) => {
+  return new S3ResourceHandler(logger, data.path, data.bucketName, data.location, data.endpoint);
 };
 
 module.exports = { constructor, deserializer };

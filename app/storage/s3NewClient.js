@@ -17,11 +17,11 @@
 'use strict';
 
 const conf = require('./../conf').conf;
-const logger = require('./../log').log;
 
 module.exports = class S3NewClient {
 
-  constructor(config, locationConstraint) {
+  constructor(logger, config, locationConstraint) {
+    this.logger = logger;
     this.s3 = new conf.storage.sdk.S3(config);
     this.locationConstraint = locationConstraint;
   }
@@ -30,11 +30,11 @@ module.exports = class S3NewClient {
     try {
       const exists = await this.bucketExists(bucketName);
       if (!exists) {
-        logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
+        this.logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
         await this.createBucket(bucketName);
       }
     } catch (err) {
-      logger.error(`could not create bucket '${bucketName}'`, err);
+      this.logger.error(`could not create bucket '${bucketName}'`, err);
       throw err;
     }
 
@@ -56,10 +56,10 @@ module.exports = class S3NewClient {
       return true;
     } catch (err) {
       if (err.statusCode >= 400 && err.statusCode < 500) {
-        logger.warn(`Bucket '${bucketName}' not found`);
+        this.logger.warn(`Bucket '${bucketName}' not found`);
         return false;
       }
-      logger.error(err, err.stack);
+      this.logger.error(err, err.stack);
       throw new Error('S3 Error');
     }
   }

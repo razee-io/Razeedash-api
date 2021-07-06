@@ -21,7 +21,7 @@ const { RedisPubSub } = require('graphql-redis-subscriptions');
 const ObjectId = require('mongoose').Types.ObjectId;
 var Redis = require('ioredis-mock');
 const _ = require('lodash');
-
+const log = require('../../log').log;
 // const why = require('why-is-node-running');
 
 const apiFunc = require('./api');
@@ -704,7 +704,7 @@ describe('resource graphql test suite', () => {
         await sleep(200);
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
-        pubSub.resourceChangedFunc(aResource);
+        pubSub.resourceChangedFunc(aResource, log);
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
@@ -714,7 +714,7 @@ describe('resource graphql test suite', () => {
         // sleep 0.1 second and send a resourceChanged event
         await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
-        pubSub.resourceChangedFunc(anotherResource);
+        pubSub.resourceChangedFunc(anotherResource, log);
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();

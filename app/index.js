@@ -21,7 +21,7 @@ const compression = require('compression');
 const body_parser = require('body-parser');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
-const log = require('./log').log;
+const log = require('./log').createLogger('razeedash-api/app/index');
 const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
@@ -46,22 +46,6 @@ app.use(body_parser.urlencoded({ extended: false }));
 app.set('port', port);
 app.use('/api', router); // only for everything under /api
 
-// eslint-disable-next-line no-unused-vars
-app.use(function errorHandler(err, req, res, next) {
-  if (err) {
-    if (req.log && req.log.error)
-      req.log.error(err);
-    else
-      log.error(err);
-    if (!res.headersSent) {
-      let statusCode = err.statusCode || 500;
-      return res.status(statusCode).send();
-    } else {
-      return next(err);
-    }
-  }
-  next();
-});
 i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   backend: {
     loadPath:'./locales/{{lng}}/razee-resources.json'
@@ -75,6 +59,7 @@ i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   keySeparator: '#|#'
 });
 app.use(i18nextMiddleware.handle(i18next));
+
 app.get('/metrics', async function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
   response.end(await promClient.register.metrics());
@@ -94,7 +79,24 @@ initialize().then((db) => {
 
 
 async function onReady() {
-  await apollo({app, httpServer: server});
+  await apollo({ app, httpServer: server });
+
+  app.use(function errorHandler(err, req, res, next) {
+    if (err) {
+      if (req.log && req.log.error)
+        req.log.error(err);
+      else
+        log.error(err);
+      if (!res.headersSent) {
+        let statusCode = err.statusCode || 500;
+        return res.status(statusCode).send();
+      } else {
+        return next(err);
+      }
+    }
+    next();
+  });
+
   server.listen(port);
 }
 
