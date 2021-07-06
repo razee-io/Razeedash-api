@@ -72,12 +72,10 @@ const SubscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  custom: [
-    {
-      key: String,
-      val: String,
-    }
-  ],
+  custom: {
+    type: Map,
+    of: String
+  },
 }, {
   strict:'throw',
 });

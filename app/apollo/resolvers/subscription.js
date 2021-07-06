@@ -141,6 +141,15 @@ const subscriptionResolvers = {
 
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
+      subscriptions = subscriptions.map((sub) => {
+        var customArr = [];
+        for (var [key, val] of Object.entries(sub.custom)) {
+          customArr.push({ 'key': key, 'val': val});
+        }
+        sub.custom = customArr;
+        return sub;
+      });
+
       return subscriptions;
     },
     subscription: async(parent, { orgId, uuid , name, _queryName }, context, fullQuery) => {
@@ -161,6 +170,12 @@ const subscriptionResolvers = {
         }
 
         await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, context);
+
+        var customArr = [];
+        for (var [key, val] of Object.entries(subscription.custom)) {
+          customArr.push({ 'key': key, 'val': val});
+        }
+        subscription.custom = customArr;
 
         return subscription;
       }catch(err){
@@ -328,6 +343,16 @@ const subscriptionResolvers = {
           throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
         }
 
+        var customMap = new Map();
+
+        custom.forEach((i) => {
+          if (!customMap.has(i.key)) {
+            customMap.set(i.key, i.val);
+          } else {
+            throw new Error('Duplicate key');
+          }
+        });
+
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
         await models.Subscription.create({
           _id: UUID(),
@@ -335,7 +360,7 @@ const subscriptionResolvers = {
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
           kubeOwnerId,
-          custom
+          custom: customMap
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
@@ -385,10 +410,20 @@ const subscriptionResolvers = {
           throw  new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
+        var customMap = new Map();
+
+        custom.forEach((i) => {
+          if (!customMap.has(i.key)) {
+            customMap.set(i.key, i.val);
+          } else {
+            throw new Error('Duplicate key');
+          }
+        });
+
         var sets = {
           name, groups,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
-          clusterId, custom,
+          clusterId, custom:customMap,
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
