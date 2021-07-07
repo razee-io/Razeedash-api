@@ -167,6 +167,28 @@ const getPresetClusters = async () => {
   console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
 };
 
+// This function just converts conventional GQL output into the proper Mongo input for directly
+// inserting into the db
+let convert_custom_gql = (custom) => {
+  let custom_map = new Map();
+  if(custom){
+    custom.forEach(keyval => {
+      custom_map.set(keyval.key, keyval.val);
+    });
+  }
+  return Object.fromEntries(custom_map);
+};
+
+let convert_custom_mongo = (custom) => {
+  let custom_arr = [];
+  if(custom){
+    Object.keys(custom).forEach((k) => custom_arr.push({key: k, val: custom[k]}));
+  }
+
+  return custom_arr;
+};
+
+
 const createChannels = async () => {
   await models.Channel.create({
     _id: 'fake_ch_id_1',
@@ -174,7 +196,7 @@ const createChannels = async () => {
     uuid: channel_01_uuid,
     name: channel_01_name,
     versions: [],
-    custom: channel_01_custom
+    custom: convert_custom_gql(channel_01_custom)
   });
 
   await models.Channel.create({
@@ -183,7 +205,7 @@ const createChannels = async () => {
     uuid: channel_02_uuid,
     name: channel_02_name,
     versions: [],
-    custom: channel_02_custom
+    custom: convert_custom_gql(channel_02_custom)
   });
 
   await models.Channel.create({
@@ -192,7 +214,7 @@ const createChannels = async () => {
     uuid: channel_03_uuid,
     name: channel_03_name,
     versions: [],
-    custom: channel_03_custom
+    custom: convert_custom_gql(channel_03_custom)
   });
   await models.Channel.create({
     _id: 'fake_id_4',
@@ -200,7 +222,7 @@ const createChannels = async () => {
     uuid: channel_04_uuid,
     name: channel_04_name,
     versions: [],
-    custom: channel_04_custom
+    custom: convert_custom_gql(channel_04_custom)
   });
 };
 
@@ -304,7 +326,6 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         uuid: channel_04_uuid,
       });
-
       expect(channel.custom.length).to.be.equal(channel_04_custom.length);
       for (let i = 0; i < channel.custom.length; ++i) {
         expect(channel.custom[i].key).to.be.equal(channel_04_custom[i].key);
@@ -365,12 +386,13 @@ describe('channel graphql test suite', () => {
       const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
       expect(channel1.data_location).to.equal('dal');
 
-      expect(channel1.custom).to.be.length(custom_dat.length);
+      const c1_custom  = convert_custom_mongo(channel1.custom);
+      expect(c1_custom).to.be.length(custom_dat.length);
 
       // Compare every key/val pair
       for (let i = 0; i < custom_dat.length; ++i) {
-        expect(channel1.custom[i].key).to.be.equal(custom_dat[i].key);
-        expect(channel1.custom[i].val).to.be.equal(custom_dat[i].val);
+        expect(c1_custom[i].key).to.be.equal(custom_dat[i].key);
+        expect(c1_custom[i].val).to.be.equal(custom_dat[i].val);
       }
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
@@ -549,12 +571,13 @@ describe('channel graphql test suite', () => {
       expect(editChannel.name).to.equal(`${channel_02_name}_new`);
 
       const channel1 = await models.Channel.findOne({uuid: editChannel.uuid});
-      expect(channel1.custom).to.be.length(channel_02_custom_new.length);
+      const c1_custom = convert_custom_mongo(channel1.custom);
+      expect(c1_custom).to.be.length(channel_02_custom_new.length);
 
       // Compare every key/val pair
       for (let i = 0; i < channel1.custom.length; ++i) {
-        expect(channel1.custom[i].key).to.be.equal(channel_02_custom_new[i].key);
-        expect(channel1.custom[i].val).to.be.equal(channel_02_custom_new[i].val);
+        expect(c1_custom[i].key).to.be.equal(channel_02_custom_new[i].key);
+        expect(c1_custom[i].val).to.be.equal(channel_02_custom_new[i].val);
       }
 
       //step 1.1: edit channel 02's name

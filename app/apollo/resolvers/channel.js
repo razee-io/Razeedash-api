@@ -25,7 +25,7 @@ const storageFactory = require('./../../storage/storageFactory');
 const yaml = require('js-yaml');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
-const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
+const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, parseCustomForGQL, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const channelResolvers = {
   Query: {
@@ -58,6 +58,8 @@ const channelResolvers = {
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
+
+        parseCustomForGQL(channel);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
@@ -77,6 +79,8 @@ const channelResolvers = {
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
+
+        parseCustomForGQL(channel);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
@@ -96,7 +100,7 @@ const channelResolvers = {
         var channels = await models.Channel.find({ org_id: orgId, tags: { $all: tags } });
         channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
-
+        _.forEach(channels, (channel) => parseCustomForGQL(channel));
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
@@ -182,6 +186,17 @@ const channelResolvers = {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
 
+        let custom_map = new Map();
+        if(custom){
+          custom.forEach(keyval => {
+            if(custom_map.has(keyval.key)){
+              throw new RazeeValidationError(context.req.t('Duplicate keys found: \'{{key}}\'.', {'key' : keyval.key}), context);
+            }
+            custom_map.set(keyval.key, keyval.val);
+          });
+        }
+        const custom_obj = Object.fromEntries(custom_map);
+
         const uuid = UUID();
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
         await models.Channel.create({
@@ -191,7 +206,7 @@ const channelResolvers = {
           data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerId,
-          custom,
+          custom: custom_obj,
         });
         return {
           uuid,
@@ -215,7 +230,19 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('channel uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom } }, {omitUndefined:true});
+
+        let custom_map = new Map();
+        if(custom){
+          custom.forEach(keyval => {
+            if(custom_map.has(keyval.key)){
+              throw new RazeeValidationError(context.req.t('Duplicate keys found: \'{{key}}\'.', {'key' : keyval.key}), context);
+            }
+            custom_map.set(keyval.key, keyval.val);
+          });
+        }
+        custom_map = Object.fromEntries(custom_map);
+
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom: custom_map } }, {omitUndefined:true});
 
         // find any subscriptions for this configuration channel and update channelName in those subs
         await models.Subscription.updateMany(

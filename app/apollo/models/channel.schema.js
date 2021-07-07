@@ -46,12 +46,9 @@ const ChannelSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  custom: [
-    {
-      key: String,
-      val: String,
-    }
-  ],
+  custom: {
+    type: Object,
+  },
   versions: [
     {
       uuid: {
