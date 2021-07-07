@@ -73,8 +73,7 @@ const SubscriptionSchema = new mongoose.Schema({
     default: Date.now,
   },
   custom: {
-    type: Map,
-    of: String
+    type: Object,
   },
 }, {
   strict:'throw',

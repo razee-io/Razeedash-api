@@ -186,16 +186,7 @@ const createSubscriptions = async () => {
     version: sub_03_version,
     version_uuid: sub_03_version_uuid,
     owner: 'tester',
-    custom: [
-      {
-        'key': 'forEnv',
-        'val': 'testing'
-      },
-      {
-        'key': 'forType',
-        'val': 'testing'
-      }
-    ]
+    custom: { forEnv: 'testing', forType: 'testing' }
   });
 };
 

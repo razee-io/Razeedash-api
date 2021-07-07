@@ -290,16 +290,7 @@ const createSubscriptions = async () => {
     channel: channel_04_name,
     version: channelVersion_04_name,
     version_uuid: channelVersion_04_uuid,
-    custom: [
-      {
-        'key': 'forEnv',
-        'val': 'testing'
-      },
-      {
-        'key': 'forType',
-        'val': 'testing'
-      }
-    ],
+    custom: { forEnv: 'testing', forType: 'testing' }
   });
 };
 
@@ -579,7 +570,7 @@ describe('subscription graphql test suite', () => {
             'key': 'forType',
             'val': 'new'
           }
-        ],
+        ]
       });
       expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
