@@ -24,29 +24,29 @@ async function test() {
   const location = 'WDC';
 
   // Write resource into bucket
-  const handler = storageFactory.newResourceHandler(path, bucketName, location);
+  const handler = storageFactory().newResourceHandler(path, bucketName, location);
   const ivText = await handler.setDataAndEncrypt(resource, orgKey);
   const encodedResource = handler.serialize();
   console.log(encodedResource, ivText);
   if (encodedResource.metadata.type !== 's3') throw new Error('Incorrect handler type');
 
   // Read resource from the bucket
-  const getHandler = storageFactory.deserialize(encodedResource);
+  const getHandler = storageFactory().deserialize(encodedResource);
   const decryptedResource = await getHandler.getDataAndDecrypt(orgKey, ivText);
   console.log(decryptedResource);
 
   if (resource !== decryptedResource) throw new Error('Resources do not match');
 
   // Now delete the bucket
-  const delHandler = storageFactory.deserialize(encodedResource);
+  const delHandler = storageFactory().deserialize(encodedResource);
   await delHandler.deleteData();
   const emptyEncodedResource = delHandler.serialize();
 
   // Delete the bucket again - should not throw exceptions
-  const delHandlerToo = storageFactory.deserialize(encodedResource);
+  const delHandlerToo = storageFactory().deserialize(encodedResource);
   await delHandlerToo.deleteData();
 
-  const emptyHandler = storageFactory.deserialize(emptyEncodedResource);
+  const emptyHandler = storageFactory().deserialize(emptyEncodedResource);
   try {
     await emptyHandler.getDataAndDecrypt(orgKey, ivText);
     throw new Error('Should not reach this point');
@@ -56,7 +56,7 @@ async function test() {
 
   // Async write resource into bucket without encryption
   const longString = 'x'.repeat(10*1024*1024);
-  const handler2 = storageFactory.newResourceHandler(path, bucketName, location);
+  const handler2 = storageFactory().newResourceHandler(path, bucketName, location);
   const promise = handler2.setData(longString);
   console.log('Waiting on promise...' + new Date());
   await promise;

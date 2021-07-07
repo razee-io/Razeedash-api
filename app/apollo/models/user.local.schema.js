@@ -15,7 +15,6 @@
  */
 
 const bcrypt = require('bcrypt');
-const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -24,13 +23,7 @@ const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-s
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODEL } = require('./const');
-const { getBunyanConfig } = require('../../utils/bunyan');
-
 const SECRET = require('./const').SECRET;
-
-const logger = bunyan.createLogger(
-  getBunyanConfig('razeedash-api/apollo/models/user.local.schema'),
-);
 
 const UserLocalSchema = new mongoose.Schema({
   _id: {
@@ -195,7 +188,7 @@ UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
 };
 
 UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
-  logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
+  context.logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
 
   const user = await models.User.createUser(models, args);
   return { token: models.User.createToken(user, secret, '240m') };
@@ -203,15 +196,15 @@ UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
 };
 
 UserLocalSchema.statics.signIn = async (models, login, password, secret, context) => {
-  logger.debug({login, req_id: context.req_id}, 'local signIn enter');
+  context.logger.debug({login, req_id: context.req_id}, 'local signIn enter');
   const user = await models.User.findByLogin(login);
   if (!user) {
-    logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
+    context.logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
     throw new UserInputError('No user found with this login credentials.');
   }
   const isValid = await user.validatePassword(password);
   if (!isValid) {
-    logger.warn({ req_id: context.req_id }, 'Invalid password.');
+    context.logger.warn({ req_id: context.req_id }, 'Invalid password.');
     throw new AuthenticationError('Invalid password.');
   }
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
@@ -272,7 +265,7 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isValidOrgKey = async function(models, me) {
+UserLocalSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
 
   const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();

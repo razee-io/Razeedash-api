@@ -85,7 +85,7 @@ const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields
     if (!resource) return resource;
 
     if (queryFields['data'] && resource.data) {
-      const handler = storageFactory.deserialize(resource.data);
+      const handler = storageFactory(logger).deserialize(resource.data);
       const yaml = await handler.getData();
       resource.data = yaml;
     }
@@ -250,7 +250,7 @@ const resourceResolvers = {
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
         if (queryFields['data'] && resource.data) {
-          const handler = storageFactory.deserialize(resource.data);
+          const handler = storageFactory(logger).deserialize(resource.data);
           const yaml = await handler.getData();
           resource.data = yaml;
         }
@@ -381,7 +381,7 @@ const resourceResolvers = {
       if(!histId || histId == resource._id.toString()){
         let content = resource.data;
         if ( content ) {
-          const handler = storageFactory.deserialize(content);
+          const handler = storageFactory(logger).deserialize(content);
           const yaml = await handler.getData();
           content = yaml;
         }
@@ -400,7 +400,7 @@ const resourceResolvers = {
 
       var content = await getContent(obj);
       if ( content ) {
-        const handler = storageFactory.deserialize(content);
+        const handler = storageFactory(logger).deserialize(content);
         const yaml = await handler.getData();
         content = yaml;
       }

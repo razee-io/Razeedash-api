@@ -485,13 +485,20 @@ describe('channel graphql test suite', () => {
       // step 3: get a channel version by user1 token
       const {
         data: {
-          data: { channelVersion },
+          data: data,
+          errors: errors
         },
       } = await channelApi.channelVersion(token, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         versionUuid: addChannelVersion.versionUuid,
       });
+
+      if (errors) {
+        expect.fail(errors[0].message);
+      }
+
+      const channelVersion = data.channelVersion;
 
       expect(channelVersion.channelName).to.equal(channel_01_name);
       expect(channelVersion.name).to.equal(`${channel_01_name}:v.0.1`);

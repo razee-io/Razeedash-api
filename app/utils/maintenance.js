@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const log = require('../log').log;
+const log = require('../log').createLogger('razeedash-api/app/utils/maintenance');
 
 let maintenanceMode = () => false;
 

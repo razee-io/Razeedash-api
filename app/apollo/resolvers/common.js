@@ -29,7 +29,7 @@ const validClusterAuth = async (me, queryName, context) => {
   const { models } = context;
   // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
   if(me && me.type == 'cluster'){
-    const result = await models.User.isValidOrgKey(models, me);
+    const result = await models.User.isValidOrgKey(models, me, context.logger);
     if(!result){
       throw new RazeeForbiddenError(context.req.t(
         'Invalid razee-org-key was submitted for {{queryName}}', {'queryName':queryName}), context

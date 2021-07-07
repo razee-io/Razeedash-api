@@ -15,7 +15,7 @@
  */
 
 const delay = require('delay');
-const log = require('./log').log;
+const log = require('./log').createLogger('razeedash-api/app/wait-mongo');
 
 
 const MongoClientClass = require('./mongo/mongoClient.js');

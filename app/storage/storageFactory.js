@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const _ = require('lodash');
-const logger = require('./../log').log;
+const initLogger = require('./../log').createLogger('razeedash-api/storage');
 
 const ResourceStorageHandler = require('./resourceStorageHandler');
 const conf = require('../conf').conf;
@@ -26,7 +26,7 @@ const configFileName = 'app/storageConfig.json';
 
 const s3legacyType = 's3legacy'; // legacy handler requires special treatment
 
-class StorageFactory {
+class StorageFactoryConfig {
   constructor() {
     this.init();
     conf.on('storage-config-reset', () => this.init());
@@ -51,15 +51,27 @@ class StorageFactory {
     }
   }
 
+  logInfo(msg) {
+    initLogger.info(msg);
+  }
+}
+
+const config = new StorageFactoryConfig();
+
+class StorageFactory {
+  constructor(logger) {
+    this.logger = (logger || initLogger);
+  }
+
   newResourceHandler(resourceKey, bucketName, location) {
-    const targetHandler = this.defaultHandler.constructor(resourceKey, bucketName, location);
-    return new ResourceStorageHandler(targetHandler, { type: this.defaultHandlerType });
+    const targetHandler = config.defaultHandler.constructor(this.logger, resourceKey, bucketName, location);
+    return new ResourceStorageHandler(targetHandler, { type: config.defaultHandlerType });
   }
 
   deserialize(encodedResource) {
     if (this.isLink(encodedResource)) {
-      const s3legacyHandler = this.handlers.get(s3legacyType);
-      return s3legacyHandler.deserializer(encodedResource);
+      const s3legacyHandler = config.handlers.get(s3legacyType);
+      return s3legacyHandler.deserializer(this.logger, encodedResource);
     }
     /*
         Find required handler type in the metadata and look it up in the handlers map
@@ -68,20 +80,21 @@ class StorageFactory {
       throw new Error(`Invalid metadata structure: ${encodedResource.metadata}`);
     }
     const handlerType = encodedResource.metadata.type;
-    const handler = this.handlers.get(handlerType);
+    const handler = config.handlers.get(handlerType);
     if (!handler) {
       throw new Error(`Resource handler implementation for type ${handlerType} is not defined`);
     }
-    return new ResourceStorageHandler(handler.deserializer(encodedResource.data), encodedResource.metadata);
-  }
-
-  logInfo(msg) {
-    logger.info(msg);
+    return new ResourceStorageHandler(handler.deserializer(this.logger, encodedResource.data), encodedResource.metadata);
   }
 
   isLink(s) {
     return _.isString(s) && /^(http|https):\/\/?/.test(s);
   }
+
 }
 
-module.exports = new StorageFactory();
+const storageFactory = (logger) => {
+  return new StorageFactory(logger);
+};
+
+module.exports = storageFactory;
