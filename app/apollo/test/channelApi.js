@@ -94,6 +94,7 @@ const channelFunc = grahqlUrl => {
                 name
                 description
               }
+              custom
           }
         }
     `,

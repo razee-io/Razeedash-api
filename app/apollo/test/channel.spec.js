@@ -51,7 +51,7 @@ let presetClusters;
 
 const channel_01_name = 'fake_channel_01';
 const channel_01_uuid = 'fake_ch_01_uuid';
-const channel_01_custom = null;
+const channel_01_custom = { 'testkey1': 'testval1', 'testkey2': 'testval2' };
 
 const channel_02_name = 'fake_channel_02';
 const channel_02_uuid = 'fake_ch_02_uuid';
@@ -276,28 +276,6 @@ describe('channel graphql test suite', () => {
     }
   });
 
-  it('get channel custom properties', async () => {
-    try {
-      const {
-        data: {
-          data: { channel },
-        },
-      } = await channelApi.channel(token, {
-        orgId: org01._id,
-        uuid: channel_04_uuid,
-      });
-
-      expect(channel.custom).to.be.deep.equal(channel_04_custom);
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
   it('get channel by channel name', async () => {
     try {
       const {
@@ -310,6 +288,7 @@ describe('channel graphql test suite', () => {
       });
 
       expect(channelByName.uuid).to.equal(channel_01_uuid);
+      expect(channelByName.custom).to.be.deep.equal(channel_01_custom);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
