@@ -409,8 +409,17 @@ const channelResolvers = {
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
         }
 
+        // Get the Version
+        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+
         // Get the Channel for the Version
-        const channel = await models.Channel.findOne({ versions: { $elemMatch: { uuid: uuid } }, org_id });
+        let channel;
+        if( deployableVersionObj ) {
+          channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
+        }
+        else {
+          channel = await models.Channel.findOne({ versions: { $elemMatch: { uuid: uuid } }, org_id });
+        }
         if(!channel){
           // If unable to find the Channel then cannot verify authorization, so throw an error
           throw new NotFoundError(context.req.t('channel for version "{{uuid}}" not found', {'uuid':uuid}), context);
@@ -419,14 +428,8 @@ const channelResolvers = {
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
-        // Get the Version
-        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
-        if(!deployableVersionObj){
-          // If unable to find the Version, continue so Channel cleanup can still occur
-          // The Channel maintains a reference to the Version's uuid, name, description, etc -- future data model optimization may eliminate this
-          logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} version not found`);
-        }
-        else {
+        // If the Version is found...
+        if(deployableVersionObj){
           // Delete Version data
           const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
           await handler.deleteData();
