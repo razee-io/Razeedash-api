@@ -47,7 +47,7 @@ const ChannelSchema = new mongoose.Schema({
     default: Date.now,
   },
   custom: {
-    type: Object,
+    type: Map,
   },
   versions: [
     {

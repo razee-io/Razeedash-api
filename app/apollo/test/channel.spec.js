@@ -322,7 +322,7 @@ describe('channel graphql test suite', () => {
       const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
       expect(channel1.data_location).to.equal('dal');
 
-      expect(channel1.custom).to.be.deep.equal(custom_dat);
+      expect(Object.fromEntries(channel1.custom)).to.be.deep.equal(custom_dat);
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
@@ -508,7 +508,7 @@ describe('channel graphql test suite', () => {
       expect(editChannel.name).to.equal(`${channel_02_name}_new`);
 
       const channel1 = await models.Channel.findOne({uuid: editChannel.uuid});
-      expect(channel1.custom).to.be.deep.equal(channel_02_custom_new);
+      expect(Object.fromEntries(channel1.custom)).to.be.deep.equal(channel_02_custom_new);
 
 
       //step 1.1: edit channel 02's name
