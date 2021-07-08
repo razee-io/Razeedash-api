@@ -170,7 +170,7 @@ const createChannels = async () => {
         uuid: channelVersion_01_uuid,
         name: channelVersion_01_name,
         description: channelVersion_01_name + ' description',
-        location: 's3',/*location is no longer used, but may still be present in existing data such as this*/
+        location: 's3', /*location is no longer used, but may still be present in existing data such as this*/
       },
     ]
   });
