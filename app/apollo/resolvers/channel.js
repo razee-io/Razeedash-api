@@ -400,6 +400,8 @@ const channelResolvers = {
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       try{
+        let foundVersion = false;
+
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
@@ -430,6 +432,8 @@ const channelResolvers = {
 
         // If the Version is found...
         if(deployableVersionObj){
+          foundVersion = true;
+
           // Delete Version data
           const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
           await handler.deleteData();
@@ -442,6 +446,8 @@ const channelResolvers = {
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
         if( vIndex >= 0 ) {
+          foundVersion = true;
+
           versionObjs.splice(vIndex, 1);
 
           await models.Channel.updateOne(
@@ -450,7 +456,12 @@ const channelResolvers = {
           );
         }
 
-        // Return success if no errors thrown
+        // If the Version was neither found nor found referenced from a Channel, return a not-found error
+        if( !foundVersion ) {
+          throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found', {'uuid':uuid}), context);
+        }
+
+        // Return success if Version was deleted and/or a reference to the Channel was removed
         return {
           uuid,
           success: true,
