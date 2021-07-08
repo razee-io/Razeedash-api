@@ -25,14 +25,6 @@ const channelSchema = gql`
     created: Date
     location: String
   }
-  input CustomChannelDataInput {
-    key: String!
-    val: String
-  }
-  type CustomChannelData {
-    key: String!
-    val: String
-  }
   type Channel {
     uuid: String!
     orgId: String!
@@ -42,7 +34,7 @@ const channelSchema = gql`
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
-    custom: [CustomChannelData!] 
+    custom: JSON
     owner: BasicUser
     kubeOwnerName: String
   }
@@ -117,12 +109,12 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: [CustomChannelDataInput!]): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
 
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: [CustomChannelDataInput!]): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
 
      """
      Adds a yaml version to this channel

@@ -39,26 +39,10 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 };
 
-// The way that the custom attributes are stored in Mongo differs from how GraphQL parses and
-// returns them, so this just reformats the keys in a way that GraphQL can grok
-var parseCustomForGQL = (channel) => {
-  if (!channel) return;
-
-  let custom_gql = [];
-  if (channel.custom) {
-    Object.keys(channel.custom).forEach((key) => custom_gql.push({key, val: channel.custom[key]}));
-  }
-  channel.custom = custom_gql;
-};
-
 var getAllowedChannels = async(me, orgId, action, field, context)=>{
   const { models } = context;
   var channels = await models.Channel.find({ org_id: orgId });
-  var filtered = await filterChannelsToAllowed(me, orgId, action, field, channels, context);
-
-  _.forEach(filtered, (channel) => parseCustomForGQL(channel));
-
-  return filtered;
+  return await filterChannelsToAllowed(me, orgId, action, field, channels, context);
 };
 
 var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)=>{
@@ -257,5 +241,4 @@ module.exports =  {
   getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
   validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
-  parseCustomForGQL,
 };
