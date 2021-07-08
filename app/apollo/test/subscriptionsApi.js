@@ -62,7 +62,7 @@ const subscriptionsFunc = grahqlUrl => {
                 id
                 name
               }
-              custom {key, val}
+              custom
             }
           }
         `,
@@ -96,7 +96,7 @@ const subscriptionsFunc = grahqlUrl => {
                 id
                 name
               }
-              custom {key, val}
+              custom
           }
         }
       `,
@@ -130,7 +130,7 @@ const subscriptionsFunc = grahqlUrl => {
                 id
                 name
               }
-              custom {key, val}
+              custom
           }
         }
       `,
@@ -160,7 +160,7 @@ const subscriptionsFunc = grahqlUrl => {
               versionUuid
               created
               updated
-              custom {key, val}
+              custom
           }
         }
       `,
@@ -190,7 +190,7 @@ const subscriptionsFunc = grahqlUrl => {
               versionUuid
               created
               updated
-              custom {key, val}
+              custom
           }
         }
       `,
@@ -207,7 +207,7 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!, $custom: [CustomSubscriptionDataInput!]) {
+          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!, $custom: JSON) {
             addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, custom: $custom){
 			        uuid
             }
@@ -227,7 +227,7 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!, $custom: [CustomSubscriptionDataInput!]) {
+          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!, $custom: JSON) {
             editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, custom: $custom) {
               uuid
               success

@@ -141,17 +141,6 @@ const subscriptionResolvers = {
 
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
-      subscriptions = subscriptions.map((sub) => {
-        if (sub.custom) {
-          var customArr = [];
-          for (var [key, val] of Object.entries(sub.custom)) {
-            customArr.push({ 'key': key, 'val': val });
-          }
-          sub.custom = customArr;
-        }
-        return sub;
-      });
-
       return subscriptions;
     },
     subscription: async(parent, { orgId, uuid , name, _queryName }, context, fullQuery) => {
@@ -243,17 +232,6 @@ const subscriptionResolvers = {
 
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
-      subscriptions = subscriptions.map((sub) => {
-        if (sub.custom) {
-          var customArr = [];
-          for (var [key, val] of Object.entries(sub.custom)) {
-            customArr.push({ 'key': key, 'val': val });
-          }
-          sub.custom = customArr;
-        }
-        return sub;
-      });
-
       return subscriptions;
     },
 
@@ -314,17 +292,6 @@ const subscriptionResolvers = {
 
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
-      subscriptions = subscriptions.map((sub) => {
-        if (sub.custom) {
-          var customArr = [];
-          for (var [key, val] of Object.entries(sub.custom)) {
-            customArr.push({ 'key': key, 'val': val });
-          }
-          sub.custom = customArr;
-        }
-        return sub;
-      });
-
       return subscriptions;
     }
   },
@@ -359,18 +326,6 @@ const subscriptionResolvers = {
         });
         if(!version){
           throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
-        }
-
-        if (custom) {
-          var customMap = new Map();
-          custom.forEach((i) => {
-            if (!customMap.has(i.key)) {
-              customMap.set(i.key, i.val);
-            } else {
-              throw new Error('Duplicate key');
-            }
-          });
-          custom = Object.fromEntries(customMap);
         }
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
@@ -428,18 +383,6 @@ const subscriptionResolvers = {
         });
         if(!version){
           throw  new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
-        }
-
-        if (custom) {
-          var customMap = new Map();
-          custom.forEach((i) => {
-            if (!customMap.has(i.key)) {
-              customMap.set(i.key, i.val);
-            } else {
-              throw new Error('Duplicate key');
-            }
-          });
-          custom = Object.fromEntries(customMap);
         }
 
         var sets = {

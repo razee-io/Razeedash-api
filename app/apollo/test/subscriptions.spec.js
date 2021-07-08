@@ -383,7 +383,7 @@ describe('subscription graphql test suite', () => {
         orgId: org77._id,
       });
       expect(result1.data.data.subscriptions).to.have.length(2);
-      expect(result1.data.data.subscriptions[1].custom).to.have.length(2);
+      expect(Object.keys(result1.data.data.subscriptions[1].custom)).to.have.length(2);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -499,16 +499,10 @@ describe('subscription graphql test suite', () => {
         groups:['dev'],
         channelUuid: channel_04_uuid,
         versionUuid: channelVersion_04_uuid,
-        custom: [
-          {
-            'key': 'forEnv',
-            'val': 'testing'
-          },
-          {
-            'key': 'forType',
-            'val': 'testing'
-          }
-        ],
+        custom: {
+          'forEnv': 'testing',
+          'forType': 'testing'
+        },
       });
       expect(result.data.data.addSubscription.uuid).to.be.an('string');
     } catch (error) {
@@ -561,16 +555,10 @@ describe('subscription graphql test suite', () => {
         groups:['new-tag'],
         channelUuid: channel_04_uuid,
         versionUuid: channelVersion_04_uuid,
-        custom: [
-          {
-            'key': 'forEnv',
-            'val': 'new'
-          },
-          {
-            'key': 'forType',
-            'val': 'new'
-          }
-        ]
+        custom: {
+          'forEnv': 'new',
+          'forType': 'new'
+        }
       });
       expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
@@ -579,8 +567,8 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_04_uuid,
       });
       expect(result4.data.data.subscription.name).to.equal('new-name');
-      expect(result4.data.data.subscription.custom[0].val).to.equal('new');
-      expect(result4.data.data.subscription.custom[1].val).to.equal('new');
+      expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
+      expect(result4.data.data.subscription.custom.forType).to.equal('new');
 
     } catch (error) {
       if (error.response) {
