@@ -442,8 +442,6 @@ const channelResolvers = {
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
         if( vIndex >= 0 ) {
-          foundVersion = true;
-
           versionObjs.splice(vIndex, 1);
 
           await models.Channel.updateOne(
