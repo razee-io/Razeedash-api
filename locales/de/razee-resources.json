@@ -58,7 +58,7 @@
   "The version name {{name}} already exists": "Der Versionsname {{name}} ist bereits vorhanden.",
   "Too many configuration channel versions are registered under {{channel_uuid}}.": "Unter {{channel_uuid}} sind zu viele Konfigurationskanalversionen registriert.",
   "Too many configuration channels are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Konfigurationskanäle registriert.",
-  "The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]": "Der Datenstandort  {{data_location}} ist nicht gültig. Zulässige Werte: [{{valid_locations}}]",
+  "The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]": "Der Datenstandort  {{data_location}} ist nicht gültig.  Zulässige Werte: [{{valid_locations}}]",
   "Too many subscriptions are registered under {{org_id}}.": "Unter {{org_id}} sind zu viele Subskriptionen registriert.",
   "version uuid \"{{uuid}}\" not found": "Versions-UUID \"{{uuid}}\" nicht gefunden",
   "version uuid \"{{version_uuid}}\" not found": "Versions-UUID \"{{version_uuid}}\" nicht gefunden",
