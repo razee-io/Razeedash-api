@@ -51,7 +51,10 @@ let presetClusters;
 
 const channel_01_name = 'fake_channel_01';
 const channel_01_uuid = 'fake_ch_01_uuid';
-const channel_01_custom = { 'testkey1': 'testval1', 'testkey2': 'testval2' };
+const channel_01_custom = {
+  'testkey1': 'testval1',
+  'testkey2': 'testval2'
+};
 
 const channel_02_name = 'fake_channel_02';
 const channel_02_uuid = 'fake_ch_02_uuid';
