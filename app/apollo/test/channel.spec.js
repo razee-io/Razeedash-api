@@ -165,10 +165,36 @@ const createChannels = async () => {
     org_id: org01._id,
     uuid: channel_04_uuid,
     name: channel_04_name,
-    versions: []
+    versions: [
+      {
+        uuid: channelVersion_01_uuid,
+        name: channelVersion_01_name,
+        description: channelVersion_01_name + ' description',
+        location: 's3', /*location is no longer used, but may still be present in existing data such as this*/
+      },
+    ]
   });
 };
 
+const createVersions = async () => {
+  await models.DeployableVersion.create({
+    _id: 'fake_ver_1',
+    org_id: org01._id,
+    uuid: channelVersion_01_uuid,
+    channel_id: channel_04_uuid,
+    channel_name: channel_04_name,
+    name: channelVersion_01_name,
+    description: channelVersion_01_name + ' description',
+    content: {
+      metadata: {
+        type: 'embedded',
+      },
+      data: 'U2FsdGVkX1/u/AiVrC+WKmt3d2+I7N+Y08bfnQ36SH0=',
+    },
+    type: 'application/yaml',
+    ownerId: 'abc',
+  });
+};
 
 const createSubscriptions = async () => {
   await models.Subscription.create({
@@ -199,6 +225,7 @@ describe('channel graphql test suite', () => {
     await createOrganizations();
     await createUsers();
     await createChannels();
+    await createVersions();
     await createSubscriptions();
 
     // Can be uncommented if you want to see the test data that was added to the DB
@@ -423,6 +450,46 @@ describe('channel graphql test suite', () => {
       expect(channelVersionByName.name).to.equal(`${channel_01_name}:v.0.2`);
       expect(channelVersionByName.content).to.equal('{"n0": 456.78}');
       expect(channelVersionByName.created).to.be.an('string');
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add and remove channel version from a channel with another version ', async () => {
+    try {
+      // step 1: add a channel version by admin token
+      const {
+        data: {
+          data: { addChannelVersion },
+        },
+      } = await channelApi.addChannelVersion(adminToken, {
+        orgId: org01._id,
+        channelUuid: channel_04_uuid,
+        name: `${channel_04_name}:v.0.1`,
+        type: 'yaml',
+        content: '{"n0": 123.45}',
+        description: `${channel_04_name}:v.0.1`
+      });
+      expect(addChannelVersion.success).to.equal(true);
+      expect(addChannelVersion.versionUuid).to.be.an('string');
+
+      // step 2: delete a channel version by admin token
+      const {
+        data: {
+          data: { removeChannelVersion },
+        },
+      } = await channelApi.removeChannelVersion(adminToken, {
+        orgId: org01._id,
+        uuid: addChannelVersion.versionUuid,
+      });
+      expect(removeChannelVersion.success).to.equal(true);
+      expect(removeChannelVersion.uuid).to.equal(addChannelVersion.versionUuid);
 
     } catch (error) {
       if (error.response) {
