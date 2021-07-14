@@ -402,11 +402,6 @@ const channelResolvers = {
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       try{
-        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
-        if(!deployableVersionObj){
-          throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found', {'uuid':uuid}), context);
-        }
-
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
@@ -416,29 +411,48 @@ const channelResolvers = {
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
         }
 
-        const channel_uuid = deployableVersionObj.channel_id;
-        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        // Get the Version
+        const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+
+        // Get the Channel for the Version
+        let channel;
+        if( deployableVersionObj ) {
+          channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
+        }
+        else {
+          channel = await models.Channel.findOne({ versions: { $elemMatch: { uuid: uuid } }, org_id });
+        }
         if(!channel){
-          throw new NotFoundError(context.req.t('channel uuid "{{channel_uuid}}" not found', {'channel_uuid':channel_uuid}), context);
+          // If unable to find the Channel then cannot verify authorization, so throw an error
+          throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found and no references found', {'uuid':uuid}), context);
         }
+
+        // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        const versionObj = channel.versions.find(v => v.uuid === uuid);
-        if (!versionObj) {
-          throw new NotFoundError(context.req.t('versionObj "{{uuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'uuid':uuid, 'channel.name':channel.name}), context);
+
+        // If the Version is found...
+        if(deployableVersionObj){
+          // Delete Version data
+          const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
+          await handler.deleteData();
+
+          // Delete the Version
+          await models.DeployableVersion.deleteOne({ org_id, uuid });
         }
 
-        const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
-        await handler.deleteData();
-
-        await models.DeployableVersion.deleteOne({ org_id, uuid });
-
+        // Remove the Version reference from the Channel
         const versionObjs = channel.versions;
         const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
-        versionObjs.splice(vIndex, 1);
-        await models.Channel.updateOne(
-          { org_id, uuid: channel_uuid },
-          { versions: versionObjs }
-        );
+        if( vIndex >= 0 ) {
+          versionObjs.splice(vIndex, 1);
+
+          await models.Channel.updateOne(
+            { org_id, uuid: channel.uuid },
+            { versions: versionObjs }
+          );
+        }
+
+        // Return success if Version was deleted and/or a reference to the Channel was removed
         return {
           uuid,
           success: true,

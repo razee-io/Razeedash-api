@@ -60,6 +60,9 @@ const ChannelSchema = new mongoose.Schema({
       description: {
         type: String,
       },
+      location: {
+        type: String,
+      },
       created: {
         type: Date,
         default: Date.now,
