@@ -39,6 +39,7 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const subscriptionApi = subscriptionFunc(graphqlUrl);
 let token;
+let token77;
 let adminToken;
 
 let org01Data;
@@ -48,6 +49,7 @@ let org77;
 
 let user01Data;
 let user01;
+let user77;
 let user77Data;
 let userRootData;
 
@@ -64,6 +66,9 @@ const channel_02_uuid = 'fake_ch_02_uuid';
 const channel_03_name = 'fake_channel_03';
 const channel_03_uuid = 'fake_ch_03_uuid';
 
+const channel_04_name = 'fake_channel_04';
+const channel_04_uuid = 'fake_ch_04_uuid';
+
 const channelVersion_01_name = 'fake_channelVersion_01';
 const channelVersion_01_uuid = 'fake_cv_01_uuid';
 
@@ -73,6 +78,9 @@ const channelVersion_02_uuid = 'fake_cv_02_uuid';
 const channelVersion_03_name = 'fake_channelVersion_03';
 const channelVersion_03_uuid = 'fake_cv_03_uuid';
 
+const channelVersion_04_name = 'fake_channelVersion_04';
+const channelVersion_04_uuid = 'fake_cv_04_uuid';
+
 const subscription_01_name = 'fake_subscription_01';
 const subscription_01_uuid = 'fake_sub_01_uuid';
 
@@ -81,6 +89,9 @@ const subscription_02_uuid = 'fake_sub_02_uuid';
 
 const subscription_03_name = 'fake_subscription_03';
 const subscription_03_uuid = 'fake_sub_03_uuid';
+
+const subscription_04_name = 'fake_subscription_04';
+const subscription_04_uuid = 'fake_sub_04_uuid';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -113,7 +124,7 @@ const createUsers = async () => {
       'utf8',
     ),
   );
-  await prepareUser(models, user77Data);
+  user77 = await prepareUser(models, user77Data);
   userRootData = JSON.parse(
     fs.readFileSync(
       `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.root.json`,
@@ -189,6 +200,19 @@ const createChannels = async () => {
     name: channel_03_name,
     versions: []
   });
+
+  await models.Channel.create({
+    _id: 'fake_id_4',
+    org_id: org77._id,
+    uuid: channel_04_uuid,
+    name: channel_04_name,
+    versions: [
+      {
+        uuid: channelVersion_04_uuid,
+        name: channelVersion_04_name
+      }
+    ]
+  });
 };
 
 const createGroups = async () => {
@@ -254,6 +278,20 @@ const createSubscriptions = async () => {
     version: channelVersion_03_name,
     version_uuid: channelVersion_03_uuid,
   });
+
+  await models.Subscription.create({
+    _id: 'fake_id_4',
+    org_id: org77._id,
+    uuid: subscription_04_uuid,
+    name: subscription_04_name,
+    owner: user77._id,
+    groups: ['dev'],
+    channel_uuid: channel_04_uuid,
+    channel: channel_04_name,
+    version: channelVersion_04_name,
+    version_uuid: channelVersion_04_uuid,
+    custom: { forEnv: 'testing', forType: 'testing' }
+  });
 };
 
 const createClusters = async () => {
@@ -315,6 +353,7 @@ describe('subscription graphql test suite', () => {
     // await getPresetClusters();
 
     token = await signInUser(models, resourceApi, user01Data);
+    token77 = await signInUser(models, resourceApi, user77Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
 
@@ -338,6 +377,13 @@ describe('subscription graphql test suite', () => {
         },
       } = result;
       expect(subscriptions).to.have.length(2);
+
+      // get subscriptions with custom attribute
+      const result1 = await subscriptionApi.subscriptions(token77, {
+        orgId: org77._id,
+      });
+      expect(result1.data.data.subscriptions).to.have.length(2);
+      expect(Object.keys(result1.data.data.subscriptions[1].custom)).to.have.length(2);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -445,6 +491,20 @@ describe('subscription graphql test suite', () => {
         versionUuid: channelVersion_02_uuid,
       });
       expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);
+
+      // add subscription with custom attribute
+      const result = await subscriptionApi.addSubscription(token77, {
+        orgId: org77._id,
+        name: 'a_random_name3',
+        groups:['dev'],
+        channelUuid: channel_04_uuid,
+        versionUuid: channelVersion_04_uuid,
+        custom: {
+          'forEnv': 'testing',
+          'forType': 'testing'
+        },
+      });
+      expect(result.data.data.addSubscription.uuid).to.be.an('string');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -486,6 +546,29 @@ describe('subscription graphql test suite', () => {
       expect(subscription.name).to.equal('new-name');
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
+
+      //step1, edit the subscription with custom attribute
+      const result3 = await subscriptionApi.editSubscription(token77, {
+        orgId: org77._id,
+        uuid: subscription_04_uuid,
+        name: 'new-name',
+        groups:['new-tag'],
+        channelUuid: channel_04_uuid,
+        versionUuid: channelVersion_04_uuid,
+        custom: {
+          'forEnv': 'new',
+          'forType': 'new'
+        }
+      });
+      expect(result3.data.data.editSubscription.uuid).to.be.an('string');
+      //step2, get the updated subscription
+      const result4 = await subscriptionApi.subscription(token77, {
+        orgId: org77._id,
+        uuid: subscription_04_uuid,
+      });
+      expect(result4.data.data.subscription.name).to.equal('new-name');
+      expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
+      expect(result4.data.data.subscription.custom.forType).to.equal('new');
 
     } catch (error) {
       if (error.response) {

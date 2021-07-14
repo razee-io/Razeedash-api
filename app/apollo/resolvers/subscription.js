@@ -296,7 +296,7 @@ const subscriptionResolvers = {
     }
   },
   Mutation: {
-    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null }, context)=>{
+    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -335,6 +335,7 @@ const subscriptionResolvers = {
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
           kubeOwnerId,
+          custom
         });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
@@ -351,7 +352,7 @@ const subscriptionResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
-    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -387,7 +388,7 @@ const subscriptionResolvers = {
         var sets = {
           name, groups,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
-          clusterId,
+          clusterId, custom,
         };
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 

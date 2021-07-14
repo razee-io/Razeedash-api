@@ -51,15 +51,29 @@ let presetClusters;
 
 const channel_01_name = 'fake_channel_01';
 const channel_01_uuid = 'fake_ch_01_uuid';
+const channel_01_custom = {
+  'testkey1': 'testval1',
+  'testkey2': 'testval2'
+};
 
 const channel_02_name = 'fake_channel_02';
 const channel_02_uuid = 'fake_ch_02_uuid';
+const channel_02_custom = { 'keyA': 'valA' };
 
 const channel_03_name = 'fake_channel_03';
 const channel_03_uuid = 'fake_ch_03_uuid';
+const channel_03_custom = {
+  'key_with_null_val': null,
+  'keyB': 'valB',
+};
 
 const channel_04_name = 'fake_channel_04';
 const channel_04_uuid = 'fake_ch_04_uuid';
+const channel_04_custom = {
+  'keyC': 'valC',
+  'keyD': 'valD',
+  'keyE': 'valE',
+};
 
 const channelVersion_01_name = 'fake_channelVersion_01';
 const channelVersion_01_uuid = 'fake_cv_01_uuid';
@@ -136,13 +150,15 @@ const getPresetClusters = async () => {
   console.log(`presetClusters=${JSON.stringify(presetClusters)}`);
 };
 
+
 const createChannels = async () => {
   await models.Channel.create({
     _id: 'fake_ch_id_1',
     org_id: org01._id,
     uuid: channel_01_uuid,
     name: channel_01_name,
-    versions: []
+    versions: [],
+    custom: channel_01_custom
   });
 
   await models.Channel.create({
@@ -150,7 +166,8 @@ const createChannels = async () => {
     org_id: org01._id,
     uuid: channel_02_uuid,
     name: channel_02_name,
-    versions: []
+    versions: [],
+    custom: channel_02_custom
   });
 
   await models.Channel.create({
@@ -158,13 +175,15 @@ const createChannels = async () => {
     org_id: org77._id,
     uuid: channel_03_uuid,
     name: channel_03_name,
-    versions: []
+    versions: [],
+    custom: channel_03_custom
   });
   await models.Channel.create({
     _id: 'fake_id_4',
     org_id: org01._id,
     uuid: channel_04_uuid,
     name: channel_04_name,
+    custom: channel_04_custom,
     versions: [
       {
         uuid: channelVersion_01_uuid,
@@ -276,6 +295,7 @@ describe('channel graphql test suite', () => {
       });
 
       expect(channel.name).to.equal(channel_01_name);
+      expect(channel.custom).to.be.deep.equal(channel_01_custom);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -298,6 +318,7 @@ describe('channel graphql test suite', () => {
       });
 
       expect(channelByName.uuid).to.equal(channel_01_uuid);
+      expect(channelByName.custom).to.be.deep.equal(channel_01_custom);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -310,6 +331,11 @@ describe('channel graphql test suite', () => {
 
   it('add a channel', async () => {
     try {
+      const custom_dat = {
+        'random_key_a':  'random_val_a',
+        'random_key_B':  'random_val_B'
+      };
+
       const {
         data: {
           data: { addChannel },
@@ -317,13 +343,16 @@ describe('channel graphql test suite', () => {
       } = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
-        data_location: 'dal'
+        data_location: 'dal',
+        custom: custom_dat
       });
 
       expect(addChannel.uuid).to.be.an('string');
 
       const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
       expect(channel1.data_location).to.equal('dal');
+
+      expect(Object.fromEntries(channel1.custom)).to.be.deep.equal(custom_dat);
 
       const addChannel2 = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
@@ -529,7 +558,11 @@ describe('channel graphql test suite', () => {
   it('edit and remove channel', async () => {
     try {
 
-      //step 1: edit channel 02's name
+      let channel_02_custom_new = {
+        'newkey': 'newval',
+      };
+
+      //step 1: edit channel 02's name and custom properties
       const {
         data: {
           data: { editChannel },
@@ -537,11 +570,16 @@ describe('channel graphql test suite', () => {
       } = await channelApi.editChannel(adminToken, {
         orgId: org01._id,
         uuid: channel_02_uuid,
-        name: `${channel_02_name}_new`
+        name: `${channel_02_name}_new`,
+        custom: channel_02_custom_new
       });
 
       expect(editChannel.success).to.equal(true);
       expect(editChannel.name).to.equal(`${channel_02_name}_new`);
+
+      const channel1 = await models.Channel.findOne({uuid: editChannel.uuid});
+      expect(Object.fromEntries(channel1.custom)).to.be.deep.equal(channel_02_custom_new);
+
 
       //step 1.1: edit channel 02's name
       const {
@@ -587,6 +625,7 @@ describe('channel graphql test suite', () => {
       throw error;
     }
   });
+
   it('edit channel and update subscription channel name', async () => {
     try {
 

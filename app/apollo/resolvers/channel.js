@@ -42,6 +42,7 @@ const channelResolvers = {
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
+
       return channels;
     },
     channel: async(parent, { orgId, uuid }, context, fullQuery) => {
@@ -155,7 +156,7 @@ const channelResolvers = {
     }
   },
   Mutation: {
-    addChannel: async (parent, { orgId: org_id, name, data_location, tags=[] }, context)=>{
+    addChannel: async (parent, { orgId: org_id, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
@@ -190,6 +191,7 @@ const channelResolvers = {
           data_location: data_location ? data_location.toLowerCase() : conf.storage.defaultLocation,
           ownerId: me._id,
           kubeOwnerId,
+          custom,
         });
         return {
           uuid,
@@ -202,7 +204,7 @@ const channelResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
-    editChannel: async (parent, { orgId: org_id, uuid, name, data_location, tags=[] }, context)=>{
+    editChannel: async (parent, { orgId: org_id, uuid, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
@@ -213,7 +215,7 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('channel uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location } }, {omitUndefined:true});
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom } }, {omitUndefined:true});
 
         // find any subscriptions for this configuration channel and update channelName in those subs
         await models.Subscription.updateMany(
