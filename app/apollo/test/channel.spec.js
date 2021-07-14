@@ -183,7 +183,7 @@ const createChannels = async () => {
     org_id: org01._id,
     uuid: channel_04_uuid,
     name: channel_04_name,
-    custom: channel_04_custom
+    custom: channel_04_custom,
     versions: [
       {
         uuid: channelVersion_01_uuid,
