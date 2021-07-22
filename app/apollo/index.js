@@ -32,7 +32,10 @@ const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
-const initModule = require(`./init.${AUTH_MODEL}`);
+
+const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
+const initModule = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].initPath) : require(`./init.${AUTH_MODEL}`);
+
 const conf = require('../conf.js').conf;
 const { v4: uuid } = require('uuid');
 const pubSub = GraphqlPubSub.getInstance();

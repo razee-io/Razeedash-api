@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-const { AUTH_MODEL_CLASS } = require('./auth.consts');
-const AuthClass = require(`${AUTH_MODEL_CLASS}`);
+//PLC
+const { AUTH_MODEL, AUTH_MODEL_CLASS } = require('./auth.consts');
+const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
+const AuthClass = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].classPath) : require(`${AUTH_MODEL_CLASS}`);
 const auth = new AuthClass();
 
 module.exports = { auth };

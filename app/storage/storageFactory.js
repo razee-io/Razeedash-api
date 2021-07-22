@@ -17,12 +17,13 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const _ = require('lodash');
 const initLogger = require('./../log').createLogger('razeedash-api/storage');
 
 const ResourceStorageHandler = require('./resourceStorageHandler');
 const conf = require('../conf').conf;
-const configFileName = 'app/storageConfig.json';
+const configFileName = path.join(__dirname, '..', 'storageConfig.json');
 
 const s3legacyType = 's3legacy'; // legacy handler requires special treatment
 

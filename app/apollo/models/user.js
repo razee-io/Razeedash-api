@@ -17,7 +17,10 @@
 const mongoose = require('mongoose');
 
 const { AUTH_MODEL } = require('./const');
-const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
+
+//PLC
+const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
+const UserSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].modelPath) : require(`./user.${AUTH_MODEL}.schema`);
 
 const User = mongoose.model('users', UserSchema);
 

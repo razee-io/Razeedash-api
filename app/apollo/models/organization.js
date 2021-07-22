@@ -17,7 +17,9 @@ const mongoose = require('mongoose');
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const { AUTH_MODEL } = require('./const');
 
-const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
+// PLC
+const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
+const OrganizationSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].orgPath) : require(`./organization.${AUTH_MODEL}.schema`);
 
 OrganizationSchema.plugin(mongooseLeanVirtuals);
 const Organization = mongoose.model('orgs', OrganizationSchema);
