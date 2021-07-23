@@ -211,7 +211,7 @@ const channelResolvers = {
           kubeOwnerId,
           custom,
         });
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'created');
+        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'channel created');
 
         return {
           uuid,
