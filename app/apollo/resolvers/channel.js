@@ -135,6 +135,25 @@ const channelResolvers = {
         // search version by version uuid or version name
         const versionObj = channel.versions.find(v => (v.uuid === versionUuid || v.name === versionName));
         if (!versionObj) {
+          const orphanedDeployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, $or: [{uuid: versionUuid},{name: versionName}] });
+          if (orphanedDeployableVersionObj) {
+            logger.warn(
+              {
+                org_id,
+                channel_uuid: channel.uuid,
+                channel_name: channel.name,
+                ver_uuid: versionUuid,
+                ver_name: versionName,
+                orphan_uuid: orphanedDeployableVersionObj.uuid,
+                orphan_name: orphanedDeployableVersionObj.name,
+                orphan_channel_id: orphanedDeployableVersionObj.channel_id,
+                orphan_channel_name: orphanedDeployableVersionObj.channel_name,
+                queryName
+              },
+              'possible orphan -- Version found with matching name or uuid, but it is not referenced by the Channel'
+            );
+          }
+
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
