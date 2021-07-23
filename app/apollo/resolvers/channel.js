@@ -430,6 +430,8 @@ const channelResolvers = {
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
+        const name = deployableVersionObj ? deployableVersionObj.name : channel.versions.find( x => x.uuid == uuid ).name;
+
         // If the Version is found...
         if(deployableVersionObj){
           // Delete Version data
