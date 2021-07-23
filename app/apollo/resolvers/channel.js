@@ -33,7 +33,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { me, req_id, logger } = context;
       const queryName = 'channels';
-      logger.debug({req_id, user: whoIs(me), orgId, queryName }, 'entry');
+      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
       try{
         var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
@@ -49,7 +49,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
-      logger.debug({req_id, user: whoIs(me), orgId, uuid, queryName}, 'entry');
+      logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
 
       try{
         var channel = await models.Channel.findOne({org_id: orgId, uuid });
@@ -68,7 +68,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelByName';
-      logger.debug({req_id, user: whoIs(me), orgId, name, queryName}, 'entry');
+      logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
 
       try{
         var channel = await models.Channel.findOne({ org_id: orgId, name });
@@ -87,7 +87,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelsByTags';
-      logger.debug({req_id, user: whoIs(me), orgId, tags, queryName}, 'entry');
+      logger.debug({req_id, user: whoIs(me), orgId, tags}, `${queryName} enter`);
 
       try{
         if(tags.length < 1){
@@ -106,7 +106,7 @@ const channelResolvers = {
     channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context, fullQuery) => {
       const { me, req_id, logger } = context;
       const queryName = 'channelVersionByName';
-      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName, queryName }, 'entry');
+      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context, fullQuery);
     },
 
@@ -114,9 +114,10 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName, queryName}, 'entry');
+      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
 
       try{
+
         const org = await models.Organization.findOne({ _id: org_id });
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
@@ -135,25 +136,6 @@ const channelResolvers = {
         // search version by version uuid or version name
         const versionObj = channel.versions.find(v => (v.uuid === versionUuid || v.name === versionName));
         if (!versionObj) {
-          const orphanedDeployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, $or: [{uuid: versionUuid},{name: versionName}] });
-          if (orphanedDeployableVersionObj) {
-            logger.warn(
-              {
-                org_id,
-                channel_uuid: channel.uuid,
-                channel_name: channel.name,
-                ver_uuid: versionUuid,
-                ver_name: versionName,
-                orphan_uuid: orphanedDeployableVersionObj.uuid,
-                orphan_name: orphanedDeployableVersionObj.name,
-                orphan_channel_id: orphanedDeployableVersionObj.channel_id,
-                orphan_channel_name: orphanedDeployableVersionObj.channel_name,
-                queryName
-              },
-              'possible orphan -- Version found with matching name or uuid, but it is not referenced by the Channel'
-            );
-          }
-
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
@@ -177,7 +159,7 @@ const channelResolvers = {
     addChannel: async (parent, { orgId: org_id, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, name, queryName }, 'entry');
+      logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
@@ -195,7 +177,7 @@ const channelResolvers = {
         }
 
         // validate the number of total channels are under the limit
-        const total = await models.Channel.countDocuments({org_id});
+        const total = await models.Channel.count({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
@@ -211,8 +193,6 @@ const channelResolvers = {
           kubeOwnerId,
           custom,
         });
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'channel created');
-
         return {
           uuid,
         };
@@ -227,7 +207,7 @@ const channelResolvers = {
     editChannel: async (parent, { orgId: org_id, uuid, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name, queryName }, 'entry');
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
@@ -242,13 +222,12 @@ const channelResolvers = {
           { org_id: org_id, channel_uuid: uuid },
           { $set: { channelName: name } }
         );
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'subscriptions updated');
         //update the channelName
         await models.DeployableVersion.updateMany(
           { org_id: org_id, channel_id: uuid },
           { $set: { channel_name: name } }
+
         );
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'versions updated');
 
         return {
           uuid,
@@ -266,8 +245,9 @@ const channelResolvers = {
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
       const { models, me, req_id, logger } = context;
+
       const queryName = 'addChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file, queryName }, 'entry');
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
       const org = await models.Organization.findOne({ _id: org_id });
@@ -305,7 +285,7 @@ const channelResolvers = {
         throw new RazeeValidationError(context.req.t('The version name {{name}} already exists', {'name':name}), context);
       }
       // validate the number of total configuration channel versions are under the limit
-      const total = await models.DeployableVersion.countDocuments({org_id, channel_id: channel_uuid});
+      const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
         throw new RazeeValidationError(context.req.t('Too many configuration channel versions are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
       }
@@ -328,20 +308,17 @@ const channelResolvers = {
         throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
       }
 
-      const uuid = UUID();
-
       const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
       const bucketName = conf.storage.getChannelBucket(channel.data_location);
       const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
-      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, 'data stored');
 
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const deployableVersionObj = {
         _id: UUID(),
         org_id,
-        uuid: uuid,
+        uuid: UUID(),
         channel_id: channel.uuid,
         channelName: channel.name,
         name,
@@ -359,7 +336,6 @@ const channelResolvers = {
         name, description,
         created: dObj.created
       };
-      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, 'version created');
 
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
@@ -373,7 +349,7 @@ const channelResolvers = {
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, 'entry');
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
@@ -383,12 +359,12 @@ const channelResolvers = {
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid;
 
-        const subCount = await models.Subscription.countDocuments({ org_id, channel_uuid });
+        const subCount = await models.Subscription.count({ org_id, channel_uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.', {'subCount':subCount}), context);
         }
 
-        const serSubCount = await models.ServiceSubscription.countDocuments({ channel_uuid });
+        const serSubCount = await models.ServiceSubscription.count({ channel_uuid });
         if(serSubCount > 0){
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please have tem updated/removed before removing this channel.', {'serSubCount':serSubCount}), context);
         }
@@ -402,15 +378,12 @@ const channelResolvers = {
             await handler.deleteData();
           });
         }));
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'version data deleted');
 
         // deletes the linked deployableVersions in db
         await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'versions deleted');
 
         // deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'channel deleted');
 
         return {
           uuid,
@@ -427,13 +400,13 @@ const channelResolvers = {
     removeChannelVersion: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, 'entry');
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       try{
-        const subCount = await models.Subscription.countDocuments({ org_id, version_uuid: uuid });
+        const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
         }
-        const serSubCount = await models.ServiceSubscription.countDocuments({ version_uuid: uuid });
+        const serSubCount = await models.ServiceSubscription.count({ version_uuid: uuid });
         if(serSubCount > 0){
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
         }
@@ -457,18 +430,16 @@ const channelResolvers = {
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
-        const name = deployableVersionObj ? deployableVersionObj.name : channel.versions.find( x => x.uuid == uuid ).name;
-
         // If the Version is found...
         if(deployableVersionObj){
           // Delete Version data
           const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
           await handler.deleteData();
-          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'data removed');
+          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} data removed`);
 
           // Delete the Version
           await models.DeployableVersion.deleteOne({ org_id, uuid });
-          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'version deleted');
+          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version deleted`);
         }
 
         // Remove the Version reference from the Channel
@@ -476,7 +447,7 @@ const channelResolvers = {
           { org_id, uuid: channel.uuid },
           { $pull: { versions: { uuid: uuid } } }
         );
-        logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'version reference removed');
+        logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version reference removed`);
 
         // Return success if Version was deleted and/or a reference to the Channel was removed
         return {
