@@ -107,7 +107,7 @@ const channelResolvers = {
       const { me, req_id, logger } = context;
       const queryName = 'channelVersionByName';
       logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName, queryName }, `entry`);
-      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName }, context, fullQuery);
+      return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context, fullQuery);
     },
 
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context, fullQuery) => {
