@@ -33,7 +33,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { me, req_id, logger } = context;
       const queryName = 'channels';
-      logger.debug({req_id, user: whoIs(me), orgId, queryName }, `entry`);
+      logger.debug({req_id, user: whoIs(me), orgId, queryName }, 'entry');
 
       try{
         var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
@@ -49,7 +49,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
-      logger.debug({req_id, user: whoIs(me), orgId, uuid, queryName}, `enter`);
+      logger.debug({req_id, user: whoIs(me), orgId, uuid, queryName}, 'entry');
 
       try{
         var channel = await models.Channel.findOne({org_id: orgId, uuid });
@@ -68,7 +68,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelByName';
-      logger.debug({req_id, user: whoIs(me), orgId, name, queryName}, `enter`);
+      logger.debug({req_id, user: whoIs(me), orgId, name, queryName}, 'entry');
 
       try{
         var channel = await models.Channel.findOne({ org_id: orgId, name });
@@ -87,7 +87,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelsByTags';
-      logger.debug({req_id, user: whoIs(me), orgId, tags, queryName}, `enter`);
+      logger.debug({req_id, user: whoIs(me), orgId, tags, queryName}, 'entry');
 
       try{
         if(tags.length < 1){
@@ -106,7 +106,7 @@ const channelResolvers = {
     channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context, fullQuery) => {
       const { me, req_id, logger } = context;
       const queryName = 'channelVersionByName';
-      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName, queryName }, `entry`);
+      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName, queryName }, 'entry');
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context, fullQuery);
     },
 
@@ -114,7 +114,7 @@ const channelResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName, queryName}, `enter`);
+      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName, queryName}, 'entry');
 
       try{
         const org = await models.Organization.findOne({ _id: org_id });
@@ -158,7 +158,7 @@ const channelResolvers = {
     addChannel: async (parent, { orgId: org_id, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, name, queryName }, `entry`);
+      logger.debug({ req_id, user: whoIs(me), org_id, name, queryName }, 'entry');
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {
@@ -192,7 +192,7 @@ const channelResolvers = {
           kubeOwnerId,
           custom,
         });
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, `created`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'created');
 
         return {
           uuid,
@@ -208,7 +208,7 @@ const channelResolvers = {
     editChannel: async (parent, { orgId: org_id, uuid, name, data_location, tags=[], custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name, queryName }, `entry`);
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name, queryName }, 'entry');
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
@@ -223,13 +223,13 @@ const channelResolvers = {
           { org_id: org_id, channel_uuid: uuid },
           { $set: { channelName: name } }
         );
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, `subscriptions updated`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'subscriptions updated');
         //update the channelName
         await models.DeployableVersion.updateMany(
           { org_id: org_id, channel_id: uuid },
           { $set: { channel_name: name } }
         );
-        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, `versions updated`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: name, queryName}, 'versions updated');
 
         return {
           uuid,
@@ -248,7 +248,7 @@ const channelResolvers = {
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file, queryName }, `entry`);
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file, queryName }, 'entry');
 
       // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
       const org = await models.Organization.findOne({ _id: org_id });
@@ -316,7 +316,7 @@ const channelResolvers = {
       const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
-      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, `data stored`);
+      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, 'data stored');
 
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const deployableVersionObj = {
@@ -340,7 +340,7 @@ const channelResolvers = {
         name, description,
         created: dObj.created
       };
-      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, `version created`);
+      logger.info({org_id, channel_uuid: channel_uuid, ver_uuid: uuid, ver_name: name, queryName}, 'version created');
 
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
@@ -354,7 +354,7 @@ const channelResolvers = {
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, `entry`);
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, 'entry');
 
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
@@ -383,15 +383,15 @@ const channelResolvers = {
             await handler.deleteData();
           });
         }));
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, `version data deleted`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'version data deleted');
 
         // deletes the linked deployableVersions in db
         await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, `versions deleted`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'versions deleted');
 
         // deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
-        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, `channel deleted`);
+        logger.info({org_id, channel_uuid: uuid, channel_name: channel.name, queryName}, 'channel deleted');
 
         return {
           uuid,
@@ -408,7 +408,7 @@ const channelResolvers = {
     removeChannelVersion: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, `entry`);
+      logger.debug({ req_id, user: whoIs(me), org_id, uuid, queryName }, 'entry');
       try{
         const subCount = await models.Subscription.countDocuments({ org_id, version_uuid: uuid });
         if(subCount > 0){
@@ -445,11 +445,11 @@ const channelResolvers = {
           // Delete Version data
           const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
           await handler.deleteData();
-          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, `data removed`);
+          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'data removed');
 
           // Delete the Version
           await models.DeployableVersion.deleteOne({ org_id, uuid });
-          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, `version deleted`);
+          logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'version deleted');
         }
 
         // Remove the Version reference from the Channel
@@ -457,7 +457,7 @@ const channelResolvers = {
           { org_id, uuid: channel.uuid },
           { $pull: { versions: { uuid: uuid } } }
         );
-        logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, `version reference removed`);
+        logger.info({org_id, ver_uuid: uuid, ver_name: name, queryName}, 'version reference removed');
 
         // Return success if Version was deleted and/or a reference to the Channel was removed
         return {
