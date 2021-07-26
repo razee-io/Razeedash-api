@@ -17,7 +17,7 @@ const mongoose = require('mongoose');
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const { AUTH_MODEL } = require('./const');
 
-// PLC
+// If external auth model specified, use it.  Else use built-in auth model.
 const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
 const OrganizationSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].orgPath) : require(`./organization.${AUTH_MODEL}.schema`);
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//PLC
+ // If external auth model specified, use it.  Else use built-in auth model.
 const { AUTH_MODEL, AUTH_MODEL_CLASS } = require('./auth.consts');
 const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
 const AuthClass = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].classPath) : require(`${AUTH_MODEL_CLASS}`);
