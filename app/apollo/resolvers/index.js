@@ -32,13 +32,13 @@ const resolversMap = {
 };
 if( process.env.CUSTOM_RESOLVERS ) {
   const customResolvers = JSON.parse( process.env.CUSTOM_RESOLVERS );
-  for( key in customResolvers ) {
+  for( const key in customResolvers ) {
     resolversMap[key] = customResolvers[key];
   }
 }
 const resolvers = [];
-for( key in resolversMap ) {
-  console.log( `Loading resolver '${key}' from '${resolversMap[key]}'`)
+for( const key in resolversMap ) {
+  console.log( `Loading resolver '${key}' from '${resolversMap[key]}'`);
   resolvers.push( require(resolversMap[key]) );
 }
 

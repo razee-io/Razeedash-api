@@ -34,4 +34,4 @@ console.log( `External Auth Models: ${JSON.stringify(ExternalAuthModels, null, 4
 
 module.exports = {
   ExternalAuthModels: ExternalAuthModels
-}
+};

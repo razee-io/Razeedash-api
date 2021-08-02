@@ -32,13 +32,13 @@ const schemaMap = {
 };
 if( process.env.CUSTOM_RESOLVERS ) {
   const customSchemas = JSON.parse( process.env.CUSTOM_SCHEMAS );
-  for( key in customSchemas ) {
+  for( const key in customSchemas ) {
     schemaMap[key] = customSchemas[key];
   }
 }
 const schemas = [];
-for( key in schemaMap ) {
-  console.log( `Loading schema '${key}' from '${schemaMap[key]}'`)
+for( const key in schemaMap ) {
+  console.log( `Loading schema '${key}' from '${schemaMap[key]}'`);
   schemas.push( require(schemaMap[key]) );
 }
 
