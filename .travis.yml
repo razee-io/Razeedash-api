@@ -16,6 +16,7 @@ script:
   - npm run test:apollo:default
   - npm run test:apollo:local
   - npm run test:apollo:passport.local
+  - npm run test:apollo:extauthtest
   - export BUILD_TIME=`date '+%Y-%m-%d %H:%M:%S'`
   - docker build --rm --build-arg BUILD_TIME="$BUILD_TIME" --build-arg BUILD_ID="${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}" -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" .
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
