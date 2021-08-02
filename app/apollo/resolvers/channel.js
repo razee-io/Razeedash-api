@@ -430,27 +430,26 @@ const channelResolvers = {
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
+        const name = deployableVersionObj ? deployableVersionObj.name : channel.versions.find( x => x.uuid == uuid ).name;
+
         // If the Version is found...
         if(deployableVersionObj){
           // Delete Version data
           const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
           await handler.deleteData();
+          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} data removed`);
 
           // Delete the Version
           await models.DeployableVersion.deleteOne({ org_id, uuid });
+          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version deleted`);
         }
 
         // Remove the Version reference from the Channel
-        const versionObjs = channel.versions;
-        const vIndex = versionObjs.findIndex(v => v.uuid === uuid);
-        if( vIndex >= 0 ) {
-          versionObjs.splice(vIndex, 1);
-
-          await models.Channel.updateOne(
-            { org_id, uuid: channel.uuid },
-            { versions: versionObjs }
-          );
-        }
+        await models.Channel.updateOne(
+          { org_id, uuid: channel.uuid },
+          { $pull: { versions: { uuid: uuid } } }
+        );
+        logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version reference removed`);
 
         // Return success if Version was deleted and/or a reference to the Channel was removed
         return {
