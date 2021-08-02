@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { AUTH_MODELS, AUTH_MODEL } = require('../models/const');
+const { AUTH_MODEL } = require('../models/const');
 
 // This file contains auth specific impl to help prepare
 // org, users, and how to signin users
