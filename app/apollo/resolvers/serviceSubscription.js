@@ -145,19 +145,19 @@ const serviceResolvers = {
 
         const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
-          throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', { 'orgId': orgId }), context);
+          throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', { 'org_id': orgId }), context);
         }
 
         const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
         if (!channel) {
-          throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
         }
 
         const version = channel.versions.find((version) => {
           return (version.uuid == versionUuid);
         });
         if (!version) {
-          throw new NotFoundError(context.req.t('version uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
+          throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
         }
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
@@ -200,7 +200,7 @@ const serviceResolvers = {
 
       const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
       if (!channel) {
-        throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
+        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
       }
 
       const version = channel.versions.find((version) => {

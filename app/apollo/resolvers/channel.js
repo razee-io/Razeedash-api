@@ -212,7 +212,7 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw new NotFoundError(context.req.t('channel uuid "{{uuid}}" not found', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom } }, {omitUndefined:true});
@@ -271,7 +271,7 @@ const channelResolvers = {
 
       const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
       if(!channel){
-        throw new NotFoundError(context.req.t('channel uuid "{{channel_uuid}}" not found', {'channel_uuid':channel_uuid}), context);
+        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
       }
 
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
@@ -354,7 +354,7 @@ const channelResolvers = {
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
-          throw new NotFoundError(context.req.t('channel uuid "{{uuid}}" not found', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         const channel_uuid = channel.uuid;
@@ -366,7 +366,7 @@ const channelResolvers = {
 
         const serSubCount = await models.ServiceSubscription.count({ channel_uuid });
         if(serSubCount > 0){
-          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please have tem updated/removed before removing this channel.', {'serSubCount':serSubCount}), context);
+          throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please update/remove them before removing this channel.', {'serSubCount':serSubCount}), context);
         }
 
         // deletes the linked deployableVersions in s3
