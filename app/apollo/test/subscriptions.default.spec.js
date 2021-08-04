@@ -25,7 +25,12 @@ const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { GraphqlPubSub } = require('../subscription');
 
-const { prepareOrganization } = require(`./testHelper.${AUTH_MODEL}`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareOrganization } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
+
 let mongoServer;
 let myApollo;
 const graphqlPort = 18000;
@@ -63,7 +68,7 @@ const sub_03_groups = 'prod';
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_01.json`,
+      `${testDataPath}/cluster.spec.org_01.json`,
       'utf8',
     ),
   );

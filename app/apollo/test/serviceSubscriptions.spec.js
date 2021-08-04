@@ -17,7 +17,11 @@
 'use strict';
 
 const { AUTH_MODEL } = require('../models/const');
-const { signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { signInUser } = require(testHelperPath);
 
 // Service subscriptions require super-user,
 // which is implemented only in local auth model

@@ -29,11 +29,11 @@ const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-const {
-  prepareUser,
-  prepareOrganization,
-  signInUser,
-} = require(`./testHelper.${AUTH_MODEL}`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
 const SubClient = require('./subClient');
 const { GraphqlPubSub } = require('../subscription');
@@ -64,22 +64,22 @@ let presetResources;
 let resourceObjId = new ObjectId('aaaabbbbccccddddeeeeffff');
 
 const createOrganizations = async () => {
-  org01Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.org_01.json`, 'utf8'));
+  org01Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.org_01.json`, 'utf8'));
   org_01 = await prepareOrganization(models, org01Data);
 
-  org02Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.org_02.json`, 'utf8'));
+  org02Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.org_02.json`, 'utf8'));
   org_02 = await prepareOrganization(models, org02Data);
 
-  shouldNotMatchAnyData = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.shouldNotMatchAny.json`, 'utf8'));
+  shouldNotMatchAnyData = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.shouldNotMatchAny.json`, 'utf8'));
   shouldNotMatchAny = await prepareOrganization(models, shouldNotMatchAnyData);
 };
 
 const createUsers = async () => {
 
-  user01Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.user01.json`, 'utf8'));
+  user01Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.user01.json`, 'utf8'));
   await prepareUser(models, user01Data);
 
-  user02Data = JSON.parse(fs.readFileSync(`./app/apollo/test/data/${AUTH_MODEL}/resource.spec.user02.json`, 'utf8'));
+  user02Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.user02.json`, 'utf8'));
   await prepareUser(models, user02Data);
 
   return {};
