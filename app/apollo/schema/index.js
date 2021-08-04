@@ -30,7 +30,7 @@ const schemaMap = {
   'serviceSubscription': './serviceSubscription',
   'organization': './organization'
 };
-if( process.env.CUSTOM_RESOLVERS ) {
+if( process.env.CUSTOM_SCHEMAS ) {
   const customSchemas = JSON.parse( process.env.CUSTOM_SCHEMAS );
   for( const key in customSchemas ) {
     schemaMap[key] = customSchemas[key];
