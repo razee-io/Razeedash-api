@@ -21,7 +21,7 @@ E.g. to support setting `AUTH_MODEL` to `iam`, the JSON string would be:
 {
   "iam": {
     "classPath": "[path]/auth_iam.js",
-    "modelPath": "[path]/user.iam.schema.js",
+    "schemaPath": "[path]/user.iam.schema.js",
     "initPath": "[path]/init.iam.js",
     "orgPath": "[path]/organization.iam.schema.js"
   }

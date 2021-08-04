@@ -4,7 +4,7 @@ The external auth helper `../testHelper.extauthtest.js` is an exact copy of the 
 
 To use these files for auth, export the `EXTERNAL_AUTH_MODELS` and `AUTH_MODEL` environment variables:
 ```bash
-export EXTERNAL_AUTH_MODELS="{ \"extauthtest\": { \"classPath\": \"$(pwd)/app/apollo/test/externalAuth/auth_local.js\", \"modelPath\": \"$(pwd)/app/apollo/test/externalAuth/user.local.schema.js\", \"initPath\": \"$(pwd)/app/apollo/test/externalAuth/init.local.js\", \"orgPath\": \"$(pwd)/app/apollo/test/externalAuth/organization.local.schema.js\" } }"
+export EXTERNAL_AUTH_MODELS="{ \"extauthtest\": { \"classPath\": \"$(pwd)/app/apollo/test/externalAuth/auth_local.js\", \"schemaPath\": \"$(pwd)/app/apollo/test/externalAuth/user.local.schema.js\", \"initPath\": \"$(pwd)/app/apollo/test/externalAuth/init.local.js\", \"orgPath\": \"$(pwd)/app/apollo/test/externalAuth/organization.local.schema.js\" } }"
 
 export AUTH_MODEL=extauthtest
 ```
