@@ -314,7 +314,7 @@ const subscriptionResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
-          throw new NotFoundError(context.req.t('channel uuid "{{channel_uuid}}" not found', {'channel_uuid':channel_uuid}), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
         // validate groups are all exists in label dbs
@@ -363,7 +363,7 @@ const subscriptionResolvers = {
         var subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
 
         if(!subscription){
-          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", orgId:{{orgId}} } not found.', {'uuid':uuid, 'orgId':orgId}), context);
+          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':orgId}), context);
         }
 
         await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
@@ -437,7 +437,7 @@ const subscriptionResolvers = {
         // loads the channel
         var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
-          throw new NotFoundError(context.req.t('Channel uuid "{{subscription.channel_uuid}}" not found.', {'subscription.channel_uuid':subscription.channel_uuid}), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }
 
         // loads the version

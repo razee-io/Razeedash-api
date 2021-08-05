@@ -26,7 +26,12 @@ const groupFunc = require('./groupApi');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { v4: UUID } = require('uuid');
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
 let mongoServer;
 let myApollo;
@@ -85,14 +90,14 @@ const group_01_77_uuid = 'fake_group_01_77_uuid;';
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_01.json`,
+      `${testDataPath}/cluster.spec.org_01.json`,
       'utf8',
     ),
   );
   org01 = await prepareOrganization(models, org01Data);
   org77Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_77.json`,
+      `${testDataPath}/cluster.spec.org_77.json`,
       'utf8',
     ),
   );
@@ -102,21 +107,21 @@ const createOrganizations = async () => {
 const createUsers = async () => {
   user01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user01.json`,
+      `${testDataPath}/cluster.spec.user01.json`,
       'utf8',
     ),
   );
   await prepareUser(models, user01Data);
   user77Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user77.json`,
+      `${testDataPath}/cluster.spec.user77.json`,
       'utf8',
     ),
   );
   await prepareUser(models, user77Data);
   userRootData = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.root.json`,
+      `${testDataPath}/cluster.spec.root.json`,
       'utf8',
     ),
   );

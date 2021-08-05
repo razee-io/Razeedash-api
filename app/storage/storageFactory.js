@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp. All Rights Reserved.
+ * Copyright 2019, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const _ = require('lodash');
 const initLogger = require('./../log').createLogger('razeedash-api/storage');
 
 const ResourceStorageHandler = require('./resourceStorageHandler');
 const conf = require('../conf').conf;
-const configFileName = 'app/storageConfig.json';
+const configFileName = path.join(__dirname, '..', 'storageConfig.json');
 
 const s3legacyType = 's3legacy'; // legacy handler requires special treatment
 

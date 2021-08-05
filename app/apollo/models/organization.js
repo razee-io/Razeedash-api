@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@ const mongoose = require('mongoose');
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const { AUTH_MODEL } = require('./const');
 
-const OrganizationSchema = require(`./organization.${AUTH_MODEL}.schema`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
+const OrganizationSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].orgPath) : require(`./organization.${AUTH_MODEL}.schema`);
 
 OrganizationSchema.plugin(mongooseLeanVirtuals);
 const Organization = mongoose.model('orgs', OrganizationSchema);

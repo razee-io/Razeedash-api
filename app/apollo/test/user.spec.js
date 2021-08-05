@@ -23,7 +23,11 @@ const { models } = require('../models');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-const { prepareUser, prepareOrganization, signInUser, signUpUser } = require(`./testHelper.${AUTH_MODEL}`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareUser, prepareOrganization, signInUser, signUpUser } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
 let mongoServer;
 let myApollo;
@@ -44,7 +48,7 @@ let presetUsers;
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.org_01.json`,
+      `${testDataPath}/user.spec.org_01.json`,
       'utf8',
     ),
   );
@@ -55,7 +59,7 @@ const createOrganizations = async () => {
 const createUsers = async () => {
   user01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user01.json`,
+      `${testDataPath}/user.spec.user01.json`,
       'utf8',
     ),
   );
@@ -63,14 +67,14 @@ const createUsers = async () => {
 
   user02Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.user02.json`,
+      `${testDataPath}/user.spec.user02.json`,
       'utf8'
     )
   );
 
   rootData = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/user.spec.root.json`,
+      `${testDataPath}/user.spec.root.json`,
       'utf8',
     ),
   );

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,11 @@ const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
-const initModule = require(`./init.${AUTH_MODEL}`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
+const initModule = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].initPath) : require(`./init.${AUTH_MODEL}`);
+
 const conf = require('../conf.js').conf;
 const { v4: uuid } = require('uuid');
 const pubSub = GraphqlPubSub.getInstance();

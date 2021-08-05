@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,66 +14,32 @@
  * limitations under the License.
  */
 
-const { gql } = require('apollo-server-express');
+/*
+Custom schemas can be specified by environment variable.
+This allows, for example, replacing the built in 'user' schema with a custom one that does not provide `Mutation.signUp` or `Mutation.signIn`.
+*/
 
-const userSchema = require('./user');
-const resourceSchema = require('./resource');
-const groupSchema = require('./group');
-const clusterSchema = require('./cluster');
-const channelSchema = require('./channel');
-const subscriptionSchema = require('./subscription');
-const serviceSchema = require('./service');
-const organizationSchema = require('./organization');
-
-const linkSchema = gql`
-
-  # The string validator @sv(min: Int, max: Int) on any input field will check for min and max length and illegal characters.
-  # if you just provide @sv it will just check for allowed characters and assume default min and max lengths of 1 and 256
-  # @jv is the json validator
-  directive @sv(min: Int, max: Int) on ARGUMENT_DEFINITION 
-  directive @jv on ARGUMENT_DEFINITION
-
-  scalar Date
-  scalar DateTime
-  scalar JSON
-
-  type Query {
-    _: Boolean
+const schemaMap = {
+  'link': './link',
+  'user': './user',
+  'resource': './resource',
+  'group': './group',
+  'cluster': './cluster',
+  'channel': './channel',
+  'subscription': './subscription',
+  'serviceSubscription': './serviceSubscription',
+  'organization': './organization'
+};
+if( process.env.CUSTOM_SCHEMAS ) {
+  const customSchemas = JSON.parse( process.env.CUSTOM_SCHEMAS );
+  for( const key in customSchemas ) {
+    schemaMap[key] = customSchemas[key];
   }
-
-  type Mutation {
-    _: Boolean
-  }
-
-  type Subscription {
-    _: Boolean
-  }
-  
-  input SortObj {
-    field: String!
-    desc: Boolean = false
-  }
-  
-  input MongoQueries {
-    resources: JSON
-    
-    #we'll enable these ones later
-    # clusters: JSON
-    # channels: JSON
-    # groups: JSON
-    # orgs: JSON
-    # subscriptions: JSON
-  }
-`;
-
-const schemas = [ linkSchema,
-  organizationSchema,
-  userSchema,
-  resourceSchema,
-  groupSchema,
-  clusterSchema,
-  channelSchema,
-  subscriptionSchema,
-  serviceSchema];
+}
+const schemas = [];
+for( const key in schemaMap ) {
+  console.log( `Loading schema '${key}' from '${schemaMap[key]}'`);
+  schemas.push( require(schemaMap[key]) );
+}
 
 module.exports = schemas;
