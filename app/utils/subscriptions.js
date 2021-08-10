@@ -37,6 +37,12 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
         kubeOwnerName = subscription.kubeOwnerName;
       }
     }
+    if(kubeOwnerName){
+      var iamMatch = kubeOwnerName.match(/^(IAM\#)(.*)$/);
+      if(iamMatch){
+        kubeOwnerName = `${iamMatch[1]}${iamMatch[2].toLowerCase()}`;
+      }
+    }
     return {
       subscriptionName: subscription.name,
       subscriptionChannel: subscription.channelName,
