@@ -39,7 +39,7 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
     }
     if(kubeOwnerName){
       // forces iam usernames to be lowercase
-      var iamMatch = kubeOwnerName.match(/^(IAM\#)(.*)$/);
+      const iamMatch = kubeOwnerName.match(/^(IAM\#)(.*)$/);
       if(iamMatch){
         kubeOwnerName = `${iamMatch[1]}${iamMatch[2].toLowerCase()}`;
       }
