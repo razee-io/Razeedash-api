@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-const maintenanceMode = (flag, key) => {
-  console.log( 'maintenance-default entry' );
+const maintenanceMode = () => {
   return false;
 };
 
