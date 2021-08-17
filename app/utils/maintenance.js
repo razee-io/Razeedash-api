@@ -49,6 +49,4 @@ try {
 
 const maintenanceMessage = `The operation can not complete because the database is in maintenance mode (plugin: ${pluginName})`;
 
-log.error(`maintenanceMode test: ${maintenanceMode('dummyflag', 'dummykey')}`);
-
 module.exports = { maintenanceMode, maintenanceMessage };
