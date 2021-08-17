@@ -16,12 +16,17 @@
 
 const log = require('../log').createLogger('razeedash-api/app/utils/maintenance');
 
-let maintenanceMode = () => false;
+let pluginName = process.env.MAINTENANCE_PLUGIN || 'maintenance-default';
+const plugin = require( pluginName );
 
+let maintenanceMode = plugin.maintenanceMode;
+
+// Attempt to load featureflag from legacy mix-in code (this code will be removed once legacy featureflag mix-in code is converted to a plugin)
 try {
   const { FeatureFlagClient } = require('../featureflag');
   const ffClient = FeatureFlagClient.getInstance();
 
+  pluginName = 'featureflag';
   maintenanceMode = async (flag, key) => {
     if(!flag || !key) {
       log.debug('Maintenance flag and key are not defined. All database write operations are enabled.');
@@ -39,10 +44,11 @@ try {
     }
   };
 } catch (error) {
-  log.debug('A maintenance mode plugin was not loaded. All database write operations are enabled.');
-  log.error(error);
+  log.warn(`featureflag plugin was not loaded. Database write operations will be determined by plugin: ${pluginName}.`);
 }
 
-const maintenanceMessage = 'The operation can not complete because the database is in maintenance mode';
+const maintenanceMessage = `The operation can not complete because the database is in maintenance mode (plugin: ${pluginName})`;
+
+log.error(`maintenanceMode test: ${maintenanceMode('dummyflag', 'dummykey')}`);
 
 module.exports = { maintenanceMode, maintenanceMessage };

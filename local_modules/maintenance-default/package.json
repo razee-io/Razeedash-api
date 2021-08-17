@@ -1,0 +1,8 @@
+{
+  "name": "maintenance-default",
+  "version": "0.0.1",
+  "description": "Default maintenance plugin for razeedash and graphql",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "repository": "https://github.com/razee-io/Razeedash-api"
+}
