@@ -16,7 +16,7 @@
 
 const log = require('../log').createLogger('razeedash-api/app/utils/maintenance');
 
-let pluginName = process.env.MAINTENANCE_PLUGIN || 'maintenance-default';
+let pluginName = process.env.MAINTENANCE_PLUGIN || './maintenance-default';
 const plugin = require( pluginName );
 
 let maintenanceMode = plugin.maintenanceMode;
