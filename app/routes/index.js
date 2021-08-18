@@ -217,7 +217,7 @@ async function initialize(){
       ],
       resourceYamlHist:[
         {
-          keys: { org_id: 1, cluster_id: 1, resourceSelfLink: 1, deleted: 1 },
+          keys: { org_id: 1, cluster_id: 1, resourceSelfLink: 1 },
           options: { name: 'main-search', }
         }
       ],

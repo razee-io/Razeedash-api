@@ -334,7 +334,7 @@ const resourceResolvers = {
       }
 
       var searchObj = {
-        org_id, cluster_id, resourceSelfLink, deleted: false
+        org_id, cluster_id, resourceSelfLink, deleted: {$ne: true}
       };
       var updatedSearchObj = {};
       if(beforeDate){
