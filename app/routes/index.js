@@ -215,6 +215,12 @@ async function initialize(){
           options: { name: 'cluster_id_text_selfLink_text_searchableData.searchableExpression_text', }
         }
       ],
+      resourceYamlHist:[
+        {
+          keys: { org_id: 1, cluster_id: 1, resourceSelfLink: 1, deleted: 1 },
+          options: { name: 'main-search', }
+        }
+      ],
       messages:[
         {
           keys: { org_id: 1, cluster_id: 1 },
