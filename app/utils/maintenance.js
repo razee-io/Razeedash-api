@@ -21,32 +21,6 @@ const plugin = require( pluginName );
 
 let maintenanceMode = plugin.maintenanceMode;
 
-// Attempt to load featureflag from legacy mix-in code (this code will be removed once legacy featureflag mix-in code is converted to a plugin)
-try {
-  const { FeatureFlagClient } = require('../featureflag');
-  const ffClient = FeatureFlagClient.getInstance();
-
-  pluginName = 'featureflag';
-  maintenanceMode = async (flag, key) => {
-    if(!flag || !key) {
-      log.debug('Maintenance flag and key are not defined. All database write operations are enabled.');
-      return false;
-    } else {
-      try {
-        const maintenanceModeEnabled = await ffClient.variation(flag, {'key': key}, false);
-        log.debug(`Maintenance mode is set to: ${maintenanceModeEnabled} for flag ${flag} and user ${key}`);
-        return maintenanceModeEnabled;
-      } catch (error) {
-        log.error('There was a problem reading from launch darkly so maintenance mode will not be enabled');
-        log.error(error);
-        return false;
-      }
-    }
-  };
-} catch (error) {
-  log.warn(`featureflag plugin was not loaded. Database write operations will be determined by plugin: ${pluginName}.`);
-}
-
 const maintenanceMessage = `The operation can not complete because the database is in maintenance mode (plugin: ${pluginName})`;
 
 module.exports = { maintenanceMode, maintenanceMessage };
