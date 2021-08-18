@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-const log = require('../log').createLogger('razeedash-api/app/utils/maintenance');
-
-let pluginName = process.env.MAINTENANCE_PLUGIN || './maintenance-default';
+const pluginName = process.env.MAINTENANCE_PLUGIN || './maintenance-default';
 const plugin = require( pluginName );
-
-let maintenanceMode = plugin.maintenanceMode;
-
 const maintenanceMessage = `The operation can not complete because the database is in maintenance mode (plugin: ${pluginName})`;
 
-module.exports = { maintenanceMode, maintenanceMessage };
+module.exports = { plugin.maintenanceMode, maintenanceMessage };
