@@ -24,7 +24,7 @@ module.exports = (logger, location, endpoint) => { // only logger parameter is m
   if (location) {
     location = location.toLowerCase();
   } else {
-    throw new Error('Unable to create S3 client because location parameter is not specified and defaultLocation is not set');    
+    throw new Error('Unable to create S3 client because location parameter is not specified and defaultLocation is not set');
   }
 
   const locationConfig = conf.storage.s3ConnectionMap.get(location);
