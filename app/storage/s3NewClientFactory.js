@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp. All Rights Reserved.
+ * Copyright 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ module.exports = (logger, location, endpoint) => { // only logger parameter is m
   location = location || conf.storage.defaultLocation;
   if (location) {
     location = location.toLowerCase();
+  } else {
+    throw new Error('Unable to create S3 client because location parameter is not specified and defaultLocation is not set');    
   }
 
   const locationConfig = conf.storage.s3ConnectionMap.get(location);

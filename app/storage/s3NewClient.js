@@ -80,11 +80,8 @@ module.exports = class S3NewClient {
     }).promise();
   }
 
-  async deleteMultipleObjects(bucketName, keys) { // array of string keys
-    const objects = [];
-    for (const k of keys) {
-      objects.push({ Key: k });
-    }
+  async deleteObjects(bucketName, keys) { // array of string keys
+    const objects = keys.map(e => ({ Key: e }));
     return this.s3.deleteObjects({
       Bucket: bucketName,
       Delete: {
