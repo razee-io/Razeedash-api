@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp. All Rights Reserved.
+ * Copyright 2019, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,16 @@ module.exports = class S3NewClient {
     return this.s3.deleteObject({
       Bucket: bucketName,
       Key: key
+    }).promise();
+  }
+
+  async deleteObjects(bucketName, keys) { // array of string keys
+    const objects = keys.map(e => ({ Key: e }));
+    return this.s3.deleteObjects({
+      Bucket: bucketName,
+      Delete: {
+        Objects: objects
+      }
     }).promise();
   }
 
