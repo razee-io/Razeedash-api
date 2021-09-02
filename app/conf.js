@@ -42,7 +42,23 @@ const conf = {
   maintenance: {
     flag: process.env.MAINTENANCE_FLAG,
     key: process.env.MAINTENANCE_KEY
-  }
+  },
+  kms: {
+    server: {
+      serviceUrl: process.env.KMS_SERVER_SERVICE_URL || 'https://us-south.kms.cloud.ibm.com',
+      iamAuthUrl: process.env.KMS_SERVER_IAM_AUTH_URL || 'https://iam.cloud.ibm.com',
+      apiKey: process.env.KMS_SERVER_API_KEY,
+      bluemixInstanceGuid: process.env.KMS_SERVER_BLUEMIX_INSTANCE_GUID,
+      rootKeyId: process.env.KMS_SERVER_ROOT_KEY_ID,
+    },
+    cos:{
+      enabled: process.env.KMS_COS_ENABLED,
+      defaultOrgId: process.env.KMS_COS_DEFAULT_ORG_ID,
+      defaultRegion: process.env.KMS_COS_DEFAULT_REGION,
+      defaultServiceId: process.env.KMS_COS_DEFAULT_SERVICE_ID,
+      defaultRootKeyId: process.env.KMS_COS_DEFAULT_ROOT_KEY_ID,
+    },
+  },
 };
 
 module.exports = {

@@ -22,7 +22,8 @@ const cipher = require('./cipher');
 
 class S3ResourceHandler {
 
-  constructor(logger, resourceKey, bucketName, location, endpoint) {
+  constructor(logger, resourceKey, bucketName, location, endpoint, { org=null }={}){
+    console.log(3434343, resourceKey, bucketName, location, endpoint, org)
     this.logger = logger;
     if (!resourceKey || !bucketName) {
       throw new Error(`Path (${resourceKey}) and/or bucket name (${bucketName}) is not specified`);
@@ -41,28 +42,34 @@ class S3ResourceHandler {
     }
 
     this.config = {
+      paramValidation: false, // disable validation so we can pass all the non-standard IBM* headers
       endpoint: endpoint || locationConfig.endpoint,
       accessKeyId: locationConfig.accessKeyId,
       secretAccessKey: locationConfig.secretAccessKey,
       s3ForcePathStyle: true,
       signatureVersion: 'v4',
-      sslEnabled: conf.storage.sslEnabled
+      sslEnabled: conf.storage.sslEnabled,
     };
 
-    this.s3NewClient = new S3ClientClass(this.logger, this.config, locationConfig.locationConstraint);
+    this.org = org;
+    console.log(11111, org)
+
+    this.s3NewClient = new S3ClientClass(this.logger, this.config, locationConfig.locationConstraint, {
+      org, locationConfig,
+    });
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
     this.logInfo(`Uploading object ${this.bucketName}:${this.resourceKey} ...`);
     const { encryptedBuffer, ivText } = cipher.encrypt(stringOrBuffer, key);
-    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, encryptedBuffer);
+    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, encryptedBuffer, { org: this.org });
     this.logInfo(`Uploaded object to ${result.Location}`);
     return ivText;
   }
 
   async setData(stringOrBuffer) {
     this.logInfo(`Uploading object ${this.bucketName}:${this.resourceKey} ...`);
-    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, stringOrBuffer);
+    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, stringOrBuffer, { org: this.org });
     this.logInfo(`Uploaded object to ${result.Location}`);
   }
 
@@ -98,8 +105,8 @@ class S3ResourceHandler {
   }
 }
 
-const constructor = (logger, resourceKey, bucketName, location) => {
-  return new S3ResourceHandler(logger, resourceKey, bucketName, location);
+const constructor = (...args) => {
+  return new S3ResourceHandler(...args);
 };
 
 const deserializer = (logger, data) => {

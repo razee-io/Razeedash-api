@@ -122,13 +122,19 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
+function pushToS3Sync(org, key, searchableDataHash, dataStr, data_location, logger) {
   //if its a new or changed resource, write the data out to an S3 object
   const result = {};
-  const bucket = conf.storage.getResourceBucket(data_location);
+  // const bucket = conf.storage.getResourceBucket(data_location);
+  const locationConf = conf.storage.s3ConnectionMap.get(data_location || conf.storage.defaultLocation) || {};
+  const bucketPrefix = locationConf.orgBucketPrefix || 'razee-org-';
+  const bucket = `${bucketPrefix}${org._id.toLowerCase()}`;
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  const handler = storageFactory(logger).newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
+  const path = `${org._id}/${keyHash}/${searchableDataHash}`;
+  console.log(22222, data_location, locationConf, org);
+  const factory = storageFactory(logger);
+  const handler = factory.newResourceHandler(path, bucket, data_location, null, { org });
   result.promise = handler.setData(dataStr);
   result.encodedData = handler.serialize();
   return result;
@@ -272,7 +278,7 @@ const updateClusterResources = async (req, res, next) => {
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (!currentResource || resourceHash !== currentResource.hash) {
               let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
+              s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
               dataStr=s3UploadWithPromiseResponse.encodedData;
               s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
@@ -374,7 +380,7 @@ const updateClusterResources = async (req, res, next) => {
             const currentResource = await Resources.findOne(key);
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             let start = Date.now();
-            s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
+            s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
             dataStr = s3UploadWithPromiseResponse.encodedData;
             s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
             if (currentResource) {

@@ -17,6 +17,8 @@
 
 'use strict';
 
+var _ = require('lodash');
+
 class StorageConfig {
   constructor(env) {
     this.load(env);
@@ -38,6 +40,14 @@ class StorageConfig {
         connection.signatureVersion = 'v4';
         connection.channelBucket = env['S3_' + metro + '_CHANNEL_BUCKET'] || env.S3_CHANNEL_BUCKET || 'razee';
         connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
+        connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
+        let kmsEnabled = (env['S3_' + metro + '_KMS_ENABLED'] || env.S3_KMS_ENABLED || null);
+        kmsEnabled = !!(kmsEnabled && !_.includes(['false', '0'], kmsEnabled));
+        connection.kmsEnabled = kmsEnabled;
+        connection.kmsEndpoint = env['S3_' + metro + '_KMS_ENDPOINT'] || env.S3_KMS_ENDPOINT || '';
+        connection.kmsApiKey = env['S3_' + metro + '_KMS_API_KEY'] || env.S3_KMS_API_KEY|| '';
+        connection.kmsBluemixInstanceGuid = env['S3_' + metro + '_KMS_BLUEMIX_INSTANCE_GUID'] || env.S3_KMS_BLUEMIX_INSTANCE_GUID || '';
+        connection.kmsIamAuthUrl = env['S3_' + metro + '_KMS_IAM_AUTH_URL'] || env.S3_KMS_IAM_AUTH_URL || 'https://iam.cloud.ibm.com';
         connectionMap.set(metro.toLowerCase(), connection);
       } else {
         throw new Error(`S3 endpoint for location '${metro}' is not defnied, possibly missing '${envVar}' env variable.`);

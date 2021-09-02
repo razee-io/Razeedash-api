@@ -22,6 +22,7 @@ const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
 const OrganizationSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].orgPath) : require(`./organization.${AUTH_MODEL}.schema`);
 
 OrganizationSchema.plugin(mongooseLeanVirtuals);
+
 const Organization = mongoose.model('orgs', OrganizationSchema);
 
 module.exports = Organization;

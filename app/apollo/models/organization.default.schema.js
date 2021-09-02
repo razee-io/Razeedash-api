@@ -35,6 +35,13 @@ const OrganizationDefaultSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  kms: {
+    crn: String,
+    lastRotateTime: {
+      type: Date,
+      default: Date.now,
+    },
+  },
   type: {
     type: String,
     required: false,
