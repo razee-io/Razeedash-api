@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-const pluginName = process.env.MAINTENANCE_PLUGIN || './maintenance-default';
-const plugin = require( pluginName );
+const maintenanceMode = () => {
+  return false;
+};
 
-const maintenanceMode = plugin.maintenanceMode;
-const maintenanceMessage = `The operation can not complete because the database is in maintenance mode (plugin: ${pluginName})`;
-
-module.exports = { maintenanceMode, maintenanceMessage };
+module.exports = { maintenanceMode };
