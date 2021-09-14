@@ -129,13 +129,18 @@ function pushToS3Sync(org, key, searchableDataHash, dataStr, data_location, logg
   const locationConf = conf.storage.s3ConnectionMap.get(data_location || conf.storage.defaultLocation) || {};
   const bucketPrefix = locationConf.orgBucketPrefix || 'razee-org-';
   const bucket = `${bucketPrefix}${org._id.toLowerCase()}`;
-  var bucketKey = `${data_location}-resources`;
+  // var bucketKey = `${data_location}-resources`;
+  const bucketConfObj = {
+    type: 'active',
+    region: data_location,
+    kind: 'resources',
+  };
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
   const path = `${org._id}/${keyHash}/${searchableDataHash}`;
   console.log(22222, data_location, locationConf, org);
-  const factory = storageFactory(logger);
-  const handler = factory.newResourceHandler(path, bucket, data_location, null, { org });
+  const factory = storageFactory({ logger });
+  const handler = factory.newResourceHandler({ path, bucketConfObj, data_location, org });
   result.promise = handler.setData(dataStr);
   result.encodedData = handler.serialize();
   return result;

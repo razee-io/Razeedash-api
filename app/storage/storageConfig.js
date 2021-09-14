@@ -25,6 +25,9 @@ class StorageConfig {
   }
 
   load(env) {
+    if(!env){
+      throw new Error(`required args: env`);
+    }
     const metroArray = env.S3_LOCATIONS ? env.S3_LOCATIONS.match(/\S+/g) : [];
     const connectionMap = new Map();
     for (let metro of metroArray) {
@@ -38,8 +41,8 @@ class StorageConfig {
         connection.locationConstraint = env['S3_' + metro + '_LOCATION_CONSTRAINT'];
         connection.s3ForcePathStyle = true;
         connection.signatureVersion = 'v4';
-        connection.channelBucket = env['S3_' + metro + '_CHANNEL_BUCKET'] || env.S3_CHANNEL_BUCKET || 'razee';
-        connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
+        // connection.channelBucket = env['S3_' + metro + '_CHANNEL_BUCKET'] || env.S3_CHANNEL_BUCKET || 'razee';
+        // connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
         connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
         let kmsEnabled = (env['S3_' + metro + '_KMS_ENABLED'] || env.S3_KMS_ENABLED || null);
         kmsEnabled = !!(kmsEnabled && !_.includes(['false', '0'], kmsEnabled));
@@ -66,13 +69,15 @@ class StorageConfig {
     }
   }
 
-  getChannelBucket(location) {
+  getChannelBucket({ location }) {
+    throw `can we deprecate this`
     location = location ? location.toLowerCase() : this.defaultLocation;
     const connection = this.s3ConnectionMap.get(location);
     return connection ? connection.channelBucket : undefined;
   }
 
-  getResourceBucket(location) {
+  getResourceBucket({ location }){
+    throw `can we deprecate this`
     location = location ? location.toLowerCase() : this.defaultLocation;
     const connection = this.s3ConnectionMap.get(location);
     return connection ? connection.resourceBucket : undefined;

@@ -26,14 +26,15 @@ module.exports = class S3NewClient {
 
   static bucketCreatePromises = {};
 
-  constructor(logger, config, locationConstraint, { locationConfig, org }) {
-    this.logger = logger;
-    console.log(3333, config)
-    this.s3 = new conf.storage.sdk.S3(config);
-    // this.s3.logger = console;
-    // this.s3.config.logger = console;
-    this.locationConstraint = locationConstraint;
-    this.locationConfig = locationConfig;
+  s3 = null;
+  logger = null;
+  config = null;
+  locationConfig = null;
+  org = null;
+
+  constructor({ logger, config, locationConfig, org }) {
+    var s3 = new conf.storage.sdk.S3(config);
+    _.assign(this, { s3, logger, locationConfig, org });
   }
 
   async upload(bucketName, path, stringBufferOrStream, { org }={}) {
@@ -77,7 +78,7 @@ module.exports = class S3NewClient {
     }
   }
 
-  async createBucket(bucketName, { org=null }={}) {
+  async createBucket(bucketName, { bucketKey=null, org=null }={}) {
     // we dont want to run this function multiple times for an org, because then we'll have multiple keys generated
     // this code lets us limit to only running once - even if getting called multiple times
     // first, we keep track of a promise while we're running. if other requests happen before it finishes, we return the currently running promise
@@ -85,16 +86,17 @@ module.exports = class S3NewClient {
     // once we have a lock, we check if the bucket already exists. if so, we exit.
     // then we create the kms key. and create the bucket, providing that key.
     // once thats done, we release the lock and resolve the promise
-    console.log(22222, 'promises', S3NewClient.bucketCreatePromises, 22222222, { bucketName });
-    if(S3NewClient.bucketCreatePromises[bucketName]){
-      console.log('attaching to promise', S3NewClient.bucketCreatePromises[bucketName])
-      console.log(66666, 'attached promise resolved val', await S3NewClient.bucketCreatePromises[bucketName]);
-      return await S3NewClient.bucketCreatePromises[bucketName];
+    var bucketKey = bucketKey || bucketName;
+    console.log(22222, 'promises', S3NewClient.bucketCreatePromises, 22222222, { bucketKey });
+    if(S3NewClient.bucketCreatePromises[bucketKey]){
+      console.log('attaching to promise', S3NewClient.bucketCreatePromises[bucketKey])
+      console.log(66666, 'attached promise resolved val', await S3NewClient.bucketCreatePromises[bucketKey]);
+      return await S3NewClient.bucketCreatePromises[bucketKey];
     }
     console.log('creating promise');
     var p = new Promise(async(resolve, reject)=>{
       try{
-        var lockName = `org_create_bucket_${bucketName}`;
+        var lockName = `org_create_bucket_${bucketKey}`;
 
         // mutex's the bucket/key creation by creating a redis lock
         var redisClient = await getRedisClient();
@@ -135,7 +137,7 @@ module.exports = class S3NewClient {
         var options = {
           Bucket: bucketName,
           CreateBucketConfiguration: {
-            LocationConstraint: this.locationConstraint,
+            LocationConstraint: this.locationConfig.locationConstraint,
           },
         };
 
@@ -151,9 +153,9 @@ module.exports = class S3NewClient {
       catch(err){
         reject(err);
       }
-      delete S3NewClient.bucketCreatePromises[bucketName];
+      delete S3NewClient.bucketCreatePromises[bucketKey];
     });
-    S3NewClient.bucketCreatePromises[bucketName] = p;
+    S3NewClient.bucketCreatePromises[bucketKey] = p;
     console.log('promise created', S3NewClient.bucketCreatePromises);
     return p;
   }

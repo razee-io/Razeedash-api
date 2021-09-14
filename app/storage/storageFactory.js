@@ -64,10 +64,17 @@ class StorageFactory {
     this.logger = (logger || initLogger);
   }
 
-  newResourceHandler(resourceKey, bucketName, location, endpoint, args) {
-    console.log(44444, {resourceKey,bucketName,location,endpoint,args})
+  newResourceHandler(args={}) {
+    var { path, bucketConfObj, location, endpoint, org } = args;
+    // if(!path || !bucketConfObj){
+    //   throw new Error(`required args: { path, bucketConfObj }`);
+    // }
+    console.log(44444, { path, bucketConfObj, location, endpoint, org })
     // args is an obj of other attrs to pass that can be useful in certain contexts, such as { org }
-    const targetHandler = config.defaultHandler.constructor(this.logger, resourceKey, bucketName, location, endpoint, args);
+    const targetHandler = config.defaultHandler.constructor({
+      ..._.pick(this, ['logger']),
+      ...args
+    });
     return new ResourceStorageHandler(targetHandler, { type: config.defaultHandlerType });
   }
 
@@ -87,7 +94,7 @@ class StorageFactory {
     if (!handler) {
       throw new Error(`Resource handler implementation for type ${handlerType} is not defined`);
     }
-    return new ResourceStorageHandler(handler.deserializer(this.logger, encodedResource.data), encodedResource.metadata);
+    return new ResourceStorageHandler(handler.deserializer({ logger: this.logger, data: encodedResource.data }), encodedResource.metadata);
   }
 
   isLink(s) {

@@ -30,9 +30,12 @@ describe('Resource storage', () => {
   let storageConf;
   let bucketExistsPrototype;
 
-  const bucketName = 'my-bucket-223432r32e';
+  // const bucketName = 'my-bucket-223432r32e';
   const path = 'my-resource-name';
   const orgKey = 'orgApiKey-63fe2b3a-8c07-45ee-9b34-8eb5ecf27edf';
+  const org = {
+    _id: 'test_org_id',
+  };
 
   before(async () => {
     storageConf = conf.storage; // save
@@ -68,9 +71,14 @@ describe('Resource storage', () => {
     });
 
     const resource = 'my precious resource';
+    const bucketConfObj = {
+      type: 'active',
+      location: null,
+      kind: 'resources',
+    };
 
     // Write resource into bucket
-    const handler = storageFactory().newResourceHandler(path, bucketName);  // default location will be used
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, org });  // default location will be used
     const ivText = await handler.setDataAndEncrypt(resource, orgKey);
     const encodedResource = handler.serialize();
     console.log(encodedResource, ivText);
@@ -106,8 +114,14 @@ describe('Resource storage', () => {
     });
 
     const longString = 'x'.repeat(1 * 24 * 1024);
+    const data_location = 'WDC';
+    const bucketConfObj = {
+      type: 'active',
+      location: data_location,
+      kind: 'resources',
+    };
 
-    const handler = storageFactory().newResourceHandler(path, bucketName, 'WDC'); // upper case should be OK
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org }); // upper case should be OK
     const promise = handler.setData(longString);
     await promise;
 
@@ -125,7 +139,7 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
 
-    expect(() => storageFactory().newResourceHandler(path, '')).to.throw('not specified');
+    expect(() => storageFactory().newResourceHandler({ path })).to.throw('is not specified');
   });
 
   it('S3 object storage driver must recognize invalid resource encodings and invalid locations', async () => {
@@ -150,30 +164,48 @@ describe('Resource storage', () => {
     const resource4 = { metadata: { type: 's3' }, data: { path: 'path' } };
     expect(() => storageFactory().deserialize(resource4)).to.throw('not specified');
 
-    const resource5 = { metadata: { type: 's3' }, data: { path: 'path', bucketName: 'my bucket', location: 'ABC' } };
+    const bucketConfObj = {
+      type: 'active',
+      location: 'ABC',
+      kind: 'resources',
+    };
+    const org = {
+      _id: 'test_org_id',
+    };
+    const resource5 = { metadata: { type: 's3' }, data: { path: 'path', bucketConfObj, org } };
     expect(() => storageFactory().deserialize(resource5)).to.throw('Storage connection settings for \'abc\' location are not configured');
 
   });
 
-  it('S3 channel bucket name', async () => {
-    conf.storage = new StorageConfig({
-      COS_SDK: 'mock-aws-s3',
-      S3_LOCATIONS: 'WDC  ',
-      S3_WDC_ENDPOINT: 'wdc.ibm.com',
-      S3_WDC_CHANNEL_BUCKET: 'cos-razee'
-    });
-
-    const channelBucket = conf.storage.getChannelBucket('wDc'); // case should not matter
-    expect(channelBucket).to.equal('cos-razee');
-  });
+  // it('S3 channel bucket name', async () => {
+  //   conf.storage = new StorageConfig({
+  //     COS_SDK: 'mock-aws-s3',
+  //     S3_LOCATIONS: 'WDC  ',
+  //     S3_WDC_ENDPOINT: 'wdc.ibm.com',
+  //     S3_WDC_CHANNEL_BUCKET: 'cos-razee'
+  //   });
+  //
+  //   const channelBucket = conf.storage.getChannelBucket('wDc'); // case should not matter
+  //   expect(channelBucket).to.equal('cos-razee');
+  // });
 
   it('Embedded resource upload with encryption and download with decryption', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
 
     let resource = 'my precious resource';
 
+    const org = {
+      _id: 'test_org_id',
+    };
+
+    const bucketConfObj = {
+      type: 'active',
+      location: null,
+      kind: 'resources',
+    };
+
     // Write resource into bucket
-    const handler = storageFactory().newResourceHandler(path, bucketName);
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, org });
     const ivText = await handler.setDataAndEncrypt(resource, orgKey);
     const encodedResource = handler.serialize();
     console.log(encodedResource);
@@ -203,9 +235,16 @@ describe('Resource storage', () => {
   it('Embedded async write resource into bucket without encryption', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
 
+    const data_location = 'wdc';
+    const bucketConfObj = {
+      type: 'active',
+      location: data_location,
+      kind: 'resources',
+    };
+
     const longString = 'x'.repeat(1 * 24 * 1024);
 
-    const handler = storageFactory().newResourceHandler(path, bucketName, 'wdc');
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org });
     const promise = handler.setData(longString);
     await promise;
     const encodedData = handler.serialize();
