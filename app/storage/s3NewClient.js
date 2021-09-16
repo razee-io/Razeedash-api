@@ -21,6 +21,7 @@ const { getKmsKeyForOrg } = require('../utils/orgs');
 const _ = require('lodash');
 const { getRedisClient } = require('../utils/redis');
 const RedisLock = require('ioredis-lock');
+const delay = require('delay');
 
 module.exports = class S3NewClient {
 
@@ -85,7 +86,7 @@ module.exports = class S3NewClient {
     // once we have a lock, we check if the bucket already exists. if so, we exit.
     // then we create the kms key. and create the bucket, providing that key.
     // once thats done, we release the lock and resolve the promise
-    let bucketKey = bucketKey || bucketName;
+    bucketKey = bucketKey || bucketName;
     if(S3NewClient.bucketCreatePromises[bucketKey]){
       return await S3NewClient.bucketCreatePromises[bucketKey];
     }

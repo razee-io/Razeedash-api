@@ -16,7 +16,6 @@
 
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
-const conf = require('../conf');
 const { models } = require('../apollo/models');
 const { genKmsKey, rotateKey } = require('./keyProtect');
 
@@ -99,7 +98,7 @@ var getKmsKeyForOrg = async({ org, metroConf })=>{
 
 var rotateKmsKeyForOrg = async({ org, metroConf })=>{
   if(!org || !org._id){
-    throw new Error(`pass an org to rotateKmsKeyForOrg()`);
+    throw new Error('pass an org to rotateKmsKeyForOrg()');
   }
   if(!metroConf){
     throw new Error('rotateKmsKeyForOrg requires metroConf in input');

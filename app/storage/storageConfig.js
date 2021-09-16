@@ -26,7 +26,7 @@ class StorageConfig {
 
   load(env) {
     if(!env){
-      throw new Error(`required args: env`);
+      throw new Error('required args: env');
     }
     const metroArray = env.S3_LOCATIONS ? env.S3_LOCATIONS.match(/\S+/g) : [];
     const connectionMap = new Map();

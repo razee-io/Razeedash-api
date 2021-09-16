@@ -52,7 +52,6 @@ class S3OrgBucketResourceHandler {
       signatureVersion: 'v4',
       sslEnabled: conf.storage.sslEnabled,
     };
-    console.log(99999, config)
 
     _.assign(this, {
       logger,
@@ -77,7 +76,7 @@ class S3OrgBucketResourceHandler {
     if(type == 'active'){
       let { location, kind } = bucketConfObj;
       if(!location || !kind){
-        throw new Error(`bucketConfObj of type "active" needs location and kind attrs`);
+        throw new Error('bucketConfObj of type "active" needs location and kind attrs');
       }
       return `${bucketConfObj.location}_${bucketConfObj.kind}`;
     }

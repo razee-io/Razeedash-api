@@ -15,14 +15,11 @@
  */
 
 const {
-  whoIs, validAuth, BasicRazeeError, RazeeValidationError,
+  whoIs,
 } = require ('./common');
-const { ACTIONS, TYPES } = require('../models/const');
-const _ = require('lodash');
 
 const organizationResolvers = {
   Query: {
-
     organizations: async (parent, args, context) => {
       const queryName = 'organizations';
       const { models, me, req_id, logger } = context;

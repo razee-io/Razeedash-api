@@ -41,10 +41,10 @@ const genKmsKey = async({ name, metroConf })=>{
 
 const rotateKey = async({ crn, metroConf })=>{
   if(!crn){
-    throw new Error(`crn is required for rotateKey()`);
+    throw new Error('crn is required for rotateKey()');
   }
   if(!metroConf){
-    throw new Error(`metroConf is required for rotateKey()`);
+    throw new Error('metroConf is required for rotateKey()');
   }
   const keyId = _.last(crn.split(':'));
   if(!keyId){

@@ -38,7 +38,6 @@ const buildHashForResource = require('../../utils/cluster.js').buildHashForResou
 const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
-const conf = require('../../conf.js').conf;
 const storageFactory = require('./../../storage/storageFactory');
 
 const addUpdateCluster = async (req, res, next) => {
