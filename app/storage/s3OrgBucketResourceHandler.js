@@ -1,0 +1,206 @@
+/**
+ * Copyright 2019 IBM Corp. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+'use strict';
+
+const conf = require('./../conf.js').conf;
+const S3ClientClass = require('./s3NewClient');
+const cipher = require('./cipher');
+const { v4: uuid } = require('uuid');
+const { models } = require('../apollo/models');
+const _ = require('lodash');
+
+class S3OrgBucketResourceHandler {
+  logger = null;
+
+  constructor(args){
+    var { logger, path, bucketConfObj, endpoint, org } = args;
+    console.log(3434343, path, bucketConfObj, endpoint, org)
+    if (!path || !bucketConfObj) {
+      throw new Error(`Path (${path}) and/or bucketConfObj is not specified`);
+    }
+    if(!org || !org._id){
+      throw new Error('An org is required');
+    }
+    bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
+    if (bucketConfObj.location) {
+      bucketConfObj.location = bucketConfObj.location.toLowerCase();
+    }
+    const locationConfig = conf.storage.s3ConnectionMap.get(bucketConfObj.location);
+    if (!locationConfig) {
+      throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
+    }
+
+    var config = {
+      paramValidation: false, // disable validation so we can pass all the non-standard IBM* headers
+      endpoint: endpoint || locationConfig.endpoint,
+      accessKeyId: locationConfig.accessKeyId,
+      secretAccessKey: locationConfig.secretAccessKey,
+      s3ForcePathStyle: true,
+      signatureVersion: 'v4',
+      sslEnabled: conf.storage.sslEnabled,
+    };
+    console.log(99999, config)
+
+    _.assign(this, {
+      logger,
+      path,
+      bucketConfObj,
+      org,
+      config,
+      locationConfig,
+    });
+
+    this.s3NewClient = new S3ClientClass({
+      logger, config, locationConfig, org
+    });
+  }
+
+  getBucketKey(){
+    var { bucketConfObj } = this;
+    var { type } = bucketConfObj;
+    if(!type){
+      throw new Error('bucketConfObj needs attrs: { type }');
+    }
+    if(type == 'active'){
+      var { location, kind } = bucketConfObj;
+      console.log(88888, bucketConfObj)
+      if(!location || !kind){
+        throw new Error(`bucketConfObj of type "active" needs location and kind attrs`);
+      }
+      return `${bucketConfObj.location}_${bucketConfObj.kind}`;
+    }
+    else if(type == 'backup'){
+      var { location, period } = bucketConfObj;
+      return `backup_${location}_${period}`;
+    }
+    else{
+      throw new Error(`unhandled type "${type}"`);
+    }
+  }
+
+  getExistingBucketNameFromOrg(){
+    var { org, bucketConfObj } = this;
+    var { type, location } = bucketConfObj;
+    if(type == 'active'){
+      var { kind } = bucketConfObj;
+      return _.get(org.buckets, `[${type}][${kind}][${location}]`);
+    }
+    else if(type == 'backup'){
+      var { period } = bucketConfObj;
+      return _.get(org.buckets, `[${type}][${period}][${location}]`);
+    }
+    else{
+      throw new Error(`unhandled type "${type}"`);
+    }
+  }
+
+  async getBucketName(){
+    var { org, bucketConfObj } = this;
+    var { type, location } = bucketConfObj;
+    var bucketKey = this.getBucketKey();
+
+    // checks from db first
+    var bucketName = await this.getExistingBucketNameFromOrg();
+    if(bucketName){
+      return bucketName;
+    }
+    // if not in db, creates it
+    var bucketKeyClean = bucketKey
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_{2,}/g, '_')
+    ;
+    var uniqId = uuid();
+    bucketName = `${bucketKeyClean}_${org._id}_${uniqId}`;
+
+    await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
+
+    var sets = {};
+    if(type == 'active'){
+      var { kind } = bucketConfObj;
+      sets[`buckets.${type}.${kind}.${location}`] = bucketName;
+    }
+    else if(type == 'backup'){
+      var { period } = bucketConfObj;
+      sets[`buckets.${type}.${period}.${location}`] = bucketName;
+    }
+    else{
+      throw new Error(`unhandled type "${type}"`);
+    }
+    await models.Organization.updateOne({ _id: org._id }, { $set: sets });
+    return bucketKey;
+  }
+
+  async setDataAndEncrypt(stringOrBuffer, key) {
+    var { path, org } = this;
+    var bucketName = await this.getBucketName();
+    this.logInfo(`Uploading object ${bucketName}:${path} ...`);
+    const { encryptedBuffer, ivText } = cipher.encrypt(stringOrBuffer, key);
+    const result = await this.s3NewClient.upload(bucketName, path, encryptedBuffer, org);
+    this.logInfo(`Uploaded object to ${result.Location}`);
+    return ivText;
+  }
+
+  async setData(stringOrBuffer) {
+    var bucketName = await this.getBucketName();
+    this.logInfo(`Uploading object ${bucketName}:${this.path} ...`);
+    const result = await this.s3NewClient.upload(bucketName, this.path, stringOrBuffer, { org: this.org });
+    this.logInfo(`Uploaded object to ${result.Location}`);
+  }
+
+  async getDataAndDecrypt(key, iv) {
+    var bucketName = await this.getBucketName();
+    this.logInfo(`Downloading object ${bucketName}:${this.path} ...`);
+    const response = await this.s3NewClient.getObject(bucketName, this.path);
+    const encryptedBuffer = Buffer.from(response.Body);
+    return cipher.decryptBuffer(encryptedBuffer, key, iv); // utf-8 text
+  }
+
+  async getData() {
+    var bucketName = await this.getBucketName();
+    this.logInfo(`Downloading object ${bucketName}:${this.path} ...`);
+    const response = await this.s3NewClient.getObject(bucketName, this.path);
+    return Buffer.from(response.Body).toString(); // utf-8 text
+  }
+
+  async deleteData() {
+    var bucketName = await this.getBucketName();
+    this.logInfo(`Deleting object ${bucketName}:${this.path} ...`);
+    await this.s3NewClient.deleteObject(bucketName, this.path);
+  }
+
+  serialize() {
+    return _.pick(this, ['path', 'bucketConfObj', 'endpoint']);
+  }
+
+  logInfo(msg) {
+    this.logger.info(msg);
+  }
+}
+
+const constructor = (args) => {
+  return new S3OrgBucketResourceHandler(args);
+};
+
+const deserializer = (args) => {
+  var { logger, data } = args;
+  return new S3OrgBucketResourceHandler({
+    logger,
+    ...data,
+  });
+};
+
+module.exports = { constructor, deserializer };

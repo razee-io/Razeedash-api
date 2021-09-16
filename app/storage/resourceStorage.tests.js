@@ -139,7 +139,7 @@ describe('Resource storage', () => {
       S3_WDC_ENDPOINT: 'wdc.ibm.com',
     });
 
-    expect(() => storageFactory().newResourceHandler({ path })).to.throw('is not specified');
+    expect(() => storageFactory().newResourceHandler({ path })).to.throw('Pass a bucketConfObj or bucketName');
   });
 
   it('S3 object storage driver must recognize invalid resource encodings and invalid locations', async () => {
@@ -162,7 +162,7 @@ describe('Resource storage', () => {
     expect(() => storageFactory().deserialize(resource3)).to.throw('Resource handler implementation for type abcd is not defined');
 
     const resource4 = { metadata: { type: 's3' }, data: { path: 'path' } };
-    expect(() => storageFactory().deserialize(resource4)).to.throw('not specified');
+    expect(() => storageFactory().deserialize(resource4)).to.throw('Pass a bucketConfObj or bucketName');
 
     const bucketConfObj = {
       type: 'active',
