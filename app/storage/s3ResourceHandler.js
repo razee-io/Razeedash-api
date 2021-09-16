@@ -24,7 +24,7 @@ const _ = require('lodash');
 class S3ResourceHandler {
 
   constructor(args) {
-    var { logger, path, bucketName=null, bucketConfObj=null, location, endpoint, org } = args;
+    let { logger, path, bucketName=null, bucketConfObj=null, location, endpoint, org } = args;
     if(!bucketConfObj && !bucketName){
       throw new Error('Pass a bucketConfObj or bucketName');
     }
@@ -33,7 +33,7 @@ class S3ResourceHandler {
       bucketConfObj.location = location;
     }
     if(!bucketName){
-      bucketName = `todo_${bucketConfObj.location}`;
+      bucketName = conf.storage.getResourceBucket(location);
     }
     this.logger = logger;
     if (!path || !bucketName) {
@@ -41,8 +41,6 @@ class S3ResourceHandler {
     }
     this.path = path;
     this.bucketName = bucketName;
-
-    console.log(7777, conf.storage.defaultLocation)
 
     bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
     if (bucketConfObj.location) {
@@ -53,7 +51,7 @@ class S3ResourceHandler {
       throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
     }
 
-    var config = {
+    let config = {
       endpoint: endpoint || locationConfig.endpoint,
       accessKeyId: locationConfig.accessKeyId,
       secretAccessKey: locationConfig.secretAccessKey,
@@ -104,14 +102,12 @@ class S3ResourceHandler {
   }
 
   serialize() {
-    console.log(99991, this)
-    var out = {
+    const out = {
       path: this.path,
       bucketName: this.bucketName,
       location: this.bucketConfObj.location,
       endpoint: this.config.endpoint
     };
-    console.log(9999, out)
     return out;
   }
 
@@ -125,7 +121,7 @@ const constructor = (args) => {
 };
 
 const deserializer = (args) => {
-  var { logger, data } = args;
+  const { logger, data } = args;
   return new S3ResourceHandler({
     logger,
     ...data,

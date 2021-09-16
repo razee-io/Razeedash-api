@@ -312,10 +312,10 @@ const channelResolvers = {
       const { data_location=null } = channel;
       const bucketConfObj = {
         type: 'active',
-        region: data_location,
+        location: data_location,
         kind: 'configs',
       };
-      const handler = storageFactory(logger).newResourceHandler({ path, bucketConfObj, data_location });
+      const handler = storageFactory(logger).newResourceHandler({ path, bucketConfObj });
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
 

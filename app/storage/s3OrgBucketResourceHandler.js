@@ -27,8 +27,7 @@ class S3OrgBucketResourceHandler {
   logger = null;
 
   constructor(args){
-    var { logger, path, bucketConfObj, endpoint, org } = args;
-    console.log(3434343, path, bucketConfObj, endpoint, org)
+    let { logger, path, bucketConfObj, endpoint, org } = args;
     if (!path || !bucketConfObj) {
       throw new Error(`Path (${path}) and/or bucketConfObj is not specified`);
     }
@@ -44,7 +43,7 @@ class S3OrgBucketResourceHandler {
       throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
     }
 
-    var config = {
+    let config = {
       paramValidation: false, // disable validation so we can pass all the non-standard IBM* headers
       endpoint: endpoint || locationConfig.endpoint,
       accessKeyId: locationConfig.accessKeyId,
@@ -70,21 +69,20 @@ class S3OrgBucketResourceHandler {
   }
 
   getBucketKey(){
-    var { bucketConfObj } = this;
-    var { type } = bucketConfObj;
+    let { bucketConfObj } = this;
+    let { type } = bucketConfObj;
     if(!type){
       throw new Error('bucketConfObj needs attrs: { type }');
     }
     if(type == 'active'){
-      var { location, kind } = bucketConfObj;
-      console.log(88888, bucketConfObj)
+      let { location, kind } = bucketConfObj;
       if(!location || !kind){
         throw new Error(`bucketConfObj of type "active" needs location and kind attrs`);
       }
       return `${bucketConfObj.location}_${bucketConfObj.kind}`;
     }
     else if(type == 'backup'){
-      var { location, period } = bucketConfObj;
+      let { location, period } = bucketConfObj;
       return `backup_${location}_${period}`;
     }
     else{
@@ -93,14 +91,14 @@ class S3OrgBucketResourceHandler {
   }
 
   getExistingBucketNameFromOrg(){
-    var { org, bucketConfObj } = this;
-    var { type, location } = bucketConfObj;
+    let { org, bucketConfObj } = this;
+    let { type, location } = bucketConfObj;
     if(type == 'active'){
-      var { kind } = bucketConfObj;
+      let { kind } = bucketConfObj;
       return _.get(org.buckets, `[${type}][${kind}][${location}]`);
     }
     else if(type == 'backup'){
-      var { period } = bucketConfObj;
+      let { period } = bucketConfObj;
       return _.get(org.buckets, `[${type}][${period}][${location}]`);
     }
     else{
@@ -109,32 +107,32 @@ class S3OrgBucketResourceHandler {
   }
 
   async getBucketName(){
-    var { org, bucketConfObj } = this;
-    var { type, location } = bucketConfObj;
-    var bucketKey = this.getBucketKey();
+    let { org, bucketConfObj } = this;
+    let { type, location } = bucketConfObj;
+    let bucketKey = this.getBucketKey();
 
     // checks from db first
-    var bucketName = await this.getExistingBucketNameFromOrg();
+    let bucketName = await this.getExistingBucketNameFromOrg();
     if(bucketName){
       return bucketName;
     }
     // if not in db, creates it
-    var bucketKeyClean = bucketKey
+    let bucketKeyClean = bucketKey
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/_{2,}/g, '_')
     ;
-    var uniqId = uuid();
+    let uniqId = uuid();
     bucketName = `${bucketKeyClean}_${org._id}_${uniqId}`;
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
 
-    var sets = {};
+    let sets = {};
     if(type == 'active'){
-      var { kind } = bucketConfObj;
+      let { kind } = bucketConfObj;
       sets[`buckets.${type}.${kind}.${location}`] = bucketName;
     }
     else if(type == 'backup'){
-      var { period } = bucketConfObj;
+      let { period } = bucketConfObj;
       sets[`buckets.${type}.${period}.${location}`] = bucketName;
     }
     else{
@@ -145,8 +143,8 @@ class S3OrgBucketResourceHandler {
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
-    var { path, org } = this;
-    var bucketName = await this.getBucketName();
+    let { path, org } = this;
+    let bucketName = await this.getBucketName();
     this.logInfo(`Uploading object ${bucketName}:${path} ...`);
     const { encryptedBuffer, ivText } = cipher.encrypt(stringOrBuffer, key);
     const result = await this.s3NewClient.upload(bucketName, path, encryptedBuffer, org);
@@ -155,14 +153,14 @@ class S3OrgBucketResourceHandler {
   }
 
   async setData(stringOrBuffer) {
-    var bucketName = await this.getBucketName();
+    let bucketName = await this.getBucketName();
     this.logInfo(`Uploading object ${bucketName}:${this.path} ...`);
     const result = await this.s3NewClient.upload(bucketName, this.path, stringOrBuffer, { org: this.org });
     this.logInfo(`Uploaded object to ${result.Location}`);
   }
 
   async getDataAndDecrypt(key, iv) {
-    var bucketName = await this.getBucketName();
+    let bucketName = await this.getBucketName();
     this.logInfo(`Downloading object ${bucketName}:${this.path} ...`);
     const response = await this.s3NewClient.getObject(bucketName, this.path);
     const encryptedBuffer = Buffer.from(response.Body);
@@ -170,14 +168,14 @@ class S3OrgBucketResourceHandler {
   }
 
   async getData() {
-    var bucketName = await this.getBucketName();
+    let bucketName = await this.getBucketName();
     this.logInfo(`Downloading object ${bucketName}:${this.path} ...`);
     const response = await this.s3NewClient.getObject(bucketName, this.path);
     return Buffer.from(response.Body).toString(); // utf-8 text
   }
 
   async deleteData() {
-    var bucketName = await this.getBucketName();
+    let bucketName = await this.getBucketName();
     this.logInfo(`Deleting object ${bucketName}:${this.path} ...`);
     await this.s3NewClient.deleteObject(bucketName, this.path);
   }
@@ -196,7 +194,7 @@ const constructor = (args) => {
 };
 
 const deserializer = (args) => {
-  var { logger, data } = args;
+  const { logger, data } = args;
   return new S3OrgBucketResourceHandler({
     logger,
     ...data,

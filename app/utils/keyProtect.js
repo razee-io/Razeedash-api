@@ -1,11 +1,10 @@
 const _ = require('lodash');
-// const { conf } = require('../conf');
 const KeyProtectV2 = require('@ibm-cloud/ibm-key-protect/ibm-key-protect-api/v2');
 const { IamAuthenticator } = require('@ibm-cloud/ibm-key-protect/auth');
 const { createLogger } = require('../log');
 const logger = createLogger('keyProtect');
 
-var genKmsKey = async({ name, metroConf })=>{
+const genKmsKey = async({ name, metroConf })=>{
   const authenticator = new IamAuthenticator({
     apikey: metroConf.kmsApiKey,
     url: metroConf.kmsIamAuthUrl,
@@ -33,25 +32,21 @@ var genKmsKey = async({ name, metroConf })=>{
       },
     ],
   };
-  var result = await keyProtectClient.createKey({
+  const result = await keyProtectClient.createKey({
     ...envConfig,
     body,
   });
-  console.log(1111, result);
-  var crn = result.result.resources[0].crn;
-  console.log(2222, result.result.resources[0]);
-  console.log(3333, crn);
-  return crn;
+  return result.result.resources[0].crn;
 };
 
-var rotateKey = async({ crn, metroConf })=>{
+const rotateKey = async({ crn, metroConf })=>{
   if(!crn){
     throw new Error(`crn is required for rotateKey()`);
   }
   if(!metroConf){
     throw new Error(`metroConf is required for rotateKey()`);
   }
-  var keyId = _.last(crn.split(':'));
+  const keyId = _.last(crn.split(':'));
   if(!keyId){
     throw new Error('unable to find kms key id in crn');
   }
@@ -70,7 +65,7 @@ var rotateKey = async({ crn, metroConf })=>{
     bluemixInstance: metroConf.kmsBluemixInstanceGuid,
   };
   try{
-    var result = await keyProtectClient.rotateKey({
+    const result = await keyProtectClient.rotateKey({
       id: keyId,
       keyActionRotateBody: {},
       ...envConfig,
@@ -90,12 +85,6 @@ var rotateKey = async({ crn, metroConf })=>{
     throw err;
   }
 };
-
-// setTimeout(async()=>{
-//   var crn = `crn:v1:bluemix:public:kms:${conf.kms.cos.defaultRegion}:a/${conf.kms.cos.defaultOrgId}:${conf.kms.cos.defaultServiceId}:key:${conf.kms.cos.defaultRootKeyId}`;
-//   var result = await rotateKey({ crn });
-//   console.log(5555, result);
-// },1);
 
 module.exports = {
   genKmsKey,

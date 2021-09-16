@@ -121,7 +121,7 @@ describe('Resource storage', () => {
       kind: 'resources',
     };
 
-    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org }); // upper case should be OK
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, org }); // upper case should be OK
     const promise = handler.setData(longString);
     await promise;
 
@@ -176,18 +176,6 @@ describe('Resource storage', () => {
     expect(() => storageFactory().deserialize(resource5)).to.throw('Storage connection settings for \'abc\' location are not configured');
 
   });
-
-  // it('S3 channel bucket name', async () => {
-  //   conf.storage = new StorageConfig({
-  //     COS_SDK: 'mock-aws-s3',
-  //     S3_LOCATIONS: 'WDC  ',
-  //     S3_WDC_ENDPOINT: 'wdc.ibm.com',
-  //     S3_WDC_CHANNEL_BUCKET: 'cos-razee'
-  //   });
-  //
-  //   const channelBucket = conf.storage.getChannelBucket('wDc'); // case should not matter
-  //   expect(channelBucket).to.equal('cos-razee');
-  // });
 
   it('Embedded resource upload with encryption and download with decryption', async () => {
     conf.storage = new StorageConfig({}); // resources will be embedded
@@ -244,7 +232,7 @@ describe('Resource storage', () => {
 
     const longString = 'x'.repeat(1 * 24 * 1024);
 
-    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org });
+    const handler = storageFactory().newResourceHandler({ path, bucketConfObj, org });
     const promise = handler.setData(longString);
     await promise;
     const encodedData = handler.serialize();

@@ -33,7 +33,7 @@ module.exports = class S3NewClient {
   org = null;
 
   constructor({ logger, config, locationConfig, org }) {
-    var s3 = new conf.storage.sdk.S3(config);
+    const s3 = new conf.storage.sdk.S3(config);
     _.assign(this, { s3, logger, locationConfig, org });
   }
 
@@ -43,14 +43,13 @@ module.exports = class S3NewClient {
       if (!exists) {
         this.logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
         await this.createBucket(bucketName, { org });
-        console.log(55555, 'creat bucket is resolved');
       }
     } catch (err) {
       this.logger.error(`could not create bucket '${bucketName}'`, err);
       throw err;
     }
 
-    var s3UploadOptions = {
+    const s3UploadOptions = {
       Bucket: bucketName,
       Key: path,
       Body: stringBufferOrStream,
@@ -86,31 +85,24 @@ module.exports = class S3NewClient {
     // once we have a lock, we check if the bucket already exists. if so, we exit.
     // then we create the kms key. and create the bucket, providing that key.
     // once thats done, we release the lock and resolve the promise
-    var bucketKey = bucketKey || bucketName;
-    console.log(22222, 'promises', S3NewClient.bucketCreatePromises, 22222222, { bucketKey });
+    let bucketKey = bucketKey || bucketName;
     if(S3NewClient.bucketCreatePromises[bucketKey]){
-      console.log('attaching to promise', S3NewClient.bucketCreatePromises[bucketKey])
-      console.log(66666, 'attached promise resolved val', await S3NewClient.bucketCreatePromises[bucketKey]);
       return await S3NewClient.bucketCreatePromises[bucketKey];
     }
-    console.log('creating promise');
-    var p = new Promise(async(resolve, reject)=>{
+    const p = new Promise(async(resolve, reject)=>{
       try{
-        var lockName = `org_create_bucket_${bucketKey}`;
+        const lockName = `org_create_bucket_${bucketKey}`;
 
         // mutex's the bucket/key creation by creating a redis lock
-        var redisClient = await getRedisClient();
-        var lock = RedisLock.createLock(redisClient, {
+        const redisClient = await getRedisClient();
+        const lock = RedisLock.createLock(redisClient, {
           timeout: 20000,
           retries: 10,
           delay: 1000,
         });
         try {
-          console.log(11111, 'aquireing lock', lockName)
           await lock.acquire(lockName);
-          console.log(11112, 'got lock', lockName)
         } catch (err) {
-          console.log(11113, 'failed to get lock', lockName)
           // if the lock fails, assumes another "thread" is already attempting to create the bucket.
           // so waits for that to finish
           await delay(10000);
@@ -123,10 +115,16 @@ module.exports = class S3NewClient {
           return;
         }
 
+        let options = {
+          Bucket: bucketName,
+          CreateBucketConfiguration: {
+            LocationConstraint: this.locationConfig.locationConstraint,
+          },
+        };
+
         // if using kms, updates the creation options to specify the key info
-        console.log(6666, { locationConfig: this.locationConfig, org })
         if(this.locationConfig.kmsEnabled && org){
-          var crn = await getKmsKeyForOrg({ org });
+          const crn = await getKmsKeyForOrg({ org });
           options = _.assign(options, {
             IBMSSEKPCustomerRootKeyCrn: crn,
             IBMSSEKPEncryptionAlgorithm: 'AES256',
@@ -134,15 +132,8 @@ module.exports = class S3NewClient {
           });
         }
 
-        var options = {
-          Bucket: bucketName,
-          CreateBucketConfiguration: {
-            LocationConstraint: this.locationConfig.locationConstraint,
-          },
-        };
-
         // creates the bucket
-        var out = this.s3.createBucket(options).promise();
+        const out = this.s3.createBucket(options).promise();
 
         // resolves the promise with the bucket create info
         resolve(out);
@@ -156,7 +147,6 @@ module.exports = class S3NewClient {
       delete S3NewClient.bucketCreatePromises[bucketKey];
     });
     S3NewClient.bucketCreatePromises[bucketKey] = p;
-    console.log('promise created', S3NewClient.bucketCreatePromises);
     return p;
   }
 

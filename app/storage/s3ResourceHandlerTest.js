@@ -31,7 +31,7 @@ async function test() {
     location: data_location,
     kind: 'resources',
   };
-  const handler = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org });
+  const handler = storageFactory().newResourceHandler({ path, bucketConfObj, org });
   const ivText = await handler.setDataAndEncrypt(resource, orgKey);
   const encodedResource = handler.serialize();
   console.log(encodedResource, ivText);
@@ -63,7 +63,7 @@ async function test() {
 
   // Async write resource into bucket without encryption
   const longString = 'x'.repeat(10*1024*1024);
-  const handler2 = storageFactory().newResourceHandler({ path, bucketConfObj, data_location, org });
+  const handler2 = storageFactory().newResourceHandler({ path, bucketConfObj, org });
   const promise = handler2.setData(longString);
   console.log('Waiting on promise...' + new Date());
   await promise;

@@ -45,14 +45,14 @@ const conf = {
   },
   kms: {
     server: {
-      serviceUrl: process.env.KMS_SERVER_SERVICE_URL || 'https://us-south.kms.cloud.ibm.com',
-      iamAuthUrl: process.env.KMS_SERVER_IAM_AUTH_URL || 'https://iam.cloud.ibm.com',
+      serviceUrl: process.env.KMS_SERVER_SERVICE_URL,
+      iamAuthUrl: process.env.KMS_SERVER_IAM_AUTH_URL,
       apiKey: process.env.KMS_SERVER_API_KEY,
       bluemixInstanceGuid: process.env.KMS_SERVER_BLUEMIX_INSTANCE_GUID,
       rootKeyId: process.env.KMS_SERVER_ROOT_KEY_ID,
     },
     cos:{
-      enabled: process.env.KMS_COS_ENABLED,
+      enabled: process.env.KMS_COS_ENABLED && !(process.env.KMS_COS_ENABLED.trim().toLowerCase() === 'false'),
       defaultOrgId: process.env.KMS_COS_DEFAULT_ORG_ID,
       defaultRegion: process.env.KMS_COS_DEFAULT_REGION,
       defaultServiceId: process.env.KMS_COS_DEFAULT_SERVICE_ID,

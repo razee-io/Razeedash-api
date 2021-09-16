@@ -65,15 +65,11 @@ class StorageFactory {
   }
 
   newResourceHandler(args={}) {
-    var { path, bucketConfObj, location, endpoint, org } = args;
-    // if(!path || !bucketConfObj){
-    //   throw new Error(`required args: { path, bucketConfObj }`);
-    // }
-    console.log(44444, { path, bucketConfObj, location, endpoint, org })
-    // args is an obj of other attrs to pass that can be useful in certain contexts, such as { org }
+    // let { path, bucketConfObj, location, endpoint, org } = args;
+    // sends an obj to the constructor, which contains all passed in `args` with a `logger` attr add in
     const targetHandler = config.defaultHandler.constructor({
-      ..._.pick(this, ['logger']),
-      ...args
+      logger: this.logger,
+      ...args,
     });
     return new ResourceStorageHandler(targetHandler, { type: config.defaultHandlerType });
   }
