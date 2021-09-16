@@ -25,10 +25,11 @@ const conf = require('./../conf.js').conf;
 const StorageConfig = require('./storageConfig');
 const storageFactory = require('./storageFactory');
 const s3ClientClass = require('./s3NewClient');
+const _ = require('lodash');
 
 describe('Resource storage', () => {
   let storageConf;
-  let bucketExistsPrototype;
+  let oldS3ClientClassPrototype;
 
   // const bucketName = 'my-bucket-223432r32e';
   const path = 'my-resource-name';
@@ -39,13 +40,19 @@ describe('Resource storage', () => {
 
   before(async () => {
     storageConf = conf.storage; // save
-    bucketExistsPrototype = s3ClientClass.prototype.bucketExists; // save
-    s3ClientClass.prototype.bucketExists = () => false; // because mock SDK does not have 'headBucket'
+    oldS3ClientClassPrototype = _.pick(s3ClientClass.prototype, ['bucketExists', 'createBucket']);
+    _.assign(s3ClientClass.prototype, {
+      bucketExists: () => false,
+      createBucket: () => true,
+    });
   });
 
   after(() => {
     conf.storage = storageConf; // restore
-    s3ClientClass.prototype.bucketExists = bucketExistsPrototype; // restore
+    // restores the prototype
+    _.each(oldS3ClientClassPrototype, (func, funcName)=>{
+      s3ClientClass.prototype[funcName] = func;
+    });
   });
 
   it('Missing endpoint for a location must throw an error', async () => {
