@@ -41,6 +41,7 @@ class StorageConfig {
         connection.locationConstraint = env['S3_' + metro + '_LOCATION_CONSTRAINT'];
         connection.s3ForcePathStyle = true;
         connection.signatureVersion = 'v4';
+        connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
         connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
         let kmsEnabled = (env['S3_' + metro + '_KMS_ENABLED'] || env.S3_KMS_ENABLED || null);
         kmsEnabled = !!(kmsEnabled && !_.includes(['false', '0'], kmsEnabled));
@@ -65,6 +66,12 @@ class StorageConfig {
     } else {
       this.defaultHandler = 'embedded';
     }
+  }
+
+  getResourceBucket(location) {
+    location = location ? location.toLowerCase() : this.defaultLocation;
+    const connection = this.s3ConnectionMap.get(location);
+    return connection ? connection.resourceBucket : undefined;
   }
 }
 
