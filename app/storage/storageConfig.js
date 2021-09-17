@@ -17,8 +17,6 @@
 
 'use strict';
 
-var _ = require('lodash');
-
 class StorageConfig {
   constructor(env) {
     this.load(env);
