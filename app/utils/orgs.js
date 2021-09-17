@@ -70,24 +70,24 @@ const decryptOrgData = (orgKey, data) => {
   return tokenCrypt.decrypt(data, orgKey);
 };
 
-var getKmsKeyForOrg = async({ org, metroConf })=>{
+const getKmsKeyForOrg = async({ org, metroConf })=>{
   if(!org?._id){
     throw new Error('genKmsKeyForOrg requires an org as input');
   }
   if(!metroConf){
     throw new Error('genKmsKeyForOrg requires metroConf in input');
   }
-  var crn = _.get(org, 'kms.crn');
+  let crn = _.get(org, 'kms.crn');
   if(crn){
     // if already has a key, then returns it
     return crn;
   }
-  var name = `s3_org_encryption_key_${org._id}`;
+  const name = `s3_org_encryption_key_${org._id}`;
   crn = await genKmsKey({ name, metroConf });
-  var search = {
+  const search = {
     _id: org._id,
   };
-  var updates = {
+  const updates = {
     $set: {
       'kms.crn': crn,
     }
@@ -96,19 +96,19 @@ var getKmsKeyForOrg = async({ org, metroConf })=>{
   return crn;
 };
 
-var rotateKmsKeyForOrg = async({ org, metroConf })=>{
+const rotateKmsKeyForOrg = async({ org, metroConf })=>{
   if(!org || !org._id){
     throw new Error('pass an org to rotateKmsKeyForOrg()');
   }
   if(!metroConf){
     throw new Error('rotateKmsKeyForOrg requires metroConf in input');
   }
-  var crn = org.kms.crn;
+  const crn = org.kms.crn;
   if(!crn){
     throw new Error('org doesnt have a kms crn');
   }
   await rotateKey({ crn, metroConf });
-  var sets = {
+  const sets = {
     'kms.lastRotateTime': new Date(),
   };
   await models.Organization.updateOne({ _id: org._id }, { $set: sets });
