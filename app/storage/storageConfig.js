@@ -43,9 +43,7 @@ class StorageConfig {
         connection.signatureVersion = 'v4';
         connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
         connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
-        let kmsEnabled = (env['S3_' + metro + '_KMS_ENABLED'] || env.S3_KMS_ENABLED || null);
-        kmsEnabled = !!(kmsEnabled && !_.includes(['false', '0'], kmsEnabled));
-        connection.kmsEnabled = kmsEnabled;
+        connection.kmsEnabled = (process.env.KMS_COS_ENABLED && !(process.env.KMS_COS_ENABLED.trim().toLowerCase() === 'false'));
         connection.kmsEndpoint = env['S3_' + metro + '_KMS_ENDPOINT'] || env.S3_KMS_ENDPOINT || '';
         connection.kmsApiKey = env['S3_' + metro + '_KMS_API_KEY'] || env.S3_KMS_API_KEY|| '';
         connection.kmsBluemixInstanceGuid = env['S3_' + metro + '_KMS_BLUEMIX_INSTANCE_GUID'] || env.S3_KMS_BLUEMIX_INSTANCE_GUID || '';
