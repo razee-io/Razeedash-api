@@ -39,6 +39,7 @@ class StorageConfig {
         connection.locationConstraint = env['S3_' + metro + '_LOCATION_CONSTRAINT'];
         connection.s3ForcePathStyle = true;
         connection.signatureVersion = 'v4';
+        connection.channelBucket = env['S3_' + metro + '_CHANNEL_BUCKET'] || env.S3_CHANNEL_BUCKET || 'razee';
         connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
         connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
         connection.kmsEnabled = (process.env.KMS_COS_ENABLED && !(process.env.KMS_COS_ENABLED.trim().toLowerCase() === 'false'));

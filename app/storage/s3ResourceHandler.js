@@ -23,15 +23,15 @@ const _ = require('lodash');
 
 class S3ResourceHandler {
 
-  getBucketNameFromBucketConfObj({ bucketConfObj }){
-    if(!bucketConfObj){
-      throw new Error('bucketConfObj is required');
+  getBucketNameFromBucketConfObj({ bucketConfObj, locationConfig }){
+    if(!bucketConfObj || !locationConfig){
+      throw new Error('required args: { bucketConfObj, locationConfig }');
     }
     if(bucketConfObj.kind == 'configs'){
-      return process.env.S3_CHANNEL_BUCKET;
+      return locationConfig.channelBucket;
     }
     else if(bucketConfObj.kind == 'resources'){
-      return process.env.S3_RESOURCE_BUCKET;
+      return locationConfig.resourceBucket;
     }
     throw new Error(`invalid kind "${bucketConfObj.kind}"`);
   }
@@ -45,8 +45,16 @@ class S3ResourceHandler {
     if(location){
       bucketConfObj.location = location;
     }
+    bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
+    if (bucketConfObj.location) {
+      bucketConfObj.location = bucketConfObj.location.toLowerCase();
+    }
+    const locationConfig = conf.storage.s3ConnectionMap.get(bucketConfObj.location);
+    if (!locationConfig) {
+      throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
+    }
     if(!bucketName){
-      bucketName = this.getBucketNameFromBucketConfObj({ bucketConfObj });
+      bucketName = this.getBucketNameFromBucketConfObj({ bucketConfObj, locationConfig });
     }
     this.logger = logger;
     if (!path || !bucketName) {
@@ -56,14 +64,7 @@ class S3ResourceHandler {
     this.bucketName = bucketName;
     this.org = org;
 
-    bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
-    if (bucketConfObj.location) {
-      bucketConfObj.location = bucketConfObj.location.toLowerCase();
-    }
-    const locationConfig = conf.storage.s3ConnectionMap.get(bucketConfObj.location);
-    if (!locationConfig) {
-      throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
-    }
+
 
     let config = {
       endpoint: endpoint || locationConfig.endpoint,
