@@ -23,6 +23,19 @@ const _ = require('lodash');
 
 class S3ResourceHandler {
 
+  getBucketNameFromBucketConfObj({ bucketConfObj }){
+    if(!bucketConfObj){
+      throw new Error('bucketConfObj is required');
+    }
+    if(bucketConfObj.kind == 'configs'){
+      return process.env.S3_CHANNEL_BUCKET;
+    }
+    else if(bucketConfObj.kind == 'resources'){
+      return process.env.S3_RESOURCE_BUCKET;
+    }
+    throw new Error(`invalid kind "${bucketConfObj.kind}"`);
+  }
+
   constructor(args) {
     let { logger, path, bucketName=null, bucketConfObj=null, location, endpoint, org } = args;
     if(!bucketConfObj && !bucketName){
@@ -33,7 +46,7 @@ class S3ResourceHandler {
       bucketConfObj.location = location;
     }
     if(!bucketName){
-      bucketName = conf.storage.getResourceBucket(location);
+      bucketName = this.getBucketNameFromBucketConfObj({ bucketConfObj });
     }
     this.logger = logger;
     if (!path || !bucketName) {
@@ -41,6 +54,7 @@ class S3ResourceHandler {
     }
     this.path = path;
     this.bucketName = bucketName;
+    this.org = org;
 
     bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
     if (bucketConfObj.location) {

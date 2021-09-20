@@ -63,12 +63,6 @@ class StorageConfig {
       this.defaultHandler = 'embedded';
     }
   }
-
-  getResourceBucket(location) {
-    location = location ? location.toLowerCase() : this.defaultLocation;
-    const connection = this.s3ConnectionMap.get(location);
-    return connection ? connection.resourceBucket : undefined;
-  }
 }
 
 module.exports = StorageConfig;
