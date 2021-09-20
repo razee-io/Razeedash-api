@@ -58,7 +58,7 @@ class StorageConfig {
       this.defaultLocation = this.s3ConnectionMap.size > 0 ? (env.S3_DEFAULT_LOCATION || metroArray[0]).toLowerCase() : undefined;
       this.sslEnabled = !env.S3_DISABLE_SSL; // for local minio support
       this.sdk = require(env.COS_SDK || 'aws-sdk'); // also works with 'ibm-cos-sdk' and 'mock-aws-s3'
-      this.defaultHandler = 's3';
+      this.defaultHandler = 's3OrgBucket';
     } else {
       this.defaultHandler = 'embedded';
     }
