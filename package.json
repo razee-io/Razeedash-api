@@ -82,7 +82,7 @@
     "mock-aws-s3": "^4.0.2",
     "moment": "^2.29.1",
     "mongodb": "^3.6.5",
-    "mongoose": "^6.0.7",
+    "mongoose": "^5.13.9",
     "mongoose-lean-defaults": "^2.0.1",
     "mongoose-lean-virtuals": "^0.8.1",
     "mustache": "^4.1.0",
