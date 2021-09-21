@@ -19,7 +19,6 @@
 const conf = require('./../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
-const { v4: uuid } = require('uuid');
 const { models } = require('../apollo/models');
 const _ = require('lodash');
 
@@ -120,7 +119,8 @@ class S3OrgBucketResourceHandler {
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/_{2,}/g, '_')
     ;
-    let uniqId = uuid();
+    const uniqIdLen = 8;
+    let uniqId = Math.random().toString(36).substr(2, uniqIdLen);
     bucketName = `${bucketKeyClean}_${org._id}_${uniqId}`;
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
