@@ -19,7 +19,6 @@
 const conf = require('./../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
-const { v4: uuid } = require('uuid');
 const { models } = require('../apollo/models');
 const _ = require('lodash');
 
