@@ -115,13 +115,14 @@ class S3OrgBucketResourceHandler {
       return bucketName;
     }
     // if not in db, creates it
-    let bucketKeyClean = bucketKey
-      .replace(/[^a-z0-9_]/g, '_')
-      .replace(/_{2,}/g, '_')
-    ;
     const uniqIdLen = 8;
     let uniqId = Math.random().toString(36).substr(2, uniqIdLen);
-    bucketName = `${bucketKeyClean}_${org._id}_${uniqId}`;
+    bucketName = `${bucketKey}-${org._id}-${uniqId}`;
+    bucketName = bucketName.toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-{2,}/g, '-')
+    ;
+
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
 
