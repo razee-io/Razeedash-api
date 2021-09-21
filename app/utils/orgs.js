@@ -71,7 +71,7 @@ const decryptOrgData = (orgKey, data) => {
 };
 
 const getKmsKeyForOrg = async({ org, metroConf })=>{
-  if(!org?._id){
+  if(!org || !org._id){
     throw new Error('genKmsKeyForOrg requires an org as input');
   }
   if(!metroConf){
