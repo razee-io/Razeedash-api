@@ -120,7 +120,7 @@ class S3OrgBucketResourceHandler {
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/_{2,}/g, '_')
     ;
-    let uniqId = uuid();
+    let uniqId = uuid().slice(0,8);
     bucketName = `${bucketKeyClean}_${org._id}_${uniqId}`;
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
