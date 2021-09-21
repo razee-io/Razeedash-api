@@ -144,3 +144,4 @@ const deserializer = (args) => {
 };
 
 module.exports = { constructor, deserializer };
+
