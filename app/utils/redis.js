@@ -7,16 +7,10 @@ let client;
 
 const createClient = ()=>{
   const url = process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
-  let tlsOption;
+  const options = {};
   if(process.env.REDIS_CERTIFICATE_PATH){
-    tlsOption = { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] };
+    options.tls = { ca: [fs.readFileSync(process.env.REDIS_CERTIFICATE_PATH)] };
   }
-  else{
-    tlsOption = { rejectUnauthorized: false };
-  }
-  const options = {
-    tls: tlsOption,
-  };
   client = new Redis(url, options);
   return client;
 };
