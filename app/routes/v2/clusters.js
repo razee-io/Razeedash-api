@@ -132,7 +132,7 @@ function pushToS3Sync(org, key, searchableDataHash, dataStr, data_location, logg
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
   const path = `${org._id}/${keyHash}/${searchableDataHash}`;
-  const factory = storageFactory({ logger });
+  const factory = storageFactory(logger);
   const handler = factory.newResourceHandler({ path, bucketConfObj, org });
   result.promise = handler.setData(dataStr);
   result.encodedData = handler.serialize();

@@ -315,7 +315,7 @@ const channelResolvers = {
         location: data_location,
         kind: 'configs',
       };
-      const handler = storageFactory(logger).newResourceHandler({ path, bucketConfObj });
+      const handler = storageFactory(logger).newResourceHandler({ path, bucketConfObj, org });
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
 
