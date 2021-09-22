@@ -64,8 +64,13 @@ class StorageFactory {
     this.logger = (logger || initLogger);
   }
 
-  newResourceHandler(resourceKey, bucketName, location) {
-    const targetHandler = config.defaultHandler.constructor(this.logger, resourceKey, bucketName, location);
+  newResourceHandler(args={}) {
+    // let { path, bucketConfObj, location, endpoint, org } = args;
+    // sends an obj to the constructor, which contains all passed in `args` with a `logger` attr add in
+    const targetHandler = config.defaultHandler.constructor({
+      logger: this.logger,
+      ...args,
+    });
     return new ResourceStorageHandler(targetHandler, { type: config.defaultHandlerType });
   }
 
@@ -85,7 +90,7 @@ class StorageFactory {
     if (!handler) {
       throw new Error(`Resource handler implementation for type ${handlerType} is not defined`);
     }
-    return new ResourceStorageHandler(handler.deserializer(this.logger, encodedResource.data), encodedResource.metadata);
+    return new ResourceStorageHandler(handler.deserializer({ logger: this.logger, data: encodedResource.data }), encodedResource.metadata);
   }
 
   isLink(s) {

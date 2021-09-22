@@ -309,8 +309,13 @@ const channelResolvers = {
       }
 
       const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
-      const bucketName = conf.storage.getChannelBucket(channel.data_location);
-      const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
+      const { data_location=null } = channel;
+      const bucketConfObj = {
+        type: 'active',
+        location: data_location,
+        kind: 'configs',
+      };
+      const handler = storageFactory(logger).newResourceHandler({ path, bucketConfObj, org });
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
       const data = handler.serialize();
 

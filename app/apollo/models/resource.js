@@ -17,7 +17,7 @@
 const mongoose = require('mongoose');
 const ResourceSchema = require('./resource.schema');
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
-const mongooseLeanDefaults = require('mongoose-lean-defaults');
+const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 
 ResourceSchema.plugin(mongooseLeanVirtuals);
 ResourceSchema.plugin(mongooseLeanDefaults);
