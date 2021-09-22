@@ -69,8 +69,11 @@ class S3OrgBucketResourceHandler {
   getBucketKey(){
     let { bucketConfObj, org } = this;
     let { type } = bucketConfObj;
-    if(!type || !org || !org._id){
-      throw new Error('bucketConfObj needs attrs: { type, org }');
+    if(!type){
+      throw new Error('bucketConfObj needs attrs: { type }');
+    }
+    if(!org || !org._id){
+      throw new Error('handler needs attrs: { org }');
     }
     if(type == 'active'){
       let { location, kind } = bucketConfObj;
