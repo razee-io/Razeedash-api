@@ -5,7 +5,6 @@ const { createLogger } = require('../log');
 const logger = createLogger('keyProtect');
 
 const genKmsKey = async({ name, locationConfig })=>{
-  console.log(66666, locationConfig)
   const authenticator = new IamAuthenticator({
     apikey: locationConfig.kmsApiKey,
     url: locationConfig.kmsIamAuthUrl,

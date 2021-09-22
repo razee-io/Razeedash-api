@@ -122,7 +122,7 @@ module.exports = class S3NewClient {
             LocationConstraint: this.locationConfig.locationConstraint,
           },
         };
-console.log(55555, this.locationConfig, org)
+
         // if using kms, updates the creation options to specify the key info
         if(this.locationConfig.kmsEnabled && org){
           const crn = await getKmsKeyForOrg({ org, locationConfig: this.locationConfig });
@@ -132,7 +132,7 @@ console.log(55555, this.locationConfig, org)
             IBMServiceInstanceId: this.locationConfig.kmsBluemixInstanceGuid,
           });
         }
-console.log(44444, options)
+
         // creates the bucket
         const out = this.s3.createBucket(options).promise();
 

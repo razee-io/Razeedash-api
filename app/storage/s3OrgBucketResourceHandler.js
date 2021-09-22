@@ -122,7 +122,6 @@ class S3OrgBucketResourceHandler {
       .replace(/[^a-z0-9-]/g, '-')
       .replace(/-{2,}/g, '-')
     ;
-    console.log(77777, bucketName, bucketKey, uniqId)
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
 
