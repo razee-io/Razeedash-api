@@ -249,7 +249,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     });
   }
   if(queryFields.resources){
-    const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids } };
+    const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids }, deleted: false };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
     var resources = await loadResourcesWithSearchAndArgs({
       search,
