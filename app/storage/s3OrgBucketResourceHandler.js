@@ -67,21 +67,24 @@ class S3OrgBucketResourceHandler {
   }
 
   getBucketKey(){
-    let { bucketConfObj } = this;
+    let { bucketConfObj, org } = this;
     let { type } = bucketConfObj;
     if(!type){
       throw new Error('bucketConfObj needs attrs: { type }');
+    }
+    if(!org || !org._id){
+      throw new Error('handler needs attrs: { org }');
     }
     if(type == 'active'){
       let { location, kind } = bucketConfObj;
       if(!location || !kind){
         throw new Error('bucketConfObj of type "active" needs location and kind attrs');
       }
-      return `${bucketConfObj.location}_${bucketConfObj.kind}`;
+      return `${bucketConfObj.location}-${bucketConfObj.kind}-${org._id}`;
     }
     else if(type == 'backup'){
       let { location, period } = bucketConfObj;
-      return `backup_${location}_${period}`;
+      return `backup-${location}-${org._id}-${period}`;
     }
     else{
       throw new Error(`unhandled type "${type}"`);
@@ -117,12 +120,11 @@ class S3OrgBucketResourceHandler {
     // if not in db, creates it
     const uniqIdLen = 8;
     let uniqId = Math.random().toString(36).substr(2, uniqIdLen);
-    bucketName = `${bucketKey}-${org._id}-${uniqId}`;
+    bucketName = `${bucketKey}-${uniqId}`;
     bucketName = bucketName.toLowerCase()
       .replace(/[^a-z0-9-]/g, '-')
       .replace(/-{2,}/g, '-')
     ;
-
 
     await this.s3NewClient.createBucket(bucketName, { bucketKey, org });
 
@@ -139,7 +141,7 @@ class S3OrgBucketResourceHandler {
       throw new Error(`unhandled type "${type}"`);
     }
     await models.Organization.updateOne({ _id: org._id }, { $set: sets });
-    return bucketKey;
+    return bucketName;
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {

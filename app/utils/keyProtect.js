@@ -4,20 +4,20 @@ const { IamAuthenticator } = require('@ibm-cloud/ibm-key-protect/auth');
 const { createLogger } = require('../log');
 const logger = createLogger('keyProtect');
 
-const genKmsKey = async({ name, metroConf })=>{
+const genKmsKey = async({ name, locationConfig })=>{
   const authenticator = new IamAuthenticator({
-    apikey: metroConf.kmsApiKey,
-    url: metroConf.kmsIamAuthUrl,
+    apikey: locationConfig.kmsApiKey,
+    url: locationConfig.kmsIamAuthUrl,
   });
   const keyProtectClient = new KeyProtectV2({
     authenticator,
-    serviceUrl: metroConf.kmsEndpoint,
+    serviceUrl: locationConfig.kmsEndpoint,
   });
   const envConfig = {
-    apiKey: metroConf.kmsApiKey,
-    iamAuthUrl: metroConf.kmsIamAuthUrl,
-    serviceUrl: metroConf.kmsEndpoint,
-    bluemixInstance: metroConf.kmsBluemixInstanceGuid,
+    apiKey: locationConfig.kmsApiKey,
+    iamAuthUrl: locationConfig.kmsIamAuthUrl,
+    serviceUrl: locationConfig.kmsEndpoint,
+    bluemixInstance: locationConfig.kmsBluemixInstanceGuid,
   };
   const body = {
     metadata: {
@@ -39,30 +39,30 @@ const genKmsKey = async({ name, metroConf })=>{
   return result.result.resources[0].crn;
 };
 
-const rotateKey = async({ crn, metroConf })=>{
+const rotateKey = async({ crn, locationConfig })=>{
   if(!crn){
     throw new Error('crn is required for rotateKey()');
   }
-  if(!metroConf){
-    throw new Error('metroConf is required for rotateKey()');
+  if(!locationConfig){
+    throw new Error('locationConfig is required for rotateKey()');
   }
   const keyId = _.last(crn.split(':'));
   if(!keyId){
     throw new Error('unable to find kms key id in crn');
   }
   const authenticator = new IamAuthenticator({
-    apikey: metroConf.kmsApiKey,
-    url: metroConf.kmsIamAuthUrl,
+    apikey: locationConfig.kmsApiKey,
+    url: locationConfig.kmsIamAuthUrl,
   });
   const keyProtectClient = new KeyProtectV2({
     authenticator,
-    serviceUrl: metroConf.kmsEndpoint,
+    serviceUrl: locationConfig.kmsEndpoint,
   });
   const envConfig = {
-    apiKey: metroConf.kmsApiKey,
-    iamAuthUrl: metroConf.kmsIamAuthUrl,
-    serviceUrl: metroConf.kmsEndpoint,
-    bluemixInstance: metroConf.kmsBluemixInstanceGuid,
+    apiKey: locationConfig.kmsApiKey,
+    iamAuthUrl: locationConfig.kmsIamAuthUrl,
+    serviceUrl: locationConfig.kmsEndpoint,
+    bluemixInstance: locationConfig.kmsBluemixInstanceGuid,
   };
   try{
     const result = await keyProtectClient.rotateKey({

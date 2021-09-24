@@ -70,12 +70,12 @@ const decryptOrgData = (orgKey, data) => {
   return tokenCrypt.decrypt(data, orgKey);
 };
 
-const getKmsKeyForOrg = async({ org, metroConf })=>{
+const getKmsKeyForOrg = async({ org, locationConfig })=>{
   if(!org || !org._id){
     throw new Error('genKmsKeyForOrg requires an org as input');
   }
-  if(!metroConf){
-    throw new Error('genKmsKeyForOrg requires metroConf in input');
+  if(!locationConfig){
+    throw new Error('genKmsKeyForOrg requires locationConfig in input');
   }
   let crn = _.get(org, 'kms.crn');
   if(crn){
@@ -83,7 +83,7 @@ const getKmsKeyForOrg = async({ org, metroConf })=>{
     return crn;
   }
   const name = `s3_org_encryption_key_${org._id}`;
-  crn = await genKmsKey({ name, metroConf });
+  crn = await genKmsKey({ name, locationConfig });
   const search = {
     _id: org._id,
   };
@@ -96,18 +96,18 @@ const getKmsKeyForOrg = async({ org, metroConf })=>{
   return crn;
 };
 
-const rotateKmsKeyForOrg = async({ org, metroConf })=>{
+const rotateKmsKeyForOrg = async({ org, locationConfig })=>{
   if(!org || !org._id){
     throw new Error('pass an org to rotateKmsKeyForOrg()');
   }
-  if(!metroConf){
-    throw new Error('rotateKmsKeyForOrg requires metroConf in input');
+  if(!locationConfig){
+    throw new Error('rotateKmsKeyForOrg requires locationConfig in input');
   }
   const crn = org.kms.crn;
   if(!crn){
     throw new Error('org doesnt have a kms crn');
   }
-  await rotateKey({ crn, metroConf });
+  await rotateKey({ crn, locationConfig });
   const sets = {
     'kms.lastRotateTime': new Date(),
   };
