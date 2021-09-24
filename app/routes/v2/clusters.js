@@ -196,6 +196,7 @@ const updateClusterResources = async (req, res, next) => {
       res.status(400).send('Missing resource body');
       return;
     }
+    req.log.info({ operation: 'starting updateClusterResources', clusterId }, 'satcon-performance');
 
     let resources = body;
     if (!Array.isArray(resources)) {
@@ -226,6 +227,7 @@ const updateClusterResources = async (req, res, next) => {
             } else {
               selfLink = resource.object.metadata.selfLink;
             }
+            req.log.info({ operation: 'building dataStr for updateClusterResources', clusterId, selfLink }, 'satcon-performance');
             const key = {
               org_id: req.org._id,
               cluster_id: req.params.cluster_id,
@@ -279,7 +281,7 @@ const updateClusterResources = async (req, res, next) => {
               let start = Date.now();
               s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
               dataStr=s3UploadWithPromiseResponse.encodedData;
-              s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
+              s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key, clusterId, selfLink }, 'satcon-performance');};
             }
             var changes = null;
             var options = {};
@@ -381,7 +383,7 @@ const updateClusterResources = async (req, res, next) => {
             let start = Date.now();
             s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
             dataStr = s3UploadWithPromiseResponse.encodedData;
-            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
+            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key, clusterId: req.params.cluster_id, selfLink }, 'satcon-performance'); };
             if (currentResource) {
               let start = Date.now();
               await Resources.updateOne(
