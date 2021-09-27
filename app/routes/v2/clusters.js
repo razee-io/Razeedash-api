@@ -191,6 +191,7 @@ const syncClusterResources = async(req, res)=>{
 const updateClusterResources = async (req, res, next) => {
   try {
     var clusterId = req.params.cluster_id;
+    if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [start]' );
     const body = req.body;
     if (!body) {
       res.status(400).send('Missing resource body');
@@ -217,6 +218,7 @@ const updateClusterResources = async (req, res, next) => {
           case 'POLLED':
           case 'MODIFIED':
           case 'ADDED': {
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [POLLED/MODIFIED/ADDED start]' );
             let beginTime = Date.now();
             const resourceHash = buildHashForResource(resource.object, req.org);
             let dataStr = JSON.stringify(resource.object);
@@ -266,6 +268,7 @@ const updateClusterResources = async (req, res, next) => {
             let start = Date.now();
             const remoteResource = await Resources.findOne(rrSearchKey);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.remoteResource', 'data': rrSearchKey}, 'satcon-performance');
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after remoteResource.findOne]' );
             if(remoteResource) {
               searchableDataObj['subscription_id'] = remoteResource.searchableData['annotations["deploy_razee_io_clustersubscription"]'];
               searchableDataObj['searchableExpression'] = searchableDataObj['searchableExpression'] + ':' + searchableDataObj['subscription_id'];
@@ -275,6 +278,7 @@ const updateClusterResources = async (req, res, next) => {
             start = Date.now();
             const currentResource = await Resources.findOne(key);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.currentResource', 'data': key}, 'satcon-performance');
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [resources.findOne]' );
             const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             if (!currentResource || resourceHash !== currentResource.hash) {
@@ -299,8 +303,10 @@ const updateClusterResources = async (req, res, next) => {
                 if(hasSearchableDataChanges) {
                   // if any of the searchable attrs has changes, then save a new yaml history obj (for diffing in the ui)
                   let start = Date.now();
+                  if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before addResourceYamlHist]' );
                   const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
                   req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:hasSearchableDataChanges', 'data': clusterId}, 'satcon-performance');
+                  if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after addResourceYamlHist]' );
                   toSet['histId'] = histId;
                 }
                 // if obj in db and theres changes to save
@@ -314,8 +320,10 @@ const updateClusterResources = async (req, res, next) => {
             else{
               // adds the yaml hist item too
               let start = Date.now();
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before addResourceYamlHist]' );
               const histId = await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, dataStr);
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after addResourceYamlHist]' );
 
               // if obj not in db, then adds it
               const total = await Resources.count({org_id:  req.org._id, deleted: false});
@@ -323,6 +331,7 @@ const updateClusterResources = async (req, res, next) => {
                 res.status(400).send({error: 'Too many resources are registered under this organization.'});
                 return;
               }
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after resources.count]' );
               changes = {
                 $set: { deleted: false, hash: resourceHash, histId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
                 $currentDate: { created: true, updated: true, lastModified: true },
@@ -337,6 +346,7 @@ const updateClusterResources = async (req, res, next) => {
             start = Date.now();
             const result = await Resources.updateOne(key, changes, options);
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.newResource', 'data': key}, 'satcon-performance');
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after resources.updateOne]' );
             // publish notification to graphql
             if (result) {
               let resourceId = null;
@@ -348,10 +358,12 @@ const updateClusterResources = async (req, res, next) => {
                 resourceCreated = currentResource.created;
               }
               if (resourceId) {
+                if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before pubSub.resourceChangedFunc]' );
                 pubSub.resourceChangedFunc(
                   {_id: resourceId, data: dataStr, created: resourceCreated,
                     deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
                     hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
+                if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after pubSub.resourceChangedFunc]' );
               }
             }
             if(s3UploadWithPromiseResponse!==undefined){
@@ -362,6 +374,7 @@ const updateClusterResources = async (req, res, next) => {
             break;
           }
           case 'DELETED': {
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [DELETED start]' );
             let beginTime = Date.now();
             let s3UploadWithPromiseResponse;
             let selfLink;
@@ -379,6 +392,7 @@ const updateClusterResources = async (req, res, next) => {
             const searchableDataObj = buildSearchableDataForResource(req.org, resource.object, { clusterId });
             const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
             const currentResource = await Resources.findOne(key);
+            if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) resource.findOne]' );
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
             let start = Date.now();
             s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
@@ -386,6 +400,7 @@ const updateClusterResources = async (req, res, next) => {
             s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key, clusterId: req.params.cluster_id, selfLink }, 'satcon-performance'); };
             if (currentResource) {
               let start = Date.now();
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before (deleted) resource.updateOne]' );
               await Resources.updateOne(
                 key, {
                   $set: { deleted: true, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
@@ -394,9 +409,12 @@ const updateClusterResources = async (req, res, next) => {
                 }
               );
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) resource.updateOne]' );
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) addResourceYamlHistObj]' );
               pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id,
                 cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
+              if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) pubSub.resourceChangedFunc]' );
             }
             if (s3UploadWithPromiseResponse !== undefined) {
               await s3UploadWithPromiseResponse.promise;
