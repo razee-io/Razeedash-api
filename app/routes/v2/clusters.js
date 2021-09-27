@@ -211,8 +211,7 @@ const updateClusterResources = async (req, res, next) => {
     const data_location = cluster.registration.data_location;
 
     const limit = pLimit(10);
-    let errorCount = 0;
-    let successCount = 0;
+    let errors = [];
     await Promise.all(resources.map(async (resource) => {
       try{
         return limit(async() => {
@@ -523,21 +522,18 @@ const updateClusterResources = async (req, res, next) => {
               throw new Error(`Unsupported event ${resource.type}`);
             }
           }
-          successCount += 1;
         });
-
       }
       catch(err){
-        errorCount += 1;
+        errors.push(err);
       }
     }));
-    let msg = 'Thanks';
-    let status = 200;
-    if(errorCount > 0){
-      status = 500;
-      msg = `${successCount} successes, ${errorCount} errors`;
+    if(errors.length > 0){
+      req.log.error(errors[0].message);
+      next(errors[0]);
+      return;
     }
-    res.status(status).send(msg);
+    res.status(200).send('Thanks');
   } catch (err) {
     req.log.error(err.message);
     next(err);
