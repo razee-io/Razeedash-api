@@ -190,7 +190,7 @@ const syncClusterResources = async(req, res)=>{
 
 const updateClusterResources = async (req, res, next) => {
   try {
-    var clusterId = req.params.cluster_id;
+    const clusterId = req.params.cluster_id;
     if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [start]' );
     const body = req.body;
     if (!body) {
@@ -232,7 +232,7 @@ const updateClusterResources = async (req, res, next) => {
             req.log.info({ operation: 'building dataStr for updateClusterResources', clusterId, selfLink }, 'satcon-performance');
             const key = {
               org_id: req.org._id,
-              cluster_id: req.params.cluster_id,
+              cluster_id: clusterId,
               selfLink: selfLink
             };
             let searchableDataObj = buildSearchableDataForResource(req.org, resource.object, { clusterId });
@@ -241,7 +241,7 @@ const updateClusterResources = async (req, res, next) => {
               // if children arrives earlier than this RR without subscription_id, update children's subscription_id
               const childSearchKey = {
                 org_id: req.org._id,
-                cluster_id: req.params.cluster_id,
+                cluster_id: clusterId,
                 selfLink: {$in: searchableDataObj.children},
                 'searchableData.subscription_id': {$exists: false},
                 deleted: false
@@ -260,7 +260,7 @@ const updateClusterResources = async (req, res, next) => {
             }
             const rrSearchKey =  {
               org_id: req.org._id,
-              cluster_id: req.params.cluster_id,
+              cluster_id: clusterId,
               'searchableData.kind': 'RemoteResource',
               'searchableData.children': selfLink,
               deleted: false
@@ -361,7 +361,7 @@ const updateClusterResources = async (req, res, next) => {
                 if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before pubSub.resourceChangedFunc]' );
                 pubSub.resourceChangedFunc(
                   {_id: resourceId, data: dataStr, created: resourceCreated,
-                    deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
+                    deleted: false, org_id: req.org._id, cluster_id: clusterId, selfLink: selfLink,
                     hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
                 if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after pubSub.resourceChangedFunc]' );
               }
@@ -386,7 +386,7 @@ const updateClusterResources = async (req, res, next) => {
             let dataStr = JSON.stringify(resource.object);
             const key = {
               org_id: req.org._id,
-              cluster_id: req.params.cluster_id,
+              cluster_id: clusterId,
               selfLink: selfLink
             };
             const searchableDataObj = buildSearchableDataForResource(req.org, resource.object, { clusterId });
@@ -397,7 +397,7 @@ const updateClusterResources = async (req, res, next) => {
             let start = Date.now();
             s3UploadWithPromiseResponse = pushToS3Sync(req.org, key, searchableDataHash, dataStr, data_location, req.log);
             dataStr = s3UploadWithPromiseResponse.encodedData;
-            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key, clusterId: req.params.cluster_id, selfLink }, 'satcon-performance'); };
+            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key, clusterId: clusterId, selfLink }, 'satcon-performance'); };
             if (currentResource) {
               let start = Date.now();
               if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [before (deleted) resource.updateOne]' );
@@ -413,7 +413,7 @@ const updateClusterResources = async (req, res, next) => {
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
               if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) addResourceYamlHistObj]' );
               pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id,
-                cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
+                cluster_id: clusterId, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
               if( !req.params.cluster_id ) req.log.error( 'Cluster ID now lost at point [after (deleted) pubSub.resourceChangedFunc]' );
             }
             if (s3UploadWithPromiseResponse !== undefined) {
