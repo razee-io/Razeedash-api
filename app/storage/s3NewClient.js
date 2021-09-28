@@ -134,7 +134,24 @@ module.exports = class S3NewClient {
         }
 
         // creates the bucket
-        const out = this.s3.createBucket(options).promise();
+        let out;
+        try{
+          out = await this.s3.createBucket(options).promise();
+        }
+        catch(err){
+          this.logger.error({ bucketName, bucketKey }, 'failed to create bucket');
+          try{
+            const allBuckets = await this.listBuckets();
+            const allBucketNames = _.map(allBuckets.Buckets, 'Name');
+            const bucketCount = allBucketNames.length;
+            this.logger.info({ bucketCount }, 'total current bucket count');
+            this.logger.info({ allBucketNames }, 'existing bucket names');
+          }
+          catch(err2){
+            this.logger.error('failed to get full bucket list');
+          }
+          reject(err);
+        }
 
         // resolves the promise with the bucket create info
         resolve(out);
@@ -175,5 +192,8 @@ module.exports = class S3NewClient {
     }).promise();
   }
 
+  async listBuckets(){
+    return this.s3.listBuckets().promise();
+  }
 };
 
