@@ -23,6 +23,8 @@ const { getRedisClient } = require('../utils/redis');
 const RedisLock = require('ioredis-lock');
 const delay = require('delay');
 
+let alreadyLoggedBucketList = false;
+
 module.exports = class S3NewClient {
 
   static bucketCreatePromises = {};
@@ -134,7 +136,30 @@ module.exports = class S3NewClient {
         }
 
         // creates the bucket
-        const out = this.s3.createBucket(options).promise();
+        let out;
+        try{
+          out = await this.s3.createBucket(options).promise();
+        }
+        catch(err){
+          this.logger.error({ bucketName, bucketKey }, 'failed to create bucket');
+          if(!alreadyLoggedBucketList){
+            alreadyLoggedBucketList = true;
+            this.logger.error('trying to log all existing bucket names');
+            try{
+              const allBuckets = await this.listBuckets();
+              const allBucketNames = _.map(allBuckets.Buckets, 'Name');
+              const bucketCount = allBucketNames.length;
+              this.logger.info({ bucketCount }, 'total current bucket count');
+              _.each(_.chunk(allBucketNames, 20), (bucketNames)=>{
+                this.logger.info({ bucketNames }, 'some existing bucket names');
+              });
+            }
+            catch(err2){
+              this.logger.error('failed to get full bucket list');
+            }
+          }
+          reject(err);
+        }
 
         // resolves the promise with the bucket create info
         resolve(out);
@@ -175,5 +200,8 @@ module.exports = class S3NewClient {
     }).promise();
   }
 
+  async listBuckets(){
+    return this.s3.listBuckets().promise();
+  }
 };
 
