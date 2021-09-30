@@ -23,7 +23,7 @@ const { getRedisClient } = require('../utils/redis');
 const RedisLock = require('ioredis-lock');
 const delay = require('delay');
 
-let alreadyLoggedBucketList = false;
+let alreadyTryingToLogBucketList = false;
 
 module.exports = class S3NewClient {
 
@@ -44,8 +44,15 @@ module.exports = class S3NewClient {
     try {
       const exists = await this.bucketExists(bucketName);
       if (!exists) {
-        this.logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
-        await this.createBucket(bucketName, { org });
+        const createMissingBuckets = (process.env.S3_CREATE_MISSING_BUCKETS && process.env.S3_CREATE_MISSING_BUCKETS  != 'false');
+        if(createMissingBuckets){
+          this.logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
+          await this.createBucket(bucketName, {org});
+        }
+        else{
+          this.logger.error(`bucket '${bucketName}' does not exist, and S3_CREATE_MISSING_BUCKETS  not enabled`);
+          throw new Error(`bucket "${bucketName}" does not exist`);
+        }
       }
     } catch (err) {
       this.logger.error(`could not create bucket '${bucketName}'`, err);
@@ -142,8 +149,8 @@ module.exports = class S3NewClient {
         }
         catch(err){
           this.logger.error({ bucketName, bucketKey }, 'failed to create bucket');
-          if(!alreadyLoggedBucketList){
-            alreadyLoggedBucketList = true;
+          if(!alreadyTryingToLogBucketList){
+            alreadyTryingToLogBucketList = true;
             this.logger.error('trying to log all existing bucket names');
             try{
               const allBuckets = await this.listBuckets();

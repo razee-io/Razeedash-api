@@ -1,6 +1,5 @@
 {
     "s3": "app/storage/s3ResourceHandler",
-    "s3OrgBucket": "app/storage/s3OrgBucketResourceHandler",
     "embedded": "app/storage/embeddedResourceHandler",
     "s3legacy": "app/storage/legacyS3ResourceHandler"
 }
