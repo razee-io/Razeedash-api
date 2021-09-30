@@ -69,6 +69,7 @@ describe('Resource storage', () => {
   });
 
   it('S3 resource upload with encryption and download with decryption', async () => {
+    process.env.S3_CREATE_MISSING_BUCKETS = 'true';
     conf.storage = new StorageConfig({
       COS_SDK: 'mock-aws-s3',
       S3_LOCATIONS: ' WDC LON ',
@@ -114,6 +115,7 @@ describe('Resource storage', () => {
   });
 
   it('S3 async write resource into bucket without encryption', async () => {
+    process.env.S3_CREATE_MISSING_BUCKETS = 'true';
     conf.storage = new StorageConfig({
       COS_SDK: 'mock-aws-s3',
       S3_LOCATIONS: ' WDC',
