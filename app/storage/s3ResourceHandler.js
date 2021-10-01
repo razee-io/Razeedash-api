@@ -64,8 +64,6 @@ class S3ResourceHandler {
     this.bucketName = bucketName;
     this.org = org;
 
-
-
     let config = {
       endpoint: endpoint || locationConfig.endpoint,
       accessKeyId: locationConfig.accessKeyId,
