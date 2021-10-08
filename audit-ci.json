@@ -1,5 +1,6 @@
 {
   "low": true,
   "_allowlistDevDependencies": "Allowlist devDependencies 'glob-parent' and 'yarg-parser' when calling audit-ci.",
-  "allowlist": ["glob-parent", "yargs-parser"]
+  "allowlist": ["glob-parent", "yargs-parser"],
+  "skip-dev": true
 }
