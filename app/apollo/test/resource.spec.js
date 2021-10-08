@@ -253,15 +253,6 @@ const createResources = async () => {
     yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_02' },
     updated: new Date(),
   });
-  await models.ResourceYamlHist.create({
-    _id: 'resourceYamlHist_03_deleted',
-    org_id: org_01._id,
-    cluster_id: 'cluster_01',
-    resourceSelfLink: '/mybla/selfLink',
-    yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_03' },
-    deleted: true,
-    updated: new Date(),
-  });
 };
 
 const getPresetOrgs = async () => {

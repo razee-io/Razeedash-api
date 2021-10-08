@@ -17,48 +17,32 @@
 'use strict';
 
 const conf = require('./../conf').conf;
-const { getKmsKeyForOrg } = require('../utils/orgs');
-const _ = require('lodash');
-const { getRedisClient } = require('../utils/redis');
-const RedisLock = require('ioredis-lock');
-const delay = require('delay');
-
-let alreadyLoggedBucketList = false;
 
 module.exports = class S3NewClient {
 
-  static bucketCreatePromises = {};
-
-  s3 = null;
-  logger = null;
-  config = null;
-  locationConfig = null;
-  org = null;
-
-  constructor({ logger, config, locationConfig, org }) {
-    const s3 = new conf.storage.sdk.S3(config);
-    _.assign(this, { s3, logger, locationConfig, org });
+  constructor(logger, config, locationConstraint) {
+    this.logger = logger;
+    this.s3 = new conf.storage.sdk.S3(config);
+    this.locationConstraint = locationConstraint;
   }
 
-  async upload(bucketName, path, stringBufferOrStream, { org }={}) {
+  async upload(bucketName, path, stringBufferOrStream) {
     try {
       const exists = await this.bucketExists(bucketName);
       if (!exists) {
         this.logger.warn(`bucket '${bucketName}' does not exist, creating it ...`);
-        await this.createBucket(bucketName, { org });
+        await this.createBucket(bucketName);
       }
     } catch (err) {
       this.logger.error(`could not create bucket '${bucketName}'`, err);
       throw err;
     }
 
-    const s3UploadOptions = {
+    const awsStream = this.s3.upload({
       Bucket: bucketName,
       Key: path,
-      Body: stringBufferOrStream,
-      // SSECustomerAlgorithm: 'AES256',
-    };
-    const awsStream = this.s3.upload(s3UploadOptions);
+      Body: stringBufferOrStream
+    });
 
     return awsStream.promise();
   }
@@ -80,100 +64,13 @@ module.exports = class S3NewClient {
     }
   }
 
-  async createBucket(bucketName, { bucketKey=null, org=null }={}) {
-    // we dont want to run this function multiple times for an org, because then we'll have multiple keys generated
-    // this code lets us limit to only running once - even if getting called multiple times
-    // first, we keep track of a promise while we're running. if other requests happen before it finishes, we return the currently running promise
-    // then we use redisLock to limit to one pod running at any time. (if one's already running, then the lock fails)
-    // once we have a lock, we check if the bucket already exists. if so, we exit.
-    // then we create the kms key. and create the bucket, providing that key.
-    // once thats done, we release the lock and resolve the promise
-    bucketKey = bucketKey || bucketName;
-    if(S3NewClient.bucketCreatePromises[bucketKey]){
-      return await S3NewClient.bucketCreatePromises[bucketKey];
-    }
-    const p = new Promise(async(resolve, reject)=>{
-      try{
-        const lockName = `org_create_bucket_${bucketKey}`;
-
-        // mutex's the bucket/key creation by creating a redis lock
-        const redisClient = await getRedisClient();
-        const lock = RedisLock.createLock(redisClient, {
-          timeout: 20000,
-          retries: 10,
-          delay: 1000,
-        });
-        try {
-          await lock.acquire(lockName);
-        } catch (err) {
-          // if the lock fails, assumes another "thread" is already attempting to create the bucket.
-          // so waits for that to finish
-          await delay(10000);
-        }
-
-        // double checks whether the bucket has already been created
-        const exists = await this.bucketExists(bucketName);
-        if(exists){
-          resolve(true);
-          return;
-        }
-
-        let options = {
-          Bucket: bucketName,
-          CreateBucketConfiguration: {
-            LocationConstraint: this.locationConfig.locationConstraint,
-          },
-        };
-
-        // if using kms, updates the creation options to specify the key info
-        if(this.locationConfig.kmsEnabled && org){
-          const crn = await getKmsKeyForOrg({ org, locationConfig: this.locationConfig });
-          options = _.assign(options, {
-            IBMSSEKPCustomerRootKeyCrn: crn,
-            IBMSSEKPEncryptionAlgorithm: 'AES256',
-            IBMServiceInstanceId: this.locationConfig.kmsBluemixInstanceGuid,
-          });
-        }
-
-        // creates the bucket
-        let out;
-        try{
-          out = await this.s3.createBucket(options).promise();
-        }
-        catch(err){
-          this.logger.error({ bucketName, bucketKey }, 'failed to create bucket');
-          if(!alreadyLoggedBucketList){
-            alreadyLoggedBucketList = true;
-            this.logger.error('trying to log all existing bucket names');
-            try{
-              const allBuckets = await this.listBuckets();
-              const allBucketNames = _.map(allBuckets.Buckets, 'Name');
-              const bucketCount = allBucketNames.length;
-              this.logger.info({ bucketCount }, 'total current bucket count');
-              _.each(_.chunk(allBucketNames, 20), (bucketNames)=>{
-                this.logger.info({ bucketNames }, 'some existing bucket names');
-              });
-            }
-            catch(err2){
-              this.logger.error('failed to get full bucket list');
-            }
-          }
-          reject(err);
-        }
-
-        // resolves the promise with the bucket create info
-        resolve(out);
-
-        // unlocks
-        await lock.release();
-      }
-      catch(err){
-        reject(err);
-      }
-      delete S3NewClient.bucketCreatePromises[bucketKey];
-    });
-    S3NewClient.bucketCreatePromises[bucketKey] = p;
-    return p;
+  async createBucket(bucketName) {
+    return this.s3.createBucket({
+      Bucket: bucketName,
+      CreateBucketConfiguration: {
+        LocationConstraint: this.locationConstraint
+      },
+    }).promise();
   }
 
   async deleteObject(bucketName, key) {
@@ -200,8 +97,5 @@ module.exports = class S3NewClient {
     }).promise();
   }
 
-  async listBuckets(){
-    return this.s3.listBuckets().promise();
-  }
 };
 

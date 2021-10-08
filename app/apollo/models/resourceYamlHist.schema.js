@@ -31,10 +31,6 @@ const ResourceYamlHistSchema = new mongoose.Schema({
     type: String,
   },
   yamlStr: mongoose.Schema.Types.Mixed,
-  deleted: {
-    type: Boolean,
-    default: false,
-  },
   updated: {
     type: Date,
     default: Date.now,

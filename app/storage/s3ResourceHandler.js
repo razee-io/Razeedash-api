@@ -19,54 +19,28 @@
 const conf = require('./../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
-const _ = require('lodash');
 
 class S3ResourceHandler {
 
-  getBucketNameFromBucketConfObj({ bucketConfObj, locationConfig }){
-    if(!bucketConfObj || !locationConfig){
-      throw new Error('required args: { bucketConfObj, locationConfig }');
-    }
-    if(bucketConfObj.kind == 'configs'){
-      return locationConfig.channelBucket;
-    }
-    else if(bucketConfObj.kind == 'resources'){
-      return locationConfig.resourceBucket;
-    }
-    throw new Error(`invalid kind "${bucketConfObj.kind}"`);
-  }
-
-  constructor(args) {
-    let { logger, path, bucketName=null, bucketConfObj=null, location, endpoint, org } = args;
-    if(!bucketConfObj && !bucketName){
-      throw new Error('Pass a bucketConfObj or bucketName');
-    }
-    bucketConfObj = bucketConfObj || {};
-    if(location){
-      bucketConfObj.location = location;
-    }
-    bucketConfObj.location = bucketConfObj.location || conf.storage.defaultLocation;
-    if (bucketConfObj.location) {
-      bucketConfObj.location = bucketConfObj.location.toLowerCase();
-    }
-    const locationConfig = conf.storage.s3ConnectionMap.get(bucketConfObj.location);
-    if (!locationConfig) {
-      throw new Error(`Storage connection settings for '${bucketConfObj.location}' location are not configured`);
-    }
-    if(!bucketName){
-      bucketName = this.getBucketNameFromBucketConfObj({ bucketConfObj, locationConfig });
-    }
+  constructor(logger, resourceKey, bucketName, location, endpoint) {
     this.logger = logger;
-    if (!path || !bucketName) {
-      throw new Error(`Path (${path}) and/or bucket name (${bucketName}) is not specified`);
+    if (!resourceKey || !bucketName) {
+      throw new Error(`Path (${resourceKey}) and/or bucket name (${bucketName}) is not specified`);
     }
-    this.path = path;
+    this.resourceKey = resourceKey;
     this.bucketName = bucketName;
-    this.org = org;
 
+    this.location = location || conf.storage.defaultLocation;
+    if (this.location) {
+      this.location = this.location.toLowerCase();
+    }
 
+    const locationConfig = conf.storage.s3ConnectionMap.get(this.location);
+    if (!locationConfig) {
+      throw new Error(`Storage connection settings for '${this.location}' location are not configured`);
+    }
 
-    let config = {
+    this.config = {
       endpoint: endpoint || locationConfig.endpoint,
       accessKeyId: locationConfig.accessKeyId,
       secretAccessKey: locationConfig.secretAccessKey,
@@ -74,56 +48,49 @@ class S3ResourceHandler {
       signatureVersion: 'v4',
       sslEnabled: conf.storage.sslEnabled
     };
-    _.assign(this, {
-      bucketConfObj,
-      config,
-    });
 
-    this.s3NewClient = new S3ClientClass({
-      logger, config, locationConfig, org
-    });
+    this.s3NewClient = new S3ClientClass(this.logger, this.config, locationConfig.locationConstraint);
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
-    this.logInfo(`Uploading object ${this.bucketName}:${this.path} ...`);
+    this.logInfo(`Uploading object ${this.bucketName}:${this.resourceKey} ...`);
     const { encryptedBuffer, ivText } = cipher.encrypt(stringOrBuffer, key);
-    const result = await this.s3NewClient.upload(this.bucketName, this.path, encryptedBuffer);
+    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, encryptedBuffer);
     this.logInfo(`Uploaded object to ${result.Location}`);
     return ivText;
   }
 
   async setData(stringOrBuffer) {
-    this.logInfo(`Uploading object ${this.bucketName}:${this.path} ...`);
-    const result = await this.s3NewClient.upload(this.bucketName, this.path, stringOrBuffer);
+    this.logInfo(`Uploading object ${this.bucketName}:${this.resourceKey} ...`);
+    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, stringOrBuffer);
     this.logInfo(`Uploaded object to ${result.Location}`);
   }
 
   async getDataAndDecrypt(key, iv) {
-    this.logInfo(`Downloading object ${this.bucketName}:${this.path} ...`);
-    const response = await this.s3NewClient.getObject(this.bucketName, this.path);
+    this.logInfo(`Downloading object ${this.bucketName}:${this.resourceKey} ...`);
+    const response = await this.s3NewClient.getObject(this.bucketName, this.resourceKey);
     const encryptedBuffer = Buffer.from(response.Body);
     return cipher.decryptBuffer(encryptedBuffer, key, iv); // utf-8 text
   }
 
   async getData() {
-    this.logInfo(`Downloading object ${this.bucketName}:${this.path} ...`);
-    const response = await this.s3NewClient.getObject(this.bucketName, this.path);
+    this.logInfo(`Downloading object ${this.bucketName}:${this.resourceKey} ...`);
+    const response = await this.s3NewClient.getObject(this.bucketName, this.resourceKey);
     return Buffer.from(response.Body).toString(); // utf-8 text
   }
 
   async deleteData() {
-    this.logInfo(`Deleting object ${this.bucketName}:${this.path} ...`);
-    await this.s3NewClient.deleteObject(this.bucketName, this.path);
+    this.logInfo(`Deleting object ${this.bucketName}:${this.resourceKey} ...`);
+    await this.s3NewClient.deleteObject(this.bucketName, this.resourceKey);
   }
 
   serialize() {
-    const out = {
-      path: this.path,
+    return {
+      path: this.resourceKey,
       bucketName: this.bucketName,
-      location: this.bucketConfObj.location,
+      location: this.location,
       endpoint: this.config.endpoint
     };
-    return out;
   }
 
   logInfo(msg) {
@@ -131,17 +98,12 @@ class S3ResourceHandler {
   }
 }
 
-const constructor = (args) => {
-  return new S3ResourceHandler(args);
+const constructor = (logger, resourceKey, bucketName, location) => {
+  return new S3ResourceHandler(logger, resourceKey, bucketName, location);
 };
 
-const deserializer = (args) => {
-  const { logger, data } = args;
-  return new S3ResourceHandler({
-    logger,
-    ...data,
-  });
+const deserializer = (logger, data) => {
+  return new S3ResourceHandler(logger, data.path, data.bucketName, data.location, data.endpoint);
 };
 
 module.exports = { constructor, deserializer };
-
