@@ -20,7 +20,7 @@ const tokenCrypt = require('./../utils/crypt');
 const _ = require('lodash');
 
 class EmbeddedResourceHandler {
-  constructor({ logger, data }) {
+  constructor(logger, data) {
     this.logger = logger;
     this.data = data;
   }
@@ -59,13 +59,12 @@ class EmbeddedResourceHandler {
   }
 }
 
-const constructor = (args) => {
-  return new EmbeddedResourceHandler(args);
+const constructor = (logger) => {
+  return new EmbeddedResourceHandler(logger);
 };
 
-const deserializer = (args) => {
-  // args = { logger, data: 'U2FsdGVkX19sLNcjqjkkoY2seqwUHGA8Oo' }
-  return new EmbeddedResourceHandler(args);
+const deserializer = (logger, data) => {
+  return new EmbeddedResourceHandler(logger, data);
 };
 
 module.exports = { constructor, deserializer };

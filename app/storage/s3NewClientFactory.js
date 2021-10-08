@@ -19,7 +19,7 @@
 const conf = require('./../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 
-module.exports = (logger, location, endpoint, org) => { // only logger parameter is mandatory
+module.exports = (logger, location, endpoint) => { // only logger parameter is mandatory
   location = location || conf.storage.defaultLocation;
   if (location) {
     location = location.toLowerCase();
@@ -41,5 +41,5 @@ module.exports = (logger, location, endpoint, org) => { // only logger parameter
     sslEnabled: conf.storage.sslEnabled
   };
 
-  return new S3ClientClass({ logger, config, locationConfig, org });
+  return new S3ClientClass(logger, config, locationConfig.locationConstraint);
 };
