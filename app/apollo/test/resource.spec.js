@@ -402,7 +402,7 @@ describe('resource graphql test suite', () => {
       }
     });
 
-    it('should filter based on input kinds', async()=>{
+    it('should filter based on input kinds and honor both sort and limit', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
 
@@ -410,15 +410,16 @@ describe('resource graphql test suite', () => {
 
         const result1 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
-          kinds: ['Deployment'],
+          kinds: ['Deployment', 'StatefulSet'],
+          limit: 1,
+          sort: [{field:"searchableData.kind"}], // Deployment will be sorted as the 1st
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal(
           'Deployment',
         );
-        expect(result1.data.data.resources.count).to.equal(
-          1,
-        );
+        expect(result1.data.data.resources.count).to.equal(1);
+        expect(result1.data.data.resources.totalCount).to.equal(2);
         const result2 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
           kinds: ['StatefulSet'],
