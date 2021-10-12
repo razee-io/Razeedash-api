@@ -44,4 +44,3 @@ const ResourceYamlHistSchema = new mongoose.Schema({
 });
 
 module.exports = ResourceYamlHistSchema;
-

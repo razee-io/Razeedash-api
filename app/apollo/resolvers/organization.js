@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-const {
-  whoIs,
-} = require ('./common');
+const { whoIs } = require ('./common');
 
 const organizationResolvers = {
   Query: {
+
     organizations: async (parent, args, context) => {
       const queryName = 'organizations';
       const { models, me, req_id, logger } = context;

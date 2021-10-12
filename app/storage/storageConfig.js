@@ -23,9 +23,6 @@ class StorageConfig {
   }
 
   load(env) {
-    if(!env){
-      throw new Error('required args: env');
-    }
     const metroArray = env.S3_LOCATIONS ? env.S3_LOCATIONS.match(/\S+/g) : [];
     const connectionMap = new Map();
     for (let metro of metroArray) {
@@ -41,12 +38,6 @@ class StorageConfig {
         connection.signatureVersion = 'v4';
         connection.channelBucket = env['S3_' + metro + '_CHANNEL_BUCKET'] || env.S3_CHANNEL_BUCKET || 'razee';
         connection.resourceBucket = env['S3_' + metro + '_RESOURCE_BUCKET'] || env.S3_RESOURCE_BUCKET || connection.channelBucket || 'razee';
-        connection.orgBucketPrefix = env['S3_' + metro + '_ORG_BUCKET_PREFIX'] || env.S3_ORG_BUCKET_PREFIX || 'razee-org-';
-        connection.kmsEnabled = (process.env.KMS_COS_ENABLED && !(process.env.KMS_COS_ENABLED.trim().toLowerCase() === 'false'));
-        connection.kmsEndpoint = env['S3_' + metro + '_KMS_ENDPOINT'] || env.S3_KMS_ENDPOINT || '';
-        connection.kmsApiKey = env['S3_' + metro + '_KMS_API_KEY'] || env.S3_KMS_API_KEY|| '';
-        connection.kmsBluemixInstanceGuid = env['S3_' + metro + '_KMS_BLUEMIX_INSTANCE_GUID'] || env.S3_KMS_BLUEMIX_INSTANCE_GUID || '';
-        connection.kmsIamAuthUrl = env['S3_' + metro + '_KMS_IAM_AUTH_URL'] || env.S3_KMS_IAM_AUTH_URL || 'https://iam.cloud.ibm.com';
         connectionMap.set(metro.toLowerCase(), connection);
       } else {
         throw new Error(`S3 endpoint for location '${metro}' is not defnied, possibly missing '${envVar}' env variable.`);
@@ -59,10 +50,22 @@ class StorageConfig {
       this.defaultLocation = this.s3ConnectionMap.size > 0 ? (env.S3_DEFAULT_LOCATION || metroArray[0]).toLowerCase() : undefined;
       this.sslEnabled = !env.S3_DISABLE_SSL; // for local minio support
       this.sdk = require(env.COS_SDK || 'aws-sdk'); // also works with 'ibm-cos-sdk' and 'mock-aws-s3'
-      this.defaultHandler = process.env.DEFAULT_STORAGE_HANDLER || 's3';
+      this.defaultHandler = 's3';
     } else {
       this.defaultHandler = 'embedded';
     }
+  }
+
+  getChannelBucket(location) {
+    location = location ? location.toLowerCase() : this.defaultLocation;
+    const connection = this.s3ConnectionMap.get(location);
+    return connection ? connection.channelBucket : undefined;
+  }
+
+  getResourceBucket(location) {
+    location = location ? location.toLowerCase() : this.defaultLocation;
+    const connection = this.s3ConnectionMap.get(location);
+    return connection ? connection.resourceBucket : undefined;
   }
 }
 

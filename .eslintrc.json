@@ -1,5 +1,4 @@
 {
-    "parser": "babel-eslint",
     "parserOptions": {
         "ecmaVersion": 9,
         "sourceType": "script"
@@ -31,7 +30,6 @@
             "always"
         ],
         "require-atomic-updates": 1,
-        "no-trailing-spaces": "error",
-        "no-async-promise-executor": 0
+        "no-trailing-spaces": "error"
     }
 }
