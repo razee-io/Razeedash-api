@@ -412,7 +412,7 @@ describe('resource graphql test suite', () => {
           orgId: meResult.data.data.me.orgId,
           kinds: ['Deployment', 'StatefulSet'],
           limit: 1,
-          sort: [{field:"searchableData.kind"}], // Deployment will be sorted as the 1st
+          sort: [{field:'searchableData.kind'}], // Deployment will be sorted as the 1st
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal(
