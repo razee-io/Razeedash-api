@@ -46,7 +46,7 @@ const filterNamespaces = async (data, me, orgId, queryName, context) => {
 
   return {
     count: filteredData.length,
-    totalCount: filteredData.length,
+    totalCount: data.totalCount,
     resources: filteredData
   };
 };
@@ -334,7 +334,7 @@ const resourceResolvers = {
       }
 
       var searchObj = {
-        org_id, cluster_id, resourceSelfLink
+        org_id, cluster_id, resourceSelfLink, deleted: {$ne: true}
       };
       var updatedSearchObj = {};
       if(beforeDate){

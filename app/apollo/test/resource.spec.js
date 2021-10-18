@@ -253,6 +253,15 @@ const createResources = async () => {
     yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_02' },
     updated: new Date(),
   });
+  await models.ResourceYamlHist.create({
+    _id: 'resourceYamlHist_03_deleted',
+    org_id: org_01._id,
+    cluster_id: 'cluster_01',
+    resourceSelfLink: '/mybla/selfLink',
+    yamlStr: { metadata: {type: 'embedded'}, data: 'YAML_HIST_DATA_03' },
+    deleted: true,
+    updated: new Date(),
+  });
 };
 
 const getPresetOrgs = async () => {
@@ -393,7 +402,7 @@ describe('resource graphql test suite', () => {
       }
     });
 
-    it('should filter based on input kinds', async()=>{
+    it('should filter based on input kinds and honor both sort and limit', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
 
@@ -401,15 +410,16 @@ describe('resource graphql test suite', () => {
 
         const result1 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
-          kinds: ['Deployment'],
+          kinds: ['Deployment', 'StatefulSet'],
+          limit: 1,
+          sort: [{field:'searchableData.kind'}], // Deployment will be sorted as the 1st
         });
         console.log(JSON.stringify(result1.data));
         expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal(
           'Deployment',
         );
-        expect(result1.data.data.resources.count).to.equal(
-          1,
-        );
+        expect(result1.data.data.resources.count).to.equal(1);
+        expect(result1.data.data.resources.totalCount).to.equal(2);
         const result2 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
           kinds: ['StatefulSet'],
