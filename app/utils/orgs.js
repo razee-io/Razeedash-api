@@ -21,7 +21,7 @@ const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
   if (!orgKey) {
     req.log.info( 'Missing razee-org-key' );
-    res.status(401).send( 'razee-org-key required' );
+    res.status(401).type('json').send( 'razee-org-key required' );
     return;
   }
 

@@ -16,6 +16,7 @@
 
 const express = require('express');
 const app = express();
+const helmet = require("helmet");
 const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
@@ -38,6 +39,8 @@ const i18nextBackend = require('i18next-fs-backend');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);
+app.set('x-powered-by', false) // hide x-powered-by header!
+app.use(helmet.contentSecurityPolicy());
 app.use(addRequestId);
 app.use(compression());
 
