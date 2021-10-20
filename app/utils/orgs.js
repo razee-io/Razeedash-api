@@ -21,7 +21,7 @@ const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
   if (!orgKey) {
     req.log.info( 'Missing razee-org-key' );
-    res.status(401).type('json').send( 'razee-org-key required' );
+    res.status(401).json('{"msg": "razee-org-key required"}');
     return;
   }
 
@@ -40,7 +40,7 @@ const verifyAdminOrgKey = async(req, res, next) => {
   const receivedAdminKey = req.get('org-admin-key');
   if(!receivedAdminKey) {
     req.log.warn(`org-admin-key not specified on route ${req.url}`);
-    return res.status(400).send( 'org-admin-key required' );
+    return res.status(400).json('{"msg": "org-admin-key required"}');
   }
 
   const storedAdminKey = process.env.ORG_ADMIN_KEY;

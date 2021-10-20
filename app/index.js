@@ -38,12 +38,12 @@ const i18nextBackend = require('i18next-fs-backend');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);
-app.set('x-powered-by', false) // hide x-powered-by header!
+app.set('x-powered-by', false); // hide x-powered-by header!
 
 app.use(function (req, res, next) {  // for owasp-zap security scanner
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; frame-src 'self'; form-action 'self'; frame-ancestors 'self'"
+    'default-src "self"; font-src "self"; img-src "self"; script-src "self"; style-src "self"; frame-src "self"; form-action "self"; frame-ancestors "self"'
   );
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   next();
@@ -74,6 +74,10 @@ app.use(i18nextMiddleware.handle(i18next));
 app.get('/metrics', async function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
   response.end(await promClient.register.metrics());
+});
+
+app.get('*', function(req, res) { // this must be the last route
+  res.status(400).json('{"msg": "Method/Url not allowed"}');
 });
 
 const server = http.createServer(app);
