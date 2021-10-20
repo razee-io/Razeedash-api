@@ -16,7 +16,6 @@
 
 const express = require('express');
 const app = express();
-const helmet = require("helmet");
 const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
@@ -40,7 +39,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);
 app.set('x-powered-by', false) // hide x-powered-by header!
-app.use(helmet.contentSecurityPolicy());
+
+app.use(function (req, res, next) {  // for owasp-zap security scanner
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; frame-src 'self'; form-action 'self'; frame-ancestors 'self'"
+  );
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 app.use(addRequestId);
 app.use(compression());
 
