@@ -53,7 +53,46 @@ const getExpressBunyanConfig = (route) => {
     streams: [{
       level: process.env.LOG_LEVEL || 'info',
       stream: process.stdout
-    }]
+    }],
+    serializers: {
+      /*
+      The body for resource updates from managed clustes can include errors such as:
+        "[longsequenceofcharacters]": "Unable to fetch header secret data. { name: clustersubscription-[uuid]-secret, namespace: razeedeploy, key: razee-api-org-key }: secrets \"clustersubscription-[uuid]-secret\" is forbidden: User \"IAM#not-a-real-user@ibm.com\" cannot get resource \"secrets\" in API group \"\" in the namespace \"razeedeploy\""
+      When the resource updates are published in Razeedash-api app/apollo/subscription/index.js's resourceChangedFunc function, Express logs the body, including the user name.
+      To avoid logging the user name (PII of the user being impersonated), a custom 'body' serializer function is used to redact any `IAM#` ids.
+      Specifically, any error string containing \"IAM#SOMETHING\" will have it replaced with \"[REDACTED]\"
+      This would also be a possible place to remove additional details from the body if the whole body is producing overly large log payloads.
+      */
+      body: ( b => {
+        try {
+          const bodyArray = ( Array.isArray(b) ) ? b : [b];
+          for( elem of bodyArray ) {
+            if( elem.object && elem.object.status && elem.object.status['razee-logs'] && elem.object.status['razee-logs'].error ) {
+              Object.keys(elem.object.status['razee-logs'].error).forEach( k => {
+                if (typeof elem.object.status['razee-logs'].error[k] === 'string' || elem.object.status['razee-logs'].error[k] instanceof String) {
+                  let usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
+                  while( usrStartIdx >= 0 ) {
+                    const usrEndIdx = elem.object.status['razee-logs'].error[k].indexOf( '\"', usrStartIdx + 1 );
+                    if( usrEndIdx > usrStartIdx) {
+                      elem.object.status['razee-logs'].error[k] = elem.object.status['razee-logs'].error[k].substring( 0, usrStartIdx + 1 ) + '[REDACTED]' + elem.object.status['razee-logs'].error[k].substring(usrEndIdx);
+                      usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
+                    }
+                    else {
+                      // userEndIdx not found, can't redact any more
+                      usrStartIdx = -1;
+                    }
+                  }
+                }
+              } );
+            }
+          }
+        }
+        catch(e) {
+          // If any unexpected error is encountered while redacting, continue
+        }
+        return b;
+      } )
+    }
   };
   return result;
 };
