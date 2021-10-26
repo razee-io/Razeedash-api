@@ -148,7 +148,7 @@ class PubSubImpl {
         op = 'delete';
       }
       try {
-        logger.debug({ op, resource, topic }, 'Publishing resource updates');
+        logger.debug({ op, resource: Object.assign({}, resource, {data: undefined, searchableData: undefined}), topic }, 'Publishing resource updates');  // Log without data / searchable data as they may contain user names in errors.
         await this.pubSub.publish(topic, {
           resourceUpdated: { resource, op },
         });
