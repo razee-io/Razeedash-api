@@ -60,7 +60,7 @@
     "fs-readfile-promise": "^3.0.1",
     "glob": "^7.1.6",
     "glob-promise": "^4.1.0",
-    "graphql": "^14.6.0",
+    "graphql": "^15.6.1",
     "graphql-fields": "^2.0.3",
     "graphql-iso-date": "^3.6.1",
     "graphql-passport": "^0.6.3",
