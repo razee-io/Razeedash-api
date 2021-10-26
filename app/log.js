@@ -66,13 +66,13 @@ const getExpressBunyanConfig = (route) => {
       body: ( b => {
         try {
           const bodyArray = ( Array.isArray(b) ) ? b : [b];
-          for( elem of bodyArray ) {
+          for( const elem of bodyArray ) {
             if( elem.object && elem.object.status && elem.object.status['razee-logs'] && elem.object.status['razee-logs'].error ) {
               Object.keys(elem.object.status['razee-logs'].error).forEach( k => {
                 if( typeof elem.object.status['razee-logs'].error[k] === 'string' || elem.object.status['razee-logs'].error[k] instanceof String ) {
                   let usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
                   while( usrStartIdx >= 0 ) {
-                    const usrEndIdx = elem.object.status['razee-logs'].error[k].indexOf( '\"', usrStartIdx + 1 );
+                    const usrEndIdx = elem.object.status['razee-logs'].error[k].indexOf( '"', usrStartIdx + 1 );
                     if( usrEndIdx > usrStartIdx) {
                       elem.object.status['razee-logs'].error[k] = elem.object.status['razee-logs'].error[k].substring( 0, usrStartIdx + 1 ) + '[REDACTED]' + elem.object.status['razee-logs'].error[k].substring(usrEndIdx);
                       usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
