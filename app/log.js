@@ -69,7 +69,7 @@ const getExpressBunyanConfig = (route) => {
           for( elem of bodyArray ) {
             if( elem.object && elem.object.status && elem.object.status['razee-logs'] && elem.object.status['razee-logs'].error ) {
               Object.keys(elem.object.status['razee-logs'].error).forEach( k => {
-                if (typeof elem.object.status['razee-logs'].error[k] === 'string' || elem.object.status['razee-logs'].error[k] instanceof String) {
+                if( typeof elem.object.status['razee-logs'].error[k] === 'string' || elem.object.status['razee-logs'].error[k] instanceof String ) {
                   let usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
                   while( usrStartIdx >= 0 ) {
                     const usrEndIdx = elem.object.status['razee-logs'].error[k].indexOf( '\"', usrStartIdx + 1 );
