@@ -19,8 +19,8 @@ const { TYPES, ACTIONS } = require('../models/const');
 
 const whoIs = me => {
   if (me === null || me === undefined) return 'null';
-  if (me.email) return me.email;
   if (me.identifier) return me.identifier;
+  if (me.email) return me.email;
   if (me.type) return me.type;
   return me._id;
 };
