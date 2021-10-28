@@ -81,7 +81,7 @@ router.use(async (req, res, next) => {
   if(!orgKey){
     orgKey = req.query.orgKey;
     if(!orgKey){
-      return res.status(401).send( 'razee-org-key required' );
+      return res.status(401).json('{"msg": "razee-org-key required"}');
     }
   }
   req.orgKey = orgKey;

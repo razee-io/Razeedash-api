@@ -10,7 +10,6 @@
     }
   },
   "host": "localhost:3333",
-  "basePath": "/api/v2",
   "tags": [
     {
       "name": "clusters",
@@ -42,7 +41,7 @@
     "http"
   ],
   "paths": {
-    "/orgs/": {
+    "/api/v2/orgs/": {
       "post": {
         "tags": [
           "orgs"
@@ -135,7 +134,7 @@
         }
       }
     },
-    "/orgs/{id}": {
+    "/api/v2/orgs/{id}": {
       "put": {
         "tags": [
           "orgs"
@@ -229,7 +228,7 @@
         }
       }
     },
-    "/clusters/": {
+    "/api/v2/clusters/": {
       "get": {
         "tags": [
           "clusters"
@@ -274,7 +273,7 @@
         }
       }
     },
-    "/clusters/{cluster_id}": {
+    "/api/v2/clusters/{cluster_id}": {
       "post": {
         "tags": [
           "clusters"
@@ -364,7 +363,7 @@
         }
       }
     },
-    "/clusters/{cluster_id}/resources": {
+    "/api/v2/clusters/{cluster_id}/resources": {
       "post": {
         "tags": [
           "clusters"
@@ -409,7 +408,7 @@
         }
       }
     },
-    "/clusters/{cluster_id}/messages": {
+    "/api/v2/clusters/{cluster_id}/messages": {
       "post": {
         "tags": [
           "clusters"
@@ -451,7 +450,7 @@
         }
       }
     },
-    "/webhooks/": {
+    "/api/v2/webhooks/": {
       "post": {
         "tags": [
           "webhooks"
@@ -486,7 +485,7 @@
         }
       }
     },
-    "/webhooks/{webhook_id}/callback": {
+    "/api/v2/webhooks/{webhook_id}/callback": {
       "post": {
         "tags": [
           "webhooks"
@@ -528,7 +527,7 @@
         }
       }
     },
-    "/webhooks/{webhook_id}": {
+    "/api/v2/webhooks/{webhook_id}": {
       "delete": {
         "tags": [
           "webhooks"
@@ -558,7 +557,7 @@
         }
       }
     },
-    "/resources/": {
+    "/api/v2/resources/": {
       "get": {
         "tags": [
           "resources"
