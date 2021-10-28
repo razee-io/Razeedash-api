@@ -167,6 +167,10 @@ async function initialize(){
         {
           keys: { org_id: 1, channel_id: 1, name: 1},
           options: { name: 'org_id.channel_id.name', unique: true }
+        },
+        {
+          keys: { "content.data.bucketName": 1, "content.data.path": 1},
+          options: { name: 'bucketName.path' }
         }
       ],
       groups: [
@@ -213,12 +217,20 @@ async function initialize(){
         {
           keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
           options: { name: 'cluster_id_text_selfLink_text_searchableData.searchableExpression_text', }
+        },
+        {
+          keys: { "data.data.bucketName": 1, "data.data.path": 1},
+          options: { name: 'bucketName.path' }
         }
       ],
       resourceYamlHist:[
         {
           keys: { org_id: 1, cluster_id: 1, resourceSelfLink: 1 },
           options: { name: 'main-search', }
+        },
+        {
+          keys: { "yamlStr.data.bucketName": 1, "yamlStr.data.path": 1},
+          options: { name: 'bucketName.path' }
         }
       ],
       messages:[
