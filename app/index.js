@@ -76,6 +76,11 @@ app.get('/metrics', async function (request, response) {
   response.end(await promClient.register.metrics());
 });
 
+// Ensure server-health, often used in liveness/readiness checks, is allowed
+app.get('/.well-known/apollo/server-health', function(req, res) {
+  next(req, res);
+});
+
 app.get('*', function(req, res) { // this must be the last route
   res.status(400).json('{"msg": "Method/Url not allowed"}');
 });
