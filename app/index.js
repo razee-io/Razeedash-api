@@ -77,12 +77,18 @@ app.get('/metrics', async function (request, response) {
 });
 
 // Ensure server-health, often used in liveness/readiness checks, is allowed
-app.get('/.well-known/apollo/server-health', function(req, res) {
-  next(req, res);
+app.get('/.well-known/apollo/server-health', function(req, res, next) {
+  res.locals.isHealthCheck = true;
+  next();
 });
 
-app.get('*', function(req, res) { // this must be the last route
-  res.status(400).json('{"msg": "Method/Url not allowed"}');
+app.get('*', function(req, res, next) { // this must be the last route
+  if( res.locals && res.locals.isHealthCheck ) {
+    next();
+  }
+  else {
+    res.status(400).json('{"msg": "Method/Url not allowed"}');
+  }
 });
 
 const server = http.createServer(app);
