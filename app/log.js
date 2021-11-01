@@ -56,39 +56,69 @@ const getExpressBunyanConfig = (route) => {
     }],
     serializers: {
       /*
-      The body for resource updates from managed clustes can include errors such as:
+      The body for resource updates from managed clusters can include details of the 'Impersonated-User' in object.status.children
+      The body for resource updates from managed clusters can include errors in object.status.razee-logs.error such as:
         "[longsequenceofcharacters]": "Unable to fetch header secret data. { name: clustersubscription-[uuid]-secret, namespace: razeedeploy, key: razee-api-org-key }: secrets \"clustersubscription-[uuid]-secret\" is forbidden: User \"IAM#not-a-real-user@ibm.com\" cannot get resource \"secrets\" in API group \"\" in the namespace \"razeedeploy\""
       When the resource updates are published in Razeedash-api app/apollo/subscription/index.js's resourceChangedFunc function, Express logs the body, including the user name.
-      To avoid logging the user name (PII of the user being impersonated), a custom 'body' serializer function is used to redact any `IAM#` ids.
-      Specifically, any error string containing \"IAM#SOMETHING\" will have it replaced with \"[REDACTED]\"
-      This would also be a possible place to remove additional details from the body if the whole body is producing overly large log payloads.
+      To avoid logging the user name (PII of the user being impersonated), a custom 'body' serializer function is used to *truncate* unnecessary attributes and to *redact* any `IAM#` ids in errors.
+      Specifically, any error string containing \"IAM#SOMETHING\" will have it replaced with \"[REDACTED]\".
+      The truncation also helps minimize the size of the log entries created.
       */
       body: ( b => {
         try {
           const bodyArray = ( Array.isArray(b) ) ? b : [b];
-          for( const elem of bodyArray ) {
-            if( elem.object && elem.object.status && elem.object.status['razee-logs'] && elem.object.status['razee-logs'].error ) {
-              Object.keys(elem.object.status['razee-logs'].error).forEach( k => {
-                if( typeof elem.object.status['razee-logs'].error[k] === 'string' || elem.object.status['razee-logs'].error[k] instanceof String ) {
-                  let usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
-                  while( usrStartIdx >= 0 ) {
-                    const usrEndIdx = elem.object.status['razee-logs'].error[k].indexOf( '"', usrStartIdx + 1 );
-                    if( usrEndIdx > usrStartIdx) {
-                      elem.object.status['razee-logs'].error[k] = elem.object.status['razee-logs'].error[k].substring( 0, usrStartIdx + 1 ) + '[REDACTED]' + elem.object.status['razee-logs'].error[k].substring(usrEndIdx);
-                      usrStartIdx = elem.object.status['razee-logs'].error[k].indexOf( '"IAM#' );
-                    }
-                    else {
-                      // userEndIdx not found, can't redact any more
-                      usrStartIdx = -1;
+          for( const bodyElem of bodyArray ) {
+            if( bodyElem.object ) {
+              for( const objectKey of Object.keys(bodyElem.object) ) {
+                // Truncate object except specific desired properties
+                if( ! ['kind','apiVersion','metadata','status'].includes(objectKey) ) {
+                  bodyElem.object[objectKey] = '[TRUNCATED]';
+                  continue;
+                }
+                // Truncate object.metadata except specific desired properties
+                if( objectKey === 'metadata' ) {
+                  for( const metadataKey of Object.keys(bodyElem.object[objectKey]) ) {
+                    if( ! ['name','namespace','resourceVersion','selfLink','uid','creationTimestamp'].includes(metadataKey) ) {
+                      bodyElem.object[objectKey][metadataKey] = '[TRUNCATED]';
+                      continue;
                     }
                   }
                 }
-              } );
+                // Truncate object.status except specific desired properties
+                else if( objectKey === 'status' ) {
+                  for( const statusKey of Object.keys(bodyElem.object[objectKey]) ) {
+                    if( ! ['last-modified','razee-logs'].includes(statusKey) ) {
+                      bodyElem.object[objectKey][statusKey] = '[TRUNCATED]';
+                    }
+                    // Redact object.status.razee-logs
+                    if( statusKey === 'razee-logs' && bodyElem.object[objectKey][statusKey].error ) {
+                      const error = bodyElem.object[objectKey][statusKey].error;
+                      Object.keys(error).forEach( k => {
+                        if( typeof error[k] === 'string' || error[k] instanceof String ) {
+                          let usrStartIdx = error[k].indexOf( '"IAM#' );
+                          while( usrStartIdx >= 0 ) {
+                            const usrEndIdx = error[k].indexOf( '"', usrStartIdx + 1 );
+                            if( usrEndIdx > usrStartIdx) {
+                              error[k] = error[k].substring( 0, usrStartIdx + 1 ) + '[REDACTED]' + error[k].substring(usrEndIdx);
+                              usrStartIdx = error[k].indexOf( '"IAM#' );
+                            }
+                            else {
+                              // userEndIdx not found, can't redact any more
+                              usrStartIdx = -1;
+                            }
+                          }
+                        }
+                      } );
+                    }
+                  }
+                }
+              }
             }
           }
         }
         catch(e) {
           // If any unexpected error is encountered while redacting, continue
+          console.error( `Log redaction error: ${e.message}` );
         }
         return b;
       } )
