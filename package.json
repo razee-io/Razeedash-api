@@ -65,7 +65,7 @@
     "graphql-iso-date": "^3.6.1",
     "graphql-passport": "^0.6.3",
     "graphql-redis-subscriptions": "^2.3.1",
-    "graphql-tag": "^2.11.0",
+    "graphql-tag": "^2.12.6",
     "graphql-type-json": "^0.3.2",
     "i18next": "^20.2.1",
     "i18next-fs-backend": "^1.1.1",
