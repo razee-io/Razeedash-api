@@ -120,5 +120,10 @@
     "sinon": "^11.1.1",
     "why-is-node-running": "^2.2.0",
     "yaml-lint": "^1.2.4"
+  },
+  "config": {
+    "mongodbMemoryServer": {
+      "debug": "1"
+    }
   }
 }
