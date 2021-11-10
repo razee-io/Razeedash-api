@@ -307,8 +307,8 @@ describe('resource graphql test suite', () => {
 
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongo_url = await mongoServer.getConnectionString();
+    mongoServer = await MongoMemoryServer.create();
+    const mongo_url = mongoServer.getUri();
     console.log(`resource.spec.js in memory test mongodb url is ${mongo_url}`);
     myApollo = await apollo({ mongo_url, graphql_port: graphqlPort });
 

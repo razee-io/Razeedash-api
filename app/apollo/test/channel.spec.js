@@ -238,8 +238,8 @@ const createSubscriptions = async () => {
 describe('channel graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getConnectionString();
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
