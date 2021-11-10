@@ -70,5 +70,3 @@ dev/
 # vscode settings
 .vscode
 .DS_Store
-
-.nvmrc
