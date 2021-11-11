@@ -203,8 +203,9 @@ const getOrgKey = async () => {
 describe('subscriptions graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getConnectionString();
+    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    await mongoServer.start();
+    const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });

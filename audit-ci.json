@@ -1,6 +1,6 @@
 {
   "low": true,
-  "_allowlistDevDependencies": "Allowlist devDependencies 'glob-parent' and 'yarg-parser' when calling audit-ci.",
-  "allowlist": ["glob-parent", "yargs-parser"],
+  "_allowlistInfo": "Allowlist 'glob-parent' (brought in by devDependency 'gulp') and 'ansi-regex' (brought in by `bcrypt`, used only in local auth)",
+  "allowlist": ["glob-parent","ansi-regex"],
   "skip-dev": true
 }

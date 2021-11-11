@@ -63,8 +63,9 @@ describe('Service subscription graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
     process.env.ORG_ADMIN_KEY = orgAdminKey;
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getUri();
+    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    await mongoServer.start();
+    const mongoUrl = mongoServer.getUri();
     console.log(`\tCluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
