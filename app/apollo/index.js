@@ -210,6 +210,7 @@ const apollo = async (options = {}) => {
     const server = createApolloServer();
     server.applyMiddleware({
       app,
+      cors: {origin: true},
       path: GRAPHQL_PATH,
       onHealthCheck: async () => {
         if (SIGTERM) {
