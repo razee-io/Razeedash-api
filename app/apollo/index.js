@@ -17,6 +17,7 @@
 const http = require('http');
 const express = require('express');
 const router = express.Router();
+const cors = require('cors');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
 const { IdentifierDirective, JsonDirective } = require('./utils/directives');
@@ -210,6 +211,7 @@ const apollo = async (options = {}) => {
     const server = createApolloServer();
     server.applyMiddleware({
       app,
+      cors: cors({origin: true}),
       path: GRAPHQL_PATH,
       onHealthCheck: async () => {
         if (SIGTERM) {
