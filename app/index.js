@@ -43,8 +43,6 @@ const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
 
-
-
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);

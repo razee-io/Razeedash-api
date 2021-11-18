@@ -623,12 +623,7 @@
         }
       }
     },
-
-
-
-
-
-    "/channels": {
+    "/api/v1/channels": {
       "post": {
         "tags": [
           "channels"
@@ -674,7 +669,7 @@
         "responses": {}
       }
     },
-    "/channels/{uuid}/versions": {
+    "/api/v1/channels/{uuid}/versions": {
       "post": {
         "tags": [
           "channels"
@@ -713,7 +708,7 @@
         "responses": {}
       }
     },
-    "/clusters/clustersByOrgId": {
+    "/api/v1/clusters/clustersByOrgId": {
       "get": {
         "tags": [
           "clusters"
@@ -737,7 +732,7 @@
         "responses": {}
       }
     },
-    "/groups": {
+    "/api/v1/groups": {
       "post": {
         "tags": [
           "groups"
@@ -761,7 +756,7 @@
         "responses": {}
       }
     },
-    "/groups/groupClusters": {
+    "/api/v1/groups/groupClusters": {
       "put": {
         "tags": [
           "groups"
@@ -791,7 +786,7 @@
         "responses": {}
       }
     },
-    "/subscriptions": {
+    "/api/v1/subscriptions": {
       "post": {
         "tags": [
           "subscriptions"
@@ -827,7 +822,7 @@
         "responses": {}
       }
     },
-    "/subscriptions/{uuid}": {
+    "/api/v1/subscriptions/{uuid}": {
       "get": {
         "tags": [
           "subscriptions"
@@ -857,11 +852,6 @@
         "responses": {}
       }
     }
-
-
-
-
-
   },
   "securityDefinitions": {
     "razee-org-key": {

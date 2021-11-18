@@ -47,7 +47,4 @@ for(var key in resolversMap){
   resolversByGroupName[key] = require(resolversMap[key]);
 };
 
-module.exports = {
-  resolvers,
-  resolversByGroupName,
-};
+module.exports = resolvers;

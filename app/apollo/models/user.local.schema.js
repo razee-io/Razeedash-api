@@ -228,7 +228,6 @@ UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
       token = token.slice(7, token.length);
     }
     try {
-      console.log(333333, token)
       return jwt.verify(token, SECRET);
     } catch (e) {
       logger.warn({ req_id }, 'getMeFromRequest Session expired');
@@ -320,7 +319,6 @@ UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${action} ${type} ${attributes}`);
-console.log(88898899889, me)
   if (!me || me === null || me.type === 'cluster'){
     // say no for if it is cluster facing api
     return false;

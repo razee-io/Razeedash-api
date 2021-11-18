@@ -78,9 +78,6 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 router.use('/v2/orgs', Orgs);
 
 router.use('/v1/', V1Gql);
-router.use('/asdf', (req, res, next)=>{
-  res.json({asdf:1})
-});
 
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
@@ -97,7 +94,6 @@ router.use(async (req, res, next) => {
   if (org) log.fields.org_id = org._id;
   next();
 });
-
 
 
 router.use(getOrg);

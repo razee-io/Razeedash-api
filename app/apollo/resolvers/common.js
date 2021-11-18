@@ -146,7 +146,6 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
   if (context.recoveryHintsMap) {
     context['recoveryHints'] = context.recoveryHintsMap[queryName];
   }
-console.log(88888, me)
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
@@ -167,7 +166,6 @@ console.log(88888, me)
 
     }
   }
-  console.log(77777)
 };
 
 // a helper function to render clusterInfo for a list of resources

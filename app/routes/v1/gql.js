@@ -18,7 +18,6 @@ var sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
     operationName,
   };
   req.method = 'POST';
-  console.log(555555, req.path, req.body, req.headers)
   mainServer.app.handle(req, res, {});
 };
 
@@ -80,7 +79,6 @@ router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
   var variables = {
     orgId,
   };
-  console.log(3333, query, variables, operationName)
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
 
@@ -101,7 +99,7 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
   var name = req.body.name;
   var type = req.body.type;
   var content = req.body.content;
-  console.log(3333, {name, channelUuid, type, content})
+
   if(!name || !channelUuid || !type || !content){
     throw new Error(`needs { channelUuid, name, type, content }`);
   }
