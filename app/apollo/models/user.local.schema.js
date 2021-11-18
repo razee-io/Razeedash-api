@@ -217,7 +217,7 @@ UserLocalSchema.statics.signIn = async (models, login, password, secret, context
 UserLocalSchema.statics.getMeFromRequest = async function(req, context) {
   const {req_id, logger} = context;
   const orgKey = req.get('razee-org-key');
-  if (!req.headers['authorization'] && orgKey) {
+  if (orgKey) {
     // cluster facing api (e.g. subscriptionsByCluster)
     return {orgKey, type: 'cluster'};
   }
