@@ -45,6 +45,6 @@ for( const key in resolversMap ) {
 var resolversByGroupName = {};
 for(var key in resolversMap){
   resolversByGroupName[key] = require(resolversMap[key]);
-};
+}
 
 module.exports = resolvers;

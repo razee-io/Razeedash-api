@@ -1,12 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const mongoConf = require('../../conf.js').conf;
-const MongoClientClass = require('../../mongo/mongoClient.js');
-const MongoClient = new MongoClientClass(mongoConf);
-const storageFactory = require('./../../storage/storageFactory');
-const getOrg = require('../../utils/orgs.js').getOrg;
-const _ = require('lodash');
 const mainServer = require('../../');
 
 
@@ -24,7 +18,7 @@ var sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
 var getOrgId = (req, res, next)=>{
   const orgId = req.get('org-id') || req.body.orgId || req.query.orgId;
   if(!orgId){
-    throw new Error(`Please pass an orgId in an "org-id" header, an "orgId" post body param, or an orgId query string attribute`);
+    throw new Error('Please pass an orgId in an "org-id" header, an "orgId" post body param, or an orgId query string attribute');
   }
   req.orgId = orgId;
   next();
@@ -45,7 +39,7 @@ router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
   `;
   var name = req.body.name;
   if(!name){
-    throw new Error(`needs { name }`);
+    throw new Error('needs { name }');
   }
   var variables = {
     orgId,
@@ -101,7 +95,7 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
   var content = req.body.content;
 
   if(!name || !channelUuid || !type || !content){
-    throw new Error(`needs { channelUuid, name, type, content }`);
+    throw new Error('needs { channelUuid, name, type, content }');
   }
   var variables = {
     orgId,
@@ -149,7 +143,7 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
   `;
   var name = req.body.name;
   if(!name){
-    throw new Error(`needs { name }`);
+    throw new Error('needs { name }');
   }
   var variables = {
     orgId,
@@ -173,7 +167,7 @@ router.put('/groups/groupClusters', getOrgId, asyncHandler(async(req, res)=>{
   var uuid = req.body.uuid;
   var clusters = req.body.clusters;
   if(!uuid || !clusters){
-    throw new Error(`needs { uuid, clusters }`);
+    throw new Error('needs { uuid, clusters }');
   }
   var variables = {
     orgId,
@@ -201,7 +195,7 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
   var channelUuid = req.body.channelUuid;
   var versionUuid = req.body.versionUuid;
   if(!name || !groups || clusterId || !channelUuid || !versionUuid){
-    throw new Error(`needs { name, groups, channelUuid, versionUuid }`);
+    throw new Error('needs { name, groups, channelUuid, versionUuid }');
   }
   var variables = {
     orgId,
