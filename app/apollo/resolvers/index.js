@@ -42,4 +42,12 @@ for( const key in resolversMap ) {
   resolvers.push( require(resolversMap[key]) );
 }
 
-module.exports = resolvers;
+var resolversByGroupName = {};
+for(var key in resolversMap){
+  resolversByGroupName[key] = require(resolversMap[key]);
+};
+
+module.exports = {
+  resolvers,
+  resolversByGroupName,
+};

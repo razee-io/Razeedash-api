@@ -35,8 +35,10 @@ const channelResolvers = {
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
+      console.log(33333, me, orgId)
       try{
         var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
+        console.log(4444, channels)
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
@@ -160,6 +162,7 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
+      console.log(3333, me, org_id, queryName)
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       try {

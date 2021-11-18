@@ -36,6 +36,7 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
+const V1Gql = require('./v1/gql');
 
 router.get('/v1/health', (req, res)=>{
   res.json({
@@ -76,6 +77,11 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
+router.use('/v1/', V1Gql);
+router.use('/asdf', (req, res, next)=>{
+  res.json({asdf:1})
+});
+
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
@@ -92,12 +98,15 @@ router.use(async (req, res, next) => {
   next();
 });
 
+
+
 router.use(getOrg);
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
 
 router.use('/v1/channels', Channels);
+
 
 async function initialize(){
   const options = {

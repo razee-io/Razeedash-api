@@ -24,7 +24,7 @@ const { createLogger, createExpressLogger } = require('../log');
 const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
-const resolvers = require('./resolvers');
+const { resolvers } = require('./resolvers');
 const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
 const { models, connectDb } = require('./models');
 const promClient = require('prom-client');
@@ -199,6 +199,10 @@ const apollo = async (options = {}) => {
   try {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
+    app.use((req, res, next)=>{
+      // console.log(5555, req.path, req.url, req.originalUrl, req.body);
+      next();
+    })
     app.use(createExpressLogger('razeedash-api/apollo'));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {
       initLogger.info('Enabled playground route with authorization enforcement.');
