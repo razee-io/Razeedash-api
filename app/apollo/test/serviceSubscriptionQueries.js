@@ -41,7 +41,7 @@ const queries = grahqlUrl => {
       {
         query: `
           query  ($orgId: String!, $id: ID!) {
-            subscriptionType(orgId: $orgId, id: $id) 
+            subscriptionType(orgId: $orgId, id: $id)
           } `,
         variables,
       },
@@ -117,9 +117,16 @@ const queries = grahqlUrl => {
               serviceSubscription(orgId: $orgId, ssid: $ssid) {
                 ssid
                 versionUuid
+                clusterId
+                orgId
                 owner {
                   id
                   name
+                }
+                cluster {
+                  clusterId
+                  orgId
+                  registration
                 }
               }
             } `,
