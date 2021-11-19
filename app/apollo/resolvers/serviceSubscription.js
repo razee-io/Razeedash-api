@@ -76,7 +76,6 @@ const serviceResolvers = {
       try{
         // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
         for await (const ss of models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true })) {
-          console.log( `${methodName} found serviceSubscription: ${JSON.stringify(ss, null, 2)}` );
           const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
           serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
