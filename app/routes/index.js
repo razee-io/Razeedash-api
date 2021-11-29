@@ -77,6 +77,8 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
+// the gql endpoints should be above the razee-org-key checks since it passes
+// all headers to the graphql handler code, which then does it own auth
 router.use('/v1/', V1Gql);
 
 router.use(async (req, res, next) => {
