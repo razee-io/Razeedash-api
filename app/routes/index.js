@@ -103,6 +103,7 @@ router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
 
+// Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
 
 
