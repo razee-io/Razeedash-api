@@ -23,14 +23,14 @@ const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql')
 // Send request to Graphql, but return a REST style response / code
 const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
   const methodName = 'sendReqToGraphql'
-  console.log( `${methodName} entry, operationName: ${operationName}` );
+  log.debug( `${methodName} entry, operationName: ${operationName}` );
 
   const restReqType = req.method;
 
   // Prevent Graphql handling from sending response, allow reformatting to REST specifications.
   res.oldSend = res.send.bind(res);
   res.send = function(gqlRes){
-    console.log( `${methodName} gqlRes: ${gqlRes}` );
+    log.debug( `${methodName} gqlRes: ${gqlRes}` );
     try {
       const resObj = JSON.parse(gqlRes);
 
@@ -67,7 +67,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
       throw new Error( `request type '${restReqType}' is unexpected` ); // Should never occur
     }
     catch( e ) {
-      console.log( `${methodName} error: ${e.message}` );
+      log.debug( `${methodName} error: ${e.message}` );
       return this.status(400).oldSend( e.message );
     }
   }.bind(res);
