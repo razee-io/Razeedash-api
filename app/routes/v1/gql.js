@@ -23,14 +23,14 @@ const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql')
 // Send request to Graphql, but return a REST style response / code
 const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
   const methodName = 'sendReqToGraphql'
-  log.debug( `${methodName} entry, operationName: ${operationName}` );
+  console.log( `${methodName} entry, operationName: ${operationName}` );
 
   const restReqType = req.method;
 
   // Prevent Graphql handling from sending response, allow reformatting to REST specifications.
   res.oldSend = res.send.bind(res);
   res.send = function(gqlRes){
-    log.debug( `${methodName} gqlRes: ${gqlRes}` );
+    console.log( `${methodName} gqlRes: ${gqlRes}` );
     try {
       const resObj = JSON.parse(gqlRes);
 
@@ -67,7 +67,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
       throw new Error( `request type '${restReqType}' is unexpected` ); // Should never occur
     }
     catch( e ) {
-      log.debug( `${methodName} error: ${e.message}` );
+      console.log( `${methodName} error: ${e.message}` );
       return this.status(400).oldSend( e.message );
     }
   }.bind(res);
@@ -184,10 +184,10 @@ router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
   const query = `
     query ${operationName}($orgId: String!) {
       clustersByOrgId(orgId: $orgId) {
-        id
         orgId
         clusterId
         groups { uuid name }
+        registration
         metadata
       }
     }
@@ -199,19 +199,19 @@ router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
 
-router.get('/clusters/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets specified cluster for an org'
   const { orgId } = req;
-  const clusterId = req.params.uuid;
+  const clusterId = req.params.clusterId;
   const operationName  = 'clusterByClusterId';
   const query = `
     query ${operationName}($orgId: String!, $clusterId: String!) {
       clusterByClusterId(orgId: $orgId, clusterId: $clusterId) {
-        id
         orgId
         clusterId
         groups { uuid name }
+        registration
         metadata
       }
     }
@@ -268,6 +268,50 @@ router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     uuid,
     clusters,
+  };
+  sendReqToGraphql({ req, res, query, variables, operationName });
+}));
+
+router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['subscriptions']
+  // #swagger.summary = 'Gets a subscription'
+  const { orgId } = req;
+  const operationName  = 'groups';
+  const query = `
+    query ${operationName}($orgId:  String!) {
+      groups(orgId: $orgId) {
+        uuid
+        name
+        orgId
+        clusters { clusterId }
+      }
+    }
+  `;
+  const variables = {
+    orgId,
+  };
+  sendReqToGraphql({ req, res, query, variables, operationName });
+}));
+
+router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['subscriptions']
+  // #swagger.summary = 'Gets a subscription'
+  const { orgId } = req;
+  const operationName  = 'group';
+  const query = `
+    query ${operationName}($orgId:  String!, $uuid: String!) {
+      group(orgId: $orgId, uuid: $uuid) {
+        uuid
+        name
+        orgId
+        clusters { clusterId }
+      }
+    }
+  `;
+  const uuid = req.params.uuid;
+  const variables = {
+    orgId,
+    uuid,
   };
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
