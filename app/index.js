@@ -171,7 +171,7 @@ function onConnection(){
   });
 }
 
+// Export server app so that REST interface can send request to the Graphql handler
 _.assign(module.exports, {
-  server,
   app,
 });
