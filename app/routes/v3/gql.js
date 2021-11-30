@@ -319,6 +319,17 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     name,
   };
+
+  /*
+  Note that cannot create a group with clusters in one step at this time.
+  The graphql for group creation does not currently suport this. Instead,
+  client must first create the group with just a name and then use
+  `PUT /groups/uuid` to set the clusters in the group.
+  Enhancing the graphql, or updating this code to be able to send more
+  than one graphql request to satisfy a single REST POST would be desirable
+  as a future enhancement.
+  */
+
   const methodType = 'create';
   sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
 }));
