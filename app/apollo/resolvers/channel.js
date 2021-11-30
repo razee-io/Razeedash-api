@@ -34,7 +34,7 @@ const channelResolvers = {
       const { me, req_id, logger } = context;
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      
+
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
