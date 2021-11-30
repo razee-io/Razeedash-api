@@ -41,27 +41,9 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
 
       const resVal = resObj['data'][operationName];
 
-      // FIXME: true: GET single item, false: GET multiple items.  Probably needs to be passed to sendReqToGraphql as an arg.
-      const restGetSingle = false;
-
       // If GET of a single item...
-      if( restReqType == 'GET' && restGetSingle ) {
-        if( resVal.length == 0 ) {
-          // One expected, none found, return 404 (NOT FOUND)
-          return this.status(404).oldSend( '' );
-        }
-        else if( resVal.length > 1 ) {
-          // One expected, multiple found, return 400 (BAD REQUEST)
-          return this.status(400).oldSend( JSON.stringify(resVal) );
-        }
-        else {
-          // One expected, one found, return 200 (OK)
-          return this.status(200).oldSend( JSON.stringify(resVal[0]) );
-        }
-      }
-      // If GET of multiple items...
-      else if( restReqType == 'GET' && !restGetSingle ) {
-        // Multiple expected, any number found, return 200 (OK)
+      if( restReqType == 'GET' ) {
+        // One/Multiple expected, one/multiple found, return 200 (OK)
         return this.status(200).oldSend( JSON.stringify(resVal) );
       }
       // ElseIf PUT...
