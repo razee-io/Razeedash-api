@@ -2,9 +2,92 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const mainServer = require('../../');
+const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql');
 
-
+// Send request to Graphql, but return a REST style response / code
 const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
+  const methodName = 'sendReqToGraphql'
+  log.debug( `${methodName} entry, operationName: ${operationName}` );
+
+  const restReqType = req.method;
+
+  // Prevent Graphql handling from sending response, allow reformatting to REST specifications.
+  res.oldSend = res.send.bind(res);
+  res.send = function(gqlRes){
+    log.debug( `${methodName} gqlRes: ${gqlRes}` );
+    try {
+      const resObj = JSON.parse(gqlRes);
+
+      const resErrors = resObj['errors'];
+      if( resErrors && resErrors.length > 0 ) {
+        throw new Error( `[ '${resErrors.map(e => e.message).join('\', \'')}' ]` );
+      }
+
+      const resVal = resObj['data'][operationName];
+
+      // FIXME: true: GET single item, false: GET multiple items.  Probably needs to be passed to sendReqToGraphql as an arg.
+      const restGetSingle = false;
+
+      // If GET of a single item...
+      if( restReqType == 'GET' && restGetSingle ) {
+        if( resVal.length == 0 ) {
+          // One expected, none found, return 404 (NOT FOUND)
+          return this.status(404).oldSend( '' );
+        }
+        else if( resVal.length > 1 ) {
+          // One expected, multiple found, return 400 (BAD REQUEST)
+          return this.status(400).oldSend( JSON.stringify(resVal) );
+        }
+        else {
+          // One expected, one found, return 200 (OK)
+          return this.status(200).oldSend( JSON.stringify(resVal[0]) );
+        }
+      }
+      // If GET of multiple items...
+      else if( restReqType == 'GET' && !restGetSingle ) {
+        // Multiple expected, any number found, return 200 (OK)
+        return this.status(200).oldSend( JSON.stringify(resVal) );
+      }
+      // ElseIf PUT...
+      else if( restReqType == 'PUT' ) {
+        if( resVal.length == 0 ) {
+          // One expected, none updated, return 404 (NOT FOUND)
+          return this.status(404).oldSend( '' );
+        }
+        else if( resVal.length > 1 ) {
+          // One expected, multiple updated, return 400 (BAD REQUEST)
+          return this.status(400).oldSend( JSON.stringify(resVal) );
+        }
+        else {
+          // One expected, one updated, return 200 (OK)
+          return this.status(200).oldSend( JSON.stringify(resVal[0]) );
+        }
+      }
+      // ElseIf POST...
+      else if( restReqType == 'POST' ) {
+        if( resVal.length == 0 ) {
+          // One expected, none created, return 400 (BAD REQUEST)
+          return this.status(404).oldSend( '' );
+        }
+        else if( resVal.length > 1 ) {
+          // One expected, multiple created, return 400 (BAD REQUEST)
+          return this.status(400).oldSend( JSON.stringify(resVal) );
+        }
+        else {
+          // One expected, one created, return 201 (CREATED) with `Location` header
+          this.setHeader( 'Location', 'FIXME' );
+          return this.status(201).oldSend( JSON.stringify(resVal[0]) );
+        }
+      }
+      // Else (unexpected request type)
+      throw new Error( `request type '${restReqType}' is unexpected` ); // Should never occur
+    }
+    catch( e ) {
+      log.debug( `${methodName} error: ${e.message}` );
+      return this.status(400).oldSend( e.message );
+    }
+  }.bind(res);
+
   req.path = req.url = req.originalUrl = '/graphql';
   req.body = {
     query,
@@ -12,6 +95,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
     operationName,
   };
   req.method = 'POST';
+
+  // Send to Graphql
   mainServer.app.handle(req, res, {});
 };
 
