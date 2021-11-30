@@ -110,11 +110,11 @@ const getOrgId = (req, res, next)=>{
 
 router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['channels']
-  // #swagger.summary = 'Adds a new channel'
+  // #swagger.summary = 'Adds a channel'
   const { orgId } = req;
-  const operationName  = 'addChannel';
+  const operationName = 'addChannel';
   const query = `
-    mutation ${operationName}($orgId:  String!, $name: String!) {
+    mutation ${operationName}($orgId: String!, $name: String!) {
       addChannel(orgId: $orgId, name: $name) {
         uuid
       }
@@ -134,9 +134,9 @@ router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
 
 router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['channels']
-  // #swagger.summary = 'Gets all channels for an org'
+  // #swagger.summary = 'Gets all channels'
   const { orgId } = req;
-  const operationName  = 'channels';
+  const operationName = 'channels';
   const query = `
     query ${operationName}($orgId: String!) {
       channels(orgId: $orgId) {
@@ -161,13 +161,43 @@ router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
   sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
+router.get('/channels/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['channels']
+  // #swagger.summary = 'Gets a specified channel'
+  const { orgId } = req;
+  const uuid = req.params.uuid;
+  const operationName = 'channel';
+  const query = `
+    query ${operationName}($orgId: String!, $uuid: String!) {
+      clusterByClusterId(orgId: $orgId, uuid: $uuid) {
+        uuid
+        orgId
+        name
+        created
+        versions {
+          name
+          description
+          uuid
+          created
+        }
+      }
+    }
+  `;
+  const variables = {
+    orgId,
+    uuid,
+  };
+  const methodType = 'findOne';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+}));
+
 router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a new channel version'
   const { orgId } = req;
-  const operationName  = 'addChannelVersion';
+  const operationName = 'addChannelVersion';
   const query = `
-    mutation ${operationName}($orgId:  String!, $channelUuid: String!, $name: String!, $type: String!, $content: String, ) {
+    mutation ${operationName}($orgId: String!, $channelUuid: String!, $name: String!, $type: String!, $content: String, ) {
       addChannelVersion(orgId: $orgId, channelUuid: $channelUuid, name: $name, type: $type, content: $content ){
         versionUuid
         success
@@ -195,9 +225,9 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
 
 router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['clusters']
-  // #swagger.summary = 'Gets all clusters for an org'
+  // #swagger.summary = 'Gets all clusters'
   const { orgId } = req;
-  const operationName  = 'clustersByOrgId';
+  const operationName = 'clustersByOrgId';
   const query = `
     query ${operationName}($orgId: String!) {
       clustersByOrgId(orgId: $orgId) {
@@ -219,10 +249,10 @@ router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
 
 router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['clusters']
-  // #swagger.summary = 'Gets specified cluster for an org'
+  // #swagger.summary = 'Gets a specified cluster'
   const { orgId } = req;
   const clusterId = req.params.clusterId;
-  const operationName  = 'clusterByClusterId';
+  const operationName = 'clusterByClusterId';
   const query = `
     query ${operationName}($orgId: String!, $clusterId: String!) {
       clusterByClusterId(orgId: $orgId, clusterId: $clusterId) {
@@ -246,9 +276,9 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Adds a group'
   const { orgId } = req;
-  const operationName  = 'addGroup';
+  const operationName = 'addGroup';
   const query = `
-    mutation ${operationName}($orgId:  String!, $name: String!) {
+    mutation ${operationName}($orgId: String!, $name: String!) {
       addGroup(orgId: $orgId, name: $name) {
         uuid
       }
@@ -269,11 +299,11 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
 // PUT to a group only supports setting clusters (can't change name etc)
 router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['groups']
-  // #swagger.summary = 'Assigns a group to a cluster'
+  // #swagger.summary = 'Sets the clusters for a specified group'
   const { orgId } = req;
-  const operationName  = 'groupClusters';
+  const operationName = 'groupClusters';
   const query = `
-    mutation ${operationName}($orgId:  String!, $uuid: String!, $clusters: [String!]!) {
+    mutation ${operationName}($orgId: String!, $uuid: String!, $clusters: [String!]!) {
       groupClusters(orgId: $orgId, uuid: $uuid, clusters: $clusters) {
         modified
       }
@@ -294,12 +324,12 @@ router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
 }));
 
 router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
-  // #swagger.tags = ['subscriptions']
-  // #swagger.summary = 'Gets a subscription'
+  // #swagger.tags = ['groups']
+  // #swagger.summary = 'Gets all groups'
   const { orgId } = req;
-  const operationName  = 'groups';
+  const operationName = 'groups';
   const query = `
-    query ${operationName}($orgId:  String!) {
+    query ${operationName}($orgId: String!) {
       groups(orgId: $orgId) {
         uuid
         name
@@ -316,12 +346,12 @@ router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
 }));
 
 router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
-  // #swagger.tags = ['subscriptions']
-  // #swagger.summary = 'Gets a subscription'
+  // #swagger.tags = ['groups']
+  // #swagger.summary = 'Gets a specified group'
   const { orgId } = req;
-  const operationName  = 'group';
+  const operationName = 'group';
   const query = `
-    query ${operationName}($orgId:  String!, $uuid: String!) {
+    query ${operationName}($orgId: String!, $uuid: String!) {
       group(orgId: $orgId, uuid: $uuid) {
         uuid
         name
@@ -343,9 +373,9 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Adds a subscription'
   const { orgId } = req;
-  const operationName  = 'addSubscription';
+  const operationName = 'addSubscription';
   const query = `
-    mutation ${operationName}($orgId:  String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!) {
+    mutation ${operationName}($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!) {
       addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid) {
         uuid
       }
@@ -371,13 +401,40 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
   sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
+router.get('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['subscriptions']
+  // #swagger.summary = 'Gets all subscriptions'
+  const { orgId } = req;
+  const operationName = 'subscriptions';
+  const query = `
+    query ${operationName}($orgId: String!) {
+      subscriptions(orgId: $orgId) {
+        uuid
+        orgId
+        name
+        groups
+        channelName
+        channelUuid
+        version
+        versionUuid
+        kubeOwnerName
+      }
+    }
+  `;
+  const variables = {
+    orgId,
+  };
+  const methodType = 'findMany';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+}));
+
 router.get('/subscriptions/:uuid', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['subscriptions']
-  // #swagger.summary = 'Gets a subscription'
+  // #swagger.summary = 'Gets a specified subscription'
   const { orgId } = req;
-  const operationName  = 'subscription';
+  const operationName = 'subscription';
   const query = `
-    query ${operationName}($orgId:  String!, $uuid: String!) {
+    query ${operationName}($orgId: String!, $uuid: String!) {
       subscription(orgId: $orgId, uuid: $uuid) {
         uuid
         orgId
