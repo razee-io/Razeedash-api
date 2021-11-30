@@ -36,7 +36,7 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
-const V1Gql = require('./v1/gql');
+const V3Gql = require('./v3/gql');
 
 router.get('/v1/health', (req, res)=>{
   res.json({
@@ -79,7 +79,7 @@ router.use('/v2/orgs', Orgs);
 
 // the gql endpoints should be above the razee-org-key checks since it passes
 // all headers to the graphql handler code, which then does it own auth
-router.use('/v1/', V1Gql);
+router.use('/v3/', V3Gql);
 
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');

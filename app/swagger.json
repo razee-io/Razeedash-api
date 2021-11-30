@@ -623,7 +623,7 @@
         }
       }
     },
-    "/api/v1/channels": {
+    "/api/v3/channels": {
       "post": {
         "tags": [
           "channels"
@@ -669,7 +669,7 @@
         "responses": {}
       }
     },
-    "/api/v1/channels/{uuid}/versions": {
+    "/api/v3/channels/{uuid}/versions": {
       "post": {
         "tags": [
           "channels"
@@ -708,7 +708,7 @@
         "responses": {}
       }
     },
-    "/api/v1/clusters/clustersByOrgId": {
+    "/api/v3/clusters/clustersByOrgId": {
       "get": {
         "tags": [
           "clusters"
@@ -732,7 +732,7 @@
         "responses": {}
       }
     },
-    "/api/v1/groups": {
+    "/api/v3/groups": {
       "post": {
         "tags": [
           "groups"
@@ -756,7 +756,7 @@
         "responses": {}
       }
     },
-    "/api/v1/groups/groupClusters": {
+    "/api/v3/groups/groupClusters": {
       "put": {
         "tags": [
           "groups"
@@ -786,7 +786,7 @@
         "responses": {}
       }
     },
-    "/api/v1/subscriptions": {
+    "/api/v3/subscriptions": {
       "post": {
         "tags": [
           "subscriptions"
@@ -822,7 +822,7 @@
         "responses": {}
       }
     },
-    "/api/v1/subscriptions/{uuid}": {
+    "/api/v3/subscriptions/{uuid}": {
       "get": {
         "tags": [
           "subscriptions"

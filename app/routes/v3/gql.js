@@ -15,15 +15,24 @@
 */
 
 const express = require('express');
+const _ = require('lodash');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const mainServer = require('../../');
 const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql');
 
+const methodTypes = [
+  'findOne', 'findMany', 'create', 'update',
+];
+
 // Send request to Graphql, but return a REST style response / code
-const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
-  const methodName = 'sendReqToGraphql'
+const sendReqToGraphql = async({ req, res, query, variables, operationName, methodType })=>{
+  const methodName = 'sendReqToGraphql';
   log.debug( `${methodName} entry, operationName: ${operationName}` );
+
+  if(!_.includes(methodTypes, methodType)){
+    throw new Error(`invalid methodType "${methodType}". valid options: ${JSON.stringify(methodTypes)}`);
+  }
 
   const restReqType = req.method;
 
@@ -36,19 +45,24 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
 
       const resErrors = resObj['errors'];
       if( resErrors && resErrors.length > 0 ) {
-        throw new Error( `[ '${resErrors.map(e => e.message).join('\', \'')}' ]` );
+        throw new Error(JSON.stringify({
+          errors: _.map(resErrors, 'message'),
+        }));
       }
 
       const resVal = resObj['data'][operationName];
 
       // If GET of a single item...
       if( restReqType == 'GET' ) {
+        if(methodType == 'findOne' && !resVal){
+          return this.status(404).oldSend('');
+        }
         // One/Multiple expected, one/multiple found, return 200 (OK)
         return this.status(200).oldSend( JSON.stringify(resVal) );
       }
       // ElseIf PUT...
       else if( restReqType == 'PUT' ) {
-        if( !resVal.hasOwnProperty('modified') ) {
+        if( !_.has(resVal, 'modified') ) {
           // Unexpected Graphql response, return 500 (INTERNAL SERVER ERROR)
           return this.status(500).oldSend( JSON.stringify(resVal) );
         }
@@ -114,7 +128,8 @@ router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     name,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'create';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
@@ -142,7 +157,8 @@ router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
   const variables = {
     orgId,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findMany';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>{
@@ -173,7 +189,8 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
     type,
     content,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'create';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
@@ -196,7 +213,8 @@ router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
   const variables = {
     orgId,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findMany';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
@@ -220,7 +238,8 @@ router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     clusterId,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findOne';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
@@ -243,7 +262,8 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     name,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'create';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 // PUT to a group only supports setting clusters (can't change name etc)
@@ -269,7 +289,8 @@ router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     uuid,
     clusters,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'update';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
@@ -290,7 +311,8 @@ router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
   const variables = {
     orgId,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findMany';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
@@ -313,7 +335,8 @@ router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     uuid,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findOne';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
@@ -344,7 +367,8 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
     channelUuid,
     versionUuid,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'create';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 router.get('/subscriptions/:uuid', getOrgId, asyncHandler(async(req, res)=>{
@@ -372,7 +396,8 @@ router.get('/subscriptions/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
     uuid,
   };
-  sendReqToGraphql({ req, res, query, variables, operationName });
+  const methodType = 'findOne';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
 module.exports = router;
