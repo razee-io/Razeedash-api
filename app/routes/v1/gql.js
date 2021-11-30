@@ -1,3 +1,19 @@
+/**
+* Copyright 2021 IBM Corp. All Rights Reserved.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -7,14 +23,14 @@ const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql')
 // Send request to Graphql, but return a REST style response / code
 const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
   const methodName = 'sendReqToGraphql'
-  log.debug( `${methodName} entry, operationName: ${operationName}` );
+  console.log( `${methodName} entry, operationName: ${operationName}` );
 
   const restReqType = req.method;
 
   // Prevent Graphql handling from sending response, allow reformatting to REST specifications.
   res.oldSend = res.send.bind(res);
   res.send = function(gqlRes){
-    log.debug( `${methodName} gqlRes: ${gqlRes}` );
+    console.log( `${methodName} gqlRes: ${gqlRes}` );
     try {
       const resObj = JSON.parse(gqlRes);
 
@@ -50,40 +66,26 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName })=>{
       }
       // ElseIf PUT...
       else if( restReqType == 'PUT' ) {
-        if( resVal.length == 0 ) {
-          // One expected, none updated, return 404 (NOT FOUND)
-          return this.status(404).oldSend( '' );
-        }
-        else if( resVal.length > 1 ) {
-          // One expected, multiple updated, return 400 (BAD REQUEST)
-          return this.status(400).oldSend( JSON.stringify(resVal) );
+        if( !resVal.hasOwnProperty('modified') ) {
+          // Unexpected Graphql response, return 500 (INTERNAL SERVER ERROR)
+          return this.status(500).oldSend( JSON.stringify(resVal) );
         }
         else {
-          // One expected, one updated, return 200 (OK)
-          return this.status(200).oldSend( JSON.stringify(resVal[0]) );
+          // Modification may or may not have been necessary, return 200 (OK)
+          return this.status(200).oldSend( '' );  // Ideally should return the updated object(s) here
         }
       }
       // ElseIf POST...
       else if( restReqType == 'POST' ) {
-        if( resVal.length == 0 ) {
-          // One expected, none created, return 400 (BAD REQUEST)
-          return this.status(404).oldSend( '' );
-        }
-        else if( resVal.length > 1 ) {
-          // One expected, multiple created, return 400 (BAD REQUEST)
-          return this.status(400).oldSend( JSON.stringify(resVal) );
-        }
-        else {
-          // One expected, one created, return 201 (CREATED) with `Location` header
-          this.setHeader( 'Location', 'FIXME' );
-          return this.status(201).oldSend( JSON.stringify(resVal[0]) );
-        }
+        // One expected, one created, return 201 (CREATED) with `Location` header
+        this.setHeader( 'Location', 'FIXME' );
+        return this.status(201).oldSend( JSON.stringify(resVal) );
       }
       // Else (unexpected request type)
       throw new Error( `request type '${restReqType}' is unexpected` ); // Should never occur
     }
     catch( e ) {
-      log.debug( `${methodName} error: ${e.message}` );
+      console.log( `${methodName} error: ${e.message}` );
       return this.status(400).oldSend( e.message );
     }
   }.bind(res);
@@ -192,7 +194,7 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
 
-router.get('/clusters/clustersByOrgId', getOrgId, asyncHandler(async(req, res)=>{
+router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets all clusters for an org'
   const { orgId } = req;
@@ -203,6 +205,7 @@ router.get('/clusters/clustersByOrgId', getOrgId, asyncHandler(async(req, res)=>
         id
         orgId
         clusterId
+        groups { uuid name }
         metadata
       }
     }
@@ -210,6 +213,30 @@ router.get('/clusters/clustersByOrgId', getOrgId, asyncHandler(async(req, res)=>
   `;
   const variables = {
     orgId,
+  };
+  sendReqToGraphql({ req, res, query, variables, operationName });
+}));
+
+router.get('/clusters/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['clusters']
+  // #swagger.summary = 'Gets specified cluster for an org'
+  const { orgId } = req;
+  const clusterId = req.params.uuid;
+  const operationName  = 'clusterByClusterId';
+  const query = `
+    query ${operationName}($orgId: String!, $clusterId: String!) {
+      clusterByClusterId(orgId: $orgId, clusterId: $clusterId) {
+        id
+        orgId
+        clusterId
+        groups { uuid name }
+        metadata
+      }
+    }
+  `;
+  const variables = {
+    orgId,
+    clusterId,
   };
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
@@ -237,7 +264,8 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
   sendReqToGraphql({ req, res, query, variables, operationName });
 }));
 
-router.put('/groups/groupClusters', getOrgId, asyncHandler(async(req, res)=>{
+// PUT to a group only supports setting clusters (can't change name etc)
+router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Assigns a group to a cluster'
   const { orgId } = req;
@@ -249,7 +277,7 @@ router.put('/groups/groupClusters', getOrgId, asyncHandler(async(req, res)=>{
       }
     }
   `;
-  const uuid = req.body.uuid;
+  const uuid = req.params.uuid;
   const clusters = req.body.clusters;
   if(!uuid || !clusters){
     throw new Error('needs { uuid, clusters }');
