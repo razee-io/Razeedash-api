@@ -26,7 +26,7 @@ const methodTypes = [
 ];
 
 // Send request to Graphql, but return a REST style response / code
-const sendReqToGraphql = async({ req, res, query, variables, operationName, methodType })=>{
+const sendReqToGraphql = async({ req, res, query, variables, operationName, methodType, createdIdentifier })=>{
   const methodName = 'sendReqToGraphql';
   log.debug( `${methodName} entry, operationName: ${operationName}` );
 
@@ -35,6 +35,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
   }
 
   const restReqType = req.method;
+  const restReqPath = req.path;
 
   // Prevent Graphql handling from sending response, allow reformatting to REST specifications.
   res.oldSend = res.send.bind(res);
@@ -74,7 +75,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
       // ElseIf POST...
       else if( restReqType == 'POST' ) {
         // One expected, one created, return 201 (CREATED) with `Location` header
-        this.setHeader( 'Location', 'FIXME' );
+        this.setHeader( 'Location', `${restReqPath}/${resVal[createdIdentifier||'uuid']}` );
         return this.status(201).oldSend( JSON.stringify(resVal) );
       }
       // Else (unexpected request type)
@@ -129,7 +130,7 @@ router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
     name,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
 }));
 
 router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
@@ -191,7 +192,7 @@ router.get('/channels/:uuid', getOrgId, asyncHandler(async(req, res)=>{
   sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
-router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>{
+router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(async(req, res)=>{
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a new channel version'
   const { orgId } = req;
@@ -204,7 +205,7 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
       }
     }
   `;
-  const channelUuid = req.params.uuid;
+  const channelUuid = req.params.channelUuid;
   const name = req.body.name;
   const type = req.body.type;
   const content = req.body.content;
@@ -220,6 +221,32 @@ router.post('/channels/:uuid/versions', getOrgId, asyncHandler(async(req, res)=>
     content,
   };
   const methodType = 'create';
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'versionUuid' });
+}));
+
+router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandler(async(req, res)=>{
+  // #swagger.tags = ['channels']
+  // #swagger.summary = 'Gets a specified channel version'
+  const { orgId } = req;
+  const channelUuid = req.params.channelUuid;
+  const versionUuid = req.params.versionUuid;
+  const operationName = 'channelVersion';
+  const query = `
+    query ${operationName}($orgId: String!, $channelUuid: String!, $versionUuid: String!) {
+      channelVersion(orgId: $orgId, channelUuid: $channelUuid, versionUuid: $versionUuid) {
+        uuid
+        name
+        description
+        created
+      }
+    }
+  `;
+  const variables = {
+    orgId,
+    channelUuid,
+    versionUuid,
+  };
+  const methodType = 'findOne';
   sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 }));
 
@@ -293,7 +320,7 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
     name,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
 }));
 
 // PUT to a group only supports setting clusters (can't change name etc)
@@ -398,7 +425,7 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
     versionUuid,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
 }));
 
 router.get('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
