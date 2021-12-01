@@ -96,7 +96,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
   req.method = 'POST';
 
   // Send to Graphql
-  mainServer.app.handle(req, res, {});
+  await mainServer.app.handle(req, res, () => {});
 };
 
 const getOrgId = (req, res, next)=>{
@@ -108,8 +108,7 @@ const getOrgId = (req, res, next)=>{
   next();
 };
 
-
-router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
+const postChannels = async (req, res, next) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a channel'
   const { orgId } = req;
@@ -130,10 +129,11 @@ router.post('/channels', getOrgId, asyncHandler(async(req, res)=>{
     name,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
+};
+router.post('/channels', getOrgId, asyncHandler(postChannels));
 
-router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
+const getChannels = async (req, res, next) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets all channels'
   const { orgId } = req;
@@ -159,14 +159,14 @@ router.get('/channels', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
   };
   const methodType = 'findMany';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/channels', getOrgId, asyncHandler(getChannels));
 
-router.get('/channels/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+const getChannel = async (req, res, next) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel'
   const { orgId } = req;
-  const uuid = req.params.uuid;
   const operationName = 'channel';
   const query = `
     query ${operationName}($orgId: String!, $uuid: String!) {
@@ -184,15 +184,20 @@ router.get('/channels/:uuid', getOrgId, asyncHandler(async(req, res)=>{
       }
     }
   `;
+  const uuid = req.params.uuid;
+  if(!uuid){
+    throw new Error('needs { uuid }');
+  }
   const variables = {
     orgId,
     uuid,
   };
   const methodType = 'findOne';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/channels/:uuid', getOrgId, asyncHandler(getChannel));
 
-router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(async(req, res)=>{
+const postChannelVersion = async (req, res, next) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a new channel version'
   const { orgId } = req;
@@ -209,7 +214,6 @@ router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(async(req,
   const name = req.body.name;
   const type = req.body.type;
   const content = req.body.content;
-
   if(!name || !channelUuid || !type || !content){
     throw new Error('needs { channelUuid, name, type, content }');
   }
@@ -221,15 +225,14 @@ router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(async(req,
     content,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'versionUuid' });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'versionUuid' });
+};
+router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(postChannelVersion));
 
-router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandler(async(req, res)=>{
+const getChannelVersion = async (req, res, next) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel version'
   const { orgId } = req;
-  const channelUuid = req.params.channelUuid;
-  const versionUuid = req.params.versionUuid;
   const operationName = 'channelVersion';
   const query = `
     query ${operationName}($orgId: String!, $channelUuid: String!, $versionUuid: String!) {
@@ -241,16 +244,22 @@ router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandle
       }
     }
   `;
+  const channelUuid = req.params.channelUuid;
+  const versionUuid = req.params.versionUuid;
+  if(!channelUuid || !versionUuid){
+    throw new Error('needs { channelUuid, versionUuid }');
+  }
   const variables = {
     orgId,
     channelUuid,
     versionUuid,
   };
   const methodType = 'findOne';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandler(getChannelVersion));
 
-router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
+const getClusters = async (req, res, next) => {
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets all clusters'
   const { orgId } = req;
@@ -271,14 +280,14 @@ router.get('/clusters', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
   };
   const methodType = 'findMany';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/clusters', getOrgId, asyncHandler(getClusters));
 
-router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
+const getCluster = async (req, res, next) => {
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets a specified cluster'
   const { orgId } = req;
-  const clusterId = req.params.clusterId;
   const operationName = 'clusterByClusterId';
   const query = `
     query ${operationName}($orgId: String!, $clusterId: String!) {
@@ -291,15 +300,20 @@ router.get('/clusters/:clusterId', getOrgId, asyncHandler(async(req, res)=>{
       }
     }
   `;
+  const clusterId = req.params.clusterId;
+  if(!clusterId){
+    throw new Error('needs { clusterId }');
+  }
   const variables = {
     orgId,
     clusterId,
   };
   const methodType = 'findOne';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/clusters/:clusterId', getOrgId, asyncHandler(getCluster));
 
-router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
+const postGroups = async (req, res, next) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Adds a group'
   const { orgId } = req;
@@ -331,11 +345,12 @@ router.post('/groups', getOrgId, asyncHandler(async(req, res)=>{
   */
 
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
+};
+router.post('/groups', getOrgId, asyncHandler(postGroups));
 
 // PUT to a group only supports setting clusters (can't change name etc)
-router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+const putGroup = async (req, res, next) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Sets the clusters for a specified group'
   const { orgId } = req;
@@ -358,10 +373,11 @@ router.put('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     clusters,
   };
   const methodType = 'update';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.put('/groups/:uuid', getOrgId, asyncHandler(putGroup));
 
-router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
+const getGroups = async (req, res, next) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets all groups'
   const { orgId } = req;
@@ -380,10 +396,11 @@ router.get('/groups', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
   };
   const methodType = 'findMany';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/groups', getOrgId, asyncHandler(getGroups));
 
-router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+const getGroup = async (req, res, next) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets a specified group'
   const { orgId } = req;
@@ -399,15 +416,19 @@ router.get('/groups/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     }
   `;
   const uuid = req.params.uuid;
+  if(!uuid){
+    throw new Error('needs { uuid }');
+  }
   const variables = {
     orgId,
     uuid,
   };
   const methodType = 'findOne';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/groups/:uuid', getOrgId, asyncHandler(getGroup));
 
-router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
+const postSubscriptions = async (req, res, next) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Adds a subscription'
   const { orgId } = req;
@@ -436,10 +457,11 @@ router.post('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
     versionUuid,
   };
   const methodType = 'create';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
+};
+router.post('/subscriptions', getOrgId, asyncHandler(postSubscriptions));
 
-router.get('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
+const getSubscriptions = async (req, res, next) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets all subscriptions'
   const { orgId } = req;
@@ -463,10 +485,11 @@ router.get('/subscriptions', getOrgId, asyncHandler(async(req, res)=>{
     orgId,
   };
   const methodType = 'findMany';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/subscriptions', getOrgId, asyncHandler(getSubscriptions));
 
-router.get('/subscriptions/:uuid', getOrgId, asyncHandler(async(req, res)=>{
+const getSubscription = async (req, res, next) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets a specified subscription'
   const { orgId } = req;
@@ -487,12 +510,16 @@ router.get('/subscriptions/:uuid', getOrgId, asyncHandler(async(req, res)=>{
     }
   `;
   const uuid = req.params.uuid;
+  if(!uuid){
+    throw new Error('needs { uuid }');
+  }
   const variables = {
     orgId,
     uuid,
   };
   const methodType = 'findOne';
-  sendReqToGraphql({ req, res, query, variables, operationName, methodType });
-}));
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.get('/subscriptions/:uuid', getOrgId, asyncHandler(getSubscription));
 
 module.exports = router;
