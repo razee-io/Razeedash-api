@@ -46,6 +46,11 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
 
       const resErrors = resObj['errors'];
       if( resErrors && resErrors.length > 0 ) {
+        /*
+        Note that code cannot currently differentiate between types of errors returned
+        by Graphql, e.g. to return 401 when the client is not authorized to make the request
+        or some other error.  400 BAD REQUEST is used for any Graphql error.
+        */
         throw new Error(JSON.stringify({
           errors: _.map(resErrors, 'message'),
         }));
