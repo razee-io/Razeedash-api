@@ -23,6 +23,7 @@ const serviceSchema = gql`
     orgId: String!
     name: String!
     clusterId: String!
+    cluster: BasicCluster!
     channelUuid: String!
     channelName: String!
     channel: Channel
@@ -68,7 +69,7 @@ extend type Query {
 
 extend type Mutation {
     """
-    Adds a service subscription and returns new service subscription unique id: 
+    Adds a service subscription and returns new service subscription unique id:
         orgId - user org id
         name - service subscription name
         clusterId - target service cluster_id from different orgId
@@ -76,7 +77,7 @@ extend type Mutation {
         versionUuid - user config version uuid
     """
     addServiceSubscription(orgId: String! @sv, name: String! @sv, clusterId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
-    
+
     """
     Edits a service subscription
         orgId - user org id
@@ -86,7 +87,7 @@ extend type Mutation {
         versionUuid - user config version uuid
     """
     editServiceSubscription(orgId: String! @sv, ssid: String! @sv, name: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
-    
+
     """
     Removes a service subscription
         orgId - user org id
