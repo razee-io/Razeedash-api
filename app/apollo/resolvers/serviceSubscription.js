@@ -96,16 +96,6 @@ const serviceResolvers = {
         });
       }
 
-      // render cluster information if users ask for
-      if(queryFields.cluster && serviceSubscriptions) {
-        const clusterIds = _.map(serviceSubscriptions, 'clusterId');
-        const clusters = await models.Cluster.getClustersByIds(clusterIds);
-        serviceSubscriptions = serviceSubscriptions.map((sub)=>{
-          sub.cluster = clusters[sub.clusterId];
-          return sub;
-        });
-      }
-
       await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
 
       return serviceSubscriptions;
