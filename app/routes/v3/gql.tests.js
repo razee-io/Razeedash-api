@@ -17,7 +17,6 @@
 const assert = require('assert');
 const mongodb = require('mongo-mock');
 const httpMocks = require('node-mocks-http');
-const log = require('../../log').log;
 const rewire = require('rewire');
 const v3 = rewire('./gql');
 
@@ -74,7 +73,7 @@ describe('gql', () => {
 
         // Test
         try {
-          await functionToTest( request, response, (err) => { assert.fail( 'Next was called instead of response sent' ); });
+          await functionToTest( request, response, () => { assert.fail( 'next() was called instead of response sent' ); });
         }
         catch( e ) {
           assert.fail( `function errored instead of sending response: ${e.message}` );
@@ -96,10 +95,11 @@ describe('gql', () => {
 
           // Test
           try {
-            await functionToTest( request, response, (err) => { assert.fail( 'Next was called instead of response sent' ); });
-            assert.fail( `function did not error even though params were missing` );
+            await functionToTest( request, response, () => { assert.fail( 'next() was called instead of response sent' ); });
+            assert.fail( 'function did not error even though params were missing' );
           }
           catch( e ) {
+            // Error expected
           }
         } );
       }
@@ -119,10 +119,11 @@ describe('gql', () => {
 
           // Test
           try {
-            await functionToTest( request, response, (err) => { assert.fail( 'Next was called instead of response sent' ); });
-            assert.fail( `function did not error even though body attributes were missing` );
+            await functionToTest( request, response, () => { assert.fail( 'next() was called instead of response sent' ); });
+            assert.fail( 'function did not error even though body attributes were missing' );
           }
           catch( e ) {
+            // Error expected
           }
         } );
       }

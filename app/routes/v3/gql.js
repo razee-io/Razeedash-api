@@ -113,7 +113,7 @@ const getOrgId = (req, res, next)=>{
   next();
 };
 
-const postChannels = async (req, res, next) => {
+const postChannels = async (req, res) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a channel'
   const { orgId } = req;
@@ -138,7 +138,7 @@ const postChannels = async (req, res, next) => {
 };
 router.post('/channels', getOrgId, asyncHandler(postChannels));
 
-const getChannels = async (req, res, next) => {
+const getChannels = async (req, res) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets all channels'
   const { orgId } = req;
@@ -168,7 +168,7 @@ const getChannels = async (req, res, next) => {
 };
 router.get('/channels', getOrgId, asyncHandler(getChannels));
 
-const getChannel = async (req, res, next) => {
+const getChannel = async (req, res) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel'
   const { orgId } = req;
@@ -202,7 +202,7 @@ const getChannel = async (req, res, next) => {
 };
 router.get('/channels/:uuid', getOrgId, asyncHandler(getChannel));
 
-const postChannelVersion = async (req, res, next) => {
+const postChannelVersion = async (req, res) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a new channel version'
   const { orgId } = req;
@@ -234,7 +234,7 @@ const postChannelVersion = async (req, res, next) => {
 };
 router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(postChannelVersion));
 
-const getChannelVersion = async (req, res, next) => {
+const getChannelVersion = async (req, res) => {
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel version'
   const { orgId } = req;
@@ -264,7 +264,7 @@ const getChannelVersion = async (req, res, next) => {
 };
 router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandler(getChannelVersion));
 
-const getClusters = async (req, res, next) => {
+const getClusters = async (req, res) => {
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets all clusters'
   const { orgId } = req;
@@ -289,7 +289,7 @@ const getClusters = async (req, res, next) => {
 };
 router.get('/clusters', getOrgId, asyncHandler(getClusters));
 
-const getCluster = async (req, res, next) => {
+const getCluster = async (req, res) => {
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets a specified cluster'
   const { orgId } = req;
@@ -318,7 +318,7 @@ const getCluster = async (req, res, next) => {
 };
 router.get('/clusters/:clusterId', getOrgId, asyncHandler(getCluster));
 
-const postGroups = async (req, res, next) => {
+const postGroups = async (req, res) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Adds a group'
   const { orgId } = req;
@@ -355,7 +355,7 @@ const postGroups = async (req, res, next) => {
 router.post('/groups', getOrgId, asyncHandler(postGroups));
 
 // PUT to a group only supports setting clusters (can't change name etc)
-const putGroup = async (req, res, next) => {
+const putGroup = async (req, res) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Sets the clusters for a specified group'
   const { orgId } = req;
@@ -382,7 +382,7 @@ const putGroup = async (req, res, next) => {
 };
 router.put('/groups/:uuid', getOrgId, asyncHandler(putGroup));
 
-const getGroups = async (req, res, next) => {
+const getGroups = async (req, res) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets all groups'
   const { orgId } = req;
@@ -405,7 +405,7 @@ const getGroups = async (req, res, next) => {
 };
 router.get('/groups', getOrgId, asyncHandler(getGroups));
 
-const getGroup = async (req, res, next) => {
+const getGroup = async (req, res) => {
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets a specified group'
   const { orgId } = req;
@@ -433,7 +433,7 @@ const getGroup = async (req, res, next) => {
 };
 router.get('/groups/:uuid', getOrgId, asyncHandler(getGroup));
 
-const postSubscriptions = async (req, res, next) => {
+const postSubscriptions = async (req, res) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Adds a subscription'
   const { orgId } = req;
@@ -466,7 +466,7 @@ const postSubscriptions = async (req, res, next) => {
 };
 router.post('/subscriptions', getOrgId, asyncHandler(postSubscriptions));
 
-const getSubscriptions = async (req, res, next) => {
+const getSubscriptions = async (req, res) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets all subscriptions'
   const { orgId } = req;
@@ -494,7 +494,7 @@ const getSubscriptions = async (req, res, next) => {
 };
 router.get('/subscriptions', getOrgId, asyncHandler(getSubscriptions));
 
-const getSubscription = async (req, res, next) => {
+const getSubscription = async (req, res) => {
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets a specified subscription'
   const { orgId } = req;
