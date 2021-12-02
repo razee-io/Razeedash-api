@@ -119,7 +119,7 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/OrgArray" 
+              "$ref": "#/definitions/OrgArray"
             }
           },
           "400": {
@@ -168,7 +168,7 @@
             "description": "The field(s) of the org object to be updated",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/OrgUpdate" 
+              "$ref": "#/definitions/OrgUpdate"
             }
           }
         ],
@@ -261,7 +261,7 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/Cluster" 
+              "$ref": "#/definitions/Cluster"
             }
           },
           "400": {
@@ -622,6 +622,447 @@
           }
         }
       }
+    },
+    "/api/v3/channels": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orgId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      },
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/channels/{uuid}": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/channels/{channelUuid}/versions": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "channelUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orgId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/channels/{channelUuid}/versions/{versionUuid}": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "channelUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "versionUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/clusters": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/clusters/{clusterId}": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "clusterId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/groups": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orgId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      },
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/groups/{uuid}": {
+      "put": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orgId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      },
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/subscriptions": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "obj",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orgId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      },
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/v3/subscriptions/{uuid}": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Gets all channels",
+        "description": "",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "org-id",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
     }
   },
   "securityDefinitions": {
@@ -758,7 +1199,7 @@
         "updated": { "type": "string", "format": "date" },
         "deleted": { "type": "boolean" },
         "hash": { "type": "string" },
-        "searchableData": { 
+        "searchableData": {
           "type": "object",
           "properties": {
             "kind": { "type": "string" },
@@ -768,7 +1209,7 @@
           }
         },
         "searchableDataHash": { "type": "string" },
-        "searchableDataHist": { 
+        "searchableDataHist": {
           "type": "object",
           "properties": {
             "kind": {
@@ -781,7 +1222,7 @@
                 }
               }
             },
-            "name": { 
+            "name": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -791,7 +1232,7 @@
                 }
               }
             },
-            "namespace": { 
+            "namespace": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -799,9 +1240,9 @@
                   "timestamp": { "type": "integer"},
                   "val": { "type": "string"}
                 }
-              } 
+              }
             },
-            "apiVersion": { 
+            "apiVersion": {
               "type": "array",
               "items": {
                 "type": "object",

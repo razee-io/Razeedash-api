@@ -36,6 +36,7 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
+const V3Gql = require('./v3/gql');
 
 router.get('/v1/health', (req, res)=>{
   res.json({
@@ -76,6 +77,10 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
+// the gql endpoints should be above the razee-org-key checks since it passes
+// all headers to the graphql handler code, which then does it own auth
+router.use('/v3/', V3Gql);
+
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
@@ -92,12 +97,15 @@ router.use(async (req, res, next) => {
   next();
 });
 
+
 router.use(getOrg);
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
 
+// Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
+
 
 async function initialize(){
   const options = {

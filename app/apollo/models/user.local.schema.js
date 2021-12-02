@@ -285,7 +285,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     // say no for if it is cluster facing api
     logger.debug({ req_id, orgId, reason: 'me is empty or cluster type'},'local isAuthorizedBatch exit..');
     var result = false;
-    if(await models.User.isValidOrgKey(models, me)){
+    if(await models.User.isValidOrgKey(models, me, logger)){
       result = true;
     }
     return new Array(objectArray.length).fill(result);
@@ -319,12 +319,11 @@ UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${action} ${type} ${attributes}`);
-
-  if (!me || me === null || me.type === 'cluster') {
+  if (!me || me === null || me.type === 'cluster'){
     // say no for if it is cluster facing api
     return false;
   }
-  if (me.org_admin) {
+  if (me.org_admin){
     return true;
   }
   const orgMeta = me.meta.orgs.find((o)=>{

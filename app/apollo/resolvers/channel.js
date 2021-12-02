@@ -35,6 +35,8 @@ const channelResolvers = {
       const queryName = 'channels';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+
       try{
         var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);

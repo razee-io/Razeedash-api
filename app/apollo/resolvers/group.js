@@ -77,7 +77,7 @@ const groupResolvers = {
       try{
         let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
         if (!group) {
-          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}));
+          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
@@ -356,7 +356,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
