@@ -630,6 +630,12 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -657,7 +663,14 @@
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Successful creation"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       },
       "get": {
         "tags": [
@@ -665,6 +678,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -679,7 +695,14 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/channels/{uuid}": {
@@ -689,6 +712,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "uuid",
@@ -709,7 +735,17 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/channels/{channelUuid}/versions": {
@@ -719,6 +755,12 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "channelUuid",
@@ -752,7 +794,14 @@
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Successful creation"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/channels/{channelUuid}/versions/{versionUuid}": {
@@ -762,6 +811,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "channelUuid",
@@ -788,7 +840,17 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/clusters": {
@@ -798,6 +860,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -812,7 +877,14 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/clusters/{clusterId}": {
@@ -822,6 +894,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "clusterId",
@@ -842,7 +917,17 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/groups": {
@@ -852,6 +937,12 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -879,7 +970,14 @@
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Successful creation"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       },
       "get": {
         "tags": [
@@ -887,6 +985,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -901,7 +1002,14 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/groups/{uuid}": {
@@ -911,6 +1019,12 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "uuid",
@@ -944,7 +1058,14 @@
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Successful update"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       },
       "get": {
         "tags": [
@@ -952,6 +1073,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "uuid",
@@ -972,7 +1096,14 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/subscriptions": {
@@ -982,6 +1113,12 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -1009,7 +1146,14 @@
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Successful creation"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       },
       "get": {
         "tags": [
@@ -1017,6 +1161,9 @@
         ],
         "summary": "Gets all channels",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "orgId",
@@ -1031,7 +1178,14 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     },
     "/api/v3/subscriptions/{uuid}": {
@@ -1039,8 +1193,11 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets a specified subscription",
         "description": "",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
             "name": "uuid",
@@ -1061,7 +1218,17 @@
             "type": "string"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
       }
     }
   },
