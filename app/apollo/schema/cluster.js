@@ -29,6 +29,14 @@ const clusterSchema = gql`
     name: String!
   }
 
+  type BasicCluster {
+    id: ID!
+    orgId: String!
+    clusterId: String!
+    name: String
+    registration: JSON
+  }
+
   type Cluster {
     id: ID!
     orgId: String!
@@ -155,7 +163,7 @@ const clusterSchema = gql`
 
     """
     Register a cluster with razee api for an organization. registration.name is required.
-    """ 
+    """
     registerCluster (
       orgId: String! @sv
       registration: JSON! @jv

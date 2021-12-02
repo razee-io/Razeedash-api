@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+const _ = require('lodash');
+
 const mongoose = require('mongoose');
 const { CLUSTER_REG_STATES } = require('./const');
 const ClusterSchema = new mongoose.Schema({
@@ -110,5 +112,25 @@ const ClusterSchema = new mongoose.Schema({
 });
 
 ClusterSchema.index({ org_id: 1, cluster_id: 1 }, { unique: true });
+
+// Used to get cluster details for ServiceSubscriptions
+ClusterSchema.statics.getClustersByIds = async function(ids){
+  if(!ids || ids.length < 1){
+    return {};
+  }
+  const clusters = await this.find({ cluster_id: { $in: ids } }, { }, { lean: 1 });
+  const mappedClusters = clusters.map((cluster)=>{
+    //return a BasicCluster
+    return {
+      id: cluster._id,
+      orgId: cluster.org_id,
+      clusterId: cluster.cluster_id,
+      name: cluster.name,
+      registration: cluster.registration,
+    };
+  });
+  const keyedClusters = _.keyBy(mappedClusters, 'clusterId');
+  return keyedClusters;
+};
 
 module.exports = ClusterSchema;

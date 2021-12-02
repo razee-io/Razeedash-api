@@ -162,6 +162,12 @@ describe('Service subscription graphql test suite', () => {
     printResults(result);
     expect(result.data.serviceSubscription.ssid).to.equal(testData.serSub1._id);
     expect(result.data.serviceSubscription.owner.name).to.equal('user02');
+    // Cluster orgId should be returned and match cluster2 test data
+    expect(result.data.serviceSubscription.cluster.orgId).to.equal(testData.cluster2Data.org_id);
+    // ServiceSubscription orgId should be returned and match org01 test data
+    expect(result.data.serviceSubscription.orgId).to.equal(testData.org01._id);
+    // ServiceSubscription orgId should not match Cluster orgId
+    expect(result.data.serviceSubscription.orgId).to.not.equal(result.data.serviceSubscription.cluster.orgId);
   });
 
   it('Deleting cluster should not cause service subscriptions retrieval to fail', async () => {

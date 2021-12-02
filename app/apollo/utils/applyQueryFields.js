@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-var _ = require('lodash');
+const _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
 const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
 
 
-var loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
-  var { models } = context;
-  var resourceLimit = args.resourceLimit || 500;
+const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
+  const { models } = context;
+  const resourceLimit = args.resourceLimit || 500;
   return await models.Resource.find({
     $and: [
       search,
@@ -32,8 +32,8 @@ var loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
 
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
-  var { models } = context;
-  var { orgId, groupLimit } = args;
+  const { models } = context;
+  const { orgId, groupLimit } = args;
 
   const clusterIds = _.map(clusters, 'cluster_id');
   const now = new Date();
@@ -52,11 +52,12 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     }
   });
   if(queryFields.resources) {
-    var resources = await loadResourcesWithSearchAndArgs({
+    const resources = await loadResourcesWithSearchAndArgs({
       search: { cluster_id: { $in: clusterIds } },
       args,
       context,
     });
+
     await applyQueryFieldsToResources(resources, queryFields.resources, args, context);
 
     const resourcesByClusterId = _.groupBy(resources, 'cluster_id');
@@ -71,13 +72,14 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       //   {groups: [{name: 'tag1'}]},
       //   {groups: [{name: 'tag2'}]},
       // ]
-      var groupNames = _.filter(_.uniq(_.map(_.flatten(_.map(clusters, 'groups')), 'name')));
-      var groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).limit(groupLimit).lean({ virtuals: true });
+      const groupNames = _.filter(_.uniq(_.map(_.flatten(_.map(clusters, 'groups')), 'name')));
+      const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).limit(groupLimit).lean({ virtuals: true });
+
       await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
 
-      var groupsByUuid = _.keyBy(groups, 'uuid');
+      const groupsByUuid = _.keyBy(groups, 'uuid');
       _.each(clusters, (cluster)=>{
-        var clusterGroupUuids = _.map(cluster.groups, 'uuid');
+        const clusterGroupUuids = _.map(cluster.groups, 'uuid');
         cluster.groupObjs = _.filter(_.pick(groupsByUuid, clusterGroupUuids));
         cluster.groups = _.filter(_.pick(groupsByUuid, clusterGroupUuids));
       });
@@ -86,8 +88,8 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
 };
 
 const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
-  var { me, models } = context;
-  var { orgId } = args;
+  const { me, models } = context;
+  const { orgId } = args;
 
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.uniq(_.map(groups, 'owner')));
@@ -96,8 +98,8 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
     });
   }
   if(queryFields.subscriptions || queryFields.subscriptionCount){
-    var groupNames = _.uniq(_.map(groups, 'name'));
-    var subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
+    const groupNames = _.uniq(_.map(groups, 'name'));
+    let subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
     subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
 
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscriptions, args, context);
@@ -119,8 +121,9 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
     });
   }
   if(queryFields.clusters || queryFields.clusterCount){
-    var groupUuids = _.uniq(_.map(groups, 'uuid'));
+    const groupUuids = _.uniq(_.map(groups, 'uuid'));
     const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: groupUuids } }).lean({ virtuals: true });
+
     await applyQueryFieldsToClusters(clusters, queryFields.clusters, args, context);
 
     const clustersByGroupUuid = {};
@@ -138,23 +141,24 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
 };
 
 const applyQueryFieldsToResources = async(resources, queryFields={}, args, context)=>{
-  var { me, models } = context;
-  var { orgId, subscriptionsLimit = 500 } = args;
+  const { me, models } = context;
+  const { orgId, subscriptionsLimit = 500 } = args;
 
   if(queryFields.cluster){
-    var clusterIds = _.map(resources, 'clusterId');
-    var clusters = await models.Cluster.find({ cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
+    const clusterIds = _.map(resources, 'clusterId');
+    const clusters = await models.Cluster.find({ cluster_id: { $in: clusterIds } }).lean({ virtuals: true });
+
     await applyQueryFieldsToClusters(clusters, queryFields.cluster, args, context);
 
-    var clustersById = _.keyBy(clusters, 'clusterId');
+    const clustersById = _.keyBy(clusters, 'clusterId');
     _.each(resources, (resource)=>{
       resource.cluster = clustersById[resource.clusterId];
     });
   }
 
   if(queryFields.subscription){
-    var subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
-    var subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
+    const subscriptionUuids = _.filter(_.uniq(_.map(resources, 'searchableData.subscription_id')));
+    let subscriptions = await models.Subscription.find({ uuid: { $in: subscriptionUuids } }).limit(subscriptionsLimit).lean({ virtuals: true });
     subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
 
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscription, args, context);
@@ -164,9 +168,9 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
         sub.channelName = sub.channel;
       }
     });
-    var subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');
+    const subscriptionsByUuid = _.keyBy(subscriptions, 'uuid');
     _.each(resources, (resource)=>{
-      var subId = resource.searchableData.subscription_id;
+      const subId = resource.searchableData.subscription_id;
       if(!subId){
         return;
       }
@@ -191,7 +195,7 @@ const applyQueryFieldsToDeployableVersions = async(versions, queryFields={}, arg
 
 const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context)=>{ // eslint-disable-line
   const { models, me } = context;
-  var { orgId } = args;
+  const { orgId } = args;
 
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.filter(_.uniq(_.map(channels, 'ownerId'))));
@@ -209,13 +213,13 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
   if(queryFields.subscriptions){
     //piggyback basic-info of subscriptions associated with this channel that user allowed to see
     const conditions = await getGroupConditions(me, orgId, ACTIONS.READ, 'name', 'applyQueryFieldsToChannels queryFields.subscriptions', context);
-    var channelUuids = _.uniq(_.map(channels, 'uuid'));
-    var subscriptions = await models.Subscription.find({ org_id: orgId, channel_uuid: { $in: channelUuids }, ...conditions }, {}).lean({ virtuals: true });
+    const channelUuids = _.uniq(_.map(channels, 'uuid'));
+    let subscriptions = await models.Subscription.find({ org_id: orgId, channel_uuid: { $in: channelUuids }, ...conditions }, {}).lean({ virtuals: true });
     subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
 
     await applyQueryFieldsToSubscriptions(subscriptions, queryFields.subscriptions, args, context);
 
-    var subscriptionsByChannelUuid = _.groupBy(subscriptions, 'channel_uuid');
+    const subscriptionsByChannelUuid = _.groupBy(subscriptions, 'channel_uuid');
     _.each(channels, (channel)=>{
       channel.subscriptions = subscriptionsByChannelUuid[channel.uuid] || [];
     });
@@ -223,8 +227,8 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
 };
 
 const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, context)=>{ // eslint-disable-line
-  var { me, models } = context;
-  var { orgId, servSub } = args;
+  const { me, models } = context;
+  const { orgId, servSub } = args;
 
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channelName)){
@@ -232,43 +236,57 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     }
     delete sub.channel;
   });
-  var subUuids = _.uniq(_.map(subs, 'uuid'));
+  const subUuids = _.uniq(_.map(subs, 'uuid'));
+
+  if(queryFields.cluster) {
+    const clusterIds = _.map(subs, 'clusterId');
+    const clusters = await models.Cluster.getClustersByIds(clusterIds);
+    /*
+    Clusters from `getClustersByIds` are BasicClusters and could exist in a different org than the serviceSubscription.
+    Filtering to those allowed by the serviceSubscription org would be inappropriate.
+    */
+    _.each(subs, (sub)=>{
+      sub.cluster = clusters[sub.clusterId];
+    });
+  }
 
   if(queryFields.channel){
-    var channelUuids = _.uniq(_.map(subs, 'channelUuid'));
-    var channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    const channelUuids = _.uniq(_.map(subs, 'channelUuid'));
+    let channels = await models.Channel.find({ uuid: { $in: channelUuids } });
     channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
 
     await applyQueryFieldsToChannels(channels, queryFields.channel, args, context);
 
-    var channelsByUuid = _.keyBy(channels, 'uuid');
+    const channelsByUuid = _.keyBy(channels, 'uuid');
     _.each(subs, (sub)=>{
-      var channelUuid = sub.channelUuid;
-      var channel = channelsByUuid[channelUuid];
+      const channelUuid = sub.channelUuid;
+      const channel = channelsByUuid[channelUuid];
       sub.channel = channel;
     });
   }
   if(queryFields.resources){
     const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids } };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
-    var resources = await loadResourcesWithSearchAndArgs({
+    const resources = await loadResourcesWithSearchAndArgs({
       search,
       args,
       context,
     });
+
     await applyQueryFieldsToResources(resources, queryFields.resources, args, context);
 
-    var resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
+    const resourcesBySubUuid = _.groupBy(resources, 'searchableData.subscription_id');
     _.each(subs, (sub)=>{
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
   }
   if(queryFields.groupObjs){
-    var groupNames = _.flatten(_.map(subs, 'groups'));
-    var groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
+    const groupNames = _.flatten(_.map(subs, 'groups'));
+    const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
+
     await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
 
-    var groupsByName = _.keyBy(groups, 'name');
+    const groupsByName = _.keyBy(groups, 'name');
     _.each(subs, (sub)=>{
       sub.groupObjs = _.filter(_.map(sub.groups, (groupName)=>{
         return groupsByName[groupName];
@@ -282,24 +300,25 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       deleted: false
     };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
-    var remoteResources = await loadResourcesWithSearchAndArgs({
+    const remoteResources = await loadResourcesWithSearchAndArgs({
       search,
       args,
       context,
     });
+
     await applyQueryFieldsToResources(remoteResources, queryFields.remoteResources, args, context);
 
-    var remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
+    const remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return _.get(rr, 'searchableData[\'annotations["deploy_razee_io_clustersubscription"]\']');
     });
     _.each(subs, (sub)=>{
-      var rrs = remoteResourcesBySubUuid[sub.uuid] || [];
+      const rrs = remoteResourcesBySubUuid[sub.uuid] || [];
 
       // loops through each resource. if there are errors, increments the errorCount. if no errors, increments successfulCount
-      var errorCount = 0;
-      var successCount = 0;
+      let errorCount = 0;
+      let successCount = 0;
       _.each(rrs, (rr)=>{
-        var errors = _.toArray(_.get(rr, 'searchableData.errors',[]));
+        const errors = _.toArray(_.get(rr, 'searchableData.errors',[]));
         if(errors.length > 0){
           errorCount += 1;
         }
