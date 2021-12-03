@@ -68,14 +68,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
       }
       // ElseIf PUT...
       else if( restReqType == 'PUT' ) {
-        if( !_.has(resVal, 'modified') ) {
-          // Unexpected Graphql response, return 500 (INTERNAL SERVER ERROR)
-          return this.status(500).oldSend( JSON.stringify(resVal) );
-        }
-        else {
-          // Modification may or may not have been necessary, return 200 (OK)
-          return this.status(200).oldSend( '' );  // Ideally should return the updated object(s) here
-        }
+        // Modification may or may not have been necessary, return 200 (OK)
+        return this.status(200).oldSend( '' );  // Ideally should return the updated object(s) here, but graphql doesn't return that
       }
       // ElseIf POST...
       else if( restReqType == 'POST' ) {
@@ -107,7 +101,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
 const getOrgId = (req, res, next)=>{
   const orgId = req.get('org-id') || req.body.orgId || req.query.orgId;
   if(!orgId){
-    throw new Error('Please pass an orgId in an "org-id" header, an "orgId" post body param, or an orgId query string attribute');
+    res.status(400).send( 'Please pass an orgId in an "org-id" header, an "orgId" post body param, or an orgId query string attribute' );
+    return;
   }
   req.orgId = orgId;
   next();
@@ -127,7 +122,8 @@ const postChannels = async (req, res) => {
   `;
   const name = req.body.name;
   if(!name){
-    throw new Error('needs { name }');
+    res.status(400).send( 'needs { name }' );
+    return;
   }
   const variables = {
     orgId,
@@ -191,7 +187,8 @@ const getChannel = async (req, res) => {
   `;
   const uuid = req.params.uuid;
   if(!uuid){
-    throw new Error('needs { uuid }');
+    res.status(400).send( 'needs { uuid }' );
+    return;
   }
   const variables = {
     orgId,
@@ -220,7 +217,8 @@ const postChannelVersion = async (req, res) => {
   const type = req.body.type;
   const content = req.body.content;
   if(!name || !channelUuid || !type || !content){
-    throw new Error('needs { channelUuid, name, type, content }');
+    res.status(400).send( 'needs { channelUuid, name, type, content }' );
+    return;
   }
   const variables = {
     orgId,
@@ -252,7 +250,8 @@ const getChannelVersion = async (req, res) => {
   const channelUuid = req.params.channelUuid;
   const versionUuid = req.params.versionUuid;
   if(!channelUuid || !versionUuid){
-    throw new Error('needs { channelUuid, versionUuid }');
+    res.status(400).send( 'needs { channelUuid, versionUuid }' );
+    return;
   }
   const variables = {
     orgId,
@@ -307,7 +306,8 @@ const getCluster = async (req, res) => {
   `;
   const clusterId = req.params.clusterId;
   if(!clusterId){
-    throw new Error('needs { clusterId }');
+    res.status(400).send( 'needs { clusterId }' );
+    return;
   }
   const variables = {
     orgId,
@@ -332,7 +332,8 @@ const postGroups = async (req, res) => {
   `;
   const name = req.body.name;
   if(!name){
-    throw new Error('needs { name }');
+    res.status(400).send( 'needs { name }' );
+    return;
   }
   const variables = {
     orgId,
@@ -370,7 +371,8 @@ const putGroup = async (req, res) => {
   const uuid = req.params.uuid;
   const clusters = req.body.clusters;
   if(!uuid || !clusters){
-    throw new Error('needs { uuid, clusters }');
+    res.status(400).send( 'needs { uuid, clusters }' );
+    return;
   }
   const variables = {
     orgId,
@@ -422,7 +424,8 @@ const getGroup = async (req, res) => {
   `;
   const uuid = req.params.uuid;
   if(!uuid){
-    throw new Error('needs { uuid }');
+    res.status(400).send( 'needs { uuid }' );
+    return;
   }
   const variables = {
     orgId,
@@ -451,7 +454,8 @@ const postSubscriptions = async (req, res) => {
   const channelUuid = req.body.channelUuid;
   const versionUuid = req.body.versionUuid;
   if(!name || !groups || clusterId || !channelUuid || !versionUuid){
-    throw new Error('needs { name, groups, channelUuid, versionUuid }');
+    res.status(400).send( 'needs { name, groups, channelUuid, versionUuid }' );
+    return;
   }
   const variables = {
     orgId,
@@ -516,7 +520,8 @@ const getSubscription = async (req, res) => {
   `;
   const uuid = req.params.uuid;
   if(!uuid){
-    throw new Error('needs { uuid }');
+    res.status(400).send( 'needs { uuid }' );
+    return;
   }
   const variables = {
     orgId,
