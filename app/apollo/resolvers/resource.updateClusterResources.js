@@ -20,11 +20,11 @@ const crypto = require('crypto');
 const pLimit = require('p-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 
-const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeQueryError } = require ('./common');
+const { GraphqlPubSub } = require('../subscription');
+const { whoIs } = require ('./common');
 const { buildHashForResource, buildSearchableDataForResource, buildSearchableDataObjHash, buildPushObj } = require('../../utils/cluster.js');
 
-const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../apollo/models/const');
+const { RESOURCE_LIMITS } = require('../../apollo/models/const');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
 const storageFactory = require('./../../storage/storageFactory');
@@ -188,7 +188,6 @@ const resourceResolvers = {
                   const total = await models.Resource.count({org_id:  org._id, deleted: false});
                   if (total >= RESOURCE_LIMITS.MAX_TOTAL ) {
                     throw new Error('Too many resources are registered under this organization.');
-                    return;
                   }
                   changes = {
                     $set: { deleted: false, hash: resourceHash, histId, data: dataStr, searchableData: searchableDataObj, searchableDataHash: searchableDataHash },
