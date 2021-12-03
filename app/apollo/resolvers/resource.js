@@ -17,6 +17,7 @@
 const _ = require('lodash');
 const { withFilter} = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
+const pLimit = require('p-limit');
 
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
@@ -24,6 +25,7 @@ const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeQueryError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
+const { buildHashForResource } = require('../../utils/cluster.js');
 
 const storageFactory = require('./../../storage/storageFactory');
 

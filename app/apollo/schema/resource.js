@@ -118,6 +118,19 @@ const resourceSchema = gql`
     """
     resourceContent(orgId: String! @sv, clusterId: String! @sv, resourceSelfLink: String! @sv, histId: String @sv): ResourceContentObj
   }
+  
+  input ResourceChange{
+    type: String!
+    object: JSON
+  }
+  
+  type UpdateClusterResourcesResponse{
+    success: Boolean!
+  }
+  
+  extend type Mutation{
+    updateClusterResources(orgId: String! @sv, clusterId: String! @sv, resourceChanges: [ResourceChange]!): UpdateClusterResourcesResponse
+  }
 
   extend type Subscription {
     resourceUpdated(orgId: String! @sv, filter: String @sv): ResourceUpdated!

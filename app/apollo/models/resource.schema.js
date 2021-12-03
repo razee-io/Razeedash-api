@@ -43,12 +43,19 @@ const ResourceSchema = new mongoose.Schema({
     default: false,
   },
   searchableData: {
-    type: Map,
+    type: Object,
     default: {},
   },
   searchableDataHash: {
     type: String,
     default: '',
+  },
+  searchableDataHist: {
+    type: Object,
+    default: {},
+  },
+  histId: {
+    type: String,
   },
   created: {
     type: Date,

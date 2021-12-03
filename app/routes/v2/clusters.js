@@ -183,6 +183,8 @@ const syncClusterResources = async(req, res)=>{
   res.status(200).send('Thanks');
 };
 
+
+// todo: deprecate this after forcing updater to use the graphql/v3 endpoint
 const updateClusterResources = async (req, res, next) => {
   try {
     var clusterId = req.params.cluster_id;

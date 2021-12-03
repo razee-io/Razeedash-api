@@ -527,4 +527,35 @@ const getSubscription = async (req, res) => {
 };
 router.get('/subscriptions/:uuid', getOrgId, asyncHandler(getSubscription));
 
+
+const updateClusterResources = async (req, res) => {
+  // #swagger.tags = ['clusters']
+  // #swagger.summary = 'Updates resources for a cluster'
+  const { orgId } = req;
+  const operationName = 'updateClusterResources';
+  const query = `
+    mutation ${operationName}($clusterId:String!, $orgId:String!, $resourceChanges: [ResourceChange]!) {
+      updateClusterResources(clusterId:$clusterId, orgId: $orgId, resourceChanges:$resourceChanges){
+        success
+      }
+    }
+  `;
+  const clusterId = req.params.clusterId;
+  const resourceChanges = req.body;
+  if(!clusterId){
+    throw new Error('needs { clusterId }');
+  }
+  if(!resourceChanges || !_.isArray(resourceChanges)){
+    throw new Error('body must be an array of resourceChanges');
+  }
+  const variables = {
+    orgId,
+    clusterId,
+    resourceChanges,
+  };
+  const methodType = 'update';
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.put('/clusters/:clusterId/resources', getOrgId, asyncHandler(updateClusterResources));
+
 module.exports = router;

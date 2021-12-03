@@ -17,6 +17,7 @@
 const mongoose = require('mongoose');
 const User = require('./user');
 const Resource = require('./resource');
+const ResourceStat = require('./resourceStat');
 const Cluster = require('./cluster');
 const Organization = require('./organization');
 const Channel = require('./channel');
@@ -74,6 +75,7 @@ const models = {
   Organization,
   User,
   Resource,
+  ResourceStat,
   Cluster,
   Channel,
   Group,

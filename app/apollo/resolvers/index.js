@@ -22,6 +22,7 @@ This allows, for example, replacing the built in 'user' resolver with a custom o
 const resolversMap = {
   'user': './user',
   'resource': './resource',
+  'resource.updateClusterResources': './resource.updateClusterResources',
   'group': './group',
   'cluster': './cluster',
   'channel': './channel',
