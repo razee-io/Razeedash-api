@@ -90,7 +90,7 @@ app.get('/.well-known/apollo/server-health', function(req, res, next) {
   next();
 });
 
-app.get('*', function(req, res, next) { // this must be the last route
+app.all('*', function(req, res, next) { // this must be the last route
   if( res.locals && res.locals.isHealthCheck ) {
     next();
   }
