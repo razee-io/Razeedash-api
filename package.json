@@ -79,7 +79,7 @@
     "lodash": "^4.17.21",
     "mock-aws-s3": "^4.0.2",
     "moment": "^2.29.1",
-    "mongodb": "^3.6.5",
+    "mongodb": "^4.2.1",
     "mongoose": "^5.13.9",
     "mongoose-lean-defaults": "^2.0.1",
     "mongoose-lean-virtuals": "^0.8.1",
