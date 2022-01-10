@@ -1,6 +1,7 @@
 # Local Development Tools
 
 This folder contains files for local development:
+
 - `api/`: Scripts for manually testing the Razeedash-api GraphQL and REST APIs
 - `compose/`: Scripts for starting Redis and Mongo for local development using Docker Compose (https://docs.docker.com/compose/)
 - `podman/`: Scripts for starting Redis and Mongo for local development using Podman (https://podman.io/)

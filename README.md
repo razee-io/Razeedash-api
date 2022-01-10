@@ -76,11 +76,13 @@ brew link --force gettext
 ## Run locally for development
 
 To run Razeedash-api locally, Redis and MongoDB can be easily run in containers:
+
 - Podman (recommended): See [./local-dev/podman/README.md](./local-dev/podman/README.md)
 - Docker / Docker Compose: See [./local-dev/compose/README.md](./local-dev/compose/README.md)
 
 Once Redis and MongoDB are running, execute:
-```
+
+```bash
 export MONGO_URL=mongodb://meteor:secret@localhost:27117/meteor
 export AUTH_MODEL=local
 npm install

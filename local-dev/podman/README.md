@@ -5,8 +5,10 @@ Podman (https://podman.io/) is a free container engine.  It is suitable for runn
 This directory contains scripts to easily start Redis and MongoDB prior to starting local Razeedash-api.
 
 Usage:
-`./redis-local-podman.sh [-f]`
-`./mongo-local-podman.sh [-f]`
+
+- `./redis-local-podman.sh [-f]`
+- `./mongo-local-podman.sh [-f]`
+
 The `-f` argument instructs the script to reset any persisted data, i.e. **overwrite all persisted Mongo data**.  Use with care.
 
 ### Volumes
