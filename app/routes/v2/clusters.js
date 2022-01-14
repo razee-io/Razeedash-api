@@ -218,7 +218,7 @@ const updateClusterResources = async (req, res, next) => {
           const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : checkResource.object.metadata.selfLink;
           // If the checked resource update is for the same resource (selfLink) and is a de-dupable update, remove the EARLIER update.
           if( selfLink == checkResourceSelfLink && dedupUpdates.includes(checkResourceType) ) {
-            req.log.info({ org_id: req.org._id, cluster_id: req.params.cluster_id, resource_selfLink: selfLink }, `Duplicate update to single resource in same payload truncated` );
+            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, `Duplicate update to single resource in same payload truncated` );
             resources.splice(i, 1);
             i--; // Decrement i as we just removed an item from the array.
             break; // No need to check for further resources.
