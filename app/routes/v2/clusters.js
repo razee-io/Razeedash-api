@@ -198,16 +198,16 @@ const updateClusterResources = async (req, res, next) => {
     }
 
     /*
-    If multiple updates to the same resource are received in the same payload,
-    keep only the the last `POLLED/MODIFIED/ADDED` update.
+    If multiple 'MODIFIED' updates to the same resource are received in the same
+    payload, keep only the the last 'MODIFIED' update from the payload.
     This is intended to limit noise from a resource that is experiencing many
     rapid updates.
     Ref: satellite-config/issues/1440
     */
-    const dedupUpdates = ['POLLED','MODIFIED','ADDED'];
+    const dedupUpdates = ['MODIFIED'];
     for( let i = 0; i < resources.length; i++) {
       const resource = resources[i];
-      const selfLink = (resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink) ? resource.object.metadata.annotations.selfLink : resource.object.metadata.selfLink;
+      const selfLink = (resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink) ? resource.object.metadata.annotations.selfLink : (resource.object.metadata ? resource.object.metadata.selfLink : null);
       const type = resource['type'] || 'other';
       // If the resource update is a de-dupable update, check to see if the same payload also includes additional de-dupable updates to the same resource.
       if( selfLink && dedupUpdates.includes(type) ) {
@@ -215,10 +215,10 @@ const updateClusterResources = async (req, res, next) => {
         for( let j = i+1; j < resources.length; j++) {
           const checkResource = resources[j];
           const checkResourceType = checkResource['type'] || 'other';
-          const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : checkResource.object.metadata.selfLink;
+          const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : (checkResource.object.metadata ? checkResource.object.metadata.selfLink : null);
           // If the checked resource update is for the same resource (selfLink) and is a de-dupable update, remove the EARLIER update.
           if( selfLink == checkResourceSelfLink && dedupUpdates.includes(checkResourceType) ) {
-            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, `Duplicate update to single resource in same payload truncated` );
+            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update to single resource in same payload, truncated' );
             resources.splice(i, 1);
             i--; // Decrement i as we just removed an item from the array.
             break; // No need to check for further resources.
