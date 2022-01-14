@@ -205,27 +205,31 @@ const updateClusterResources = async (req, res, next) => {
     Ref: satellite-config/issues/1440
     */
     const dedupUpdates = ['MODIFIED'];
+    const dedupedResources = [];
     for( let i = 0; i < resources.length; i++) {
       const resource = resources[i];
       const selfLink = (resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink) ? resource.object.metadata.annotations.selfLink : (resource.object.metadata ? resource.object.metadata.selfLink : null);
       const type = resource['type'] || 'other';
+      let isLastUpdate = true;
       // If the resource update is a de-dupable update, check to see if the same payload also includes additional de-dupable updates to the same resource.
       if( selfLink && dedupUpdates.includes(type) ) {
-        // Check each of the resource updates after the current one.
+        // Check each of the resource updates AFTER the current one.
         for( let j = i+1; j < resources.length; j++) {
           const checkResource = resources[j];
           const checkResourceType = checkResource['type'] || 'other';
           const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : (checkResource.object.metadata ? checkResource.object.metadata.selfLink : null);
-          // If the checked resource update is for the same resource (selfLink) and is a de-dupable update, remove the EARLIER update.
-          if( selfLink == checkResourceSelfLink && dedupUpdates.includes(checkResourceType) ) {
-            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update to single resource in same payload, truncated' );
-            resources.splice(i, 1);
-            i--; // Decrement i as we just removed an item from the array.
+          // If the checked resource update is same type for the same resource, it shouldn't be kept.
+          if( selfLink == checkResourceSelfLink && type == checkResourceType ) {
+            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update in same payload, truncated' );
+            isLastUpdate = false;
             break; // No need to check for further resources.
           }
         }
       }
+      // Keep this resource if its the last update of this type for the selfLink
+      if( isLastUpdate ) dedupedResources.push( resource );
     }
+    resources = dedupedResources;
 
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
