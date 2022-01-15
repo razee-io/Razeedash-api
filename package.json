@@ -35,7 +35,7 @@
     "fs-capacitor": "^6.2.0"
   },
   "engines": {
-    "node": ">=0.14.0"
+    "node": ">=0.14.14"
   },
   "dependencies": {
     "apollo-metrics": "^1.0.1",
@@ -73,7 +73,7 @@
     "i18next-http-middleware": "^3.1.5",
     "i18next-parser": "^5.4.0",
     "ioredis": "^4.28.3",
-    "is-port-reachable": "^4.0.0",
+    "is-port-reachable": "^3.1.0",
     "js-yaml": "^3.14.1",
     "json-key-validate": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
@@ -87,7 +87,7 @@
     "mustache": "^4.2.0",
     "object-hash": "^2.2.0",
     "object-path": "^0.11.8",
-    "p-limit": "^4.0.0",
+    "p-limit": "^3.1.0",
     "passport": "^0.5.2",
     "prom-client": "^14.0.1",
     "stream-buffers": "^3.0.2",
