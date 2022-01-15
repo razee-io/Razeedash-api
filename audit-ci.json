@@ -1,6 +1,6 @@
 {
   "low": true,
-  "_allowlistInfo": "Allowlist 'glob-parent' (brought in by devDependency 'gulp') and 'ansi-regex' (brought in by `bcrypt`, used only in local auth)",
-  "allowlist": ["glob-parent","ansi-regex"],
+  "_allowlistInfo": "Allowlist 'glob-parent' (brought in by devDependency 'gulp').",
+  "allowlist": ["glob-parent"],
   "skip-dev": true
 }
