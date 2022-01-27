@@ -23,7 +23,7 @@ const serviceSchema = gql`
     orgId: String!
     name: String!
     clusterId: String!
-    cluster: BasicCluster!
+    cluster: BasicCluster
     channelUuid: String!
     channelName: String!
     channel: Channel
