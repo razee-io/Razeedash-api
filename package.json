@@ -95,7 +95,7 @@
     "swagger-ui-express": "^4.2.0",
     "uuid": "^8.3.2",
     "validator": "^13.7.0",
-    "ws": "^7.4.6"
+    "ws": "^8.4.2"
   },
   "devDependencies": {
     "chai": "^4.3.4",
