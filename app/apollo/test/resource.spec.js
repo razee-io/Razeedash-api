@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ let presetOrgs;
 let presetUsers;
 let presetResources;
 
-let resourceObjId = new ObjectId('aaaabbbbccccddddeeeeffff');
+const resourceObjId = new ObjectId('cstr01_res01');  //12 chars
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.org_01.json`, 'utf8'));
@@ -195,6 +195,17 @@ const createResources = async () => {
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     selfLink: '/mybla/selfLink',
+    hash: 'any_hash',
+    deleted: false,
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
+    searchableData: { key01: 'any value 01', key02: 'any value 02', subscription_id: 'abc-123' },
+    searchableDataHash: 'some random hash.',
+  });
+  await models.Resource.create({
+    _id: new ObjectId( 'cstr01_res02' ),
+    org_id: org_01._id,
+    cluster_id: 'cluster_01',
+    selfLink: '/mybla2/selfLink',
     hash: 'any_hash',
     deleted: false,
     data: {metadata: {type: 'embedded'}, data: 'any_data' },
@@ -361,11 +372,8 @@ describe('resource graphql test suite', () => {
         expect(result2.data.data.resource.id).to.equal(id);
         expect(result2.data.data.resource.selfLink).to.equal('/mybla/selfLink');
       } catch (error) {
-        // console.error('error response is ', error.response);
-        console.error(
-          'error response is ',
-          JSON.stringify(error.response.data),
-        );
+        console.error(error);
+        console.error('error response is ', error.response);
         throw error;
       }
     });
@@ -385,6 +393,7 @@ describe('resource graphql test suite', () => {
         expect(result1.data.data.resources.resources[0].selfLink).to.equal(
           '/mybla/cluster04/selfLink2',
         );
+
         const result2 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
@@ -395,49 +404,52 @@ describe('resource graphql test suite', () => {
           '/mybla/cluster04/selfLink1',
         );
       } catch (error) {
-        // console.error('error response is ', error.response);
-        console.error(
-          'error response is ',
-          JSON.stringify(error.response.data),
-        );
+        console.error(error);
+        console.error('error response is ', error.response);
+        throw error;
       }
     });
 
-    it('should filter based on input kinds and honor both sort and limit', async()=>{
+    it('should filter based on input kinds and honor sort, skip, and limit', async()=>{
       try {
         token = await signInUser(models, api, user02Data);
 
         const meResult = await api.me(token);
 
+        // Verify sort and limit
         const result1 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
           kinds: ['Deployment', 'StatefulSet'],
-          limit: 1,
           sort: [{field:'searchableData.kind'}], // Deployment will be sorted as the 1st
+          limit: 1,
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal(
-          'Deployment',
-        );
-        expect(result1.data.data.resources.count).to.equal(1);
-        expect(result1.data.data.resources.totalCount).to.equal(2);
+        expect(result1.data.data.resources.resources[0].searchableData.kind).to.equal( 'Deployment', 'Expected first record Deployment when not skipping' );
+        expect(result1.data.data.resources.count).to.equal(1, 'Expected 1 records with limit 1');
+        expect(result1.data.data.resources.totalCount).to.equal(2, 'Expected 2 total records with limit 1');
+
+        // Verify kinds filter
         const result2 = await api.resources(token, {
           orgId: meResult.data.data.me.orgId,
           kinds: ['StatefulSet'],
         });
         console.log(JSON.stringify(result2.data));
-        expect(result2.data.data.resources.resources[0].searchableData.kind).to.equal(
-          'StatefulSet',
-        );
-        expect(result2.data.data.resources.count).to.equal(
-          1,
-        );
+        expect(result2.data.data.resources.resources[0].searchableData.kind).to.equal( 'StatefulSet', 'Expected returned kind to be StatefulSet' );
+        expect(result2.data.data.resources.count).to.equal( 1, 'Expected 1 StatefulSet' );
+
+        // Verify skip
+        const result3 = await api.resources(token, {
+          orgId: meResult.data.data.me.orgId,
+          kinds: ['Deployment', 'StatefulSet'],
+          sort: [{field:'searchableData.kind'}], // Deployment will be sorted as the 1st
+          skip: 1,
+        });
+        console.log(JSON.stringify(result3.data));
+        expect(result3.data.data.resources.resources[0].searchableData.kind).to.equal( 'StatefulSet', 'Expected first record StatefulSet when skipping 1' );
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
-        console.error(
-          'error response is ',
-          JSON.stringify(error.response.data),
-        );
+        throw error;
       }
     });
 
@@ -446,7 +458,6 @@ describe('resource graphql test suite', () => {
         token = await signInUser(models, api, user01Data);
 
         const meResult = await api.me(token);
-
 
         const result1 = await api.resourceHistId(token, {
           id: resourceObjId,
@@ -458,43 +469,53 @@ describe('resource graphql test suite', () => {
         expect(result1.data.data.resource.data).to.equal(
           'YAML_HIST_DATA_01',
         );
-      }catch(error){
-        console.error(
-          'error response is ',
-          JSON.stringify(error.response.data),
-        );
+      } catch (error) {
+        console.error(error);
+        console.error('error response is ', error.response);
         throw error;
       }
     });
   });
 
   describe('resourceHistory(orgId: String!, clusterId: String!, resourceSelfLink: String!, beforeDate: Date, afterDate: Date, limit: Int = 20)', ()=>{
-    it('should view history list for a resource', async()=>{
+    it('should view history list for a resource, with limit and skip', async()=>{
       let token;
       try {
         token = await signInUser(models, api, user01Data);
 
-
         const meResult = await api.me(token);
 
+        // Verify all history retrieved
         const result1 = await api.resourceHistory(token, {
           orgId: meResult.data.data.me.orgId,
           clusterId: 'cluster_01',
           resourceSelfLink: '/mybla/selfLink',
           beforeDate: null,
           afterDate: null,
-          limit: 20,
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourceHistory.count).to.equal(
-          2
-        );
+        expect(result1.data.data.resourceHistory.count).to.equal( 2, 'Expected 2 without limit' );
+        expect(result1.data.data.resourceHistory.totalCount).to.equal( 2, 'Expected 2 total without limit' );
         var ids = _.map(result1.data.data.resourceHistory.items, 'id');
-        expect(ids.length).to.equal(
-          2
-        );
-        expect(ids).to.have.members(['resourceYamlHist_01', 'resourceYamlHist_02']);
+        expect(ids.length).to.equal( 2 );
+        expect(ids).to.have.members( ['resourceYamlHist_01', 'resourceYamlHist_02'], 'Expected specific ids in history' );
+
+        // Verify limit and skip
+        const result2 = await api.resourceHistory(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01',
+          resourceSelfLink: '/mybla/selfLink',
+          beforeDate: null,
+          afterDate: null,
+          limit: 1,
+          skip: 1,
+        });
+        console.log(JSON.stringify(result2.data));
+        expect(result2.data.data.resourceHistory.count).to.equal( 1, 'Expected 1 with limit 1' );
+        expect(result2.data.data.resourceHistory.totalCount).to.equal( 2, 'Expected 2 total with limit 1' );
+        expect(result2.data.data.resourceHistory.items[0].id).to.equal( 'resourceYamlHist_02', 'Expected second history record with skip 1' );
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
         throw error;
       }
@@ -506,9 +527,7 @@ describe('resource graphql test suite', () => {
 
     it('a user should see a resource by given orgId, clusterId, and selfLink', async () => {
       try {
-
         token = await signInUser(models, api, user01Data);
-
 
         const meResult = await api.me(token);
 
@@ -525,8 +544,8 @@ describe('resource graphql test suite', () => {
           '/mybla/selfLink',
         );
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
-        // console.error('error response is ', JSON.stringify(error.response.data));
         throw error;
       }
     });
@@ -539,19 +558,15 @@ describe('resource graphql test suite', () => {
       try {
         token = await signInUser(models, api, user01Data);
 
-
         const meResult = await api.me(token);
         const result1 = await api.resourcesCount(token, {
           orgId: meResult.data.data.me.orgId,
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesCount).to.equal(1);
+        expect(result1.data.data.resourcesCount).to.equal(2);
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
-        console.error(
-          'error response is ',
-          JSON.stringify(error.response.data),
-        );
         throw error;
       }
     });
@@ -563,7 +578,6 @@ describe('resource graphql test suite', () => {
     it('a user should only see resources belongs to his organization', async () => {
       try {
         token = await signInUser(models, api, user01Data);
-
 
         const meResult = await api.me(token);
 
@@ -577,8 +591,8 @@ describe('resource graphql test suite', () => {
         );
         expect(result1.data.errors).to.be.undefined;
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
-        // console.error('error response is ', JSON.stringify(error.response.data));
         throw error;
       }
     });
@@ -587,28 +601,37 @@ describe('resource graphql test suite', () => {
   describe('resourcesByCluster(clusterId: String! filter: String): [Resource!]', () => {
     let token;
 
-    it('a user should only see resources for given clusterId with optional filter', async () => {
+    it('a user should only see resources for given clusterId with optional filter, skip, and limit', async () => {
       try {
         token = await signInUser(models, api, user01Data);
 
-
         const meResult = await api.me(token);
 
+        // Verify cluster, filter, limit
         const result1 = await api.resourcesByCluster(token, {
           orgId: meResult.data.data.me.orgId,
           clusterId: 'cluster_01',
           filter: 'selfLink',
+          limit: 1,
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesByCluster.resources[0].clusterId).to.equal(
-          'cluster_01',
-        );
-        expect(result1.data.data.resourcesByCluster.resources[0].selfLink).to.equal(
-          '/mybla/selfLink',
-        );
+        expect(result1.data.data.resourcesByCluster.resources[0].clusterId).to.equal( 'cluster_01' );
+        expect(result1.data.data.resourcesByCluster.resources[0].selfLink).to.equal( '/mybla2/selfLink', 'Expected first record mybla2 when not skipping' );
+        expect(result1.data.data.resourcesByCluster.count).to.equal( 1, 'Expected 1 records with limit 1' );
+        expect(result1.data.data.resourcesByCluster.totalCount).to.equal( 2, 'Expected 2 total records with limit 1' );
+
+        // Verify skip
+        const result2 = await api.resourcesByCluster(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId: 'cluster_01',
+          filter: 'selfLink',
+          skip: 1,
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result2.data.data.resourcesByCluster.resources[0].selfLink).to.equal( '/mybla/selfLink', 'Expected first record mybla when skipping 1' );
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
-        // console.error('error response is ', JSON.stringify(error.response.data));
         throw error;
       }
     });
@@ -617,26 +640,35 @@ describe('resource graphql test suite', () => {
   describe('resourcesBySubscription(orgId: String! filter: String): ResourcesList!', () => {
     let token;
 
-    it('a user should only see resources for given subscription id', async () => {
+    it('a user should only see resources for given subscription id, with limit and skip', async () => {
       try {
         token = await signInUser(models, api, user01Data);
 
-
         const meResult = await api.me(token);
 
+        // Verify subscription filtering, limit
         const result1 = await api.resourcesBySubscription(token, {
           orgId: meResult.data.data.me.orgId,
-          subscriptionId: 'abc-123'
+          subscriptionId: 'abc-123',
+          limit: 1,
         });
         console.log(JSON.stringify(result1.data));
-        expect(result1.data.data.resourcesBySubscription.resources[0].clusterId).to.equal(
-          'cluster_01',
-        );
-        expect(result1.data.data.resourcesBySubscription.resources[0].searchableData.subscription_id).to.equal(
-          'abc-123',
-        );
+        expect(result1.data.data.resourcesBySubscription.resources[0].clusterId).to.equal( 'cluster_01' );
+        expect(result1.data.data.resourcesBySubscription.resources[0].searchableData.subscription_id).to.equal( 'abc-123' );
+        expect(result1.data.data.resourcesBySubscription.resources[0].selfLink).to.equal( '/mybla2/selfLink', 'Expect first record myblah2 without skip' );
+        expect(result1.data.data.resourcesBySubscription.count).to.equal( 1, 'Expect 1 records with limit 1' );
+        expect(result1.data.data.resourcesBySubscription.totalCount).to.equal( 2, 'Expect 2 total records with limit 1' );
 
+        // Verify skip
+        const result2 = await api.resourcesBySubscription(token, {
+          orgId: meResult.data.data.me.orgId,
+          subscriptionId: 'abc-123',
+          skip: 1,
+        });
+        console.log(JSON.stringify(result1.data));
+        expect(result2.data.data.resourcesBySubscription.resources[0].selfLink).to.equal( '/mybla/selfLink', 'Expect first record myblah with skip 1' );
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
         throw error;
       }
@@ -673,7 +705,6 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
-
 
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
@@ -733,8 +764,8 @@ describe('resource graphql test suite', () => {
         await sleep(100);
 
         await subClient.close();
-
       } catch (error) {
+        console.error(error);
         console.error('error response is ', error.response);
         throw error;
       }
