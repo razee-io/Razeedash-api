@@ -754,7 +754,9 @@ describe('cluster graphql test suite', () => {
       });
 
       expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
-      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedResourceCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
+      expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -805,11 +807,12 @@ describe('cluster graphql test suite', () => {
         },
       } = await clusterApi.deleteClusters(adminToken, {
         orgId: org01._id,
-        clusterId: clusterIdToBeDeleted,
       });
 
       expect(deleteClusters.deletedClusterCount).to.be.above(0);
       expect(deleteClusters.deletedResourceCount).to.be.above(0);
+      expect(deleteClusters.deletedResourceYamlHistCount).to.equal(0);
+      expect(deleteClusters.deletedServiceSubscriptionCount).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

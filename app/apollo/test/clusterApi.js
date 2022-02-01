@@ -314,6 +314,8 @@ const clusterFunc = grahqlUrl => {
             deleteClusterByClusterId(orgId: $orgId clusterId: $clusterId) {
               deletedClusterCount
               deletedResourceCount
+              deletedResourceYamlHistCount
+              deletedServiceSubscriptionCount
           }
         }
     `,
@@ -335,6 +337,8 @@ const clusterFunc = grahqlUrl => {
             deleteClusters(orgId: $orgId) {
               deletedClusterCount
               deletedResourceCount
+              deletedResourceYamlHistCount
+              deletedServiceSubscriptionCount
           }
         }
     `,

@@ -67,7 +67,9 @@ const clusterSchema = gql`
 
   type DeleteClustersResponse {
     deletedClusterCount: Int,
-    deletedResourceCount: Int
+    deletedResourceCount: Int,
+    deletedResourceYamlHistCount: Int,
+    deletedServiceSubscriptionCount: Int
   }
 
   type RegisterClusterResponse {

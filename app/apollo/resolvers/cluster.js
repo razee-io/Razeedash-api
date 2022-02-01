@@ -370,21 +370,36 @@ const clusterResolvers = {
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
       try {
-        const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
-          cluster_id});
+        // Delete the Cluster record
+        const deletedCluster = await models.Cluster.findOneAndDelete({ org_id, cluster_id });
+        logger.info({req_id, user: whoIs(me), org_id, cluster_id, deletedCluster}, `Cluster '${cluster_id}' deletion complete`);
 
-        //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag.
-        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id },
-          {$set: { deleted: true }}, { upsert: false });
+        /*
+        Delete children/references to the Cluster:
+        - No need to check/modify groups as they do not reference member clusters
+        - Delete any cluster ServiceSubscriptions
+          - ServiceSubscriptions are only on a per-Cluster basis at this time (see serviceSubscription.schema.js)
+          - If ever extended to Groups instead, code may need to be updated to ensure ServiceSubscription is not incorrectly deleted
+        - Soft-delete any cluster resource
+        - Soft-delete any cluster resourceYamlHist
 
-        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
+        Soft-deletion: mark the record as deleted, a background process must clean up S3 object and actually delete the db record
+        */
+        const deletedServiceSubscription = await models.ServiceSubscription.deleteMany({ org_id, clusterId: cluster_id });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedServiceSubscription}, 'Subscriptions deletion complete');
+        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources}, 'Resources soft-deletion complete');
+        const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
-        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-
+        return {
+          deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
+          deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+        };
       } catch (error) {
-        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
+        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id and cluster_id
@@ -401,20 +416,36 @@ const clusterResolvers = {
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
       try {
+        // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
+        logger.info({req_id, user: whoIs(me), org_id, deletedClusters}, 'Clusters deletion complete');
 
-        //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag.
-        const deletedResources = await models.Resource.updateMany({ org_id },
-          {$set: { deleted: true }}, { upsert: false });
+        /*
+        Delete children/references to any Clusters:
+        - No need to check/modify groups as they do not reference member clusters
+        - Delete any cluster ServiceSubscriptions
+          - ServiceSubscriptions are only on a per-Cluster basis at this time (see serviceSubscription.schema.js)
+          - If ever extended to Groups instead, code may need to be updated to ensure ServiceSubscription is not incorrectly deleted
+        - Soft-delete any cluster resource
+        - Soft-delete any cluster resourceYamlHist
 
-        logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
+        Soft-deletion: mark the record as deleted, a background process must clean up S3 object and actually delete the db record
+        */
+        const deletedServiceSubscription = await models.ServiceSubscription.deleteMany({ org_id });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedServiceSubscription}, 'Subscriptions deletion complete');
+        const deletedResources = await models.Resource.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResources}, 'Resources soft-deletion complete');
+        const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
-        return {deletedClusterCount: deletedClusters.deletedCount,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-
+        return {
+          deletedClusterCount: deletedClusters.deletedCount,
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
+          deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+        };
       } catch (error) {
-        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
+        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id
