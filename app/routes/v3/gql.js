@@ -26,7 +26,7 @@ const methodTypes = [
 ];
 
 // Send request to Graphql, but return a REST style response / code
-const sendReqToGraphql = async({ req, res, query, variables, operationName, methodType, createdIdentifier })=>{
+const sendReqToGraphql = async({ req, res, query, variables, operationName, methodType, createdIdentifier, onComplete=null })=>{
   const methodName = 'sendReqToGraphql';
   log.debug( `${methodName} entry, operationName: ${operationName}` );
 
@@ -57,6 +57,20 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
       }
 
       const resVal = resObj['data'][operationName];
+
+      if(onComplete){
+        const onCompleteResult = onComplete({
+          resObj,
+          resErrors,
+          resVal,
+          _res: this,
+        });
+        // if !==false, then onComplete handled sending the res and we can leave
+        if(onCompleteResult !== false){
+          return;
+        }
+        // otherwise onComplete decided not to handle the result, so we must continue
+      }
 
       // If GET of a single item...
       if( restReqType == 'GET' ) {
@@ -562,5 +576,95 @@ const updateClusterResources = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
 };
 router.put('/clusters/:clusterId/resources', getOrgId, asyncHandler(updateClusterResources));
+
+
+const clusterResourcesSync = async(req, res)=>{
+  // #swagger.tags = ['clusters']
+  // #swagger.summary = 'Syncs resources for a cluster'
+  const { orgId } = req;
+  const operationName = 'clusterResourcesSync';
+  const query = `
+    mutation ${operationName}($clusterId:String!, $orgId:String!) {
+      clusterResourcesSync(clusterId:$clusterId, orgId: $orgId){
+        success
+      }
+    }
+  `;
+  const clusterId = req.params.clusterId;
+  if(!clusterId){
+    throw new Error('needs { clusterId }');
+  }
+  const variables = {
+    orgId,
+    clusterId,
+  };
+  const methodType = 'update';
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.post('/clusters/:clusterId/resources/sync', getOrgId, asyncHandler(clusterResourcesSync));
+
+const addUpdateCluster = async(req, res)=>{
+  // #swagger.tags = ['clusters']
+  // #swagger.summary = 'Syncs resources for a cluster'
+  const { orgId } = req;
+  const operationName = 'addUpdateCluster';
+  const query = `
+    mutation ${operationName}($clusterId:String!, $orgId:String!, metadata: JSON!) {
+      addUpdateCluster(clusterId:$clusterId, orgId: $orgId, metadata: $metadata){
+        code
+        message
+      }
+    }
+  `;
+  const { metadata } = req.body;
+  const clusterId = req.params.clusterId;
+  if(!clusterId || !metadata){
+    throw new Error('needs { clusterId, metadata }');
+  }
+  const variables = {
+    orgId,
+    clusterId,
+    metadata,
+  };
+  const methodType = 'update';
+  const onComplete = (resObj, resErrors, resVal, _res)=>{
+    if(!resVal.code) {
+      return false;
+    }
+    _res.status(resVal.code).send(resVal.message || '');
+  };
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType, onComplete });
+};
+router.post('/clusters/:clusterId', getOrgId, asyncHandler(addUpdateCluster));
+
+const addClusterMessages = async(req, res)=>{
+  // #swagger.tags = ['clusters']
+  // #swagger.summary = 'Syncs resources for a cluster'
+  const { orgId } = req;
+  const operationName = 'addClusterMessages';
+  const query = `
+    mutation ${operationName}($clusterId:String!, $orgId:String!, level: String, message: String, errorData: JSON) {
+      addUpdateCluster(clusterId:$clusterId, orgId: $orgId, level: $level, message: $message, errorData: $errorData){
+        success
+      }
+    }
+  `;
+  const { errorData, level, message } = req.body;
+  const clusterId = req.params.clusterId;
+  if(!clusterId){
+    throw new Error('needs { clusterId }');
+  }
+  const variables = {
+    orgId,
+    clusterId,
+    errorData,
+    level,
+    message,
+  };
+  const methodType = 'update';
+  await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
+};
+router.post('/clusters/:clusterId/messages', getOrgId, asyncHandler(addClusterMessages));
+
 
 module.exports = router;

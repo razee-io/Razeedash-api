@@ -22,6 +22,12 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
+const moment = require("moment");
+const axios = require("axios");
+const glob = require("glob-promise");
+const fs = require("fs");
+const objectHash = require("object-hash");
+const ResourceStat = require("../models/resourceStat");
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
@@ -65,6 +71,46 @@ const commonClusterSearch = async (
     .skip(skip)
     .lean({ virtuals: true });
   return results;
+};
+
+const getAddClusterWebhookHeaders = async()=>{
+  // loads the headers specified in the 'razeedash-add-cluster-webhook-headers-secret' secret
+  // returns the key-value pairs of the secret as a js obj
+  const filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
+  const fileNames = await glob('**', {
+    cwd: filesDir,
+    nodir: true,
+  });
+  const headers = {};
+  _.each(fileNames, (name)=>{
+    const val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
+    headers[encodeURIComponent(name)] = val;
+  });
+  return headers;
+};
+
+const runAddClusterWebhook = async({ logger, orgId, clusterId, metadata })=>{
+  const clusterName = metadata.name;
+  const postData = {
+    org_id: orgId,
+    cluster_id: clusterId,
+    cluster_name: clusterName,
+  };
+  const url = process.env.ADD_CLUSTER_WEBHOOK_URL;
+  if(!url){
+    return;
+  }
+  logger.info({ url, postData }, 'posting add cluster webhook');
+  try{
+    const headers = await getAddClusterWebhookHeaders();
+    const result = await axios.post(url, {
+      data: postData,
+      headers,
+    });
+    logger.info({ url, postData, statusCode: result.status }, 'posted add cluster webhook');
+  }catch(err){
+    logger.error({ url, postData, err }, 'add cluster webhook failed');
+  }
 };
 
 const clusterResolvers = {
@@ -462,6 +508,103 @@ const clusterResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end enableRegistrationUrl
+
+    addUpdateCluster: async(parent, { clusterId, orgId: org_id, metadata }, context)=>{
+      const { models, me, req_id, logger } = context;
+
+      const org = await models.Organization.findOne({ _id: org_id });
+
+      const queryName = 'addUpdateCluster';
+      logger.debug( {req_id, user: whoIs(me), org_id, clusterId }, `${queryName} enter`);
+
+      await validAuth(me, org._id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        const cluster = await models.Cluster.findOne({ org_id: org._id, cluster_id: clusterId});
+        var reg_state = CLUSTER_REG_STATES.REGISTERED;
+        if (!cluster) {
+          // new cluster flow requires a cluster to be registered first.
+          if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
+            throw new Error('Not found, the api requires you to register the cluster first.');
+          }
+          const total = await models.Cluster.count({org_id:  org._id});
+          if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
+            throw new Error('Too many clusters are registered under this organization.');
+          }
+          await models.Cluster.create({ org_id: org._id, cluster_id: clusterId, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
+          runAddClusterWebhook({ logger, orgId: org._id, clusterId, metadata }); // dont await. just put it in the bg
+          models.ResourceStat.updateOne({ org_id: org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
+          return {
+            code: 200,
+            message: 'Welcome to Razee',
+          };
+        }
+        if (cluster.dirty) {
+          await models.Cluster.updateOne(
+            { org_id: org._id, cluster_id: clusterId },
+            { $set: { metadata, reg_state, updated: new Date(), dirty: false } }
+          );
+          return {
+            code: 205,
+            message: 'Please resync',
+          };
+        }
+        await models.Cluster.updateOne(
+          { org_id: org._id, cluster_id: clusterId },
+          { $set: { metadata, reg_state, updated: new Date() } }
+        );
+        return {
+          code: 200,
+          message: 'Thanks for the update',
+        };
+      } catch (err) {
+        logger.error(err.message);
+        throw err;
+      }
+    },
+    addClusterMessages: async(parent, { clusterId, orgId: org_id, errorData, level, message }, context)=>{
+      const { models, me, req_id, logger } = context;
+
+      const org = await models.Organization.findOne({ _id: org_id });
+
+      const queryName = 'addClusterMessages';
+      logger.debug( {req_id, user: whoIs(me), org_id, clusterId }, `${queryName} enter`);
+
+      await validAuth(me, org._id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+
+      try {
+        errorData = JSON.stringify(errorData) || undefined;
+
+        const messageType = 'watch-keeper';
+
+        const messageHash = objectHash(message);
+        const key = {
+          cluster_id: clusterId,
+          org_id: org._id,
+          level: level,
+          data: errorData,
+          message_hash: messageHash,
+        };
+        const data = {
+          level: level,
+          message: message,
+          data: errorData,
+          updated: new Date(),
+        };
+        const insertData = {
+          created: new Date(),
+        };
+        await models.Message.updateOne(key, { $set: data, $setOnInsert: insertData }, { upsert: true });
+        logger.debug({ messagedata: data }, `${messageType} message data posted`);
+
+        return {
+          success: true,
+        };
+      } catch (err) {
+        logger.error(err.message);
+        throw err;
+      }
+    },
   }
 }; // end clusterResolvers
 

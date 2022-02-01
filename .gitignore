@@ -70,3 +70,5 @@ dev/
 # vscode settings
 .vscode
 .DS_Store
+
+.idea

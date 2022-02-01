@@ -66,6 +66,9 @@ const resourceSchema = gql`
     content: String!
     updated: Date!
   }
+  type ClusterResourcesSyncResponse{
+    success: Boolean!
+  }
   
   extend type Query {
     """
@@ -129,7 +132,15 @@ const resourceSchema = gql`
   }
   
   extend type Mutation{
+    """
+    Updates resources in the clusters
+    """
     updateClusterResources(orgId: String! @sv, clusterId: String! @sv, resourceChanges: [ResourceChange]!): UpdateClusterResourcesResponse
+    
+    """
+    Syncs removed and new data in the cluster
+    """
+    clusterResourcesSync(orgId: String! @sv, clusterId: String! @sv): ClusterResourcesSyncResponse!
   }
 
   extend type Subscription {

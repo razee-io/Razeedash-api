@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,37 @@
  */
 
 const mongoose = require('mongoose');
-const ResourceStatSchema = require('./resourceStat.schema');
-const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
-const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
+const MessageSchema = new mongoose.Schema({
+  org_id: {
+    type: String,
+    alias: 'orgId',
+  },
+  cluster_id: {
+    type: String,
+    alias: 'clusterId',
+  },
+  level: {
+    type: String,
+  },
+  data: {
+    type: String,
+  },
+  message: {
+    type: String,
+  },
+  message_hash: {
+    type: String,
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+  },
+  updated: {
+    type: Date,
+    default: Date.now,
+  },
+}, {
+  strict:'throw',
+});
 
-ResourceStatSchema.plugin(mongooseLeanVirtuals);
-ResourceStatSchema.plugin(mongooseLeanDefaults);
-const ResourceStat = mongoose.model('resourceStats', ResourceStatSchema);
-
-module.exports = ResourceStat;
+module.exports = MessageSchema;

@@ -82,6 +82,14 @@ const clusterSchema = gql`
   type EnableRegistrationUrlResponse {
     url: String!
   }
+  
+  type AddUpdateClusterResponse {
+    code: Int!
+    message: String
+  }
+  type AddClusterMessagesResponse {
+    success: Boolean!
+  }
 
   extend type Query {
     """
@@ -151,6 +159,16 @@ const clusterSchema = gql`
   }
 
   extend type Mutation {
+    """
+    Adds or updates cluster info
+    """
+    addUpdateCluster(orgId: String! @sv, clusterId: String! @sv, metadata: JSON!): AddUpdateClusterResponse!
+    
+    """
+    Logs an error message to devs can check on kubernetes status
+    """
+    addClusterMessages(orgId: String! @sv, clusterId: String! @sv, level: String, message: String, errorData: JSON): AddClusterMessagesResponse!
+      
     """
     Delete a cluster and all resources under the cluster
     """

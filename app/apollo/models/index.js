@@ -21,6 +21,7 @@ const ResourceStat = require('./resourceStat');
 const Cluster = require('./cluster');
 const Organization = require('./organization');
 const Channel = require('./channel');
+const Message = require('./message');
 const Subscription = require('./subscription');
 const ServiceSubscription = require('./serviceSubscription');
 const DeployableVersion = require('./deployableVersion');
@@ -77,6 +78,7 @@ const models = {
   Resource,
   ResourceStat,
   Cluster,
+  Message,
   Channel,
   Group,
   Subscription,

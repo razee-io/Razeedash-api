@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,10 @@
  */
 
 const mongoose = require('mongoose');
-const ResourceStatSchema = require('./resourceStat.schema');
+const MessageSchema = require('./message.schema');
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
-const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 
-ResourceStatSchema.plugin(mongooseLeanVirtuals);
-ResourceStatSchema.plugin(mongooseLeanDefaults);
-const ResourceStat = mongoose.model('resourceStats', ResourceStatSchema);
+MessageSchema.plugin(mongooseLeanVirtuals);
+const Message = mongoose.model('messages', MessageSchema);
 
-module.exports = ResourceStat;
+module.exports = Message;
