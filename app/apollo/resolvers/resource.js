@@ -63,9 +63,12 @@ const commonResourcesSearch = async ({ me, queryName, orgId, context, searchFilt
       .skip(skip)
       .lean({ virtuals: true, defaults: true })
     ;
-    const count = await models.Resource.find(searchFilter).count();
-    // Always exclude deleted records from totalCount
-    const totalCount = await models.Resource.find({ org_id: orgId, deleted: { $ne: true } }).count();
+
+    // `count` is the number of records in this payload (taking into account `limit`)
+    const count = resources.length;
+    // `totalCount` is the total number of records matching the search
+    const totalCount = await models.Resource.find(searchFilter).count();
+
     return {
       count,
       totalCount,
@@ -131,18 +134,18 @@ const resourceResolvers = {
       const queryName = 'resourcesCount';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      let count = 0;
       try {
-        count = await models.Resource.count({
+        return await models.Resource.count({
           org_id: org_id,
+          deleted: { $ne: true }, /* Always exclude deleted records */
         });
       } catch (error) {
         logger.error(error, 'resourcesCount encountered an error');
         throw new RazeeQueryError(context.req.t('resourcesCount encountered an error. {{error.message}}', {'error.message':error.message}), context);
       }
-      return count;
     },
     resources: async (
       parent,
@@ -354,11 +357,22 @@ const resourceResolvers = {
         searchFilter.updated = updatedSearchObj;
       }
 
-      const histObjs = await models.ResourceYamlHist.find( searchFilter, { _id:1, updated:1 }, { limit, skip } ).lean({ virtuals: true });
-      const count = await models.ResourceYamlHist.find(searchFilter).count();
+      const histObjs = await models.ResourceYamlHist
+        .find(searchFilter)
+        .sort({ _id:1, updated:1 })
+        .limit(limit)
+        .skip(skip)
+        .lean({ virtuals: true })
+      ;
+
+      // `count` is the number of records in this payload (taking into account `limit`)
+      const count = histObjs.length;
+      // `totalCount` is the total number of records matching the search
+      const totalCount = await models.ResourceYamlHist.find( searchFilter ).count();
 
       return {
         count,
+        totalCount,
         items: histObjs,
       };
     },

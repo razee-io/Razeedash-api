@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,9 +174,10 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!, $clusterId: String!, $resourceSelfLink: String!, $beforeDate: Date, $afterDate: Date, $limit: Int = 20) {
-            resourceHistory(orgId: $orgId, clusterId: $clusterId, resourceSelfLink: $resourceSelfLink, beforeDate: $beforeDate, afterDate: $afterDate, limit: $limit) {
+          query($orgId: String!, $clusterId: String!, $resourceSelfLink: String!, $beforeDate: Date, $afterDate: Date, $limit: Int, $skip: Int) {
+            resourceHistory(orgId: $orgId, clusterId: $clusterId, resourceSelfLink: $resourceSelfLink, beforeDate: $beforeDate, afterDate: $afterDate, limit: $limit, skip: $skip) {
               count,
+              totalCount,
               items{
                 id
                 updated
@@ -242,8 +243,8 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $filter: String $fromDate: Date $toDate: Date, $kinds: [String!], $sort: [SortObj!], $limit: Int){
-            resources(orgId: $orgId filter: $filter fromDate: $fromDate toDate: $toDate, kinds: $kinds, sort: $sort, limit: $limit) {
+          query($orgId: String!, $filter: String, $fromDate: Date, $toDate: Date, $kinds: [String!], $sort: [SortObj!], $limit: Int, $skip: Int){
+            resources(orgId: $orgId, filter: $filter, fromDate: $fromDate, toDate: $toDate, kinds: $kinds, sort: $sort, limit: $limit, skip: $skip) {
               count,
               totalCount
               resources{
@@ -277,9 +278,10 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $clusterId: String! $filter: String){
-            resourcesByCluster(orgId: $orgId clusterId: $clusterId filter: $filter) {
+          query($orgId: String!, $clusterId: String!, $filter: String, $limit: Int, $skip: Int){
+            resourcesByCluster(orgId: $orgId, clusterId: $clusterId, filter: $filter, limit: $limit, skip: $skip) {
               count
+              totalCount
               resources{
                 id
                 orgId
@@ -305,9 +307,10 @@ const apiFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String! $subscriptionId: String!){
-            resourcesBySubscription(orgId: $orgId subscriptionId: $subscriptionId ) {
+          query($orgId: String!, $subscriptionId: String!, $limit: Int, $skip: Int){
+            resourcesBySubscription(orgId: $orgId, subscriptionId: $subscriptionId, limit: $limit, skip: $skip) {
               count
+              totalCount
               resources{
                 id
                 orgId

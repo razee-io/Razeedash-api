@@ -58,6 +58,7 @@ const resourceSchema = gql`
   }
   type ResourceHistList{
     count: Int
+    totalCount: Int
     items: [ResourceHistObj!]!
   }
   type ResourceContentObj{
