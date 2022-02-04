@@ -380,90 +380,86 @@ describe('resource graphql test suite', () => {
 
     it('should update cluster resources', async()=>{
       const clusterId = 'cluster_01';
-      try{
-        token = await signInUser(models, api, user01Data);
-        const meResult = await api.me(token);
-        const selfLink = 'somePod/test1';
-        const result1 = await api.updateClusterResources(token, {
-          orgId: meResult.data.data.me.orgId,
-          clusterId,
-          resourceChanges: [
-            {
-              type: 'ADDED',
-              object: {
-                kind: 'Pod',
-                apiVersion: 'apps/v1',
-                metadata: {
-                  selfLink,
-                  namespace: 'razee',
-                  name: 'test1',
-                },
-              }
-            },
-          ],
-        });
-        expect(result1.data.data.updateClusterResources.success).to.equal(true);
 
-        const result2 = await api.resourcesByCluster(token, {
-          orgId: meResult.data.data.me.orgId,
-          clusterId,
-          filter: selfLink,
-        });
-        expect(result2.data.data.resourcesByCluster.resources.length).to.equal(1);
-        expect(result2.data.data.resourcesByCluster.resources[0].selfLink).to.equal(selfLink);
+      token = await signInUser(models, api, user01Data);
+      const meResult = await api.me(token);
+      const selfLink = 'somePod/test1';
+      const result1 = await api.updateClusterResources(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+        resourceChanges: [
+          {
+            type: 'ADDED',
+            object: {
+              kind: 'Pod',
+              apiVersion: 'apps/v1',
+              metadata: {
+                selfLink,
+                namespace: 'razee',
+                name: 'test1',
+              },
+            }
+          },
+        ],
+      });
+      expect(result1.data.data.updateClusterResources.success).to.equal(true);
 
-        // triggers an update this time instead of create
-        const result3 = await api.updateClusterResources(token, {
-          orgId: meResult.data.data.me.orgId,
-          clusterId,
-          resourceChanges: [
-            {
-              type: 'ADDED',
-              object: {
-                kind: 'Pod',
-                apiVersion: 'apps/v1',
-                metadata: {
-                  selfLink,
-                  namespace: 'razee',
-                  name: 'test1',
-                },
-              }
-            },
-          ],
-        });
-        expect(result3.data.data.updateClusterResources.success).to.equal(true);
+      const result2 = await api.resourcesByCluster(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+        filter: selfLink,
+      });
+      expect(result2.data.data.resourcesByCluster.resources.length).to.equal(1);
+      expect(result2.data.data.resourcesByCluster.resources[0].selfLink).to.equal(selfLink);
 
-        // now DELETE
-        const result4 = await api.updateClusterResources(token, {
-          orgId: meResult.data.data.me.orgId,
-          clusterId,
-          resourceChanges: [
-            {
-              type: 'DELETED',
-              object: {
-                kind: 'Pod',
-                apiVersion: 'apps/v1',
-                metadata: {
-                  selfLink,
-                  namespace: 'razee',
-                  name: 'test1',
-                },
-              }
-            },
-          ],
-        });
-        expect(result4.data.data.updateClusterResources.success).to.equal(true);
+      // triggers an update this time instead of create
+      const result3 = await api.updateClusterResources(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+        resourceChanges: [
+          {
+            type: 'ADDED',
+            object: {
+              kind: 'Pod',
+              apiVersion: 'apps/v1',
+              metadata: {
+                selfLink,
+                namespace: 'razee',
+                name: 'test1',
+              },
+            }
+          },
+        ],
+      });
+      expect(result3.data.data.updateClusterResources.success).to.equal(true);
 
-        const result5 = await api.resourcesByCluster(token, {
-          orgId: meResult.data.data.me.orgId,
-          clusterId,
-          filter: selfLink,
-        });
-        expect(result5.data.data.resourcesByCluster.resources.length).to.equal(0);
-      }
-      catch (err) {
-        console.log('err', err);
-      }
+      // now DELETE
+      const result4 = await api.updateClusterResources(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+        resourceChanges: [
+          {
+            type: 'DELETED',
+            object: {
+              kind: 'Pod',
+              apiVersion: 'apps/v1',
+              metadata: {
+                selfLink,
+                namespace: 'razee',
+                name: 'test1',
+              },
+            }
+          },
+        ],
+      });
+      expect(result4.data.data.updateClusterResources.success).to.equal(true);
+
+      const result5 = await api.resourcesByCluster(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+        filter: selfLink,
+      });
+      expect(result5.data.data.resourcesByCluster.resources.length).to.equal(0);
     });
   });
 

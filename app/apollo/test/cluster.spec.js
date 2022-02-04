@@ -1025,7 +1025,7 @@ describe('cluster graphql test suite', () => {
       clusterId,
       metadata,
     });
-    console.log(3333, result);
+    console.log(3333, result1);
     expect(result1.data.data.addUpdateCluster.code).to.equal(200);
     expect(result1.data.data.addUpdateCluster.message).to.equal('Welcome to Razee');
 
