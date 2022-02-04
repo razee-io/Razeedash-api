@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 const { gql } = require('apollo-server-express');
 
 const resourceSchema = gql`
-  
+
   type ClusterInfo {
     clusterId: String!
     name: String!
@@ -51,13 +51,14 @@ const resourceSchema = gql`
     totalCount: Int
     resources: [Resource!]!
   }
-  
+
   type ResourceHistObj{
     id: String!
     updated: Date!
   }
   type ResourceHistList{
     count: Int
+    totalCount: Int
     items: [ResourceHistObj!]!
   }
   type ResourceContentObj{
@@ -95,7 +96,7 @@ const resourceSchema = gql`
     """
     Search resources against **orgId**, **clusterId**, **filter** string, and date ranges.
     """
-    resourcesByCluster(orgId: String! @sv clusterId: String! @sv filter: String @sv limit: Int = 500): ResourcesList!
+    resourcesByCluster(orgId: String! @sv, clusterId: String! @sv, filter: String @sv, limit: Int = 500, skip: Int = 0): ResourcesList!
 
     """
     Return the resource by given resource **id**.
@@ -105,17 +106,17 @@ const resourceSchema = gql`
     """
     return the resource by given **orgId**, **clusterId** and **selfLink** of the resource.
     """
-    resourceByKeys(orgId: String! @sv clusterId: String! @sv selfLink: String! @sv): Resource
+    resourceByKeys(orgId: String! @sv, clusterId: String! @sv, selfLink: String! @sv): Resource
 
     """
     Search resources against **orgId** and **subscriptionId**.
     """
-    resourcesBySubscription(orgId: String! @sv subscriptionId: String! @sv): ResourcesList!
+    resourcesBySubscription(orgId: String! @sv, subscriptionId: String! @sv, limit: Int = 500, skip: Int = 0): ResourcesList!
     """
     Gets the yaml history for a resource
     """
-    resourceHistory(orgId: String! @sv, clusterId: String! @sv, resourceSelfLink: String! @sv, beforeDate: Date, afterDate: Date, limit: Int = 20): ResourceHistList!
-    
+    resourceHistory(orgId: String! @sv, clusterId: String! @sv, resourceSelfLink: String! @sv, beforeDate: Date, afterDate: Date, limit: Int = 20, skip: Int = 0): ResourceHistList!
+
     """
     Gets the content for a yaml hist item
     """
