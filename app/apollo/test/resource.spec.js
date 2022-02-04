@@ -154,6 +154,23 @@ const createClusters = async () => {
       },
     },
   });
+  await models.Cluster.create({
+    org_id:  org_02._id,
+    cluster_id: 'clusterResourcesSyncCluster',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+  });
 };
 const createSubscriptions = async () => {
   await models.Group.create({
@@ -236,6 +253,18 @@ const createResources = async () => {
     data: {metadata: {type: 'embedded'}, data: 'any_data' },
     searchableData: { key01: 'any value 01', key02: 'any value 02' },
     searchableDataHash: 'some random hash.',
+  });
+  await models.Resource.create({
+    _id: new ObjectId('aaaabbbbccc5'),
+    org_id: org_02._id,
+    cluster_id: 'clusterResourcesSyncCluster',
+    selfLink: '/mybla/selfLink/clusterResourcesSyncCluster_outdatedResource',
+    hash: 'any_hash',
+    deleted: false,
+    data: {metadata: {type: 'embedded'}, data: 'any_data' },
+    searchableData: { key01: 'any value 01', key02: 'any value 02' },
+    searchableDataHash: 'some random hash.',
+    updated: new Date('2022-01-05T12:00:01.001Z'),
   });
   await models.ResourceYamlHist.create({
     _id: 'resourceYamlHist_01',
@@ -333,6 +362,125 @@ describe('resource graphql test suite', () => {
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
+  });
+
+  describe('updateClusterResources(orgId: String!, clusterId: String!, resourceChanges: [ResourceChange]!)', ()=>{
+    let token;
+
+    it('should update cluster resources', async()=>{
+      const clusterId = 'cluster_01';
+      try{
+        token = await signInUser(models, api, user01Data);
+        const meResult = await api.me(token);
+        const selfLink = 'somePod/test1';
+        const result1 = await api.updateClusterResources(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId,
+          resourceChanges: [
+            {
+              type: 'ADDED',
+              object: {
+                kind: 'Pod',
+                apiVersion: 'apps/v1',
+                metadata: {
+                  selfLink,
+                  namespace: 'razee',
+                  name: 'test1',
+                },
+              }
+            },
+          ],
+        });
+        expect(result1.data.data.updateClusterResources.success).to.equal(true);
+
+        const result2 = await api.resourcesByCluster(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId,
+          filter: selfLink,
+        });
+        expect(result2.data.data.resourcesByCluster.resources.length).to.equal(1);
+        expect(result2.data.data.resourcesByCluster.resources[0].selfLink).to.equal(selfLink);
+
+        // triggers an update this time instead of create
+        const result3 = await api.updateClusterResources(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId,
+          resourceChanges: [
+            {
+              type: 'ADDED',
+              object: {
+                kind: 'Pod',
+                apiVersion: 'apps/v1',
+                metadata: {
+                  selfLink,
+                  namespace: 'razee',
+                  name: 'test1',
+                },
+              }
+            },
+          ],
+        });
+        expect(result3.data.data.updateClusterResources.success).to.equal(true);
+
+        // now DELETE
+        const result4 = await api.updateClusterResources(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId,
+          resourceChanges: [
+            {
+              type: 'DELETED',
+              object: {
+                kind: 'Pod',
+                apiVersion: 'apps/v1',
+                metadata: {
+                  selfLink,
+                  namespace: 'razee',
+                  name: 'test1',
+                },
+              }
+            },
+          ],
+        });
+        expect(result4.data.data.updateClusterResources.success).to.equal(true);
+
+        const result5 = await api.resourcesByCluster(token, {
+          orgId: meResult.data.data.me.orgId,
+          clusterId,
+          filter: selfLink,
+        });
+        expect(result5.data.data.resourcesByCluster.resources.length).to.equal(0);
+      }
+      catch (err) {
+        console.log('err', err);
+      }
+    });
+  });
+
+  describe('clusterResourcesSync(orgId: String!, clusterId: String!)', ()=>{
+    it('should sync cluster resources', async()=>{
+      const clusterId = 'clusterResourcesSyncCluster';
+
+      const token = await signInUser(models, api, user02Data);
+      const meResult = await api.me(token);
+
+      const result1 = await api.resourcesByCluster(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+      });
+      expect(result1.data.data.resourcesByCluster.resources.length).to.equal(1);
+
+      const result2 = await api.clusterResourcesSync(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+      });
+      expect(result2.data.data.clusterResourcesSync.success).to.equal(true);
+
+      const result3 = await api.resourcesByCluster(token, {
+        orgId: meResult.data.data.me.orgId,
+        clusterId,
+      });
+      expect(result3.data.data.resourcesByCluster.resources.length).to.equal(0);
+    });
   });
 
   describe('resource(orgId: String!, id: String!): Resource', () => {

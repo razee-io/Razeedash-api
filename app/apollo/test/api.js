@@ -463,6 +463,48 @@ const apiFunc = grahqlUrl => {
       variables,
     });
 
+  const updateClusterResources = async (token, variables) => {
+    return axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation updateClusterResources($orgId:String!, $clusterId:String!, $resourceChanges:[ResourceChange!]!) {
+            updateClusterResources(orgId:$orgId,clusterId:$clusterId, resourceChanges:$resourceChanges){
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      }
+    );
+  };
+
+  const clusterResourcesSync = async (token, variables) => {
+    return axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation clusterResourcesSync($orgId:String!, $clusterId:String!) {
+            clusterResourcesSync(orgId:$orgId,clusterId:$clusterId){
+              success
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      }
+    );
+  };
+
   return {
     registrationUrl,
     organizations,
@@ -483,6 +525,8 @@ const apiFunc = grahqlUrl => {
     resourcesDistributedCount,
     resourcesDistributed,
     resourcesDistributedByCluster,
+    updateClusterResources,
+    clusterResourcesSync,
   };
 };
 

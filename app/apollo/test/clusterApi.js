@@ -389,6 +389,48 @@ const clusterFunc = grahqlUrl => {
         },
       },
     );
+  const addUpdateCluster = async (token, variables) => {
+    return axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation addUpdateCluster($orgId:String!, $clusterId:String!, $metadata:JSON!) {
+            addUpdateCluster(orgId:$orgId,clusterId:$clusterId, metadata:$metadata){
+              code
+              message
+            }
+          }
+      `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  };
+  const addClusterMessages = async (token, variables) => {
+    return axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation addClusterMessages($orgId:String!, $clusterId:String!, $level: String, $message: String , $errorData:JSON!) {
+            addClusterMessages(orgId:$orgId,clusterId:$clusterId, level:$level, message:$message, errorData:$errorData){
+          success
+            }
+          }
+
+      `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  };
 
   return {
     byClusterID,
@@ -405,7 +447,9 @@ const clusterFunc = grahqlUrl => {
     deleteClusterByClusterId,
     deleteClusters,
     registerCluster,
-    enableRegistrationUrl
+    enableRegistrationUrl,
+    addUpdateCluster,
+    addClusterMessages,
   };
 };
 

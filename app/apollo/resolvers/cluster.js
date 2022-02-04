@@ -22,12 +22,10 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
-const moment = require("moment");
-const axios = require("axios");
-const glob = require("glob-promise");
-const fs = require("fs");
-const objectHash = require("object-hash");
-const ResourceStat = require("../models/resourceStat");
+const axios = require('axios');
+const glob = require('glob-promise');
+const fs = require('fs');
+const objectHash = require('object-hash');
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];

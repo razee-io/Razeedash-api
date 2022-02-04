@@ -865,8 +865,6 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-
-
   it('try to register a cluster when max # of clusters per account is reached', async () => {
     try {
       let registerCluster = await clusterApi.registerCluster(adminToken, {
@@ -1003,5 +1001,116 @@ describe('cluster graphql test suite', () => {
       }
       throw error;
     }
+  });
+
+  it('addUpdateCluster(orgId: String!, clusterId: String! metadata: JSON!)', async () => {
+    const orgId = org01._id;
+    const clusterId = 'newCluster';
+    const metadata = {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    };
+    // adds
+    const result1 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    expect(result1.data.data.addUpdateCluster.code).to.equal(200);
+    expect(result1.data.data.addUpdateCluster.message).to.equal('Welcome to Razee');
+
+    // updates
+    const result2 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    expect(result2.data.data.addUpdateCluster.code).to.equal(200);
+    expect(result2.data.data.addUpdateCluster.message).to.equal('Thanks for the update');
+
+    // marks as dirty
+    await models.Cluster.updateOne(
+      { cluster_id: 'newCluster' },
+      { $set: { dirty: true } }
+    );
+
+    // wants response that says it was dirty
+    const result3 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    expect(result3.data.data.addUpdateCluster.code).to.equal(205);
+    expect(result3.data.data.addUpdateCluster.message).to.equal('Please resync');
+  });
+
+  it('addClusterMessages(orgId: String!, clusterId: String!, level: String, message: String, errorData: JSON)', async () => {
+    const orgId = org01._id;
+    const clusterId = 'cluster_01';
+    let level = 'ERROR';
+    let message = 'some msg';
+    let errorData = {error: 'some msg obj'};
+
+    // insert
+    const result1 = await clusterApi.addClusterMessages(adminToken, {
+      orgId,
+      clusterId,
+      level,
+      message,
+      errorData,
+    });
+    expect(result1.data.data.addClusterMessages.success).to.equal(true);
+
+    let resultMessages = await models.Message.find({ cluster_id: 'cluster_01' }).lean({ virtuals: true });
+    expect(resultMessages.length).to.equal(1);
+    expect(resultMessages[0].message_hash).to.equal('cf9445980ee2d3960869a27ced561502cbc3bfab');
+    expect(resultMessages[0].message).to.equal(message);
+    expect(resultMessages[0].level).to.equal(level);
+    expect(JSON.parse(resultMessages[0].data).error).to.equal(errorData.error);
+
+    // update
+    const result2 = await clusterApi.addClusterMessages(adminToken, {
+      orgId,
+      clusterId,
+      level,
+      message,
+      errorData,
+    });
+    expect(result2.data.data.addClusterMessages.success).to.equal(true);
+
+    resultMessages = await models.Message.find({ cluster_id: 'cluster_01' }).lean({ virtuals: true });
+    expect(resultMessages.length).to.equal(1);
+    expect(resultMessages[0].message_hash).to.equal('cf9445980ee2d3960869a27ced561502cbc3bfab');
+    expect(resultMessages[0].message).to.equal(message);
+    expect(resultMessages[0].level).to.equal(level);
+    expect(JSON.parse(resultMessages[0].data).error).to.equal(errorData.error);
+
+    // different insert
+    level = 'INFO';
+    message = 'msg 2';
+    errorData = {attr:'some msg obj 2'};
+    const result3 = await clusterApi.addClusterMessages(adminToken, {
+      orgId,
+      clusterId,
+      level,
+      message,
+      errorData,
+    });
+    expect(result3.data.data.addClusterMessages.success).to.equal(true);
+    resultMessages = await models.Message.find({ cluster_id: 'cluster_01' }).lean({ virtuals: true });
+    expect(resultMessages.length).to.equal(2);
+    expect(resultMessages[1].message_hash).to.equal('ce4b1429b7e6b9b09b68c232b96abe25ca3673a9');
+    expect(resultMessages[1].message).to.equal(message);
+    expect(resultMessages[1].level).to.equal(level);
+    expect(JSON.parse(resultMessages[1].data).attr).to.equal(errorData.attr);
   });
 });

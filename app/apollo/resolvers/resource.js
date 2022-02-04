@@ -35,9 +35,9 @@ const {
   buildSearchableDataForResource,
   buildSearchableDataObjHash,
   buildPushObj
-} = require("../../utils/cluster");
-const {conf} = require("../../conf");
-const moment = require("moment");
+} = require('../../utils/cluster');
+const {conf} = require('../../conf');
+const moment = require('moment');
 
 const pubSub = GraphqlPubSub.getInstance();
 
@@ -781,8 +781,7 @@ const resourceResolvers = {
 
         // deletes items >1day old
         const objsToDelete = await models.Resource.find(
-          { org_id: org._id, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } },
-          { projection: { selfLink: 1, updated: 1, } }
+          { org_id: org._id, cluster_id: clusterId, deleted: true, updated: { $lt: new moment().subtract(1, 'day').toDate() } }
         );
 
         if(objsToDelete.length > 0){
