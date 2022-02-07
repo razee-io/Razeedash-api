@@ -1003,62 +1003,6 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-  it('addUpdateCluster(orgId: String!, clusterId: String! metadata: JSON!)', async () => {
-    const originalClusterLimit = process.env.CLUSTER_MAX_TOTAL_LIMIT;
-    process.env.CLUSTER_MAX_TOTAL_LIMIT=1000;
-
-    const orgId = org01._id;
-    const clusterId = 'newCluster';
-    const metadata = {
-      kube_version: {
-        major: '1',
-        minor: '16',
-        gitVersion: '1.99',
-        gitCommit: 'abc',
-        gitTreeState: 'def',
-        buildDate: 'a_date',
-        goVersion: '1.88',
-        compiler: 'some compiler',
-        platform: 'linux/amd64',
-      },
-    };
-    // adds
-    const result1 = await clusterApi.addUpdateCluster(adminToken, {
-      orgId,
-      clusterId,
-      metadata,
-    });
-    console.log(3333, result1.data.errors);
-    expect(result1.data.data.addUpdateCluster.code).to.equal(200);
-    expect(result1.data.data.addUpdateCluster.message).to.equal('Welcome to Razee');
-
-    // updates
-    const result2 = await clusterApi.addUpdateCluster(adminToken, {
-      orgId,
-      clusterId,
-      metadata,
-    });
-    expect(result2.data.data.addUpdateCluster.code).to.equal(200);
-    expect(result2.data.data.addUpdateCluster.message).to.equal('Thanks for the update');
-
-    // marks as dirty
-    await models.Cluster.updateOne(
-      { cluster_id: 'newCluster' },
-      { $set: { dirty: true } }
-    );
-
-    // wants response that says it was dirty
-    const result3 = await clusterApi.addUpdateCluster(adminToken, {
-      orgId,
-      clusterId,
-      metadata,
-    });
-    expect(result3.data.data.addUpdateCluster.code).to.equal(205);
-    expect(result3.data.data.addUpdateCluster.message).to.equal('Please resync');
-
-    process.env.CLUSTER_MAX_TOTAL_LIMIT = originalClusterLimit;
-  });
-
   it('addClusterMessages(orgId: String!, clusterId: String!, level: String, message: String, errorData: JSON)', async () => {
     const orgId = org01._id;
     const clusterId = 'cluster_01';
@@ -1118,5 +1062,56 @@ describe('cluster graphql test suite', () => {
     expect(resultMessages[1].message).to.equal(message);
     expect(resultMessages[1].level).to.equal(level);
     expect(JSON.parse(resultMessages[1].data).attr).to.equal(errorData.attr);
+  });
+
+  it('addUpdateCluster(orgId: String!, clusterId: String! metadata: JSON!)', async () => {
+    const orgId = org77._id;
+    const clusterId = 'newCluster';
+    const metadata = {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    };
+    // adds
+    const result1 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    console.log(3333, result1.data.errors);
+    expect(result1.data.data.addUpdateCluster.code).to.equal(200);
+    expect(result1.data.data.addUpdateCluster.message).to.equal('Welcome to Razee');
+
+    // updates
+    const result2 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    expect(result2.data.data.addUpdateCluster.code).to.equal(200);
+    expect(result2.data.data.addUpdateCluster.message).to.equal('Thanks for the update');
+
+    // marks as dirty
+    await models.Cluster.updateOne(
+      { cluster_id: 'newCluster' },
+      { $set: { dirty: true } }
+    );
+
+    // wants response that says it was dirty
+    const result3 = await clusterApi.addUpdateCluster(adminToken, {
+      orgId,
+      clusterId,
+      metadata,
+    });
+    expect(result3.data.data.addUpdateCluster.code).to.equal(205);
+    expect(result3.data.data.addUpdateCluster.message).to.equal('Please resync');
   });
 });
