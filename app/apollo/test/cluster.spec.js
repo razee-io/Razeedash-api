@@ -1004,6 +1004,9 @@ describe('cluster graphql test suite', () => {
   });
 
   it('addUpdateCluster(orgId: String!, clusterId: String! metadata: JSON!)', async () => {
+    const originalClusterLimit = process.env.CLUSTER_MAX_TOTAL_LIMIT;
+    process.env.CLUSTER_MAX_TOTAL_LIMIT=1000;
+
     const orgId = org01._id;
     const clusterId = 'newCluster';
     const metadata = {
@@ -1052,6 +1055,8 @@ describe('cluster graphql test suite', () => {
     });
     expect(result3.data.data.addUpdateCluster.code).to.equal(205);
     expect(result3.data.data.addUpdateCluster.message).to.equal('Please resync');
+
+    process.env.CLUSTER_MAX_TOTAL_LIMIT = originalClusterLimit;
   });
 
   it('addClusterMessages(orgId: String!, clusterId: String!, level: String, message: String, errorData: JSON)', async () => {
