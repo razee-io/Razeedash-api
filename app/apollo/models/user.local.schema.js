@@ -329,6 +329,7 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   const orgMeta = me.meta.orgs.find((o)=>{
     return (o._id == orgId);
   });
+  console.log(444444, orgMeta);
   if(!orgMeta){
     return false;
   }
