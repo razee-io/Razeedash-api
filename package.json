@@ -6,7 +6,7 @@
   "main": "app/index.js",
   "repository": "https://github.com/razee-io/Razeedash-api",
   "scripts": {
-    "start": "node app/index.js",
+    "start": "node --max-http-header-size=80000 app/index.js",
     "dev": "nodemon -r dotenv/config app/index.js | bunyan",
     "local": "export AUTH_MODEL=local; nodemon app/index.js | bunyan",
     "start:mon": "nodemon app/index.js | bunyan",
