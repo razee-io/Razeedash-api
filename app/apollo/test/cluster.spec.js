@@ -43,6 +43,7 @@ const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const clusterApi = clusterFunc(graphqlUrl);
 let token;
+let token77;
 let adminToken;
 
 let org01Data;
@@ -342,6 +343,7 @@ describe('cluster graphql test suite', () => {
     //await getPresetClusters();
 
     token = await signInUser(models, resourceApi, user01Data);
+    token77 = await signInUser(models, resourceApi, user77Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
   }); // before
 
@@ -1081,7 +1083,7 @@ describe('cluster graphql test suite', () => {
       },
     };
     // adds
-    const result1 = await clusterApi.addUpdateCluster(adminToken, {
+    const result1 = await clusterApi.addUpdateCluster(token77, {
       orgId,
       clusterId,
       metadata,
@@ -1091,7 +1093,7 @@ describe('cluster graphql test suite', () => {
     expect(result1.data.data.addUpdateCluster.message).to.equal('Welcome to Razee');
 
     // updates
-    const result2 = await clusterApi.addUpdateCluster(adminToken, {
+    const result2 = await clusterApi.addUpdateCluster(token77, {
       orgId,
       clusterId,
       metadata,
@@ -1106,7 +1108,7 @@ describe('cluster graphql test suite', () => {
     );
 
     // wants response that says it was dirty
-    const result3 = await clusterApi.addUpdateCluster(adminToken, {
+    const result3 = await clusterApi.addUpdateCluster(token77, {
       orgId,
       clusterId,
       metadata,
