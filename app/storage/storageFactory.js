@@ -1,5 +1,5 @@
 /**
- * Copyright 2019, 2021 IBM Corp. All Rights Reserved.
+ * Copyright 2019, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ const conf = require('../conf').conf;
 const configFileName = path.join(__dirname, '..', 'storageConfig.json');
 
 const s3legacyType = 's3legacy'; // legacy handler requires special treatment
+const embeddedType = 'embedded'; // embedded handler requires special treatment
 
 class StorageFactoryConfig {
   constructor() {
@@ -70,16 +71,23 @@ class StorageFactory {
   }
 
   deserialize(encodedResource) {
+    // If arg is an href, return s3legacy handler
     if (this.isLink(encodedResource)) {
       const s3legacyHandler = config.handlers.get(s3legacyType);
       return s3legacyHandler.deserializer(this.logger, encodedResource);
     }
-    /*
-        Find required handler type in the metadata and look it up in the handlers map
-    */
-    if (!encodedResource.metadata || !encodedResource.metadata.type) {
-      throw new Error(`Invalid metadata structure: ${encodedResource.metadata}`);
+    // If arg is a string, convert it to an embeddedType object
+    else if (_.isString(encodedResource)) {
+      // This could happen with very old data -- new embeddedType data should be stored as an object with metadata.type
+      encodedResource = { metadata: { type: embeddedType }, data: encodedResource };
     }
+
+    // If arg isn't an object with metadata.type, throw an error
+    if (!encodedResource.metadata || !encodedResource.metadata.type) {
+      throw new Error(`Invalid resource data, metadata.type expected: ${JSON.stringify(encodedResource).substring(0,50)}[...]`);
+    }
+
+    // Find and return required handler
     const handlerType = encodedResource.metadata.type;
     const handler = config.handlers.get(handlerType);
     if (!handler) {
