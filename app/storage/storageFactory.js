@@ -84,7 +84,7 @@ class StorageFactory {
 
     // If arg isn't an object with metadata.type, throw an error
     if (!encodedResource.metadata || !encodedResource.metadata.type) {
-      throw new Error(`Invalid resource data, metadata.type expected: ${JSON.stringify(encodedResource).substring(0,50)}[...]`);
+      throw new Error(`Invalid metadata structure: ${JSON.stringify(encodedResource).substring(0,50)}[...]`);
     }
 
     // Find and return required handler
