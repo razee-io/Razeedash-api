@@ -30,6 +30,9 @@ const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
 
+// RBAC Sync
+const { subscriptionsRbacSync } = require('../utils/rbacSync');
+
 const pubSub = GraphqlPubSub.getInstance();
 
 async function validateGroups(org_id, groups, context) {
@@ -309,10 +312,8 @@ const subscriptionResolvers = {
           throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
 
-        const uuid = UUID();
-
         // loads the channel
-        var channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
+        const channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
@@ -321,7 +322,7 @@ const subscriptionResolvers = {
         await validateGroups(org_id, groups, context);
 
         // loads the version
-        var version = channel.versions.find((version)=>{
+        const version = channel.versions.find((version)=>{
           return (version.uuid == version_uuid);
         });
         if(!version){
@@ -329,16 +330,24 @@ const subscriptionResolvers = {
         }
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
-        await models.Subscription.create({
+        const subscription = {
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId,
           kubeOwnerId,
           custom
-        });
+        };
+        await models.Subscription.create( subscription );
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        /*
+        Trigger RBAC Sync after successful Subscription creation and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, subscription creation is successful.
+        */
+        subscriptionsRbacSync( [subscription], { resync: false }, context );
 
         return {
           uuid,
@@ -352,7 +361,7 @@ const subscriptionResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
-    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, custom: custom }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, updateClusterIdentity, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -360,7 +369,7 @@ const subscriptionResolvers = {
       try{
         const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), orgId, conditions }, `${queryName} group conditions are...`);
-        var subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
+        const subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
 
         if(!subscription){
           throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':orgId}), context);
@@ -369,7 +378,7 @@ const subscriptionResolvers = {
         await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
 
         // loads the channel
-        var channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
+        const channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
         if(!channel){
           throw  new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
@@ -378,21 +387,49 @@ const subscriptionResolvers = {
         await validateGroups(orgId, groups, context);
 
         // loads the version
-        var version = channel.versions.find((version)=>{
+        const version = channel.versions.find((version)=>{
           return (version.uuid == version_uuid);
         });
         if(!version){
           throw  new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
-        var sets = {
+        let sets = {
           name, groups,
           channelName: channel.name, channel_uuid, version: version.name, version_uuid,
           clusterId, custom,
         };
+
+        // RBAC Sync
+        if( updateClusterIdentity ) sets['owner'] = me._id; //kubeOwnerId?
+
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
         pubSub.channelSubChangedFunc({ org_id: orgId }, context);
+
+        /*
+        RBAC Sync
+        Trigger after successful Subscription update and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, subscription edit is successful.
+        */
+        if( updateClusterIdentity ) {
+          // If resyncing, trigger RBAC Sync of all clusters
+          subscriptionsRbacSync( [subscription], { resync: true }, context );
+        }
+        else if( me._id != subscription.owner ) {
+          // If changing owner, trigger RBAC Sync of any un-synced clusters
+          subscriptionsRbacSync( [subscription], { resync: false }, context );
+        } else {
+          // If adding any new group(s), trigger RBAC Sync of any un-synced clusters
+          for( const group of groups ) {
+            if( !subscription.groups.includes(group) ) {
+              // At least one new group, trigger sync and stop checking for new groups
+              subscriptionsRbacSync( [subscription], { resync: false }, context );
+              break;
+            }
+          }
+        }
 
         return {
           uuid,
@@ -411,6 +448,12 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+
+      /*
+      RBAC Sync:
+      setSubscription only changes the Version used by a Subscription, so does
+      not need to trigger RBAC Sync (no owner change, no groups change).
+      */
 
       // await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context);
 

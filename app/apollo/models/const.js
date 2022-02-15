@@ -72,6 +72,14 @@ const CLUSTER_STATUS = {
   INACTIVE: 'inactive'
 };
 
+// RBAC Sync
+const CLUSTER_IDENTITY_SYNC_STATUS = {
+  UNKNOWN: 'unknown', // really shouldn't happen
+  PENDING: 'pending',
+  FAILED: 'failed',
+  SYNCED: 'synced',
+}
+
 const DIRECTIVE_LIMITS = {
   MAX_STRING_LENGTH: config.has('directive_limits.max_string_length') ? config.get('directive_limits.max_string_length') : 256,
   MIN_STRING_LENGTH: config.has('directive_limits.min_string_length') ? config.get('directive_limits.min_string_length') : 1,

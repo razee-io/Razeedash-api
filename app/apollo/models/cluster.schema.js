@@ -37,6 +37,11 @@ const ClusterSchema = new mongoose.Schema({
       },
     }
   ],
+  // RBAC Sync
+  syncedIdentities: {
+    type: Map,
+    default: {},
+  },
   metadata: {
     kube_version: {
       major: {
