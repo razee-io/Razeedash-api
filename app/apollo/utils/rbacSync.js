@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+TODO:
+- owner (me._id) vs kubeOwnerId (getKubeOwnerId(context))
+- GET updates
+*/
+
 const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { whoIs } = require ('../resolvers/common');
 const axios = require('axios');
@@ -32,14 +38,15 @@ const groupsRbacSync = async( groups, args, context ) => {
   const { resync } = args;
   const { models, me, req_id, logger } = context;
 
-  try {
-    const org_id = groups[0].org_id;
+  if( !groups || groups.length === 0 ) return;
+  const org_id = groups[0].org_id;
 
+  try {
     // get all subscriptions using these groups
-    const groupSubscriptions = models.Subscription.find( { org_id, groups: { $in: groups.map( g => g.uuid ) } } );
+    const subscriptions = models.Subscription.find( { org_id, groups: { $in: groups.map( g => g.uuid ) } } );
 
     // Sync subscriptions
-    await subscriptionsRbacSync( subscriptions, {resync: false}, context );
+    await subscriptionsRbacSync( subscriptions, resync, context );
 
     logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggered rbac sync for ${subscriptions.length} subscriptions` );
   }
@@ -53,7 +60,9 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   const methodName = 'subscriptionsRbacSync';
   const { resync } = args;
   const { models, me, req_id, logger } = context;
-  const org_id = subscription.org_id;
+
+  if( !subscriptions || subscriptions.length === 0 ) return;
+  const org_id = subscriptions[0].org_id;
 
   try {
     for( const subscription of subscriptions ) {
@@ -61,8 +70,9 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
       const groups = subscription.groups;
       const subscriptionClusters = [];
       for( const group of groups ) {
-        const groupClusters = await models.Cluster.find( { org_id, uuid: subscription.uuid } ).lean( { virtuals: true } );
+        const groupClusters = await models.Cluster.find( { org_id, groups: { $elemMatch: { uuid: group } } } ).lean( { virtuals: true } );
         subscriptionClusters.push( ...groupClusters );
+        logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found clusters for group '${group}': ${JSON.stringify(groupClusters)}` );
       }
       const clusters = getUniqueArrByKey( subscriptionClusters, 'cluster_id' );
       logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'` );
@@ -139,8 +149,8 @@ const applyRBAC = async( cluster, identity, context ) => {
         'authorization': context.req.header('authorization'),
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-      },
-      const result = await axios.post( url, {
+      };
+      const result = await axios.post( applyRbacEndpoint, {
         data: { cluster: cluster.cluster_id },
         headers,
       });

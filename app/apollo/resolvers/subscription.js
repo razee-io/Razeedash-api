@@ -329,6 +329,7 @@ const subscriptionResolvers = {
           throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
         }
 
+        const uuid = UUID();
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
         const subscription = {
           _id: UUID(),
