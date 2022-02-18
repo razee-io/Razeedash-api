@@ -104,7 +104,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
       }
     }
 
-    const identities = Object.getOwnPropertyNames(identityClusters);
+    const identities = Object.keys(identityClusters);
     for( const identity of identities) {
       const clusters = getUniqueArrByKey( identityClusters[identity], 'cluster_id' );
       logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Total ${clusters.length} clusters requiring rbac sync for identity '${identity}'` );
