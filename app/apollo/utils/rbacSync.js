@@ -45,12 +45,13 @@ const groupsRbacSync = async( groups, args, context ) => {
 
   try {
     // get all subscriptions using these groups
-    const subscriptions = models.Subscription.find( { org_id, groups: { $in: groups.map( g => g.uuid ) } } );
+    const find = { org_id, groups: { $in: groups.map( g => g.uuid ) } };
+    const subscriptions = await models.Subscription.find( find );
 
     // Sync subscriptions
+    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggering rbac sync for ${subscriptions.length} subscriptions` );
     await subscriptionsRbacSync( subscriptions, resync, context );
 
-    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggered rbac sync for ${subscriptions.length} subscriptions` );
   }
   catch( e ) {
     logger.error( e, `Error triggering rbac sync: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
