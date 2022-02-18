@@ -29,6 +29,12 @@ const clusterSchema = gql`
     name: String!
   }
 
+  type ClusterIdentity {
+    syncDate: String!
+    syncStatus: String!
+    syncMessage: String
+  }
+
   type BasicCluster {
     id: ID!
     orgId: String!
@@ -48,6 +54,7 @@ const clusterSchema = gql`
     status: String
     regState: String
     groups: [ClusterGroup]
+    syncedIdentities: [ClusterIdentity]
     groupObjs: [GroupDetail!]
     created: Date
     updated: Date
