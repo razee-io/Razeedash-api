@@ -18,6 +18,7 @@
 TODO/FIXME:
 - owner (me._id) vs kubeOwnerId (getKubeOwnerId(context))
 - GET updates
+- Make API more pluggable, less dependent on `{ cluster_id: string }` with user token api?
 */
 
 const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
@@ -124,8 +125,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
 
       // Asynchronously (no `await`) call API to sync the clusters
       for( const cluster of clusters ) {
-        applyRBAC( cluster, identity, context )
-        .catch( function( e ) {
+        applyRBAC( cluster, identity, context ).catch( function( e ) {
           logger.error( e, `applyRBAC error: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
           logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC error: ${e}` );
         } );
