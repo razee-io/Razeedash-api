@@ -40,6 +40,11 @@ const ClusterSchema = new mongoose.Schema({
   // RBAC Sync
   syncedIdentities: {
     type: Map,
+    of: new mongoose.Schema({
+      syncDate: Date,
+      syncStatus: String,
+      syncMessage: String,
+    }),
     default: {},
   },
   metadata: {

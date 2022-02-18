@@ -348,7 +348,7 @@ const subscriptionResolvers = {
         RBAC Sync completes asynchronously, so no `await`.
         Even if RBAC Sync errors, subscription creation is successful.
         */
-        subscriptionsRbacSync( [subscription], { resync: false }, context );
+        subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
         return {
           uuid,
@@ -416,17 +416,17 @@ const subscriptionResolvers = {
         */
         if( updateClusterIdentity ) {
           // If resyncing, trigger RBAC Sync of all clusters
-          subscriptionsRbacSync( [subscription], { resync: true }, context );
+          subscriptionsRbacSync( [subscription], { resync: true }, context ).catch(function(){/*ignore*/});
         }
         else if( me._id != subscription.owner ) {
           // If changing owner, trigger RBAC Sync of any un-synced clusters
-          subscriptionsRbacSync( [subscription], { resync: false }, context );
+          subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
         } else {
           // If adding any new group(s), trigger RBAC Sync of any un-synced clusters
           for( const group of groups ) {
             if( !subscription.groups.includes(group) ) {
               // At least one new group, trigger sync and stop checking for new groups
-              subscriptionsRbacSync( [subscription], { resync: false }, context );
+              subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
               break;
             }
           }

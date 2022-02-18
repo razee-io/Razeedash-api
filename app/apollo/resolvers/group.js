@@ -271,7 +271,7 @@ const groupResolvers = {
         RBAC Sync completes asynchronously, so no `await`.
         Even if RBAC Sync errors, Group (Cluster) update is successful.
         */
-        groupsRbacSync( groups, { resync: false }, context );
+        groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
         return {
@@ -361,7 +361,7 @@ const groupResolvers = {
 
         Ideally, code should identify which groups are *new* for this cluster and only trigger sync for those.
         */
-        groupsRbacSync( groups, { resync: false }, context );
+        groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
         return {

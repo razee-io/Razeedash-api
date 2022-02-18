@@ -38,6 +38,8 @@ const groupsRbacSync = async( groups, args, context ) => {
   const { resync } = args;
   const { models, me, req_id, logger } = context;
 
+  if( !applyRbacEndpoint ) return;
+
   if( !groups || groups.length === 0 ) return;
   const org_id = groups[0].org_id;
 
@@ -62,8 +64,12 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   const { resync } = args;
   const { models, me, req_id, logger } = context;
 
+  if( !applyRbacEndpoint ) return;
+
   if( !subscriptions || subscriptions.length === 0 ) return;
   const org_id = subscriptions[0].org_id;
+
+  logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Entry, ${subscriptions.length} subscriptions` );
 
   try {
     for( const subscription of subscriptions ) {
@@ -76,10 +82,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
         logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found clusters for group '${group}': ${JSON.stringify(groupClusters)}` );
       }
       const clusters = getUniqueArrByKey( subscriptionClusters, 'cluster_id' );
-      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'` );
-      if( clusters.length == 0 ) {
-        return;
-      }
+      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'` );
 
       // Identify which clusters will be synced:
       // All clusters where the `syncedIdentities[owner].syncStatus` is not SYNCED, or *all* clusters if `resync: true`
@@ -103,17 +106,14 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
         cluster_id: { $in: clustersToSync.map( c => c.cluster_id ) },
       };
       await models.Cluster.updateMany( find, { $set: sets } );
-      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Cluster records updated to await sync for subscription '${subscription.name}'` );
+      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Cluster records updated to await sync for subscription '${subscription.name}'` );
 
       // Asynchronously (no `await`) call API to sync the clusters
       for( const cluster of clusters ) {
         applyRBAC( cluster, subscription.owner, context )
-        .then( function() {
-          logger.info( {methodName, req_id, user: whoIs(me), org_id}, 'applyRBAC success' );
-        } )
         .catch( function( e ) {
-          logger.error( e, `applyRBAC failure: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
-          logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC failure: ${e}` );
+          logger.error( e, `applyRBAC error: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
+          logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC error: ${e}` );
         } );
       }
     }
@@ -130,8 +130,7 @@ const applyRBAC = async( cluster, identity, context ) => {
   const { models, me, req_id, logger } = context;
   const org_id = cluster.org_id;
 
-  logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Entry, cluster '${cluster.cluster_id}'` );
-
+  // Constants for finding and updating the cluster record later in this function
   const find = { org_id, cluster_id: cluster.cluster_id };
   find[`syncedIdentities.${identity}.syncStatus`] = { $nin: [ CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ] };
   const sets = { syncedIdentities: {} };
@@ -144,14 +143,17 @@ const applyRBAC = async( cluster, identity, context ) => {
       syncMessage: 'wrong identity',
     };
   }
+  /*
+  // This block will never execute as `applyRbacEndpoint` is already checked on function entry to prevent unnecessary processing
   else if( !applyRbacEndpoint ) {
-    logger.warn( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC impossible for cluster '${cluster.cluster_id}' (no endoint)` );
+    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC impossible for cluster '${cluster.cluster_id}' (no endoint)` );
     sets.syncedIdentities[ identity ] = {
       syncDate: Date.now(),
       syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.UNKNOWN,
       syncMessage: 'no endpoint',
     };
   }
+  */
   else {
     try{
       const headers = {
@@ -181,8 +183,8 @@ const applyRBAC = async( cluster, identity, context ) => {
       }
     }
     catch( e ) {
-      logger.error( e, `applyRBAC failure for cluster '${cluster.cluster_id}': ${JSON.stringifY({methodName, req_id, user: whoIs(me), org_id})}` );
-      logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC failure for cluster '${cluster.cluster_id}'` );
+      logger.error( e, `applyRBAC failure for cluster '${cluster.cluster_id}': ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
+      logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC failure for cluster '${cluster.cluster_id}': ${e}` );
       sets.syncedIdentities[ identity ] = {
         syncDate: Date.now(),
         syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.UNKNOWN,
@@ -193,11 +195,11 @@ const applyRBAC = async( cluster, identity, context ) => {
 
   try {
     await models.Cluster.updateOne( find, { $set: sets } );
-    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `sync updated for cluster '${cluster.cluster_id}'` );
+    logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `sync status updated to '${sets.syncedIdentities[ identity ].syncStatus}' for cluster '${cluster.cluster_id}'` );
   }
   catch( e ) {
     logger.error( e, `sync update failed for cluster '${cluster.cluster_id}': ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
-    logger.error( {methodName, req_id, user: whoIs(me), org_id}, `sync update failed for cluster '${cluster.cluster_id}'` );
+    logger.error( {methodName, req_id, user: whoIs(me), org_id}, `sync status update failed for cluster '${cluster.cluster_id}'` );
   }
 };
 
