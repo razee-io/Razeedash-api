@@ -129,35 +129,25 @@ const subscriptionResolvers = {
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
       }
 
-      console.log( `PLC calling applyQueryFieldsToSubscriptions 4` );
       await applyQueryFieldsToSubscriptions(subs, queryFields, { orgId: org_id }, context);
-      console.log( `PLC complete applyQueryFieldsToSubscriptions 4` );
 
       return subs;
     },
 
-    subscription: async(parent, { orgId, uuid , name, _queryName }, context, fullQuery) => {
+    subscription: async(parent, { orgId, uuid, name, _queryName }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/subscription` : 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} enter`);
 
       try{
-        let subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
-        subs = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
+        const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
 
         const sub = subs.find( s => {
-          return (s.uuid == uuid || s.name == name);
+          return (s.uuid === uuid || s.name === name);
         } );
-        if(!sub){
-          return null;
-        }
 
-        console.log( `PLC calling applyQueryFieldsToSubscriptions 1` );
-        await applyQueryFieldsToSubscriptions( [sub], queryFields, { orgId }, context );
-        console.log( `PLC complete applyQueryFieldsToSubscriptions 1` );
-
-        return sub;
+        return sub || null;
       }
       catch(err){
         logger.error(err);
@@ -169,11 +159,10 @@ const subscriptionResolvers = {
       const { me, req_id, logger } = context;
       const queryName = 'subscriptionByName';
       logger.debug({req_id, user: whoIs(me), org_id: orgId , name }, `${queryName} enter`);
-      return await subscriptionResolvers.Query.subscription(parent, { orgId , name, _queryName: queryName }, context, fullQuery);
+      return await subscriptionResolvers.Query.subscription(parent, { orgId, name, _queryName: queryName }, context, fullQuery);
     },
 
     subscriptionsForCluster: async(parent, {  orgId: org_id , clusterId: cluster_id  }, context, fullQuery) => {
-
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForCluster';
@@ -226,7 +215,6 @@ const subscriptionResolvers = {
         });
       }
 
-      console.log( `PLC calling applyQueryFieldsToSubscriptions 2` );
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
@@ -287,7 +275,6 @@ const subscriptionResolvers = {
         });
       }
 
-      console.log( `PLC calling applyQueryFieldsToSubscriptions 3` );
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;

@@ -244,29 +244,16 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
 
   // Get owner information if users ask for owner or identity sync status
   if( queryFields.owner || queryFields.identitySyncStatus ) {
-    console.log( `PLC processing owners` );
-
     const ownerIds = _.map(subs, 'owner');
-
-    if( ownerIds.length > 0 && ownerIds[0].id ) {
-      console.log( `PLC aborting` );
-      return;
-    }
-
     const owners = await models.User.getBasicUsersByIds(ownerIds);
-
-    console.log( `PLC owners retrieved: ${JSON.stringify( owners )}` );
 
     subs = subs.map((sub)=>{
       if(_.isUndefined(sub.channelName)){
         sub.channelName = sub.channel;
       }
-      console.log( `PLC changing sub '${sub.uuid}' owner from ${JSON.stringify(sub.owner)} to ${JSON.stringify( owners[sub.owner] )}` );
       sub.owner = owners[sub.owner];
       return sub;
     });
-
-    console.log( `PLC owners processed` );
   }
 
   _.each(subs, (sub)=>{
@@ -325,11 +312,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     const groupNames = _.flatten(_.map(subs, 'groups'));
     const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
 
-    console.log( `PLC group objects retrieved: ${JSON.stringify( groups )}` );
-
     await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
-
-    console.log( `PLC group objects processed` );
 
     const groupsByName = _.keyBy(groups, 'name');
     _.each(subs, (sub)=>{
@@ -352,11 +335,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       context,
     });
 
-    console.log( `PLC remoteResources retrieved: ${JSON.stringify( remoteResources )}` );
-
     await applyQueryFieldsToResources(remoteResources, queryFields.remoteResources, args, context);
-
-    console.log( `PLC remoteResources processed` );
 
     const remoteResourcesBySubUuid = _.groupBy(remoteResources, (rr)=>{
       return _.get(rr, 'searchableData[\'annotations["deploy_razee_io_clustersubscription"]\']');
@@ -392,19 +371,16 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   But that would be inefficient, and require iteration over the results
   while avoiding duplicates to get totals.
   */
-  console.log( `PLC checking identitySyncStatus...` );
   if( queryFields.identitySyncStatus ){
     for( const sub of subs ) {
-      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.name': { $in: sub.groups } }).lean({ virtuals: true });
-
-      console.log( `PLC clusters retrieved: ${JSON.stringify( clusters )}` );
-
       sub.identitySyncStatus = {
         unknownCount: 0,
         syncedCount: 0,
         failedCount: 0,
         pendingCount: 0,
       };
+
+      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.name': { $in: sub.groups } }).lean({ virtuals: true });
       for( const c of clusters ) {
         if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ) {
           sub.identitySyncStatus.syncedCount++;
@@ -421,7 +397,6 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       }
     }
   }
-  console.log( `PLC identitySyncStatus complete` );
 };
 
 module.exports = {
