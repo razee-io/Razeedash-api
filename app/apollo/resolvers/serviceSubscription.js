@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,16 +85,6 @@ const serviceResolvers = {
       }
 
       serviceSubscriptions.forEach(i => i.ssid = i.uuid);
-
-      // render owner information if users ask for
-      if(queryFields.owner && serviceSubscriptions) {
-        const ownerIds = _.map(serviceSubscriptions, 'owner');
-        const owners = await models.User.getBasicUsersByIds(ownerIds);
-        serviceSubscriptions = serviceSubscriptions.map((sub)=>{
-          sub.owner = owners[sub.owner];
-          return sub;
-        });
-      }
 
       await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
 
