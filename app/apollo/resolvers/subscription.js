@@ -130,20 +130,6 @@ const subscriptionResolvers = {
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
       }
 
-      // Get owner information if users ask for owner or identity sync status
-      if( queryFields.owner || queryFields.identitySyncStatus ) {
-        const ownerIds = _.map(subscriptions, 'owner');
-        const owners = await models.User.getBasicUsersByIds(ownerIds);
-
-        subscriptions = subscriptions.map((sub)=>{
-          if(_.isUndefined(sub.channelName)){
-            sub.channelName = sub.channel;
-          }
-          sub.owner = owners[sub.owner];
-          return sub;
-        });
-      }
-
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;

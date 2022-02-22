@@ -242,6 +242,20 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   const { me, models } = context;
   const { orgId, servSub } = args;
 
+  // Get owner information if users ask for owner or identity sync status
+  if( queryFields.owner || queryFields.identitySyncStatus ) {
+    const ownerIds = _.map(subs, 'owner');
+    const owners = await models.User.getBasicUsersByIds(ownerIds);
+
+    subs = subs.map((sub)=>{
+      if(_.isUndefined(sub.channelName)){
+        sub.channelName = sub.channel;
+      }
+      sub.owner = owners[sub.owner];
+      return sub;
+    });
+  }
+
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channelName)){
       sub.channelName = sub.channel;
@@ -359,7 +373,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   */
   if( queryFields.identitySyncStatus ){
     for( const sub of subs ) {
-      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: sub.groups } }).lean({ virtuals: true });
+      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.name': { $in: sub.groups } }).lean({ virtuals: true });
       sub.identitySyncStatus = {
         unknownCount: 0,
         syncedCount: 0,
