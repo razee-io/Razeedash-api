@@ -30,6 +30,7 @@ const clusterSchema = gql`
   }
 
   type ClusterIdentity {
+    id: String!
     syncDate: String!
     syncStatus: String!
     syncMessage: String

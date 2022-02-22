@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-RAZEE_CLUSTER_ID=${1:-${RAZEE_CLUSTER_ID:-pClusterId}}
+RAZEE_CLUSTER_UUID=${1:-${RAZEE_CLUSTER_UUID:-pClusterId}}
 LIMIT=${2:-999999}
 SKIP=${3:-0}
 RAZEE_ORG_ID=${4:-${RAZEE_ORG_ID:-pOrgId}}
@@ -26,7 +26,7 @@ query(
 }
 '
 RAZEE_QUERY=$(echo $RAZEE_QUERY | tr '\n' ' ')
-RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_ID}"'","limit":'${LIMIT}',"skip":'${SKIP}'}'
+RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_UUID}"'","limit":'${LIMIT}',"skip":'${SKIP}'}'
 
 echo "" && echo "LIST resources for cluster"
 ${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"

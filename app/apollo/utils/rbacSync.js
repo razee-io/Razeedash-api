@@ -18,7 +18,7 @@
 TODO/FIXME:
 - owner (me._id) vs kubeOwnerId (getKubeOwnerId(context))
 - GET updates
-- Make API more pluggable, less dependent on `{ cluster_id: string }` with user token api?
+- Make API more pluggable, less dependent on specific API syntax (`{ cluster_id: string }` with user token api)?
 */
 
 const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');

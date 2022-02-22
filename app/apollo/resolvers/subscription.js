@@ -121,15 +121,17 @@ const subscriptionResolvers = {
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
       logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
+      let subscriptions = [];
       try{
-        var subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+        subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
       }
-      // render owner information if users ask for
-      if(queryFields.owner && subscriptions) {
+
+      // Get owner information if users ask for owner or identity sync status
+      if( queryFields.owner || queryFields.identitySyncStatus ) {
         const ownerIds = _.map(subscriptions, 'owner');
         const owners = await models.User.getBasicUsersByIds(ownerIds);
 

@@ -16,7 +16,8 @@
 
 const _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
-const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
+// RBAC Sync
+const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 
 
 const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
@@ -50,7 +51,18 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
         cluster.status = CLUSTER_STATUS.ACTIVE;
       }
     }
+
+    // RBAC Sync
+    cluster.syncedIdentities = Object.keys(cluster.syncedIdentities).map( x => {
+      return {
+        id: x,
+        syncDate: cluster.syncedIdentities[x].syncDate,
+        syncStatus: cluster.syncedIdentities[x].syncStatus,
+        syncMessage: cluster.syncedIdentities[x].syncMessage,
+      };
+    } );
   });
+
   if(queryFields.resources) {
     const resources = await loadResourcesWithSearchAndArgs({
       search: { cluster_id: { $in: clusterIds } },
@@ -264,6 +276,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       sub.channel = channel;
     });
   }
+
   if(queryFields.resources){
     const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids } };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
@@ -280,6 +293,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
   }
+
   if(queryFields.groupObjs){
     const groupNames = _.flatten(_.map(subs, 'groups'));
     const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
@@ -293,6 +307,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       }));
     });
   }
+
   if(queryFields.remoteResources || queryFields.rolloutStatus){
     const search = {
       org_id: orgId,
@@ -334,6 +349,45 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       };
     });
   }
+
+  // RBAC Sync
+  /*
+  Identity Sync Status could also be obtained in theory by querying:
+    `groups { clusters { syncedIdentities { syncStatus } } }`
+  But that would be inefficient, and require iteration over the results
+  while avoiding duplicates to get totals.
+  */
+  if( queryFields.identitySyncStatus ){
+    for( const sub of subs ) {
+      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: sub.groups } }).lean({ virtuals: true });
+      sub.identitySyncStatus = {
+        unknownCount: 0,
+        syncedCount: 0,
+        failedCount: 0,
+        pendingCount: 0,
+      };
+      for( const c of clusters ) {
+        if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ) {
+          sub.identitySyncStatus.syncedCount++;
+        }
+        else if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.FAILED ) {
+          sub.identitySyncStatus.failedCount++;
+        }
+        else if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.PENDING ) {
+          sub.identitySyncStatus.pendingCount++;
+        }
+        else {
+          sub.identitySyncStatus.unknownCount++;
+        }
+      }
+    }
+  }
+};
+
+// Utility function: filter array of objects to elements unique by a specified key.
+// E.g. unique Cluster objects by `cluster_id`, even if other attributes differ.
+const getUniqueArrByKey = ( arr, key ) => {
+  return( [ ...new Map( arr.map( item => [ item[key], item ] ) ).values() ] );
 };
 
 module.exports = {

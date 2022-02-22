@@ -6,7 +6,7 @@ RAZEE_CLUSTER_LIMIT=${1:-100}
 RAZEE_CLUSTER_FILTER=${2:-.*}
 RAZEE_ORG_ID=${3:-${RAZEE_ORG_ID:-pOrgId}}
 
-RAZEE_QUERY='query($orgId: String! $filter: String $limit: Int) { clusterSearch( orgId: $orgId filter: $filter limit: $limit) { orgId clusterId created updated metadata registration status } }'
+RAZEE_QUERY='query($orgId: String! $filter: String $limit: Int) { clusterSearch( orgId: $orgId filter: $filter limit: $limit) { orgId, clusterId, created, updated, groups { uuid name }, metadata, registration, status, syncedIdentities { id, syncStatus, syncMessage } } }'
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","filter":"'"${RAZEE_CLUSTER_FILTER}"'","limit":'${RAZEE_CLUSTER_LIMIT}'}'
 
 echo "" && echo "LIST clusters"
