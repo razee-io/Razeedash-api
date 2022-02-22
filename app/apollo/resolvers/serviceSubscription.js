@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { ACTIONS, TYPES, SERVICE_SUBSCRIPTION_LIMITS } = require('../models/const');
 const {
