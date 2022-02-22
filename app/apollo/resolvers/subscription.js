@@ -135,13 +135,12 @@ const subscriptionResolvers = {
     },
 
     subscription: async(parent, { orgId, uuid, name, _queryName }, context, fullQuery) => {
-      const queryFields = GraphqlFields(fullQuery);
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/subscription` : 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} enter`);
 
       try{
-        const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
+        const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, context, fullQuery);
 
         const sub = subs.find( s => {
           return (s.uuid === uuid || s.name === name);
