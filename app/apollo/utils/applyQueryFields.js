@@ -384,12 +384,6 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   }
 };
 
-// Utility function: filter array of objects to elements unique by a specified key.
-// E.g. unique Cluster objects by `cluster_id`, even if other attributes differ.
-const getUniqueArrByKey = ( arr, key ) => {
-  return( [ ...new Map( arr.map( item => [ item[key], item ] ) ).values() ] );
-};
-
 module.exports = {
   applyQueryFieldsToChannels,
   applyQueryFieldsToClusters,
