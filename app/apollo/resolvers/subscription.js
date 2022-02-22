@@ -57,8 +57,6 @@ async function validateGroups(org_id, groups, context) {
 
 const subscriptionResolvers = {
   Query: {
-
-    // Cluster-facing API,
     subscriptionsByClusterId: async(parent, { clusterId: cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
       const query = 'subscriptionsByClusterId';
@@ -112,6 +110,7 @@ const subscriptionResolvers = {
       }
       return urls;
     },
+
     subscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
@@ -121,19 +120,22 @@ const subscriptionResolvers = {
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
       const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
       logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
-      let subscriptions = [];
+      let subs = [];
       try{
-        subscriptions = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
-        subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+        subs = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+        subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
       }
 
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
+      console.log( `PLC calling applyQueryFieldsToSubscriptions 4` );
+      await applyQueryFieldsToSubscriptions(subs, queryFields, { orgId: org_id }, context);
+      console.log( `PLC complete applyQueryFieldsToSubscriptions 4` );
 
-      return subscriptions;
+      return subs;
     },
+
     subscription: async(parent, { orgId, uuid , name, _queryName }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
@@ -141,25 +143,28 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} enter`);
 
       try{
-        var subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
-        subscriptions = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+        let subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
+        subs = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
 
-        var subscription = subscriptions.find((sub)=>{
-          return (sub.uuid == uuid || sub.name == name);
-        });
-        if(!subscription){
+        const sub = subs.find( s => {
+          return (s.uuid == uuid || s.name == name);
+        } );
+        if(!sub){
           return null;
         }
 
-        await applyQueryFieldsToSubscriptions([subscription], queryFields, { orgId }, context);
+        console.log( `PLC calling applyQueryFieldsToSubscriptions 1` );
+        await applyQueryFieldsToSubscriptions( [sub], queryFields, { orgId }, context );
+        console.log( `PLC complete applyQueryFieldsToSubscriptions 1` );
 
-        return subscription;
-      }catch(err){
+        return sub;
+      }
+      catch(err){
         logger.error(err);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
-
       }
     },
+
     subscriptionByName: async(parent, { orgId, name }, context, fullQuery) => {
       const { me, req_id, logger } = context;
       const queryName = 'subscriptionByName';
@@ -221,6 +226,7 @@ const subscriptionResolvers = {
         });
       }
 
+      console.log( `PLC calling applyQueryFieldsToSubscriptions 2` );
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
@@ -281,11 +287,13 @@ const subscriptionResolvers = {
         });
       }
 
+      console.log( `PLC calling applyQueryFieldsToSubscriptions 3` );
       await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
 
       return subscriptions;
     }
   },
+
   Mutation: {
     addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
@@ -350,6 +358,7 @@ const subscriptionResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
+
     editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, updateClusterIdentity, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
@@ -433,6 +442,7 @@ const subscriptionResolvers = {
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
+
     setSubscription: async (parent, { orgId: org_id, uuid, versionUuid: version_uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'setSubscription';
