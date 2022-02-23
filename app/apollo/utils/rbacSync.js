@@ -39,7 +39,10 @@ const groupsRbacSync = async( groups, args, context ) => {
 
   if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
 
-  if( !applyRbacEndpoint ) return;
+  if( !applyRbacEndpoint ) {
+    if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} No RBAC Sync API endpoint specified, aborting.` );
+    return;
+  }
 
   if( !groups || groups.length === 0 ) return;
   const org_id = groups[0].org_id;
@@ -73,12 +76,16 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
 
   if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
 
-  if( !applyRbacEndpoint ) return;
+  if( !applyRbacEndpoint ) {
+    if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} No RBAC Sync API endpoint specified, aborting.` );
+    return;
+  }
 
   if( !subscriptions || subscriptions.length === 0 ) return;
   const org_id = subscriptions[0].org_id;
 
-  logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Entry, ${subscriptions.length} subscriptions` );
+  logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `${subscriptions.length} subscriptions` );
+  if( process.env.NODE_ENV === 'test' ) console.log( `${subscriptions.length} subscriptions` );
 
   try {
     const identityClusters = {};  // { identity: [clusters] }
@@ -96,6 +103,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
       This needs to be rectified somehow.  In the meantime, this code must query Groups to obtain the UUIDs.
       */
       const groups = await models.Group.find( { org_id, name: { $in: groupNames } } ).lean( { virtuals: true } );
+      if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} Groups retrieved: ${groups.length}` );
 
       for( const groupName of groupNames ) {
         const group = groups.find( g => {
