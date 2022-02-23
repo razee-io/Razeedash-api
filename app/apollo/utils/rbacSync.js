@@ -17,12 +17,6 @@
 /*
 TODO/FIXME:
 - Make API more pluggable, less dependent on specific API syntax (`{ cluster_id: string }` with user token api)?
-- automated tests
-  - Update AT test data to include syncedIdentities on clusters
-  - New AT to verify Cluster SI returned
-  - New AT to verify Subscription query returns SI counts
-  - New AT to verify Subscripiton query returns groups with clusters with SI details
-  - New AT to create a Sub, wait N secs, query Sub and verify expected SI counts
 */
 
 const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
@@ -224,7 +218,7 @@ const applyRBAC = async( cluster, identity, context ) => {
       logger.error( {methodName, req_id, user: whoIs(me), org_id}, `error calling api for cluster '${cluster_id}': ${e}` );
       sets.syncedIdentities[ identity ] = {
         syncDate: Date.now(),
-        syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.UNKNOWN,
+        syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.FAILED,
         syncMessage: e.message,
       };
     }

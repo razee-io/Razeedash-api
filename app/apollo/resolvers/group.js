@@ -397,8 +397,17 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-        return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
 
+        /*
+        Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, Group (Cluster) update is successful.
+
+        Ideally, code should identify which groups are *new* for this cluster and only trigger sync for those.
+        */
+        groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
+
+        return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;

@@ -62,6 +62,12 @@ const subscriptionsFunc = grahqlUrl => {
                 id
                 name
               }
+              identitySyncStatus {
+                unknownCount
+                syncedCount
+                pendingCount
+                failedCount
+              }
               custom
             }
           }
@@ -95,6 +101,16 @@ const subscriptionsFunc = grahqlUrl => {
               owner {
                 id
                 name
+              }
+              groupObjs {
+                uuid
+                clusters {
+                  clusterId
+                  syncedIdentities {
+                    id
+                    syncStatus
+                  }
+                }
               }
               custom
           }
