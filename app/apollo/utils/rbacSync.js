@@ -23,7 +23,7 @@ const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { whoIs } = require ('../resolvers/common');
 const axios = require('axios');
 
-const applyRbacEndpoint = process.env.APPLY_RBAC_ENDPOINT;
+let applyRbacEndpoint = process.env.APPLY_RBAC_ENDPOINT;
 
 // Utility function: filter array of objects to elements unique by a specified key.
 // E.g. unique Cluster objects by `cluster_id`, even if other attributes differ.
@@ -36,6 +36,7 @@ const groupsRbacSync = async( groups, args, context ) => {
   const methodName = 'groupsRbacSync';
   const { resync } = args;
   const { models, me, req_id, logger } = context;
+  applyRbacEndpoint = process.env.APPLY_RBAC_ENDPOINT;
 
   if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
 
@@ -73,6 +74,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   const methodName = 'subscriptionsRbacSync';
   const { resync } = args;
   const { models, me, req_id, logger } = context;
+  applyRbacEndpoint = process.env.APPLY_RBAC_ENDPOINT;
 
   if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
 
