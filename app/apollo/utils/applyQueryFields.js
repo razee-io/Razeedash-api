@@ -278,7 +278,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
 
   if(queryFields.channel){
     const channelUuids = _.uniq(_.map(subs, 'channelUuid'));
-    let channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    let channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
     channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
 
     await applyQueryFieldsToChannels(channels, queryFields.channel, args, context);
@@ -310,7 +310,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
 
   if(queryFields.groupObjs){
     const groupNames = _.flatten(_.map(subs, 'groups'));
-    const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
+    const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).lean({ virtuals: true });
 
     await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
 
