@@ -432,9 +432,9 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
 
-      // Add cluster to group dev, triggering RBAC Sync as the admin user, who owns subscription 01 (dev group).  Status 'failed' expected.
+      // Add cluster to group dev, triggering RBAC Sync as the admin user, who owns subscription 01 (dev group).  Status 'failed' expected as API is 'dummy_url'.
       await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
-      // Add cluster to group stage, triggering RBAC Sync as the admin user, who does NOT own subscription 02 (stage group).  Status 'unknown' expected.
+      // Add cluster to group stage, triggering RBAC Sync as the admin user, who does NOT own subscription 02 (stage group).  Status 'unknown' expected as user is not owner.
       await assignClusterGroups( adminToken, org01._id, [org01_group_stage_uuid], 'cluster_02' );
 
       // Get clusters to debugging syncedIdentities
