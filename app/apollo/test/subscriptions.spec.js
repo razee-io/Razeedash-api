@@ -352,7 +352,8 @@ const createClusters = async () => {
 };
 
 const assignClusterGroups = async ( token, orgId, groupUUIDs, clusterUUID ) => {
-  console.log( `assignClusterGroups for subscriptions tests entry` );
+  const methodName = 'assignClusterGroups (subscriptions test)';
+  console.log( `${methodName} entry` );
   const {
     data: {
       data: { assignClusterGroups },
@@ -364,7 +365,7 @@ const assignClusterGroups = async ( token, orgId, groupUUIDs, clusterUUID ) => {
   });
   expect(assignClusterGroups.modified).to.equal( groupUUIDs.length );
   await( sleep(1000) ); // Wait to give async RBAC Sync time to complete
-  console.log( `assignClusterGroups for subscriptions tests exit` );
+  console.log( `${methodName} exit` );
 };
 
 const sleep = async ( ms ) => {
