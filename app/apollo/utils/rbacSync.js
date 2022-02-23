@@ -16,9 +16,13 @@
 
 /*
 TODO/FIXME:
-- owner (me._id) vs kubeOwnerId (getKubeOwnerId(context))
 - Make API more pluggable, less dependent on specific API syntax (`{ cluster_id: string }` with user token api)?
 - automated tests
+  - Update AT test data to include syncedIdentities on clusters
+  - New AT to verify Cluster SI returned
+  - New AT to verify Subscription query returns SI counts
+  - New AT to verify Subscripiton query returns groups with clusters with SI details
+  - New AT to create a Sub, wait N secs, query Sub and verify expected SI counts
 */
 
 const { CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
@@ -46,13 +50,12 @@ const groupsRbacSync = async( groups, args, context ) => {
 
   try {
     // get all subscriptions using these groups
-    const find = { org_id, groups: { $in: groups.map( g => g.uuid ) } };
+    const find = { org_id, groups: { $in: groups.map( g => g.name ) } };
     const subscriptions = await models.Subscription.find( find );
 
     // Sync subscriptions
-    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggering rbac sync for ${subscriptions.length} subscriptions` );
+    logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggering rbac sync for ${subscriptions.length} subscriptions for groups: ${find.groups.$in.join(', ')}` );
     await subscriptionsRbacSync( subscriptions, resync, context );
-
   }
   catch( e ) {
     logger.error( e, `Error triggering rbac sync: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
@@ -78,14 +81,32 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
 
     for( const subscription of subscriptions ) {
       // Get all Clusters for the Subscription (from the Subscription's Groups)
-      const groupUUIDs = subscription.groups;
+      const groupNames = subscription.groups;
       const subscriptionClusters = [];
-      for( const groupUUID of groupUUIDs ) {
-        // This shoud be made more efficient (single Cluster.find with all group UUIDs somehow)
-        const groupClusters = await models.Cluster.find( { org_id, groups: { $elemMatch: { uuid: groupUUID } } } ).lean( { virtuals: true } );
-        subscriptionClusters.push( ...groupClusters );
-        logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found clusters for group '${groupUUID}': ${groupClusters.length}` );
+
+      /*
+      Unfortunately, subscriptions reference groups by **name** rather than UUID.
+      Currently it is not possible to rename groups or (in theory) to create two groups with the same name, but
+      there are possible gaps in enforcement (e.g. two pods receiving a group creation request with the same
+      name at the same time).
+      This needs to be rectified somehow.  In the meantime, this code must query Groups to obtain the UUIDs.
+      */
+      const groups = await models.Group.find( { org_id, name: { $in: groupNames } } ).lean( { virtuals: true } );
+
+      for( const groupName of groupNames ) {
+        const group = groups.find( g => {
+          return g.name === groupName;
+        } );
+        if( !group ) {
+          logger.warn( {methodName, req_id, user: whoIs(me), org_id}, `Subscription '${subscription.uuid}' references group '${groupName}' that cannot be found.` );
+        }
+        else {
+          const groupClusters = await models.Cluster.find( { org_id, groups: { $elemMatch: { uuid: group.uuid } } } ).lean( { virtuals: true } );
+          subscriptionClusters.push( ...groupClusters );
+          logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found clusters for group '${group.uuid}': ${groupClusters.length}` );
+        }
       }
+
       // Remove duplicates of same cluster from multiple groups
       const clusters = getUniqueArrByKey( subscriptionClusters, 'cluster_id' );
       logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'/'${subscription.uuid}'` );
@@ -95,7 +116,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
       const clustersToSync = clusters.filter( c =>
         ( resync || ( !c.syncedIdentities || !c.syncedIdentities[ subscription.owner ] || c.syncedIdentities[ subscription.owner ].syncStatus != CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ) )
       );
-      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clustersToSync.length} clusters requiring rbac sync for subscription '${subscription.name}'/'${subscription.uuid}'` );
+      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clustersToSync.length} clusters requiring rbac sync for subscription '${subscription.name}'/'${subscription.uuid}'` );
 
       // Add/update clusters to sync for this subscription owner
       if( clustersToSync.length > 0 ) {
