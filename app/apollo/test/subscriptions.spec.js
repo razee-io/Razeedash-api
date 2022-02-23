@@ -369,7 +369,7 @@ const sleep = async ( ms ) => {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
-}
+};
 
 describe('subscription graphql test suite', () => {
 
