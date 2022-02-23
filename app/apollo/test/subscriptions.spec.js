@@ -352,6 +352,7 @@ const createClusters = async () => {
 };
 
 const assignClusterGroups = async ( token, orgId, groupUUIDs, clusterUUID ) => {
+  console.log( `assignClusterGroups for subscriptions tests entry` );
   const {
     data: {
       data: { assignClusterGroups },
@@ -363,6 +364,7 @@ const assignClusterGroups = async ( token, orgId, groupUUIDs, clusterUUID ) => {
   });
   expect(assignClusterGroups.modified).to.equal( groupUUIDs.length );
   await( sleep(1000) ); // Wait to give async RBAC Sync time to complete
+  console.log( `assignClusterGroups for subscriptions tests exit` );
 };
 
 const sleep = async ( ms ) => {
@@ -375,6 +377,8 @@ describe('subscription graphql test suite', () => {
 
   before(async () => {
     process.env.NODE_ENV = 'test';
+    process.env.APPLY_RBAC_ENDPOINT = 'dummy_url'; // Must be set to trigger/test RBAC Sync
+
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
@@ -395,9 +399,6 @@ describe('subscription graphql test suite', () => {
     token01 = await signInUser(models, resourceApi, user01Data);
     token77 = await signInUser(models, resourceApi, user77Data);
     adminToken = await signInUser(models, resourceApi, userRootData);
-
-    // Assign cluster_01 to dev group as the admin user (important for RBAC Sync, as admin user owns subscripiton 01)
-    //await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
 
     // Can be uncommented if you want to see the test data that was added to the DB
     //await getPresetOrgs();
@@ -421,7 +422,7 @@ describe('subscription graphql test suite', () => {
       });
       const subscriptions = result.data.data.subscriptions;
       expect( subscriptions ).to.have.length(2);
-      // At this point, no clusters have been added to the group for subscription 01 or subscription 02.
+      // At this point, no clusters have been added to the groups for subscription 01 or subscription 02.
       for( const subscription of subscriptions ) {
         expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
         expect( subscription.identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero' ).to.equal(0);
