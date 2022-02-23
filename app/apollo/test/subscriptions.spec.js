@@ -436,6 +436,10 @@ describe('subscription graphql test suite', () => {
       await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
       // Add cluster to group stage, triggering RBAC Sync as the admin user, who does NOT own subscription 02 (stage group).  Status 'unknown' expected.
       await assignClusterGroups( adminToken, org01._id, [org01_group_stage_uuid], 'cluster_02' );
+
+      // Get clusters to debugging syncedIdentities
+      await getPresetClusters();
+
       // Get subscriptions again.
       const result2 = await subscriptionApi.subscriptions(token01, {
         orgId: org01._id,
@@ -443,11 +447,13 @@ describe('subscription graphql test suite', () => {
       const subscriptions2 = result2.data.data.subscriptions;
       expect( subscriptions2 ).to.have.length(2);
       // subscription 01 should have failed sync status as it was triggered by the correct user by the sync API is not available.
+      console.log( `subscription 01 identitySyncStatus: ${JSON.stringify( subscriptions2[0].identitySyncStatus, null, 2 )}` );
       expect( subscriptions2[0].identitySyncStatus.syncedCount, 'subscription01 identitySyncStatus.syncedCount should be zero' ).to.equal(0);
       expect( subscriptions2[0].identitySyncStatus.failedCount, 'subscription01 identitySyncStatus.failedCount should be one' ).to.equal(1);
       expect( subscriptions2[0].identitySyncStatus.pendingCount, 'subscription01 identitySyncStatus.pendingCount should be zero' ).to.equal(0);
       expect( subscriptions2[0].identitySyncStatus.unknownCount, 'subscription01 identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       // subscription 02 should have unknown sync status as it was triggered by a user other than the owner of the subscription.
+      console.log( `subscription 02 identitySyncStatus: ${JSON.stringify( subscriptions2[0].identitySyncStatus, null, 2 )}` );
       expect( subscriptions2[1].identitySyncStatus.syncedCount, 'subscription01 identitySyncStatus.syncedCount should be zero' ).to.equal(0);
       expect( subscriptions2[1].identitySyncStatus.failedCount, 'subscription01 identitySyncStatus.failedCount should be zero' ).to.equal(0);
       expect( subscriptions2[1].identitySyncStatus.pendingCount, 'subscription01 identitySyncStatus.pendingCount should be zero' ).to.equal(0);

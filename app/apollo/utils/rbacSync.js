@@ -37,6 +37,8 @@ const groupsRbacSync = async( groups, args, context ) => {
   const { resync } = args;
   const { models, me, req_id, logger } = context;
 
+  if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
+
   if( !applyRbacEndpoint ) return;
 
   if( !groups || groups.length === 0 ) return;
@@ -49,11 +51,17 @@ const groupsRbacSync = async( groups, args, context ) => {
 
     // Sync subscriptions
     logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Triggering rbac sync for ${subscriptions.length} subscriptions for groups: ${find.groups.$in.join(', ')}` );
+    if( process.env.NODE_ENV === 'test' ) console.log( `Triggering rbac sync for ${subscriptions.length} subscriptions for groups: ${find.groups.$in.join(', ')}` );
     await subscriptionsRbacSync( subscriptions, resync, context );
+
+    if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} success` );
   }
   catch( e ) {
+    if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} error: ${e.message}` );
+
     logger.error( e, `Error triggering rbac sync: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
     logger.error( {methodName, req_id, user: whoIs(me), org_id}, `Error triggering rbac sync: ${e}` );
+    if( process.env.NODE_ENV === 'test' ) console.log( `Error triggering rbac sync: ${e.message}` );
   }
 };
 
@@ -62,6 +70,8 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   const methodName = 'subscriptionsRbacSync';
   const { resync } = args;
   const { models, me, req_id, logger } = context;
+
+  if( process.env.NODE_ENV === 'test' ) console.log( `${methodName} entry` );
 
   if( !applyRbacEndpoint ) return;
 
@@ -123,6 +133,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
     for( const identity of identities) {
       const clusters = getUniqueArrByKey( identityClusters[identity], 'cluster_id' );
       logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Total ${clusters.length} clusters requiring rbac sync for identity '${identity}'` );
+      if( process.env.NODE_ENV === 'test' ) console.log( `Total ${clusters.length} clusters requiring rbac sync for identity '${identity}'` );
 
       // Update the cluster records to set sync status to pending
       const sets = { syncedIdentities: {} };
@@ -143,6 +154,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
         applyRBAC( cluster, identity, context ).catch( function( e ) {
           logger.error( e, `applyRBAC error: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
           logger.error( {methodName, req_id, user: whoIs(me), org_id}, `applyRBAC error: ${e}` );
+          if( process.env.NODE_ENV === 'test' ) console.log( `applyRBAC error: ${e.message}` );
         } );
       }
     }
@@ -150,6 +162,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   catch( e ) {
     logger.error( {methodName, req_id, user: whoIs(me), org_id}, `Error triggering rbac sync: ${e}` );
     logger.error( e, `Error triggering rbac sync: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
+    if( process.env.NODE_ENV === 'test' ) console.log( `Error triggering rbac sync: ${e.message}` );
   }
 };
 
@@ -198,6 +211,7 @@ const applyRBAC = async( cluster, identity, context ) => {
       });
       if( result.status === 200 ) {
         logger.info( {methodName, req_id, user: whoIs(me), org_id}, `api success for cluster '${cluster_id}'` );
+        if( process.env.NODE_ENV === 'test' ) console.log( `api success for cluster '${cluster_id}'` );
         sets.syncedIdentities[ identity ] = {
           syncDate: Date.now(),
           syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.SYNCED,
@@ -206,6 +220,7 @@ const applyRBAC = async( cluster, identity, context ) => {
       }
       else {
         logger.info( {methodName, req_id, user: whoIs(me), org_id}, `api failure for cluster '${cluster_id}'` );
+        if( process.env.NODE_ENV === 'test' ) console.log( `api failure for cluster '${cluster_id}'` );
         sets.syncedIdentities[ identity ] = {
           syncDate: Date.now(),
           syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.FAILED,
@@ -216,6 +231,7 @@ const applyRBAC = async( cluster, identity, context ) => {
     catch( e ) {
       logger.error( e, `error calling api for cluster '${cluster_id}': ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
       logger.error( {methodName, req_id, user: whoIs(me), org_id}, `error calling api for cluster '${cluster_id}': ${e}` );
+      if( process.env.NODE_ENV === 'test' ) console.log( `error calling api for cluster '${cluster_id}': ${e.message}` );
       sets.syncedIdentities[ identity ] = {
         syncDate: Date.now(),
         syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.FAILED,
@@ -227,10 +243,12 @@ const applyRBAC = async( cluster, identity, context ) => {
   try {
     await models.Cluster.updateOne( find, { $set: sets } );
     logger.info( {methodName, req_id, user: whoIs(me), org_id}, `sync status updated to '${sets.syncedIdentities[ identity ].syncStatus}' for cluster '${cluster_id}'` );
+    if( process.env.NODE_ENV === 'test' ) console.log( `sync status updated to '${sets.syncedIdentities[ identity ].syncStatus}' for cluster '${cluster_id}'` );
   }
   catch( e ) {
     logger.error( e, `sync update failed for cluster '${cluster.cluster_id}': ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
     logger.error( {methodName, req_id, user: whoIs(me), org_id}, `sync status update failed for cluster '${cluster_id}'` );
+    if( process.env.NODE_ENV === 'test' ) console.log( `sync status update failed for cluster '${cluster_id}': ${e.message}` );
   }
 };
 
