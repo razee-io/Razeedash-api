@@ -33,6 +33,8 @@ const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAut
 const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
 const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
+const rbacSync = require('../utils/rbacSync.js');
+
 const { GraphqlPubSub } = require('../subscription');
 
 //const why = require('why-is-node-running');
@@ -378,7 +380,7 @@ describe('subscription graphql test suite', () => {
 
   before(async () => {
     process.env.NODE_ENV = 'test';
-    process.env.APPLY_RBAC_ENDPOINT = 'dummy_url'; // Must be set to trigger/test RBAC Sync
+    rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
 
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
