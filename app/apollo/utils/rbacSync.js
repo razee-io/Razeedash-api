@@ -33,15 +33,15 @@ The package must export a function `applyRbacAPI` that:
 Sample applyRbacAPI implementation:
 ```
 const axios = require('axios');
-applyRbacAPI = async ( cluster, identity, context ) => {
+const applyRbacAPI = async ( cluster, identity, context ) => {
   const headers = {
     'authorization': context.req.header('authorization'),
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
-  const result = await axios.post( applyRbacEndpoint, {
-    data: { cluster: cluster_id },
-    headers,
+  const result = await axios.post( API_ENDPOINT, {
+    data: { cluster: cluster.cluster_id },
+    headers
   });
   return( { success: result.status === 200, message: JSON.stringify(result.data) } );
 };
