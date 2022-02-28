@@ -53,6 +53,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     }
 
     // RBAC Sync
+    if( !cluster.syncedIdentities ) cluster.syncedIdentities = {};
     cluster.syncedIdentities = Object.keys(cluster.syncedIdentities).map( x => {
       return {
         id: x,
