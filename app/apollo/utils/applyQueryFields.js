@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 const _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
-const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS } = require('../models/const');
+// RBAC Sync
+const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 
 
 const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
@@ -50,7 +51,18 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
         cluster.status = CLUSTER_STATUS.ACTIVE;
       }
     }
+
+    // RBAC Sync
+    cluster.syncedIdentities = Object.keys(cluster.syncedIdentities).map( x => {
+      return {
+        id: x,
+        syncDate: cluster.syncedIdentities[x].syncDate,
+        syncStatus: cluster.syncedIdentities[x].syncStatus,
+        syncMessage: cluster.syncedIdentities[x].syncMessage,
+      };
+    } );
   });
+
   if(queryFields.resources) {
     const resources = await loadResourcesWithSearchAndArgs({
       search: { cluster_id: { $in: clusterIds } },
@@ -230,6 +242,20 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   const { me, models } = context;
   const { orgId, servSub } = args;
 
+  // Get owner information if users ask for owner or identity sync status
+  if( queryFields.owner || queryFields.identitySyncStatus ) {
+    const ownerIds = _.map(subs, 'owner');
+    const owners = await models.User.getBasicUsersByIds(ownerIds);
+
+    subs = subs.map((sub)=>{
+      if(_.isUndefined(sub.channelName)){
+        sub.channelName = sub.channel;
+      }
+      sub.owner = owners[sub.owner];
+      return sub;
+    });
+  }
+
   _.each(subs, (sub)=>{
     if(_.isUndefined(sub.channelName)){
       sub.channelName = sub.channel;
@@ -252,7 +278,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
 
   if(queryFields.channel){
     const channelUuids = _.uniq(_.map(subs, 'channelUuid'));
-    let channels = await models.Channel.find({ uuid: { $in: channelUuids } });
+    let channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
     channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
 
     await applyQueryFieldsToChannels(channels, queryFields.channel, args, context);
@@ -264,6 +290,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       sub.channel = channel;
     });
   }
+
   if(queryFields.resources){
     const search = { org_id: orgId, 'searchableData.subscription_id': { $in: subUuids } };
     if (servSub) delete search.org_id; // service subscriptions push resources to different orgs
@@ -280,9 +307,10 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       sub.resources = resourcesBySubUuid[sub.uuid] || [];
     });
   }
+
   if(queryFields.groupObjs){
     const groupNames = _.flatten(_.map(subs, 'groups'));
-    const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } });
+    const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).lean({ virtuals: true });
 
     await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
 
@@ -293,6 +321,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       }));
     });
   }
+
   if(queryFields.remoteResources || queryFields.rolloutStatus){
     const search = {
       org_id: orgId,
@@ -333,6 +362,40 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
         errorCount,
       };
     });
+  }
+
+  // RBAC Sync
+  /*
+  Identity Sync Status could also be obtained in theory by querying:
+    `groups { clusters { syncedIdentities { syncStatus } } }`
+  But that would be inefficient, and require iteration over the results
+  while avoiding duplicates to get totals.
+  */
+  if( queryFields.identitySyncStatus ){
+    for( const sub of subs ) {
+      sub.identitySyncStatus = {
+        unknownCount: 0,
+        syncedCount: 0,
+        failedCount: 0,
+        pendingCount: 0,
+      };
+
+      const clusters = await models.Cluster.find({ org_id: orgId, 'groups.name': { $in: sub.groups } }).lean({ virtuals: true });
+      for( const c of clusters ) {
+        if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ) {
+          sub.identitySyncStatus.syncedCount++;
+        }
+        else if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.FAILED ) {
+          sub.identitySyncStatus.failedCount++;
+        }
+        else if( c.syncedIdentities && c.syncedIdentities[sub.owner.id] && c.syncedIdentities[sub.owner.id].syncStatus === CLUSTER_IDENTITY_SYNC_STATUS.PENDING ) {
+          sub.identitySyncStatus.pendingCount++;
+        }
+        else {
+          sub.identitySyncStatus.unknownCount++;
+        }
+      }
+    }
   }
 };
 

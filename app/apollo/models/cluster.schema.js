@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,16 @@ const ClusterSchema = new mongoose.Schema({
       },
     }
   ],
+  // RBAC Sync
+  syncedIdentities: {
+    type: Map,
+    of: new mongoose.Schema({
+      syncDate: Date,
+      syncStatus: String,
+      syncMessage: String,
+    }),
+    default: {},
+  },
   metadata: {
     kube_version: {
       major: {

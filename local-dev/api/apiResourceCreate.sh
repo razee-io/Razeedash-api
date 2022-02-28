@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-CLUSTER_ID=${1:-${RAZEE_CLUSTER_ID:-pTestClusterId}}
+CLUSTER_ID=${1:-${RAZEE_CLUSTER_UUID:-pTestClusterId}}
 RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
 RAZEE_URL=${RAZEE_URL:-http://localhost:3333/api/v2/clusters}

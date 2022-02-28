@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,12 @@ const subscriptionSchema = gql`
     successCount: Int
     errorCount: Int
   }
+  type IdentitySyncStatus {
+    syncedCount: Int
+    pendingCount: Int
+    failedCount: Int
+    unknownCount: Int
+  }
   type BasicChannelSubscription {
     uuid: String!
     orgId: String!
@@ -36,7 +42,7 @@ const subscriptionSchema = gql`
     versionUuid: String!
     created: Date!
     updated: Date!
-    custom: JSON 
+    custom: JSON
   }
   type ChannelSubscription {
     uuid: String!
@@ -56,6 +62,7 @@ const subscriptionSchema = gql`
     updated: Date!
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
+    identitySyncStatus: IdentitySyncStatus!
     groupObjs: [GroupDetail!]
     custom: JSON
   }
@@ -85,7 +92,7 @@ const subscriptionSchema = gql`
   type SubscriptionUpdated {
     hasUpdates: Boolean
   }
-  
+
   extend type Query {
      """
      Gets all subscriptions for orgId
@@ -105,11 +112,11 @@ const subscriptionSchema = gql`
      """
      subscriptionsByClusterId(clusterId: String! @sv): [UpdatedSubscription]
      """
-     Ge subscriptions by clusterId
+     Get subscriptions by clusterId
      """
      subscriptionsForCluster(orgId: String! @sv, clusterId: String! @sv): [ChannelSubscription]
      """
-     Ge subscriptions by clusterName
+     Get subscriptions by clusterName
      """
      subscriptionsForClusterByName(orgId: String! @sv, clusterName: String! @sv): [BasicChannelSubscription]
   }
@@ -118,17 +125,17 @@ const subscriptionSchema = gql`
      Adds a subscription
      """
      addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, custom: JSON): AddChannelSubscriptionReply!
-     
+
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String  @sv, custom: JSON): EditChannelSubscriptionReply!
-     
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, updateClusterIdentity: Boolean, custom: JSON): EditChannelSubscriptionReply!
+
      """
      Set a configurationVersion
      """
      setSubscription(orgId: String! @sv, uuid: String! @sv, versionUuid: String! @sv ): SetSubscriptionReply!
-     
+
      """
      Removes a subscription
      """
