@@ -406,19 +406,19 @@ const subscriptionResolvers = {
         if( updateClusterIdentity ) {
           // If resyncing, trigger RBAC Sync of all clusters
           syncNeeded = true;
-          resyncNeeded = true
+          resyncNeeded = true;
         }
         else if( me._id != subscription.owner ) {
           // If changing owner, trigger RBAC Sync of any un-synced clusters
           syncNeeded = true;
-          resyncNeeded = true
+          resyncNeeded = false;
         } else {
           // If adding any new group(s), trigger RBAC Sync of any un-synced clusters
           for( const group of groups ) {
             if( !subscription.groups.includes(group) ) {
               // At least one new group, trigger sync and stop checking for new groups
               syncNeeded = true;
-              resyncNeeded = true
+              resyncNeeded = false;
               break;
             }
           }
