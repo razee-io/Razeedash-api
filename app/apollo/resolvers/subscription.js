@@ -385,7 +385,10 @@ const subscriptionResolvers = {
         };
 
         // RBAC Sync
-        if( updateClusterIdentity ) sets['owner'] = me._id; //kubeOwnerId?
+        if( updateClusterIdentity ) {
+          sets['owner'] = me._id;
+          subscription.owner = me._id; // Set the new owner on the subscription object before performing RBAC Sync based on it
+        }
 
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
 
@@ -397,6 +400,7 @@ const subscriptionResolvers = {
         RBAC Sync completes asynchronously, so no `await`.
         Even if RBAC Sync errors, subscription edit is successful.
         */
+        subscription.groups = groups; // Set the new groups on the subscription object before performing RBAC Sync based on it
         if( updateClusterIdentity ) {
           // If resyncing, trigger RBAC Sync of all clusters
           subscriptionsRbacSync( [subscription], { resync: true }, context ).catch(function(){/*ignore*/});
