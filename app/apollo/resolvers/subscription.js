@@ -389,9 +389,6 @@ const subscriptionResolvers = {
           const kubeOwnerId = await models.User.getKubeOwnerId(context);
           sets['owner'] = me._id;
           sets['kubeOwnerId'] = kubeOwnerId;
-          // Set the new owner on the subscription object before performing RBAC Sync based on it
-          subscription.owner = me._id;
-          subscription.kubeOwnerId = kubeOwnerId;
         }
 
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
@@ -404,23 +401,34 @@ const subscriptionResolvers = {
         RBAC Sync completes asynchronously, so no `await`.
         Even if RBAC Sync errors, subscription edit is successful.
         */
-        subscription.groups = groups; // Set the new groups on the subscription object before performing RBAC Sync based on it
+        let syncNeeded = false;
+        let resyncNeeded = false;
         if( updateClusterIdentity ) {
           // If resyncing, trigger RBAC Sync of all clusters
-          subscriptionsRbacSync( [subscription], { resync: true }, context ).catch(function(){/*ignore*/});
+          syncNeeded = true;
+          resyncNeeded = true
         }
         else if( me._id != subscription.owner ) {
           // If changing owner, trigger RBAC Sync of any un-synced clusters
-          subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
+          syncNeeded = true;
+          resyncNeeded = true
         } else {
           // If adding any new group(s), trigger RBAC Sync of any un-synced clusters
           for( const group of groups ) {
             if( !subscription.groups.includes(group) ) {
               // At least one new group, trigger sync and stop checking for new groups
-              subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
+              syncNeeded = true;
+              resyncNeeded = true
               break;
             }
           }
+        }
+        // If sync needed, do it
+        if( syncNeeded ) {
+          // Set the new owner and groups on the subscription object before using it to do RBAC Sync
+          subscription.groups = groups;
+          subscription.owner = me._id;
+          subscriptionsRbacSync( [subscription], { resync: resyncNeeded }, context ).catch(function(){/*ignore*/});
         }
 
         return {
