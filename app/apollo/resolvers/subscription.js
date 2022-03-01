@@ -386,8 +386,12 @@ const subscriptionResolvers = {
 
         // RBAC Sync
         if( updateClusterIdentity ) {
+          const kubeOwnerId = await models.User.getKubeOwnerId(context);
           sets['owner'] = me._id;
-          subscription.owner = me._id; // Set the new owner on the subscription object before performing RBAC Sync based on it
+          sets['kubeOwnerId'] = kubeOwnerId;
+          // Set the new owner on the subscription object before performing RBAC Sync based on it
+          subscription.owner = me._id;
+          subscription.kubeOwnerId = kubeOwnerId;
         }
 
         await models.Subscription.updateOne({ uuid, org_id: orgId, }, { $set: sets });
