@@ -16,7 +16,6 @@
 
 const { ValidationError } = require('apollo-server');
 const { SchemaDirectiveVisitor } = require('apollo-server-express');
-const { assert } = require('chai');
 const { DIRECTIVE_LIMITS } = require('../models/const');
 const mongoSanitize = require('express-mongo-sanitize');
 
@@ -64,10 +63,7 @@ class IdentifierSanitizer extends Sanitizer {
     if (this.arg === 'content')  MAXLEN = DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH;
     if (this.maxLength !== undefined) MAXLEN = this.maxLength;
     if (this.minLength !== undefined) MINLEN = this.minLength;
-    try {
-      assert.isAtMost(value.length, MAXLEN);
-      assert.isAtLeast(value.length, MINLEN);
-    } catch (e) {
+    if( value.length > MAXLEN || value.length < MINLEN ) {
       throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
     }
     if (this.arg !== 'content') {
