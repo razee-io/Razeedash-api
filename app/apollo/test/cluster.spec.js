@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -422,6 +422,18 @@ describe('cluster graphql test suite', () => {
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(4);
       expect(clustersByOrgId[0].resources).to.be.an('array');
+
+      // test skip and limit implementation
+      const {
+        data: {
+          data: { skipLimitedClustersByOrgId },
+        },
+      } = await clusterApi.byOrgID(token, {
+        orgId: org01._id, skip: 2, limit: 1
+      });
+
+      expect(skipLimitedClustersByOrgId[0].clusters_id).to.equal('cluster_03');
+      expect(skipLimitedClustersByOrgId).to.have.length(1);
 
       // with group limit
       const {

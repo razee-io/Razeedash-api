@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ const clusterSchema = gql`
       limit: Int = 50
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String @sv
+      skip: Int = 0
       ${globalGraphqlInputs}
     ): [Cluster]!
 
