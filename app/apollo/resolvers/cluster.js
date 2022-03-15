@@ -98,7 +98,7 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
 
       if(cluster){
-        var { url } = await models.Organization.getRegistrationUrl(orgId, context);
+        var { url } = await models.Organization.getRegistrationUrl(orgId, context, skip);
         url = url + `&clusterId=${clusterId}`;
         if (RDD_STATIC_ARGS.length > 0) {
           RDD_STATIC_ARGS.forEach(arg => {
