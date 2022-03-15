@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,13 +73,14 @@ const clusterResolvers = {
       parent,
       args,
       context,
-      fullQuery
+      fullQuery,
+      skip
     ) => {
       var { orgId, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
-      logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), orgId, clusterId }, `${queryName} enter`);
 
       //await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
@@ -174,9 +175,10 @@ const clusterResolvers = {
       parent,
       args,
       context,
-      fullQuery
+      fullQuery,
+      skip
     ) => {
-      var { orgId, limit, startingAfter, clusterId} = args;
+      var { orgId, limit, startingAfter, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
@@ -197,7 +199,7 @@ const clusterResolvers = {
         searchFilter = { org_id: orgId, ...conditions };
       }
 
-      const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
+      const clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 

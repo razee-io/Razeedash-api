@@ -120,6 +120,7 @@ const clusterSchema = gql`
       clusterId: String @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      skip: Int = 0
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String @sv
       ${globalGraphqlInputs}
