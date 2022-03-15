@@ -148,7 +148,7 @@ const subscriptionResolvers = {
       // If more than one matching subscription found, throw an error
       if( matchingSubs.length > 1 ) {
         logger.info({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} found ${matchingSubs.length} matching subscriptions` );
-        throw new RazeeValidationError(context.req.t('More than one subscription matches {{name}}', {'name':name}), context);
+        throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'subscription', 'name':name}), context);
       }
 
       return matchingSubs[0] || null;

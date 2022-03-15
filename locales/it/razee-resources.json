@@ -40,7 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "UUID gruppo \"{{uuid}}\" non trovato",
   "hist _id \"{{histId}}\" not found": "ID cronologia \"{{histId}}\" non trovato",
   "Invalid razee-org-key was submitted for {{queryName}}": "razee-org-key non valida inoltrata per {{queryName}}",
-  "More than one subscription matches {{name}}": "More than one subscription matches {{name}}",
+  "More than one {{type}} matches {{name}}": "More than one {{type}} matches {{name}}",
   "No org was found for the org key.": "Nessuna organizzazione trovata per la chiave organizzazione.",
   "No razee-org-key was supplied.": "Nessuna razee-org-key fornita.",
   "None of the passed group uuids were found": "Non è stato trovato alcuno degli UUID gruppo forniti",
