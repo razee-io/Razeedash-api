@@ -99,6 +99,8 @@ const subscription_01_uuid = 'fake_sub_01_uuid';
 const subscription_02_name = 'fake_subscription_02';
 const subscription_02_uuid = 'fake_sub_02_uuid';
 
+const subscription_duplicate_uuid = 'fake_sub_duplicate_uuid';  // Intentionally duplicates subscription 2 name
+
 const subscription_03_name = 'fake_subscription_03';
 const subscription_03_uuid = 'fake_sub_03_uuid';
 
@@ -284,6 +286,20 @@ const createSubscriptions = async () => {
     version_uuid: channelVersion_02_uuid,
   });
 
+  // Subscription duplicate is owned by non-admin user
+  await models.Subscription.create({
+    _id: 'fake_id_duplicate',
+    org_id: org01._id,
+    uuid: subscription_duplicate_uuid,
+    name: subscription_02_name, // Uses same name as subscription 2
+    owner: user01._id,
+    groups: [],
+    channel_uuid: channel_01_uuid,
+    channel: channel_01_name,
+    version: channelVersion_02_name,
+    version_uuid: channelVersion_02_uuid,
+  });
+
   // Subscription 03 is owned by non-admin user
   await models.Subscription.create({
     _id: 'fake_id_3',
@@ -424,7 +440,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
       });
       const subscriptions = result.data.data.subscriptions;
-      expect( subscriptions ).to.have.length(2);
+      expect( subscriptions ).to.have.length(3);
       // At this point, no clusters have been added to the groups for subscription 01 or subscription 02.
       for( const subscription of subscriptions ) {
         expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
@@ -447,7 +463,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
       });
       const subscriptions2 = result2.data.data.subscriptions;
-      expect( subscriptions2 ).to.have.length(2);
+      expect( subscriptions2 ).to.have.length(3);
       // subscription 01 should have failed sync status as it was triggered by the correct user by the sync API is not available.
       console.log( `subscription 01 identitySyncStatus: ${JSON.stringify( subscriptions2[0].identitySyncStatus, null, 2 )}` );
       expect( subscriptions2[0].identitySyncStatus.syncedCount, 'subscription01 identitySyncStatus.syncedCount should be zero' ).to.equal(0);
@@ -523,6 +539,22 @@ describe('subscription graphql test suite', () => {
       }
       throw error;
     }
+
+    // Getting a subscription by name should fail if there are multiple with same name.
+    try {
+      const result = await subscriptionApi.subscriptionByName(token01, {
+        orgId: org01._id,
+        name: subscription_02_name,
+      });
+      expect(result.data.errors).to.be.an('array').that.has.lengthOf(1);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
   });
 
   it('get subscriptions by clusterId', async () => {
@@ -563,18 +595,14 @@ describe('subscription graphql test suite', () => {
 
   it('add a subscription', async () => {
     try {
-      const {
-        data: {
-          data: { addSubscription },
-        },
-      } = await subscriptionApi.addSubscription(adminToken, {
+      const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
         groups:['dev'],
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_01_uuid,
       });
-      expect(addSubscription.uuid).to.be.an('string');
+      expect(addSubscription1.data.data.addSubscription.uuid).to.be.an('string');
 
       const addSubscription2 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
@@ -583,7 +611,7 @@ describe('subscription graphql test suite', () => {
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_02_uuid,
       });
-      expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);
+      expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);  // limit is set in definition of test job in package.json
 
       // add subscription with custom attribute
       const result = await subscriptionApi.addSubscription(token77, {

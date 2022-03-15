@@ -40,6 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "group uuid \"{{uuid}}\" not found",
   "hist _id \"{{histId}}\" not found": "hist _id \"{{histId}}\" not found",
   "Invalid razee-org-key was submitted for {{queryName}}": "Invalid razee-org-key was submitted for {{queryName}}",
+  "More than one subscription matches {{name}}": "More than one subscription matches {{name}}",
   "No org was found for the org key.": "No org was found for the org key.",
   "No razee-org-key was supplied.": "No razee-org-key was supplied.",
   "None of the passed group uuids were found": "None of the passed group uuids were found",
