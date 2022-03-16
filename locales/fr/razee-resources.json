@@ -40,6 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "identificateur unique universel de groupe \"{{uuid}}\" introuvable",
   "hist _id \"{{histId}}\" not found": "hist _id \"{{histId}}\" introuvable",
   "Invalid razee-org-key was submitted for {{queryName}}": "Un razee-org-key incorrect a été soumis pour {{queryName}}",
+  "More than one {{type}} matches {{name}}": "More than one {{type}} matches {{name}}",
   "No org was found for the org key.": "Aucune org. trouvée pour la clé d'org.",
   "No razee-org-key was supplied.": "Aucune razee-org-key n'a été fournie.",
   "None of the passed group uuids were found": "Aucun des identificateurs uniques universels de groupe transmis n'a été trouvé",

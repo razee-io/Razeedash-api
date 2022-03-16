@@ -139,19 +139,19 @@ const subscriptionResolvers = {
       const queryName = _queryName ? `${_queryName}/subscription` : 'subscription';
       logger.debug({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} enter`);
 
-      try{
-        const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, context, fullQuery);
+      const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, context, fullQuery);
 
-        const sub = subs.find( s => {
-          return (s.uuid === uuid || s.name === name);
-        } );
+      const matchingSubs = subs.filter( s => {
+        return (s.uuid === uuid || s.name === name);
+      } );
 
-        return sub || null;
+      // If more than one matching subscription found, throw an error
+      if( matchingSubs.length > 1 ) {
+        logger.info({req_id, user: whoIs(me), org_id: orgId, uuid, name }, `${queryName} found ${matchingSubs.length} matching subscriptions` );
+        throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'subscription', 'name':name}), context);
       }
-      catch(err){
-        logger.error(err);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
-      }
+
+      return matchingSubs[0] || null;
     },
 
     subscriptionByName: async(parent, { orgId, name }, context, fullQuery) => {

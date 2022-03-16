@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, NotFoundError, RazeeValidationError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -78,7 +78,15 @@ const groupResolvers = {
       // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
 
       try{
-        let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
+        const groups = await models.Group.find({ org_id: orgId, name }).limit(2).lean({ virtuals: true });
+
+        // If more than one matching group found, throw an error
+        if( groups.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id: orgId, name }, `${queryName} found ${groups.length} matching groups` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
+        }
+        const group = groups[0] || null;
+
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
@@ -168,7 +176,15 @@ const groupResolvers = {
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
       try{
-        const group = await models.Group.findOne({ name, org_id: org_id }).lean();
+        const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
+
+        // If more than one matching group found, throw an error
+        if( groups.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id, name }, `${queryName} found ${groups.length} matching groups` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
+        }
+        const group = groups[0] || null;
+
         if(!group){
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
