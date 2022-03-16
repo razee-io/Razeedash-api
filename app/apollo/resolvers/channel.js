@@ -73,17 +73,26 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
 
       try{
-        var channel = await models.Channel.findOne({ org_id: orgId, name });
+        const channels = await models.Channel.find({ org_id: orgId, name }).limit(2);
+
+        // If more than one matching config found, throw an error
+        if( channels.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id: orgId, name }, `${queryName} found ${channels.length} matching configurations` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'configuration', 'name':name}), context);
+        }
+        const channel = channels[0] || null;
+
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with name {{name}}.', {'name':name}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
+
+        return channel;
       }catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-      return channel;
     },
     channelsByTags: async(parent, { orgId, tags }, context, fullQuery)=>{
       const queryFields = GraphqlFields(fullQuery);
@@ -119,7 +128,6 @@ const channelResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
 
       try{
-
         const org = await models.Organization.findOne({ _id: org_id });
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
@@ -128,7 +136,15 @@ const channelResolvers = {
 
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
-        const channel = await models.Channel.findOne(channelFilter);
+        const channels = await models.Channel.find(channelFilter).limit(2).lean({ virtuals: true });
+
+        // If more than one matching channels found, throw an error
+        if( channels.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${channels.length} matching configurations` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'configuration', 'name':channelName}), context);
+        }
+        const channel = channels[0] || null;
+
         if(!channel){
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
         }
@@ -136,7 +152,15 @@ const channelResolvers = {
         const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
         // search version by version uuid or version name
-        const versionObj = channel.versions.find(v => (v.uuid === versionUuid || v.name === versionName));
+        const versionObjs = channel.versions.filter( v => (v.uuid === versionUuid || v.name === versionName) );
+
+        // If more than one matching version found, throw an error
+        if( versionObjs.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${versionObjs.length} matching versions` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'version', 'name':versionName}), context);
+        }
+        const versionObj = versionObjs[0] || null;
+
         if (!versionObj) {
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
