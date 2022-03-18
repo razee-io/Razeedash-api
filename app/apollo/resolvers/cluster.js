@@ -50,7 +50,7 @@ const buildSearchFilter = (ordId, condition, searchStr) => {
 const commonClusterSearch = async (
   models,
   searchFilter,
-  { limit, skip, startingAfter }
+  { limit, skip=0, startingAfter }
 ) => {
   let results = [];
 
@@ -75,7 +75,7 @@ const clusterResolvers = {
       context,
       fullQuery
     ) => {
-      var { orgId, clusterId} = args;
+      var { orgId, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;

@@ -29,7 +29,6 @@ const { AUTH_MODEL } = require('../models/const');
 
 // If external auth model specified, use it.  Else use built-in auth model.
 const externalAuth = require('../../externalAuth.js');
-const { json } = require('body-parser');
 const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
 const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
 const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
@@ -450,7 +449,7 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         groupLimit: 2,
       });
-      
+
       expect(clustersByOrgId2[3].groupObjs).to.have.length(2);
       expect(clustersByOrgId2[3].groups).to.have.length(2);
       expect(clustersByOrgId2).to.be.an('array');
