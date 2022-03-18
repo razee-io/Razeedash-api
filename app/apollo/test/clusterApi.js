@@ -99,8 +99,8 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!  $limit: Int, $startingAfter: String $groupLimit : Int) {
-            clustersByOrgId(orgId: $orgId limit: $limit startingAfter: $startingAfter, groupLimit : $groupLimit) {
+          query($orgId: String!,  $limit: Int, $skip: Int, $startingAfter: String, $groupLimit : Int) {
+            clustersByOrgId(orgId: $orgId, limit: $limit, skip: $skip, startingAfter: $startingAfter, groupLimit : $groupLimit) {
               id
               orgId
               clusterId

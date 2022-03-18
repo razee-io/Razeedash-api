@@ -50,7 +50,7 @@ const buildSearchFilter = (ordId, condition, searchStr) => {
 const commonClusterSearch = async (
   models,
   searchFilter,
-  { limit, skip=0, startingAfter }
+  { limit, skip, startingAfter }
 ) => {
   let results = [];
 
@@ -73,10 +73,9 @@ const clusterResolvers = {
       parent,
       args,
       context,
-      fullQuery,
-      skip
+      fullQuery
     ) => {
-      var { orgId, clusterId } = args;
+      var { orgId, clusterId} = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
@@ -98,7 +97,7 @@ const clusterResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
 
       if(cluster){
-        var { url } = await models.Organization.getRegistrationUrl(orgId, context, skip);
+        var { url } = await models.Organization.getRegistrationUrl(orgId, context);
         url = url + `&clusterId=${clusterId}`;
         if (RDD_STATIC_ARGS.length > 0) {
           RDD_STATIC_ARGS.forEach(arg => {
@@ -175,10 +174,9 @@ const clusterResolvers = {
       parent,
       args,
       context,
-      fullQuery,
-      skip
+      fullQuery
     ) => {
-      var { orgId, limit, startingAfter, clusterId } = args;
+      var { orgId, limit, skip, startingAfter, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;

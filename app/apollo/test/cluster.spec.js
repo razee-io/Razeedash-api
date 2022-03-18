@@ -29,6 +29,7 @@ const { AUTH_MODEL } = require('../models/const');
 
 // If external auth model specified, use it.  Else use built-in auth model.
 const externalAuth = require('../../externalAuth.js');
+const { json } = require('body-parser');
 const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
 const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
 const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
@@ -424,18 +425,21 @@ describe('cluster graphql test suite', () => {
       expect(clustersByOrgId[0].resources).to.be.an('array');
 
       // test skip and limit implementation
-      const {
-        data: {
-          data: { skipLimitedClustersByOrgId }
-        },
-      } = await clusterApi.byOrgID(token, {
-        orgId: org01._id, skip: 2, limit: 1
+      const skipResponse = await clusterApi.byOrgID(token, {
+        orgId: org01._id,
+        skip: 2, limit: 1,
       });
-
-      expect(skipLimitedClustersByOrgId[0].uuid).to.equal(3);
-      expect(clustersByOrgId[3].groups).to.have.length(3);
+      const skipLimitedClustersByOrgId = skipResponse.data.data.clustersByOrgId;
+      expect(skipLimitedClustersByOrgId[0].clusterId).to.equal('cluster_02');
       expect(skipLimitedClustersByOrgId).to.have.length(1);
-      expect(clustersByOrgId[0].resources).to.be.an('array');
+
+      // test skipping a bunch doesn't throw error
+      const skipResponse2 = await clusterApi.byOrgID(token, {
+        orgId: org01._id,
+        skip: 500, limit: 1,
+      });
+      const skipLimitedClustersByOrgId2 = skipResponse2.data.data.clustersByOrgId;
+      expect(skipLimitedClustersByOrgId2).to.have.length(0);
 
       // with group limit
       const {
@@ -446,7 +450,7 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         groupLimit: 2,
       });
-
+      
       expect(clustersByOrgId2[3].groupObjs).to.have.length(2);
       expect(clustersByOrgId2[3].groups).to.have.length(2);
       expect(clustersByOrgId2).to.be.an('array');
