@@ -424,12 +424,18 @@ describe('cluster graphql test suite', () => {
       expect(clustersByOrgId[0].resources).to.be.an('array');
 
       // test skip and limit implementation
-      const cboi = await clusterApi.byOrgID(token, {
-        orgId: org01._id,
+      const {
+        data: {
+          data: { skipLimitedClustersByOrgId }
+        },
+      } = await clusterApi.byOrgID(token, {
+        orgId: org01._id, skip: 2, limit: 1
       });
-      console.log( `ETHANDEBUG cboi: ${console.log(cboi,null,2)}` );
-      const clusterByOrgId = cboi.data.data;
-      console.log( `ETHANDEBUG clusterByOrgId: ${console.log(clusterByOrgId,null,2)}` );
+
+      expect(skipLimitedClustersByOrgId[0].uuid).to.equal(3);
+      expect(clustersByOrgId[3].groups).to.have.length(3);
+      expect(skipLimitedClustersByOrgId).to.have.length(1);
+      expect(clustersByOrgId[0].resources).to.be.an('array');
 
       // with group limit
       const {
