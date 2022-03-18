@@ -38,7 +38,6 @@ const channelResolvers = {
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
-        //add skip and limit
         var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
       }catch(err){
