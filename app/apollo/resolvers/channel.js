@@ -335,7 +335,8 @@ const channelResolvers = {
         throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
       }
 
-      const path = `${org_id.toLowerCase()}-${channel.uuid}-${name}`;
+      const newVerUuid = UUID();
+      const path = `${org_id.toLowerCase()}-${channel.uuid}-${newVerUuid}`;
       const bucketName = conf.storage.getChannelBucket(channel.data_location);
       const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
       const ivText = await handler.setDataAndEncrypt(content, orgKey);
@@ -345,7 +346,7 @@ const channelResolvers = {
       const deployableVersionObj = {
         _id: UUID(),
         org_id,
-        uuid: UUID(),
+        uuid: newVerUuid,
         channel_id: channel.uuid,
         channelName: channel.name,
         name,
@@ -357,6 +358,8 @@ const channelResolvers = {
         kubeOwnerId,
       };
 
+      // Note: if failure occurs here, the data has already been stored by storageFactory.
+      // A cleanup mechanism is needed.
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
       const versionObj = {
         uuid: deployableVersionObj.uuid,
@@ -364,6 +367,8 @@ const channelResolvers = {
         created: dObj.created
       };
 
+      // Note: if failure occurs here, the data has already been stored by storageFactory and the Version document saved.
+      // A cleanup mechanism is needed, or elimination of the need to update the Channel.
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
         { $push: { versions: versionObj } }
