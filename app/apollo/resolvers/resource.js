@@ -380,8 +380,10 @@ const resourceResolvers = {
     resourceContent: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, histId=null }, context)=>{
       const { models, me, req_id, logger } = context;
 
+      const logContext = {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId };
+
       const queryName = 'resourceContent';
-      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId }, `${queryName} enter`);
+      logger.debug( logContext, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
@@ -396,7 +398,8 @@ const resourceResolvers = {
 
       const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink },  {},  { lean:true });
       if(!resource){
-        return null;
+        logger.info( logContext, 'Resource for org_id, cluster_id, selfLink not found in database' );
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
       if(!histId || histId == resource._id.toString()){
@@ -416,7 +419,8 @@ const resourceResolvers = {
 
       const obj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
       if(!obj){
-        return null;
+        logger.info( logContext, 'Resource History for org_id, cluster_id, selfLink, histId not found in database' );
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
       var content = await getContent(obj);

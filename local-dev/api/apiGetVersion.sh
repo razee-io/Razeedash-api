@@ -2,20 +2,20 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-RAZEE_CLUSTER_UUID=${1:-${RAZEE_CLUSTER_UUID:-pTestClusterUuid}}
+RAZEE_CLUSTER_UUID=${1:-${RAZEE_CLUSTER_UUID:-pTestClusterId}}
 RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
-RAZEE_URL=${RAZEE_URL:-http://localhost:3333/api/v2/clusters}
+RAZEE_URL=${RAZEE_URL:-http://localhost:3333/api/v1/channels}
 
 [ ! -z "${RAZEE_USER_TOKEN}" ] && AUTH_HEADER="Authorization: Bearer ${RAZEE_USER_TOKEN}" || AUTH_HEADER="no-auth-available: asdf"
 
 echo
-echo "RAZEE_CLUSTER_UUID: ${RAZEE_CLUSTER_UUID}"
+echo "CLUSTER_ID: ${CLUSTER_ID}"
 echo
 
-echo "POST to ${RAZEE_URL}/${RAZEE_CLUSTER_UUID}/resources"
+echo "GET to ${RAZEE_URL}/${CLUSTER_ID}/resources"
 curl \
--X POST \
+-X GET \
 -H "${AUTH_HEADER}" \
 -H "razee-org-key: ${RAZEE_ORG_KEY}" \
 -H "Content-Type: application/json" \
@@ -27,7 +27,7 @@ curl \
     }
   }
 } } }]' \
-${RAZEE_URL}/${RAZEE_CLUSTER_UUID}/resources
+${RAZEE_URL}/${CLUSTER_ID}/resources
 
 retVal=$?
 
