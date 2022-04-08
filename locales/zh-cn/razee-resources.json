@@ -40,7 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "未找到组 uuid“{{uuid}}”",
   "hist _id \"{{histId}}\" not found": "未找到 hist_id“{{histId}}”",
   "Invalid razee-org-key was submitted for {{queryName}}": "针对 {{queryName}} 提交的 razee-org-key 无效",
-  "More than one {{type}} matches {{name}}": "More than one {{type}} matches {{name}}",
+  "More than one {{type}} matches {{name}}": "多个 {{type}} 匹配项 {{name}}",
   "No org was found for the org key.": "找不到组织密钥所属的组织。",
   "No razee-org-key was supplied.": "未提供 razee-org-key。",
   "None of the passed group uuids were found": "未找到传递的任何组 uuid",
