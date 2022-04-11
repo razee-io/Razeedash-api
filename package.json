@@ -73,7 +73,7 @@
     "json-key-validate": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "mongodb": "^3.6.5",
     "mongoose": "^5.13.9",
     "mongoose-lean-defaults": "^2.0.1",
