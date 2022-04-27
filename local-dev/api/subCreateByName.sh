@@ -2,6 +2,10 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+if [ "$0" = "$BASH_SOURCE" ]; then
+  echo "$0 can be sourced to automatically set the RAZEE_SUB_UUID variable"
+fi
+
 RAZEE_SUB_NAME=${1:-pSubName}
 RAZEE_GROUP_NAME=${2:-${RAZEE_GROUP_NAME:-pGroupName}}
 RAZEE_ORG_ID=${3:-${RAZEE_ORG_ID:-pOrgId}}
@@ -17,5 +21,16 @@ echo "" && echo "NOTE: If a group with that does not exist it will be created!"
 echo "" && echo "******************************************************************"
 
 echo "" && echo "CREATE subscription by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+unset RAZEE_SUB_UUID
+RESPONSE=$(${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}")
 echo "Result: $?"
+echo "Response:"
+echo ${RESPONSE} | jq --color-output
+
+export RAZEE_SUB_UUID=$(echo ${RESPONSE} | jq -r '.data.addSubscription.uuid')
+if [ "${RAZEE_SUB_UUID}" = "null" ]; then
+  echo "Unable to determine RAZEE_SUB_UUID"
+  unset RAZEE_SUB_UUID
+else
+  echo "RAZEE_SUB_UUID: ${RAZEE_SUB_UUID}"
+fi

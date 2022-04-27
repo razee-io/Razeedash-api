@@ -13,15 +13,14 @@ echo "" && echo "GET organizations for current user"
 unset RAZEE_ORG_ID
 RESPONSE=$(${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}")
 echo "Result: $?"
+echo "Response:"
+echo ${RESPONSE} | jq --color-output
 
 # Response like {"data":{"organizations":[{"id":"[uuid]","name":"pOrgName"}]}}
 export RAZEE_ORG_ID=$(echo ${RESPONSE} | jq -r '.data.organizations[0].id')
-#echo "RAZEE_ORG_ID: ${RAZEE_ORG_ID}"
-
 if [ "${RAZEE_ORG_ID}" = "null" ]; then
-  echo "" && echo "Error retrieving orgs: ${RESPONSE}"
+  echo "Unable to determine RAZEE_ORG_ID"
   unset RAZEE_ORG_ID
 else
-  echo "GET organizations successful"
-  echo "RAZEE_ORG_ID: ${RAZEE_ORG_ID}"
+  echo "RAZEE_CLUSTER_UUID: ${RAZEE_ORG_ID}"
 fi
