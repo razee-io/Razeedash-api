@@ -12,30 +12,14 @@ echo
 echo "RAZEE_CLUSTER_UUID: ${RAZEE_CLUSTER_UUID}"
 echo
 
-echo "POST to ${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
+echo "POST to ${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}"
 curl \
 -X POST \
 -H "razee-org-key: ${RAZEE_ORG_KEY}" \
 -H "Content-Type: application/json" \
 -w "HTTP: %{http_code}" \
---data '
-[{
-    "type": "'"ADDED"'",
-    "object": {
-      "apiVersion": "v1",
-      "kind": "ConfigMap",
-      "metadata": {
-          "name": "sample-cm",
-          "namespace": "default",
-          "resourceVersion": "1000",
-          "selfLink": "/api/v1/namespaces/default/configmaps/sample-cm"
-      },
-      "data": {
-          "version": "sample-ver-1"
-      }
-    }
-}]' \
-${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources
+--data '{ "what": "goes here? it doesnt matter for now, just testing that org key is required (it is)" }' \
+${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}
 
 retVal=$?
 

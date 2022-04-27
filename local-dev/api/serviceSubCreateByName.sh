@@ -12,5 +12,5 @@ RAZEE_QUERY='mutation($orgId: String!, $name: String!, $clusterId: String!, $cha
 RAZEE_VARIABLES='{"name":"'"${RAZEE_SSUB_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_UUID}"'","channelUuid":"'"${RAZEE_CONFIG_UUID}"'","versionUuid":"'"${RAZEE_VER_UUID}"'"}'
 
 echo "" && echo "CREATE service subscription by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

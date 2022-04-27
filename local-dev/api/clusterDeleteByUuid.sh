@@ -9,5 +9,5 @@ RAZEE_QUERY='mutation($orgId: String! $clusterId: String!) { deleteClusterByClus
 RAZEE_VARIABLES='{"clusterId":"'"${RAZEE_CLUSTER_UUID}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "DELETE cluster by id"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

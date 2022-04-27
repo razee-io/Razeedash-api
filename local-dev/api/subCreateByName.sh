@@ -17,5 +17,5 @@ echo "" && echo "NOTE: If a group with that does not exist it will be created!"
 echo "" && echo "******************************************************************"
 
 echo "" && echo "CREATE subscription by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

@@ -9,5 +9,5 @@ RAZEE_QUERY='mutation($orgId: String! $uuid: String!) { removeChannelVersion( or
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","uuid":"'"${RAZEE_VER_UUID}"'"}'
 
 echo "" && echo "DELETE version by uuid"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

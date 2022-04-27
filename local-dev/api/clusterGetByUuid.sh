@@ -9,5 +9,5 @@ RAZEE_QUERY='query($orgId: String! $clusterId: String!) { clusterByClusterId( or
 RAZEE_VARIABLES='{"clusterId":"'"${RAZEE_CLUSTER_UUID}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "GET cluster by UUID $RAZEE_CLUSTER_UUID"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

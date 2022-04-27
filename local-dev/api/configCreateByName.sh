@@ -10,5 +10,5 @@ RAZEE_QUERY='mutation ($orgId: String!, $name: String!, $data_location: String) 
 RAZEE_VARIABLES='{"name":"'"${RAZEE_CONFIG_NAME}"'","data_location":"'"${RAZEE_CONFIG_DATALOCATION}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "CREATE config by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

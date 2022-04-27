@@ -9,5 +9,5 @@ RAZEE_QUERY='mutation($orgId: String!, $name: String!){ addGroup( orgId: $orgId 
 RAZEE_VARIABLES='{"name":"'"${RAZEE_GROUP_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "CREATE group by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

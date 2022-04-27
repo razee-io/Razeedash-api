@@ -10,5 +10,5 @@ RAZEE_QUERY='mutation ($orgId: String!, $registration: JSON!) { registerCluster(
 RAZEE_VARIABLES='{"registration":{"name":"'"${RAZEE_CLUSTER_NAME}"'","location":"'"${RAZEE_CLUSTER_LOCATION}"'"},"orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "CREATE cluster with location"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"
