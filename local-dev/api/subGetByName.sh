@@ -9,5 +9,5 @@ RAZEE_QUERY='query($orgId: String! $name: String!) { subscriptionByName(orgId: $
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'", "name":"'"${RAZEE_SUB_NAME}"'"}'
 
 echo "" && echo "GET subscription by name"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

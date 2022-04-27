@@ -9,5 +9,5 @@ RAZEE_QUERY='query($orgId: String! $uuid: String!) { group( orgId: $orgId  uuid:
 RAZEE_VARIABLES='{"uuid":"'"${RAZEE_GROUP_UUID}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "GET group by uuid"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

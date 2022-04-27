@@ -9,5 +9,5 @@ RAZEE_QUERY='mutation($orgId: String! $uuid: String!) { removeSubscription( orgI
 RAZEE_VARIABLES='{"uuid":"'"${RAZEE_SUB_UUID}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "DELETE subscription by uuid"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

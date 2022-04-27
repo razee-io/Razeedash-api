@@ -10,5 +10,5 @@ RAZEE_QUERY='mutation($orgId: String!, $groupUuids: [String!]!, $clusterIds: [St
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","groupUuids":["'"${RAZEE_GROUP_UUID}"'"],"clusterIds":["'"${RAZEE_CLUSTER_UUID}"'"]}'
 
 echo "" && echo "ADD Cluster to Group"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

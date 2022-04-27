@@ -29,5 +29,5 @@ RAZEE_QUERY=$(echo $RAZEE_QUERY | tr '\n' ' ')
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_UUID}"'","limit":'${LIMIT}',"skip":'${SKIP}'}'
 
 echo "" && echo "LIST resources for cluster"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

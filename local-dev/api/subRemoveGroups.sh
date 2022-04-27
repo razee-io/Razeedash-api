@@ -12,5 +12,5 @@ RAZEE_QUERY='mutation($orgId: String!, $uuid: String!, $name: String!, $groups: 
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","uuid":"'"${RAZEE_SUB_UUID}"'","name":"'"${RAZEE_SUB_NAME}"'","groups":[],"channelUuid":"'"${RAZEE_CONFIG_UUID}"'","versionUuid":"'"${RAZEE_VER_UUID}"'"}'
 
 echo "" && echo "EDIT subscription to REMOVE ALL GROUPS"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

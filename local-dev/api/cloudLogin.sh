@@ -7,6 +7,11 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+if [ "$0" = "$BASH_SOURCE" ]; then
+  echo "This script must be run sourced ('. ./cloudLogin.sh')"
+  exit 1
+fi
+
 CLOUDPREFIX=test.
 CLOUDREGION=
 if [[ "$1" == "prod" ]]; then
@@ -14,12 +19,7 @@ if [[ "$1" == "prod" ]]; then
   CLOUDREGION=$2.
 fi
 
-
 ibmcloud logout
-if [ $? -eq 127 ]; then
-  echo "This script must be run sourced ('. ./cloudLogin.sh')"
-  exit 1
-fi
 ibmcloud login -a ${CLOUDPREFIX}cloud.ibm.com --sso
 
 export RAZEE_USER_TOKEN=$(ibmcloud iam oauth-tokens --output json | jq --raw-output '.iam_token' | sed 's/^Bearer //')

@@ -8,5 +8,5 @@ RAZEE_QUERY='query($orgId: String!) { channels( orgId: $orgId ) { uuid orgId nam
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'"}'
 
 echo "" && echo "LIST configs"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

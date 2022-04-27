@@ -20,5 +20,5 @@ RAZEE_QUERY=$(echo $RAZEE_QUERY | tr '
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","id":"'"${RAZEE_RESOURCE_ID}"'","histId":"'"${RAZEE_HISTORY_UUID}"'"}'
 
 echo "" && echo "GET resource by id"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"
