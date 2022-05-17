@@ -19,6 +19,7 @@ query(
 RAZEE_QUERY=$(echo $RAZEE_QUERY | tr '
 ' ' ')
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_UUID}"'","resourceSelfLink":"'"${RAZEE_RESOURCE_LINK}"'","histId":"'"${RAZEE_HISTORY_UUID}"'"}'
+RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","clusterId":"'"${RAZEE_CLUSTER_UUID}"'","resourceSelfLink":"'"${RAZEE_RESOURCE_LINK}"'"}'
 
 echo "" && echo "GET resource content"
 ${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output

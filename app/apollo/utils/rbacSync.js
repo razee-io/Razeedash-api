@@ -1,4 +1,4 @@
-/**
+ /**
  * Copyright 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -99,7 +99,7 @@ const applyRBAC = async( cluster, identity, context ) => {
     };
   }
   else {
-    try{
+    try {
       const apiResult = await applyRbacAPI( cluster, identity, context );
 
       if( apiResult.success ) {
@@ -111,7 +111,7 @@ const applyRBAC = async( cluster, identity, context ) => {
         };
       }
       else {
-        logger.info( {methodName, req_id, user: whoIs(me), org_id}, `api failure for cluster '${cluster_id}'` );
+        logger.info( {methodName, req_id, user: whoIs(me), org_id}, `api failure for cluster '${cluster_id}: ${apiResult.message}'` );
         sets.syncedIdentities[ identity ] = {
           syncDate: Date.now(),
           syncStatus: CLUSTER_IDENTITY_SYNC_STATUS.FAILED,
@@ -170,13 +170,12 @@ const groupsRbacSync = async( groups, args, context ) => {
 
   }
   catch( e ) {
-
     logger.error( e, `Error triggering rbac sync: ${JSON.stringify({methodName, req_id, user: whoIs(me), org_id})}` );
     logger.error( {methodName, req_id, user: whoIs(me), org_id}, `Error triggering rbac sync: ${e}` );
   }
 };
 
-// RBAC Sync specified subscriptions
+// Do RBAC Sync for the specified subscriptions
 const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   const methodName = 'subscriptionsRbacSync';
   const { resync } = args;
@@ -189,7 +188,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
   if( !subscriptions || subscriptions.length === 0 ) return;
   const org_id = subscriptions[0].org_id;
 
-  logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `${subscriptions.length} subscriptions` );
+  logger.info( {methodName, req_id, user: whoIs(me), org_id}, `${subscriptions.length} subscriptions` );
 
   try {
     const identityClusters = {};  // { identity: [clusters] }
@@ -224,14 +223,14 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
 
       // Remove duplicates of same cluster from multiple groups
       const clusters = getUniqueArrByKey( subscriptionClusters, 'cluster_id' );
-      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'/'${subscription.uuid}'` );
+      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clusters.length} clusters for subscription '${subscription.name}'/'${subscription.uuid}'` );
 
       // Identify which clusters will be synced:
       // All clusters where the `syncedIdentities[owner].syncStatus` is not SYNCED, or *all* clusters if `resync: true`
       const clustersToSync = clusters.filter( c =>
         ( resync || ( !c.syncedIdentities || !c.syncedIdentities[ subscription.owner ] || c.syncedIdentities[ subscription.owner ].syncStatus != CLUSTER_IDENTITY_SYNC_STATUS.SYNCED ) )
       );
-      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clustersToSync.length} clusters requiring rbac sync for subscription '${subscription.name}'/'${subscription.uuid}'` );
+      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Found ${clustersToSync.length} clusters requiring rbac sync for subscription '${subscription.name}'/'${subscription.uuid}' owner '${subscription.owner}'` );
 
       // Add/update clusters to sync for this subscription owner
       if( clustersToSync.length > 0 ) {
@@ -257,7 +256,7 @@ const subscriptionsRbacSync = async( subscriptions, args, context ) => {
         cluster_id: { $in: clusters.map( c => c.cluster_id ) },
       };
       const dbResponse = await models.Cluster.updateMany( find, { $set: sets } );
-      logger.debug( {methodName, req_id, user: whoIs(me), org_id}, `Cluster records updated to await sync for identity '${identity}': ${JSON.stringify(dbResponse)}` );
+      logger.info( {methodName, req_id, user: whoIs(me), org_id}, `Cluster records updated to await sync for identity '${identity}': ${JSON.stringify(dbResponse)}` );
 
       // Asynchronously (no `await`) call API to sync the clusters
       for( const cluster of clusters ) {
