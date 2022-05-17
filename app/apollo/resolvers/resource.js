@@ -15,7 +15,7 @@
  */
 
 const _ = require('lodash');
-const { withFilter} = require('apollo-server');
+const { withFilter } = require('apollo-server');
 const GraphqlFields = require('graphql-fields');
 
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
@@ -392,17 +392,14 @@ const resourceResolvers = {
         throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster group permission.'), context);
       }
 
-      var getContent = async(obj)=>{
-        return obj.yamlStr;
-      };
-
       const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink },  {},  { lean:true });
       if(!resource){
         logger.info( logContext, 'Resource for org_id, cluster_id, selfLink not found in database' );
         throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
-      if(!histId || histId == resource._id.toString()){
+      if( !histId || histId == resource.histId || histId == resource._id.toString() ){
+        logger.info( logContext, `Getting content for current resource (_id: '${resource._id.toString()}', histId: '${resource.histId}')` );
         let content = resource.data;
         if ( content ) {
           const handler = storageFactory(logger).deserialize(content);
@@ -416,25 +413,25 @@ const resourceResolvers = {
           updated: resource.updated,
         };
       }
+      logger.info( logContext, `Getting content for resource history (current resource _id: '${resource._id.toString()}', histId: '${resource.histId})` );
 
-      const obj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
-      if(!obj){
+      const histObj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
+      if(!histObj){
         logger.info( logContext, 'Resource History for org_id, cluster_id, selfLink, histId not found in database' );
         throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
-      var content = await getContent(obj);
-      if ( content ) {
+      let content = histObj.yamlStr;
+      if(content) {
         const handler = storageFactory(logger).deserialize(content);
-        const yaml = await handler.getData();
-        content = yaml;
+        content = await handler.getData();
       }
 
       return {
         id: resource._id,
-        histId: obj._id,
+        histId: histObj._id,
         content,
-        updated: obj.updated,
+        updated: histObj.updated,
       };
     },
   },

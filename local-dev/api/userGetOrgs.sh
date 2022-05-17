@@ -22,5 +22,5 @@ if [ "${RAZEE_ORG_ID}" = "null" ]; then
   echo "Unable to determine RAZEE_ORG_ID"
   unset RAZEE_ORG_ID
 else
-  echo "RAZEE_CLUSTER_UUID: ${RAZEE_ORG_ID}"
+  echo "RAZEE_ORG_ID: ${RAZEE_ORG_ID}"
 fi

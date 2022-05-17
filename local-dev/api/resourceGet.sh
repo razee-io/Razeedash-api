@@ -11,13 +11,14 @@ query(
   $orgId:String!, $id:String!, $histId:String
 ){
   resource(orgId:$orgId, id:$id, histId:$histId) {
-    id, orgId, histId, selfLink, searchableData, created, updated, lastModified, cluster { clusterId, name }, subscription { uuid, name, channelName, channelUuid, version, versionUuid }
+    id, orgId, histId, selfLink, data, searchableData, created, updated, lastModified, cluster { clusterId, name }, subscription { uuid, name, channelName, channelUuid, version, versionUuid }
   }
 }
 '
 RAZEE_QUERY=$(echo $RAZEE_QUERY | tr '
 ' ' ')
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","id":"'"${RAZEE_RESOURCE_ID}"'","histId":"'"${RAZEE_HISTORY_UUID}"'"}'
+RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","id":"'"${RAZEE_RESOURCE_ID}"'"}'
 
 echo "" && echo "GET resource by id"
 ${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
