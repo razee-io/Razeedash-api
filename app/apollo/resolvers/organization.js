@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { ACTIONS, TYPES } = require('../models/const');
+const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 
 const organizationResolvers = {
