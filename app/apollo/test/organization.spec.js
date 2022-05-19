@@ -128,5 +128,28 @@ describe('organization graphql test suite', () => {
       }
     });
 
+    it('a user should be able to add an OrgKey', async () => {
+      token = await signInUser(models, api, user01Data);
+      try {
+        const {
+          data: {
+            data: { addOrgKey },
+          },
+        } = await orgApi.addOrgKey(token, {
+          orgId: org01._id,
+          name: 'orgKey1',
+          primary: true
+        });
+        expect(addOrgKey.uuid).to.be.an('string');
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
   });
 });
