@@ -128,6 +128,7 @@ describe('organization graphql test suite', () => {
         expect(orgsResult.data.data.organizations.length).to.equal(1);
 
         org01 = orgsResult.data.data.organizations[0];
+        console.log( `org01: ${JSON.stringify(org01, null, 2)}` );
       } catch (error) {
         console.error('error response is ', error.response);
         // console.error('error response is ', JSON.stringify(error.response.data));
@@ -135,15 +136,16 @@ describe('organization graphql test suite', () => {
       }
     });
 
-    it('a user should be able to add an OrgKey', async () => {
-      token = await signInUser(models, api, user01Data);
+    it('an admin user should be able to add an OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
       try {
+        console.log( `adding orgKey1 to '${org01.id}'` );
         const {
           data: {
             data: { addOrgKey },
           },
         } = await orgKeyApi.addOrgKey(token, {
-          orgId: org01._id,
+          orgId: org01.id,
           name: 'orgKey1',
           primary: true
         });
