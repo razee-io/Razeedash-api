@@ -22,7 +22,7 @@ const orgKeyFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!) {
+          mutation($orgId: String!, $name: String!, $primary: Boolean!) {
             addOrgKey(orgId: $orgId, name: $name, primary: $primary){
 			        uuid key
             }
