@@ -36,7 +36,7 @@ const graphql_url = `http://localhost:${graphql_port}/graphql`;
 const api = apiFunc(graphql_url);
 
 const orgKeyFunc = require('./orgKeyApi');
-const orgKeyApi = orgKeyFunc(graphqlUrl);
+const orgKeyApi = orgKeyFunc(graphql_url);
 
 let org01Data;
 
