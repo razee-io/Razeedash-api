@@ -201,7 +201,6 @@ describe('organization graphql test suite', () => {
         });
         expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
         expect(orgKey.name).to.equal(orgKeyName);
-        orgKeyName
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
