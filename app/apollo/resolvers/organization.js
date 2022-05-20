@@ -185,10 +185,53 @@ const organizationResolvers = {
           throw error;
         }
 
-        logger.error({ req_id, user: whoIs(me), orgId, error }, `${queryName} error encountered`);
+        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end createOrgKey
+
+    removeOrgKey: async (parent, { orgId, uuid }, context) => {
+      const queryName = 'removeOrgKey';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} user is authorized`);
+
+      try {
+        const allOrgKeys = await organizationResolvers.Query.orgKeys( parent, { orgId }, context );
+
+        const foundOrgKey = allOrgKeys.find( e => {
+          return( e.uuid === uuid );
+        } );
+
+        if( !foundOrgKey ){
+          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey not found`);
+          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
+          throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
+        }
+
+        // Remove the OrgKey from both orgKeys and orgKeys2
+        const pull = {
+          orgKeys: uuid,
+          orgKeys2: { orgKeyUuid: uuid }
+        };
+        const res = await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
+        logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey removed`);
+
+        return { success: true };
+      } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
+
+        if(error instanceof BasicRazeeError ){
+          throw error;
+        }
+
+        logger.error({ req_id, user: whoIs(me), orgId, uuid, error }, `${queryName} error encountered`);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+    }, // end removeOrgKey
+
   },
 };
 

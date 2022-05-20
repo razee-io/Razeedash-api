@@ -40,6 +40,10 @@ const organizationSchema = gql`
     key: String!
   }
 
+  type RemoveOrgKeyReply {
+    success: Boolean!
+  }
+
   extend type Query {
     """
     Return Organizations the current user belongs to.
@@ -72,6 +76,14 @@ const organizationSchema = gql`
       name: String! @sv
       primary: Boolean! @sv
     ): AddOrgKeyReply!
+
+    """
+    Remove OrgKey
+    """
+    removeOrgKey (
+      orgId: String! @sv
+      uuid: String! @sv
+    ): RemoveOrgKeyReply!
   }
 `;
 
