@@ -216,7 +216,7 @@ const organizationResolvers = {
           orgKeys: uuid,
           orgKeys2: { orgKeyUuid: uuid }
         };
-        const res = await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
+        await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
         logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey removed`);
 
         return { success: true };
