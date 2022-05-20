@@ -17,6 +17,26 @@
 const axios = require('axios');
 
 const orgKeyFunc = grahqlUrl => {
+  const orgKeys = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String!) {
+            orgKeys(orgId: $orgId){
+              uuid name primary created updated key
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   const addOrgKey = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -38,6 +58,7 @@ const orgKeyFunc = grahqlUrl => {
     );
 
   return {
+    orgKeys,
     addOrgKey,
   };
 };

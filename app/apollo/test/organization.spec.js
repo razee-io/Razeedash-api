@@ -160,5 +160,28 @@ describe('organization graphql test suite', () => {
       }
     });
 
+    it('an admin user should be able to list OrgKeys', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `querying OrgKeys on '${org01.id}'` );
+        const {
+          data: {
+            data: { orgKeys },
+          },
+        } = await orgKeyApi.orgKeys(token, {
+          orgId: org01.id
+        });
+        expect(orgKeys).to.be.a('array');
+        expect(orgKeys.length).to.equal(2); // 2: original apikey plus the one just added
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
   });
 });
