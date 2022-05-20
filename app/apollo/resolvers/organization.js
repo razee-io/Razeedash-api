@@ -29,7 +29,7 @@ const organizationResolvers = {
 
     orgKey: async (parent, { orgId, uuid, name }, context) => {
       const queryName = 'orgKey';
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
 
       const allOrgKeys = await organizationResolvers.Query.orgKeys( parent, { orgId }, context );
