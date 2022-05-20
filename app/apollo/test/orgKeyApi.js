@@ -97,11 +97,32 @@ const orgKeyFunc = grahqlUrl => {
       },
     );
 
+  const editOrgKey = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation($orgId: String!, $uuid: String!, $name: String, $primary: Boolean) {
+            editOrgKey(orgId: $orgId, uuid: $uuid, name: $name, primary: $primary){
+			        modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
   return {
     orgKey,
     orgKeys,
     addOrgKey,
-    removeOrgKey
+    removeOrgKey,
+    editOrgKey
   };
 };
 
