@@ -27,9 +27,8 @@ const ClusterSchema = new mongoose.Schema({
     type: String,
     alias: 'clusterId',
   },
-  last_org_key_uuid: {
-    type: String,
-    alias: 'lastOrgKeyUuid',
+  lastOrgKeyUuid: {
+    type: String
   },
   groups: [
     {
