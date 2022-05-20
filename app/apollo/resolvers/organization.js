@@ -15,7 +15,7 @@
  */
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError, NotFoundError } = require ('./common');
 const { v4: UUID } = require('uuid');
 
 const organizationResolvers = {
@@ -27,10 +27,33 @@ const organizationResolvers = {
       return models.User.getOrgs(context);
     },
 
+    orgKey: async (parent, { orgId, uuid, name }, context) => {
+      const queryName = 'orgKey';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
+
+      const allOrgKeys = await organizationResolvers.Query.orgKeys( parent, { orgId }, context );
+
+      const foundOrgKey = allOrgKeys.find( e => {
+        return( e.uuid === uuid || e.name === name );
+      } );
+
+      if( !foundOrgKey ){
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKey not found: ${uuid}/${name}`);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
+        throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
+      }
+
+      return foundOrgKey;
+    },
+
     orgKeys: async (parent, { orgId }, context) => {
       const queryName = 'orgKeys';
       const { models, me, req_id, logger } = context;
       logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user has ORGANIZATION READ`);
 
       let userCanViewKeyValues = false;
       try {
@@ -63,7 +86,7 @@ const organizationResolvers = {
       try {
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} org retrieved`);
-        console.log( `org: ${JSON.stringify(org, null, 2)}` );
+        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
 
         const allOrgKeys = [];
 
@@ -81,7 +104,7 @@ const organizationResolvers = {
               };
             } )
           );
-          console.log( `legacy OrgKeys added: ${org.orgKeys.length}` );
+          logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
         }
 
         // Add OrgKeys2
@@ -97,9 +120,7 @@ const organizationResolvers = {
             };
           } )
         );
-        console.log( `OrgKeys2 added: ${org.orgKeys2.length}` );
-
-        console.log( `Response:: ${JSON.stringify( allOrgKeys, null, 2 )}` );
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
 
         // Return the orgKeys
         return allOrgKeys;
@@ -128,7 +149,7 @@ const organizationResolvers = {
       try {
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
-        console.log( `org: ${JSON.stringify(org, null, 2)}` );
+        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
 
         // Attempt to prevent name duplication
         if( org.orgKeys2 && org.orgKeys2.find( e => { return e.name === name; } ) ) {

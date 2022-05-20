@@ -52,6 +52,15 @@ const organizationSchema = gql`
     orgKeys(
       orgId: String! @sv
     ): [OrgKey!]
+
+    """
+    Get OrgKey.
+    """
+    orgKey(
+      orgId: String! @sv
+      uuid: String @sv
+      name: String @sv
+    ): OrgKey!
   }
 
   extend type Mutation {
