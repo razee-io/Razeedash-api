@@ -26,6 +26,7 @@
   "Could not find the configuration channel with uuid {{uuid}}.": "Could not find the configuration channel with uuid {{uuid}}.",
   "Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.": "Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.",
   "Could not find the organization with ID {{org_id}}.": "Could not find the organization with ID {{org_id}}.",
+  "Could not find the organization key.": "Could not find the organization key.",
   "Could not find the subscription for the subscription id {{subscription_id}}.": "Could not find the subscription for the subscription id {{subscription_id}}.",
   "Could not find the subscription.": "Could not find the subscription.",
   "Could not locate the cluster with cluster_id {{cluster_id}}": "Could not locate the cluster with cluster_id {{cluster_id}}",

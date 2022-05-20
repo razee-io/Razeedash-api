@@ -26,6 +26,15 @@ const organizationSchema = gql`
     name: String!
   }
 
+  type OrgKey {
+    uuid: String!
+    name: String!
+    primary: Boolean!
+    created: Date
+    updated: Date
+    key: String
+  }
+
   type AddOrgKeyReply {
     uuid: String!
     key: String!
@@ -36,6 +45,22 @@ const organizationSchema = gql`
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
+
+    """
+    List OrgKeys.
+    """
+    orgKeys(
+      orgId: String! @sv
+    ): [OrgKey!]
+
+    """
+    Get OrgKey.
+    """
+    orgKey(
+      orgId: String! @sv
+      uuid: String @sv
+      name: String @sv
+    ): OrgKey!
   }
 
   extend type Mutation {
