@@ -58,6 +58,7 @@
   "The configuration channel name {{name}} already exists.": "The configuration channel name {{name}} already exists.",
   "The data location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]": "The data_location {{data_location}} is not valid.  Allowed values: [{{valid_locations}}]",
   "The group name {{name}} already exists.": "The group name {{name}} already exists.",
+  "The provided name is already in use: {{name}}": "The provided name is already in use: {{name}}",
   "The version name {{name}} already exists": "The version name {{name}} already exists",
   "Too many configuration channel versions are registered under {{channel_uuid}}.": "Too many configuration channel versions are registered under {{channel_uuid}}.",
   "Too many configuration channels are registered under {{org_id}}.": "Too many configuration channels are registered under {{org_id}}.",

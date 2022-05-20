@@ -26,11 +26,27 @@ const organizationSchema = gql`
     name: String!
   }
 
+  type AddOrgKeyReply {
+    uuid: String!
+    key: String!
+  }
+
   extend type Query {
     """
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
+  }
+
+  extend type Mutation {
+    """
+    Add OrgKey
+    """
+    addOrgKey (
+      orgId: String! @sv
+      name: String! @sv
+      primary: Boolean! @sv
+    ): AddOrgKeyReply!
   }
 `;
 
