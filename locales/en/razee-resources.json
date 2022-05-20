@@ -46,6 +46,7 @@
   "No razee-org-key was supplied.": "No razee-org-key was supplied.",
   "None of the passed group uuids were found": "None of the passed group uuids were found",
   "One or more of the passed group uuids were not found": "One or more of the passed group uuids were not found",
+  "Organization key {{id}} cannot be altered, but it may be deleted.": "Organization key {{id}} cannot be altered, but it may be deleted.",
   "org id was not found": "org id was not found",
   "Provided YAML content is not valid: {{error}}": "Provided YAML content is not valid: {{error}}",
   "Query {{queryName}} error. {{error.message}}": "Query {{queryName}} error. {{error.message}}",

@@ -44,6 +44,10 @@ const organizationSchema = gql`
     success: Boolean!
   }
 
+  type EditOrgKeyReply {
+    modified: Int!
+  }
+
   extend type Query {
     """
     Return Organizations the current user belongs to.
@@ -84,6 +88,16 @@ const organizationSchema = gql`
       orgId: String! @sv
       uuid: String! @sv
     ): RemoveOrgKeyReply!
+
+    """
+    Update OrgKey
+    """
+    editOrgKey (
+      orgId: String! @sv
+      uuid: String! @sv
+      name: String @sv
+      primary: Boolean @sv
+    ): EditOrgKeyReply!
   }
 `;
 
