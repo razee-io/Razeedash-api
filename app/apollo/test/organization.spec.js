@@ -235,5 +235,28 @@ describe('organization graphql test suite', () => {
       }
     });
 
+    it('an admin user should be able to remove an OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `removing ${orgKeyTmp.uuid} from '${orgTmp.id}'` );
+        const {
+          data: {
+            data: { removeOrgKey },
+          },
+        } = await orgKeyApi.removeOrgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyTmp.uuid
+        });
+        expect(removeOrgKey.success).to.equal(true);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
   });
 });
