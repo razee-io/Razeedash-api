@@ -44,7 +44,7 @@ const organizationResolvers = {
         console.log( `org: ${JSON.stringify(org, null, 2)}` );
 
         // Attempt to prevent name duplication
-        if( org.orgKeys && org.orgKeys2.find( e => { return e.name === name; } ) ) {
+        if( org.orgKeys2 && org.orgKeys2.find( e => { return e.name === name; } ) ) {
           throw new RazeeValidationError(context.req.t('The provided name is already in use: {{name}}', {'name':name}), context);
         }
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} OrgKey '${name}' does not  already exist`);
@@ -71,6 +71,8 @@ const organizationResolvers = {
         // Return the new orgKey uuid and key value
         return { uuid: newOrgKey.orgKeyUuid, key: newOrgKey.key };
       } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else `addOrgKey` will throw an error.
+
         if(error instanceof BasicRazeeError ){
           throw error;
         }
