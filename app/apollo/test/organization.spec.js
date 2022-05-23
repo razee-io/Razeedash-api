@@ -149,7 +149,7 @@ describe('organization graphql test suite', () => {
         } = await orgKeyApi.addOrgKey(token, {
           orgId: orgTmp.id,
           name: orgKeyName,
-          primary: true
+          primary: false
         });
         expect(addOrgKey.uuid).to.be.an('string');
 
@@ -245,10 +245,33 @@ describe('organization graphql test suite', () => {
         } = await orgKeyApi.editOrgKey(token, {
           orgId: orgTmp.id,
           uuid: orgKeyTmp.uuid,
-          name: 'newname'
+          name: 'newname',
+          primary: true
         });
         console.log( `modified: ${JSON.stringify(editOrgKey)}` );
         expect(editOrgKey.modified).to.equal(1);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+      // Verify the change took effect
+      try {
+        const {
+          data: {
+            data: { orgKey },
+          },
+        } = await orgKeyApi.orgKey(token, {
+          orgId: orgTmp.id,
+          uuid: null,
+          name: 'newname'
+        });
+        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
+        expect(orgKey.name).to.equal('newname');
+        expect(orgKey.primary).to.equal(true);
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);

@@ -268,7 +268,7 @@ const organizationResolvers = {
         if( name ) {
           sets['orgKeys2.$.name'] = name;
         }
-        if( primary ) {
+        if( primary === true || primary === false ) {
           sets['orgKeys2.$.primary'] = primary;
         }
         logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} Setting: ${JSON.stringify( sets, null, 2 )}`);
