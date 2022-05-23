@@ -73,7 +73,7 @@
     "json-key-validate": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "mongodb": "^3.6.5",
     "mongoose": "^5.13.9",
     "mongoose-lean-defaults": "^2.0.1",
@@ -84,7 +84,6 @@
     "p-limit": "^3.1.0",
     "passport": "^0.4.1",
     "prom-client": "^14.0.1",
-    "stream-buffers": "^3.0.2",
     "stream-to-string": "^1.2.0",
     "subscriptions-transport-ws": "^0.9.19",
     "swagger-ui-express": "^4.2.0",
@@ -116,6 +115,7 @@
     "nyc": "^15.1.0",
     "rewire": "^6.0.0",
     "sinon": "^11.1.1",
+    "stream-buffers": "^3.0.2",
     "yaml-lint": "^1.2.4"
   }
 }

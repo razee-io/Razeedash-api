@@ -40,7 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "Gruppen-UUID \"{{uuid}}\" nicht gefunden",
   "hist _id \"{{histId}}\" not found": "Verlaufs-ID \"{{histId}}\" nicht gefunden",
   "Invalid razee-org-key was submitted for {{queryName}}": "Ungültiger razee-org-key wurde für {{queryName}} übergeben.",
-  "More than one {{type}} matches {{name}}": "More than one {{type}} matches {{name}}",
+  "More than one {{type}} matches {{name}}": "Mehrere {{type}} entsprechen {{name}}",
   "No org was found for the org key.": "Für den Organisationsschlüssel wurde keine Organisation gefunden.",
   "No razee-org-key was supplied.": "Es wurde kein razee-org-key bereitgestellt.",
   "None of the passed group uuids were found": "Keine der übergebenen Gruppen-UUIDs wurde gefunden.",

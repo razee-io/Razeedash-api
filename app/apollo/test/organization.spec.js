@@ -35,6 +35,9 @@ const graphql_port = 18003;
 const graphql_url = `http://localhost:${graphql_port}/graphql`;
 const api = apiFunc(graphql_url);
 
+const orgKeyFunc = require('./orgKeyApi');
+const orgKeyApi = orgKeyFunc(graphql_url);
+
 let org01Data;
 
 let org_01;
@@ -112,6 +115,10 @@ describe('organization graphql test suite', () => {
   describe('organisations(org_id: String!): URL!', () => {
     let token;
 
+    let orgTmp = {};
+    let orgKeyTmp = null;
+    const orgKeyName = 'orgKey1';
+
     it('a user should be able to get organizations associated with him.', async () => {
       try {
         token = await signInUser(models, api, user01Data);
@@ -121,9 +128,156 @@ describe('organization graphql test suite', () => {
         console.log(JSON.stringify(orgsResult.data));
         expect(orgsResult.data.data.organizations).to.be.a('array');
         expect(orgsResult.data.data.organizations.length).to.equal(1);
+
+        orgTmp = orgsResult.data.data.organizations[0];
+        console.log( `orgTmp: ${JSON.stringify(orgTmp, null, 2)}` );
       } catch (error) {
         console.error('error response is ', error.response);
         // console.error('error response is ', JSON.stringify(error.response.data));
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to add an OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `adding ${orgKeyName} to '${orgTmp.id}'` );
+        const {
+          data: {
+            data: { addOrgKey },
+          },
+        } = await orgKeyApi.addOrgKey(token, {
+          orgId: orgTmp.id,
+          name: orgKeyName,
+          primary: true
+        });
+        expect(addOrgKey.uuid).to.be.an('string');
+
+        orgKeyTmp = addOrgKey;
+        console.log( `orgKeyTmp: ${JSON.stringify(orgKeyTmp, null, 2)}` );
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to list OrgKeys', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        const {
+          data: {
+            data: { orgKeys },
+          },
+        } = await orgKeyApi.orgKeys(token, {
+          orgId: orgTmp.id
+        });
+        expect(orgKeys).to.be.a('array');
+        expect(orgKeys.length).to.equal(2); // 2: original apikey plus the one just added
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to get an OrgKey by UUID', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        const {
+          data: {
+            data: { orgKey },
+          },
+        } = await orgKeyApi.orgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyTmp.uuid,
+          name: null
+        });
+        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
+        expect(orgKey.name).to.equal(orgKeyName);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to get an OrgKey by Name', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        const {
+          data: {
+            data: { orgKey },
+          },
+        } = await orgKeyApi.orgKey(token, {
+          orgId: orgTmp.id,
+          uuid: null,
+          name: orgKeyName
+        });
+        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
+        expect(orgKey.name).to.equal(orgKeyName);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to edit an OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        const {
+          data: {
+            data: { editOrgKey },
+          },
+        } = await orgKeyApi.editOrgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyTmp.uuid,
+          name: 'newname'
+        });
+        console.log( `modified: ${JSON.stringify(editOrgKey)}` );
+        expect(editOrgKey.modified).to.equal(1);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to remove an OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `removing ${orgKeyTmp.uuid} from '${orgTmp.id}'` );
+        const {
+          data: {
+            data: { removeOrgKey },
+          },
+        } = await orgKeyApi.removeOrgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyTmp.uuid
+        });
+        expect(removeOrgKey.success).to.equal(true);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
         throw error;
       }
     });

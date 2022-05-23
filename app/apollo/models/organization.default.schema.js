@@ -14,67 +14,7 @@
  * limitations under the License.
  */
 
-const mongoose = require('mongoose');
-const { v4: uuid } = require('uuid');
-const OrganizationDefaultSchema = new mongoose.Schema({
-  _id: {
-    type: String,
-    alias: 'id',
-  },
-  name: {
-    type: String,
-  },
-  creatorUserId: {
-    type: String,
-  },
-  gheOrgId: {
-    type: Number,
-  },
-  orgKeys: [
-    {
-      type: String,
-    },
-  ],
-  type: {
-    type: String,
-    required: false,
-  },
-  created: {
-    type: Date,
-    default: Date.now,
-  },
-  updated: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  strict:'throw',
-});
-
-OrganizationDefaultSchema.statics.getRegistrationUrl = async function(org_id, context) {
-  context.logger.debug({org_id}, 'getRegistrationUrl enter');
-  const org = await this.findById(org_id);
-  const protocol = context.req ? context.req.protocol : 'http';
-  var host = context.req ? context.req.header('host') : 'localhost:3333';
-  if (process.env.EXTERNAL_HOST) {
-    host = process.env.EXTERNAL_HOST;
-  }
-  return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
-  };
-};
-
-OrganizationDefaultSchema.statics.createLocalOrg = async function(args) {
-  let org = await this.findOne({
-    name: args.name,
-  });
-
-  if (!org) {
-    const _id = args._id ? args._id : uuid();
-    const orgKey = 'orgApiKey-'+uuid();
-    org = await this.create({ ...args, _id, orgKeys: [orgKey] });
-  }
-  return org;
-};
+// share the same orgs schema as local
+const OrganizationDefaultSchema = require ('./organization.local.schema');
 
 module.exports = OrganizationDefaultSchema;

@@ -11,5 +11,5 @@ RAZEE_QUERY='query($orgId: String! $filter: String $limit: Int $skip: Int) { clu
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","filter":"'"${RAZEE_CLUSTER_FILTER}"'","limit":'${RAZEE_CLUSTER_LIMIT}',"skip":'${RAZEE_CLUSTER_SKIP}'}'
 
 echo "" && echo "LIST clusters"
-${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}"
-echo "" && echo "Result: $?"
+${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
+echo "Result: $?"

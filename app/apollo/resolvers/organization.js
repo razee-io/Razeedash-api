@@ -14,17 +14,284 @@
  * limitations under the License.
  */
 
-const { whoIs } = require ('./common');
+const { ACTIONS, TYPES } = require('../models/const');
+const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError, NotFoundError, RazeeForbiddenError } = require ('./common');
+const { v4: UUID } = require('uuid');
 
 const organizationResolvers = {
   Query: {
-
     organizations: async (parent, args, context) => {
       const queryName = 'organizations';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, args, me: whoIs(me) }, `${queryName} enter`);
       return models.User.getOrgs(context);
     },
+
+    orgKey: async (parent, { orgId, uuid, name }, context) => {
+      const queryName = 'orgKey';
+      const { me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
+
+      const allOrgKeys = await organizationResolvers.Query.orgKeys( parent, { orgId }, context );
+
+      const foundOrgKey = allOrgKeys.find( e => {
+        return( e.uuid === uuid || e.name === name );
+      } );
+
+      if( !foundOrgKey ){
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKey not found: ${uuid}/${name}`);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
+        throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
+      }
+
+      return foundOrgKey;
+    },
+
+    orgKeys: async (parent, { orgId }, context) => {
+      const queryName = 'orgKeys';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.READ, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user has ORGANIZATION READ`);
+
+      let userCanViewKeyValues = false;
+      try {
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.ORGANIZATION, queryName, context);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user has MANAGE`);
+        userCanViewKeyValues = true;
+      }
+      catch( e ) {
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user does not have MANAGE`);
+      }
+
+      try {
+        await validAuth(me, orgId, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user has CLUSTER ATTACH`);
+        userCanViewKeyValues = true;
+      }
+      catch( e ) {
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user does not have CLUSTER ATTACH`);
+      }
+
+      try {
+        await validAuth(me, orgId, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user has CLUSTER REGISTER`);
+        userCanViewKeyValues = true;
+      }
+      catch( e ) {
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} user does not have CLUSTER REGISTER`);
+      }
+
+      try {
+        const org = await models.Organization.findById(orgId);
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} org retrieved`);
+        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
+
+        const allOrgKeys = [];
+
+        // Add legacy OrgKeys
+        if( org.orgKeys ) {
+          allOrgKeys.push(
+            ...org.orgKeys.map( legacyOrgKey => {
+              return {
+                uuid: legacyOrgKey,
+                name: legacyOrgKey.slice( legacyOrgKey.length - 12 ),  // last segment of legacy key, which is essentially a UUID prefixed by `orgApiKey-`
+                primary: false,
+                created: null,
+                updated: null,
+                key: userCanViewKeyValues ? legacyOrgKey : null // Technically the key value is the legacy OrgKey 'uuid', so it is not actually hidden from the user
+              };
+            } )
+          );
+          logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
+        }
+
+        // Add OrgKeys2
+        allOrgKeys.push(
+          ...org.orgKeys2.map( orgKey => {
+            return {
+              uuid: orgKey.orgKeyUuid,
+              name: orgKey.name,
+              primary: orgKey.primary,
+              created: orgKey.created,
+              updated: orgKey.updated,
+              key: userCanViewKeyValues ? orgKey.key : null
+            };
+          } )
+        );
+        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
+
+        // Return the orgKeys
+        return allOrgKeys;
+      } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
+
+        if(error instanceof BasicRazeeError ){
+          throw error;
+        }
+
+        logger.error({ req_id, user: whoIs(me), orgId, error }, `${queryName} error encountered`);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+    },
+  },
+
+  Mutation: {
+    addOrgKey: async (parent, { orgId, name, primary }, context) => {
+      const queryName = 'addOrgKey';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} user is authorized`);
+
+      try {
+        const org = await models.Organization.findById(orgId);
+        logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
+        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
+
+        // Attempt to prevent name duplication
+        if( org.orgKeys2 && org.orgKeys2.find( e => { return e.name === name; } ) ) {
+          throw new RazeeValidationError(context.req.t('The provided name is already in use: {{name}}', {'name':name}), context);
+        }
+        logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} OrgKey '${name}' does not  already exist`);
+
+        // Define the new OrgKey
+        const newOrgKeyUuid = UUID();
+        const newOrgKey = {
+          orgKeyUuid: newOrgKeyUuid,
+          name,
+          primary,
+          created: Date.now(),
+          updated: Date.now(),
+          key: UUID()
+        };
+        logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} new OrgKey initialized`);
+
+        // Add the new OrgKey to the orgKeys2 attribute of the org, creating it if necessary
+        const push = {
+          orgKeys2: newOrgKey
+        };
+        const res = await models.Organization.updateOne( { _id: orgId }, { $push: push } );
+        logger.info({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} new OrgKey saved`);
+
+        // Return the new orgKey uuid and key value
+        return { uuid: newOrgKey.orgKeyUuid, key: newOrgKey.key };
+      } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
+
+        if(error instanceof BasicRazeeError ){
+          throw error;
+        }
+
+        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered`);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+    }, // end createOrgKey
+
+    removeOrgKey: async (parent, { orgId, uuid }, context) => {
+      const queryName = 'removeOrgKey';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} user is authorized`);
+
+      try {
+        const allOrgKeys = await organizationResolvers.Query.orgKeys( parent, { orgId }, context );
+
+        const foundOrgKey = allOrgKeys.find( e => {
+          return( e.uuid === uuid );
+        } );
+
+        if( !foundOrgKey ){
+          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey not found`);
+          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
+          throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
+        }
+
+        // Remove the OrgKey from both orgKeys and orgKeys2
+        const pull = {
+          orgKeys: uuid,
+          orgKeys2: { orgKeyUuid: uuid }
+        };
+        await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
+        logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey removed`);
+
+        return { success: true };
+      } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
+
+        if(error instanceof BasicRazeeError ){
+          throw error;
+        }
+
+        logger.error({ req_id, user: whoIs(me), orgId, uuid, error }, `${queryName} error encountered`);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+    }, // end removeOrgKey
+
+    editOrgKey: async (parent, { orgId, uuid, name, primary }, context) => {
+      const queryName = 'editOrgKey';
+      const { models, me, req_id, logger } = context;
+      logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} enter`);
+
+      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
+      logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} user is authorized`);
+
+      try {
+        const org = await models.Organization.findById(orgId);
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} org retrieved`);
+
+        // Check legacy OrgKeys (cannot be edited)
+        if( org.orgKeys ) {
+          const legacyOrgKey = org.orgKeys.find( e => { return( e === uuid ); } );
+          if( legacyOrgKey ) {
+            logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} Cannot edit legacy OrgKey: ${uuid}`);
+            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be altered, but it may be deleted.', {id: uuid} ), context );
+          }
+        }
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} OrgKey is not Legacy`);
+
+        // Ensure OrgKey exists
+        let orgKey = null;
+        if( org.orgKeys2 ) {
+          orgKey = org.orgKeys2.find( e => { return( e.orgKeyUuid === uuid ); } );
+        }
+        if( !orgKey ) {
+          logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} Cannot edit legacy OrgKey: ${uuid}`);
+          throw new NotFoundError( context.req.t( 'Organization key {{id}} cannot be altered, but it may be deleted.', {id: uuid} ), context );
+        }
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} OrgKey is found`);
+
+        // Edit the OrgKey
+        const sets = {};
+        if( name ) {
+          sets['orgKeys2.$.name'] = name;
+        }
+        if( primary ) {
+          sets['orgKeys2.$.primary'] = primary;
+        }
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} Setting: ${JSON.stringify( sets, null, 2 )}`);
+        const res = await models.Organization.updateOne( { _id: orgId, 'orgKeys2.orgKeyUuid': uuid }, { $set: sets } );
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} OrgKey updated`);
+
+        return {
+          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+        };
+      } catch (error) {
+        // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
+
+        if(error instanceof BasicRazeeError ){
+          throw error;
+        }
+
+        logger.error({ req_id, user: whoIs(me), orgId, uuid, name, primary, error }, `${queryName} error encountered`);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+    }, // end removeOrgKey
+
   },
 };
 
