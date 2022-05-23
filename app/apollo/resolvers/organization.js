@@ -40,7 +40,6 @@ const organizationResolvers = {
 
       if( !foundOrgKey ){
         logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKey not found: ${uuid}/${name}`);
-        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
         throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
       }
 
@@ -207,7 +206,6 @@ const organizationResolvers = {
 
         if( !foundOrgKey ){
           logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey not found`);
-          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} Found: ${JSON.stringify( allOrgKeys, null, 2 )}`);
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
@@ -260,8 +258,8 @@ const organizationResolvers = {
           orgKey = org.orgKeys2.find( e => { return( e.orgKeyUuid === uuid ); } );
         }
         if( !orgKey ) {
-          logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} Cannot edit legacy OrgKey: ${uuid}`);
-          throw new NotFoundError( context.req.t( 'Organization key {{id}} cannot be altered, but it may be deleted.', {id: uuid} ), context );
+          logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKey not found: ${uuid}`);
+          throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
         logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} OrgKey is found`);
 
