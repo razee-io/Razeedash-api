@@ -207,27 +207,27 @@ const organizationResolvers = {
       }
     }, // end createOrgKey
 
-    removeOrgKey: async (parent, { orgId, uuid }, context) => {
+    removeOrgKey: async (parent, { orgId, uuid, forceDeletion }, context) => {
       const queryName = 'removeOrgKey';
       const { models, me, req_id, logger } = context;
-      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} enter`);
+      logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
-      logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} user is authorized`);
+      logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} user is authorized`);
 
       try {
         const org = await models.Organization.findById(orgId);
-        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} org retrieved`);
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} org retrieved`);
 
-        // Ensure not removing a Primary OrgKey (set it to non-primary first)
+        // Ensure not removing a Primary OrgKey (set it to non-primary first), unless forced
         if( org.orgKeys2 ) {
           const thisOrgKey = org.orgKeys2.find( orgKey => {
             return( orgKey.orgKeyUuid == uuid );
           } );
           if( thisOrgKey && thisOrgKey.primary ) {
             // Forbidden
-            logger.warn({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey cannot be removed because it is in use (primary)` );
-            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+            logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (primary)` );
+            if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
           }
         }
 
@@ -247,7 +247,7 @@ const organizationResolvers = {
               };
             } )
           );
-          logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
+          logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
         }
 
         // Add OrgKeys2
@@ -263,22 +263,33 @@ const organizationResolvers = {
             };
           } )
         );
-        logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
 
         const foundOrgKey = allOrgKeys.find( e => {
           return( e.uuid === uuid );
         } );
 
         if( !foundOrgKey ){
-          logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey not found`);
+          logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey not found`);
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
-        // Ensure not removing the last OrgKey
+        // Ensure not removing the last OrgKey, unless forced
         if( allOrgKeys.length == 1 ) {
           // Forbidden
-          logger.warn({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey cannot be removed because it is in use (last one)` );
-          throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (last one)` );
+          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+        }
+
+        // Ensure not removing an orgKey that was the last one used by at least one managed cluster, unless forced
+        const clusterUsingOrgKey = await models.Cluster.findOne( {
+          org_id: orgId,
+          lastOrgKeyUuid: uuid,
+        } ).lean({ virtuals: true });
+        if( clusterUsingOrgKey ) {
+          // Forbidden
+          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (cluster)` );
+          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
         }
 
         // Remove the OrgKey from both orgKeys and orgKeys2
@@ -287,7 +298,7 @@ const organizationResolvers = {
           orgKeys2: { orgKeyUuid: uuid }
         };
         await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
-        logger.info({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey removed`);
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey removed`);
 
         return { success: true };
       } catch (error) {
@@ -297,7 +308,7 @@ const organizationResolvers = {
           throw error;
         }
 
-        logger.error({ req_id, user: whoIs(me), orgId, uuid, error: error.message }, `${queryName} error encountered`);
+        logger.error({ req_id, user: whoIs(me), orgId, uuid, forceDeletion, error: error.message }, `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end removeOrgKey
@@ -384,7 +395,7 @@ const organizationResolvers = {
         logger.error({ req_id, user: whoIs(me), orgId, uuid, name, primary, error }, `${queryName} error encountered`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
-    }, // end removeOrgKey
+    }, // end editOrgKey
 
   },
 };

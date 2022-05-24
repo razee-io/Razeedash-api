@@ -87,6 +87,7 @@ const organizationSchema = gql`
     removeOrgKey (
       orgId: String! @sv
       uuid: String! @sv
+      forceDeletion: Boolean @sv
     ): RemoveOrgKeyReply!
 
     """
