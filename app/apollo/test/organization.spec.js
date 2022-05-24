@@ -116,8 +116,10 @@ describe('organization graphql test suite', () => {
     let token;
 
     let orgTmp = {};
-    let orgKeyTmp = null;
-    const orgKeyName = 'orgKey1';
+    const orgKeyName1 = 'orgKey1';
+    const orgKeyName2 = 'orgKey2';
+    let orgKeyUuid1 = null;
+    let orgKeyUuid2 = null;
 
     it('a user should be able to get organizations associated with him.', async () => {
       try {
@@ -141,20 +143,47 @@ describe('organization graphql test suite', () => {
     it('an admin user should be able to add an OrgKey', async () => {
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `adding ${orgKeyName} to '${orgTmp.id}'` );
+        console.log( `adding ${orgKeyName1} to '${orgTmp.id}'` );
         const {
           data: {
             data: { addOrgKey },
           },
         } = await orgKeyApi.addOrgKey(token, {
           orgId: orgTmp.id,
-          name: orgKeyName,
-          primary: false
+          name: orgKeyName1,
+          primary: true
         });
         expect(addOrgKey.uuid).to.be.an('string');
 
-        orgKeyTmp = addOrgKey;
-        console.log( `orgKeyTmp: ${JSON.stringify(orgKeyTmp, null, 2)}` );
+        orgKeyUuid1 = addOrgKey.uuid;
+        console.log( `orgKeyUuid1: ${orgKeyUuid1}` );
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+
+    it('an admin user should be able to add a second OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `adding ${orgKeyName2} to '${orgTmp.id}'` );
+        const {
+          data: {
+            data: { addOrgKey },
+          },
+        } = await orgKeyApi.addOrgKey(token, {
+          orgId: orgTmp.id,
+          name: orgKeyName2,
+          primary: true
+        });
+        expect(addOrgKey.uuid).to.be.an('string');
+
+        orgKeyUuid2 = addOrgKey.uuid;
+        console.log( `orgKeyUuid2: ${orgKeyUuid2}` );
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
@@ -176,7 +205,7 @@ describe('organization graphql test suite', () => {
           orgId: orgTmp.id
         });
         expect(orgKeys).to.be.a('array');
-        expect(orgKeys.length).to.equal(2); // 2: original apikey plus the one just added
+        expect(orgKeys.length).to.equal(3); // 3: original apikey plus the two just added
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
@@ -196,11 +225,13 @@ describe('organization graphql test suite', () => {
           },
         } = await orgKeyApi.orgKey(token, {
           orgId: orgTmp.id,
-          uuid: orgKeyTmp.uuid,
+          uuid: orgKeyUuid1,
           name: null
         });
-        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
-        expect(orgKey.name).to.equal(orgKeyName);
+        expect(orgKey.uuid).to.equal(orgKeyUuid1);
+        expect(orgKey.name).to.equal(orgKeyName1);
+        // Because second orgKey was created, second orgKey became 'primary'.  OrgKey1 should not be primary.
+        expect(orgKey.primary).to.equal(false);
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
@@ -221,10 +252,12 @@ describe('organization graphql test suite', () => {
         } = await orgKeyApi.orgKey(token, {
           orgId: orgTmp.id,
           uuid: null,
-          name: orgKeyName
+          name: orgKeyName2
         });
-        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
-        expect(orgKey.name).to.equal(orgKeyName);
+        expect(orgKey.uuid).to.equal(orgKeyUuid2);
+        expect(orgKey.name).to.equal(orgKeyName2);
+        // Because second orgKey was created, second orgKey became 'primary'
+        expect(orgKey.primary).to.equal(true);
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
@@ -244,8 +277,8 @@ describe('organization graphql test suite', () => {
           },
         } = await orgKeyApi.editOrgKey(token, {
           orgId: orgTmp.id,
-          uuid: orgKeyTmp.uuid,
-          name: 'newname',
+          uuid: orgKeyUuid1,
+          name: orgKeyName1+'_newname',
           primary: true
         });
         console.log( `modified: ${JSON.stringify(editOrgKey)}` );
@@ -267,10 +300,11 @@ describe('organization graphql test suite', () => {
         } = await orgKeyApi.orgKey(token, {
           orgId: orgTmp.id,
           uuid: null,
-          name: 'newname'
+          name: orgKeyName1+'_newname'
         });
-        expect(orgKey.uuid).to.equal(orgKeyTmp.uuid);
-        expect(orgKey.name).to.equal('newname');
+        expect(orgKey.uuid).to.equal(orgKeyUuid1);
+        expect(orgKey.name).to.equal(orgKeyName1+'_newname');
+        // OrgKey1 is now primary again, and OrgKey2 is not
         expect(orgKey.primary).to.equal(true);
       } catch (error) {
         if (error.response) {
@@ -282,17 +316,17 @@ describe('organization graphql test suite', () => {
       }
     });
 
-    it('an admin user should be able to remove an OrgKey', async () => {
+    it('an admin user should be able to remove a non-Primary OrgKey', async () => {
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `removing ${orgKeyTmp.uuid} from '${orgTmp.id}'` );
+        console.log( `removing ${orgKeyUuid2} from '${orgTmp.id}'` );
         const {
           data: {
             data: { removeOrgKey },
           },
         } = await orgKeyApi.removeOrgKey(token, {
           orgId: orgTmp.id,
-          uuid: orgKeyTmp.uuid
+          uuid: orgKeyUuid2
         });
         expect(removeOrgKey.success).to.equal(true);
       } catch (error) {
@@ -305,5 +339,46 @@ describe('organization graphql test suite', () => {
       }
     });
 
+    it('an admin user should NOT be able to remove a Primary OrgKey', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}'` );
+        const response = await orgKeyApi.removeOrgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyUuid1
+        });
+        expect(response.data.errors).to.exist;
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
+    it('an admin user SHOULD be able to remove a Primary OrgKey with forceDeletion', async () => {
+      token = await signInUser(models, api, rootData);
+      try {
+        console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}' with forceDeletion` );
+        const {
+          data: {
+            data: { removeOrgKey },
+          },
+        } = await orgKeyApi.removeOrgKey(token, {
+          orgId: orgTmp.id,
+          uuid: orgKeyUuid1,
+          forceDeletion: true
+        });
+        expect(removeOrgKey.success).to.equal(true);
+      } catch (error) {
+        if (error.response) {
+          console.error('error encountered:  ', error.response.data);
+        } else {
+          console.error('error encountered:  ', error);
+        }
+        throw error;
+      }
+    });
   });
 });

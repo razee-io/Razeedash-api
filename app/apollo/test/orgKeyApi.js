@@ -82,8 +82,8 @@ const orgKeyFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!) {
-            removeOrgKey(orgId: $orgId, uuid: $uuid){
+          mutation($orgId: String!, $uuid: String!, $forceDeletion: Boolean) {
+            removeOrgKey(orgId: $orgId, uuid: $uuid, forceDeletion: $forceDeletion){
 			        success
             }
           }
