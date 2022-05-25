@@ -29,8 +29,8 @@ const bestOrgKeyValue = (org) => {
   if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
     const bestOrgKey = org.orgKeys2.find( o => {
       return( o.primary );
-    } ) || org.orgKeys2[0];
-    return( bestOrgKey.key );
+    } );
+    return( bestOrgKey.key || org.orgKeys2[0].key );
   }
   else if( org.orgKeys && org.orgKeys.length > 0 ) {
     return( org.orgKeys[0] );
@@ -42,7 +42,7 @@ const bestOrgKeyValue = (org) => {
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
 */
-router.get('/primaryOrgKey', getOrg, asyncHandler(async(req, res)=>{
+const getPrimaryOrgKeySubscription = async(req, res) => {
   const razeeIdentitySecretYaml = `apiVersion: v1
 kind: Secret
 metadata:
@@ -57,6 +57,10 @@ type: Opaque
 `;
 
   res.status( 200 ).send( razeeIdentitySecretYaml );
-}));
+};
+
+// /api/v2/serviceSubscriptions/primaryOrgKey
+router.get('/primaryOrgKey', getOrg, asyncHandler(getPrimaryOrgKeySubscription));
+
 
 module.exports = router;
