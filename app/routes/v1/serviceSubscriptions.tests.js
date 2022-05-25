@@ -78,7 +78,7 @@ describe('serviceSubscriptions', () => {
       await getPrimaryOrgKeySubscription(request, response);
 
       assert.equal(response.statusCode, 200);
-      assert.notEqual(response._getData().indexOf( btoa(testOrg.orgKeys2[1].key) ), -1);
+      assert.notEqual(response._getData().indexOf( Buffer.from(testOrg.orgKeys2[1].key).toString('base64') ), -1);
     });
   });
 });

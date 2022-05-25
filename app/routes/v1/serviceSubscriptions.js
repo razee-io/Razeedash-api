@@ -52,7 +52,7 @@ metadata:
     razee/watch-resource: lite
     addonmanager.kubernetes.io/mode: Reconcile
 data:
-  RAZEE_ORG_KEY: ${btoa( bestOrgKeyValue( req.org ) )}
+  RAZEE_ORG_KEY: ${Buffer.from( bestOrgKeyValue( req.org ) ).toString('base64')}
 type: Opaque
 `;
 
