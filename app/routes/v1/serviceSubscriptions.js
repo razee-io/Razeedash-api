@@ -17,27 +17,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const getOrg = require('../../utils/orgs.js').getOrg;
-
-/*
-Best OrgKey value is:
-- First found OrgKeys2 key marked as Primary
-- First found OrgKeys2 key if no Primary identified
-- First OrgKeys OrgKey if no OrgKeys2 exist
-*/
-const bestOrgKeyValue = (org) => {
-  if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
-    const bestOrgKey = org.orgKeys2.find( o => {
-      return( o.primary );
-    } );
-    return( bestOrgKey.key || org.orgKeys2[0].key );
-  }
-  else if( org.orgKeys && org.orgKeys.length > 0 ) {
-    return( org.orgKeys[0] );
-  }
-
-  throw new Error( `No valid OrgKey found for organization ${org._id}` );
-};
+const { getOrg, bestOrgKeyValue } = require('../../utils/orgs')
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.

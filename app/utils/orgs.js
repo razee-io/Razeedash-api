@@ -68,4 +68,24 @@ const decryptOrgData = (orgKey, data) => {
   return tokenCrypt.decrypt(data, orgKey);
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData};
+/*
+Best OrgKey value is:
+- First found OrgKeys2 key marked as Primary
+- First found OrgKeys2 key if no Primary identified
+- First OrgKeys OrgKey if no OrgKeys2 exist
+*/
+const bestOrgKeyValue = (org) => {
+  if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
+    const bestOrgKey = org.orgKeys2.find( o => {
+      return( o.primary );
+    } );
+    return( bestOrgKey.key || org.orgKeys2[0].key );
+  }
+  else if( org.orgKeys && org.orgKeys.length > 0 ) {
+    return( org.orgKeys[0] );
+  }
+
+  throw new Error( `No valid OrgKey found for organization ${org._id}` );
+};
+
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKeyValue };
