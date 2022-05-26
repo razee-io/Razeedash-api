@@ -22,7 +22,7 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
-const { getOrg, bestOrgKeyValue } = require('../../utils/orgs')
+const { bestOrgKeyValue } = require('../../utils/orgs');
 
 
 const buildSearchFilter = (ordId, condition, searchStr) => {

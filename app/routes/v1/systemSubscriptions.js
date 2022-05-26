@@ -17,7 +17,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const { getOrg, bestOrgKeyValue } = require('../../utils/orgs')
+const { getOrg, bestOrgKeyValue } = require('../../utils/orgs');
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
