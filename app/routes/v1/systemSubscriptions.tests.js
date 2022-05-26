@@ -21,10 +21,10 @@ const log = require('../../log').log;
 const { v4: uuid } = require('uuid');
 
 const rewire = require('rewire');
-let v1 = rewire('./serviceSubscriptions');
+let v1 = rewire('./systemSubscriptions');
 let db = {};
 
-describe('serviceSubscriptions', () => {
+describe('systemSubscriptions', () => {
 
   before(async function () {
     mongodb.max_delay = 0;
@@ -37,11 +37,11 @@ describe('serviceSubscriptions', () => {
     db.close();
   });
 
-  describe('getServiceSubscriptions', () => {
-    it('should get primaryOrgKey ServiceSubscription', async () => {
+  describe('getSystemSubscription', () => {
+    it('should get primaryOrgKey SystemSubscription', async () => {
       const testOrg = {
         '_id': uuid(),
-        'name': 'serviceSubscriptionsOrg',
+        'name': 'systemSubscriptionsOrg',
         'orgKeys' : [ 'key123' ],
         'created': new Date(),
         'updated': new Date(),

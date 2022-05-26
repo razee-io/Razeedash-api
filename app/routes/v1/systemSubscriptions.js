@@ -39,7 +39,7 @@ type: Opaque
   res.status( 200 ).send( razeeIdentitySecretYaml );
 };
 
-// /api/v2/serviceSubscriptions/primaryOrgKey
+// /api/v2/systemSubscriptions/primaryOrgKey
 router.get('/primaryOrgKey', getOrg, asyncHandler(getPrimaryOrgKeySubscription));
 
 
