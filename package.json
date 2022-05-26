@@ -35,9 +35,10 @@
     "fs-capacitor": "^6.2.0"
   },
   "dependencies": {
+    "@graphql-tools/schema": "^8.3.13",
     "apollo-metrics": "^1.0.1",
-    "apollo-server": "^2.25.3",
-    "apollo-server-express": "^2.25.0",
+    "apollo-server": "^3.8.1",
+    "apollo-server-express": "^3.8.1",
     "args": "^5.0.1",
     "aws-sdk": "^2.1023.0",
     "axios": "^0.21.1",
@@ -62,6 +63,7 @@
     "graphql-iso-date": "^3.6.1",
     "graphql-passport": "^0.6.3",
     "graphql-redis-subscriptions": "^2.3.1",
+    "graphql-subscriptions": "^2.0.0",
     "graphql-tag": "^2.12.6",
     "graphql-type-json": "^0.3.2",
     "i18next": "^21.4.2",

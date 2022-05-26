@@ -15,7 +15,10 @@
  */
 
 const _ = require('lodash');
-const { withFilter } = require('apollo-server');
+
+//PLC const { withFilter } = require('apollo-server');
+const { withFilter } = require('graphql-subscriptions');
+
 const GraphqlFields = require('graphql-fields');
 
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');

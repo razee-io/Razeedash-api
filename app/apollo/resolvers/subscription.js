@@ -16,7 +16,10 @@
 
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
-const { withFilter } = require('apollo-server');
+
+//PLC const { withFilter } = require('apollo-server');
+const { withFilter } = require('graphql-subscriptions');
+
 const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
 const {
   whoIs, validAuth, validClusterAuth,

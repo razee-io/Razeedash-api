@@ -15,7 +15,7 @@
  */
 
 const { ValidationError } = require('apollo-server');
-const { SchemaDirectiveVisitor } = require('apollo-server-express');
+//PLC const { SchemaDirectiveVisitor } = require('apollo-server-express');
 const { DIRECTIVE_LIMITS } = require('../models/const');
 const mongoSanitize = require('express-mongo-sanitize');
 
@@ -74,6 +74,8 @@ class IdentifierSanitizer extends Sanitizer {
   }
 }
 
+/*
+PLC
 class IdentifierDirective extends SchemaDirectiveVisitor {
   visitArgumentDefinition(param, details) {
     const sanitizer = new IdentifierSanitizer(param.name, this.args.min, this.args.max);
@@ -96,7 +98,7 @@ class IdentifierDirective extends SchemaDirectiveVisitor {
     field.sanitizers.push(sanitizer);
   }
 }
-
+*/
 
 class JsonSanitizer extends Sanitizer {
 
@@ -158,6 +160,8 @@ class JsonSanitizer extends Sanitizer {
   }
 }
 
+/*
+PLC
 class JsonDirective extends SchemaDirectiveVisitor {
   visitArgumentDefinition(param, details) {
     const sanitizer = new JsonSanitizer(param.name);
@@ -180,5 +184,7 @@ class JsonDirective extends SchemaDirectiveVisitor {
     field.sanitizers.push(sanitizer);
   }
 }
+*/
 
-module.exports = { IdentifierDirective, JsonDirective };
+//PLC module.exports = { IdentifierDirective, JsonDirective };
+module.exports = {};

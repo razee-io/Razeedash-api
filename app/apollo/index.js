@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+//PLC
+const { execute, subscribe } = require( 'graphql' );
+const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
+const { makeExecutableSchema } = require( '@graphql-tools/schema' );
+let subscriptionServer;
+
 const http = require('http');
 const express = require('express');
 const router = express.Router();
@@ -109,8 +115,20 @@ const loadCustomPlugins =  () => {
 var SIGTERM = false;
 process.on('SIGTERM', () => SIGTERM = true);
 
-const createApolloServer = () => {
+const createApolloServer = (schema /*PLC*/) => {
   const customPlugins = loadCustomPlugins();
+
+  //PLC
+  customPlugins.push({
+    async serverWillStart() {
+      return {
+        async drainServer() {
+          subscriptionServer.close();
+        }
+      };
+    }
+  });
+
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
     initLogger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
@@ -124,14 +142,18 @@ const createApolloServer = () => {
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
-    tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
-    typeDefs,
-    resolvers,
+    //PLC tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
+    //PLC playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
+    //PLC typeDefs,
+    //PLC resolvers,
+    schema,
+    //PLC FIXME schemaDirectives is no longer supported?
+    /*
     schemaDirectives: {
       sv: IdentifierDirective,
       jv: JsonDirective,
     },
+    */
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -151,6 +173,8 @@ const createApolloServer = () => {
         connection
       });
     },
+    /*
+    PLC
     subscriptions: {
       path: GRAPHQL_PATH,
       keepAlive: 10000,
@@ -182,9 +206,54 @@ const createApolloServer = () => {
         );
       },
     },
+    */
   });
   return server;
 };
+
+//PLC
+const createSubscriptionServer = (httpServer, apolloServer, schema) => {
+  return SubscriptionServer.create(
+    {
+      // This is the `schema` we just created.
+      schema,
+      // These are imported from `graphql`.
+      execute,
+      subscribe,
+      // Providing `onConnect` is the `SubscriptionServer` equivalent to the
+      // `context` function in `ApolloServer`. Please [see the docs](https://github.com/apollographql/subscriptions-transport-ws#constructoroptions-socketoptions--socketserver)
+      // for more information on this hook.
+      onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
+        let orgKey, orgId;
+        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
+          orgKey = connectionParams.headers['razee-org-key'];
+          const org = await models.Organization.findOne({ orgKeys: orgKey });
+          orgId = org._id;
+        }
+        const req_id = uuid();
+        const logger  = createLogger('razeedash-api/app/apollo/subscription', { req_id, org_id: orgId });
+
+        logger.debug('subscriptions:onConnect upgradeReq getMe');
+
+        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, logger},);
+        if (me === undefined) {
+          throw Error(
+            'Can not find the session for this subscription request.',
+          );
+        }
+        // add original upgrade request to the context
+        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
+      },
+    },
+    {
+      // `httpServer` is the instance returned from `http.createServer`.
+      server: httpServer,
+      // `apolloServer` is the instance returned from `new ApolloServer`.
+      path: apolloServer.graphqlPath,
+    }
+  );
+}
+
 
 const stop = async (apollo) => {
   await apollo.db.connection.close();
@@ -207,7 +276,10 @@ const apollo = async (options = {}) => {
     app.use(GRAPHQL_PATH, router);
     initModule.initApp(app, models, initLogger);
 
-    const server = createApolloServer();
+    //PLC
+    const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+    const server = createApolloServer(schema);
     server.applyMiddleware({
       app,
       cors: {origin: true},
@@ -224,7 +296,11 @@ const apollo = async (options = {}) => {
     });
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
-    server.installSubscriptionHandlers(httpServer);
+
+    //PLC
+    //server.installSubscriptionHandlers(httpServer);
+    subscriptionServer = createSubscriptionServer( httpServer, server, schema );
+
     httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;
