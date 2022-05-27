@@ -104,7 +104,12 @@ module.exports = class MongoClient {
         this.log.info(`Created new View ${view.name}`);
         result.push(v);
       } catch (e) {
-        this.log.warn(e,`Error creating View ${view.name}`);
+        if( e.message && e.message === 'Namespace already exists' ) {
+          this.log.info(`View ${view.name} already exists`);
+        }
+        else {
+          this.log.warn(e,`Error creating View ${view.name}`);
+        }
       }
     }
     return result;

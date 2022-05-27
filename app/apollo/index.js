@@ -19,6 +19,9 @@ const { execute, subscribe } = require( 'graphql' );
 const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
 const { makeExecutableSchema } = require( '@graphql-tools/schema' );
 let subscriptionServer;
+const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
+const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
+//PLC
 
 const http = require('http');
 const express = require('express');
@@ -154,6 +157,7 @@ const createApolloServer = (schema /*PLC*/) => {
       jv: JsonDirective,
     },
     */
+    //PLC FIXME CSRF protection needs to be assessed
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -277,9 +281,19 @@ const apollo = async (options = {}) => {
     initModule.initApp(app, models, initLogger);
 
     //PLC
+    resolvers.Upload = GraphQLUpload;
+    //PLC
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
     const server = createApolloServer(schema);
+
+    //PLC - may not jive with subscriptionserver?
+    await server.start();
+
+    //PLC
+    // This middleware should be added before calling `applyMiddleware`.
+    app.use(graphqlUploadExpress());
+
     server.applyMiddleware({
       app,
       cors: {origin: true},
