@@ -29,6 +29,9 @@ const { groupsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
+//PLC
+const { validateString, validateJson } = require('../utils/directives');
+
 const groupResolvers = {
   Query: {
     groups: async(parent, { orgId }, context, fullQuery) => {
@@ -108,6 +111,10 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
+
       try {
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
@@ -136,6 +143,10 @@ const groupResolvers = {
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
 
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
@@ -174,6 +185,10 @@ const groupResolvers = {
       const queryName = 'removeGroupByName';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
 
       try{
         const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
@@ -232,6 +247,11 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      //PLC
+      validateString( 'orgId', orgId );
+      groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
       try {
         const groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
@@ -312,6 +332,11 @@ const groupResolvers = {
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
+      //PLC
+      validateString( 'orgId', orgId );
+      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+
       try {
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
         const res = await models.Cluster.updateMany(
@@ -348,6 +373,11 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId }, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'clusterId', clusterId );
+      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
       try {
         const groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
@@ -396,8 +426,12 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      try{
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      clusters.forEach( value => validateString( 'clusters', value ) );
 
+      try{
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
@@ -435,6 +469,11 @@ const groupResolvers = {
       const queryName = 'unGroupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      clusters.forEach( value => validateString( 'clusters', value ) );
 
       try{
 

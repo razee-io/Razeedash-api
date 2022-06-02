@@ -78,7 +78,7 @@ const organizationSchema = gql`
     addOrgKey (
       orgId: String! @sv
       name: String! @sv
-      primary: Boolean! @sv
+      primary: Boolean!
     ): AddOrgKeyReply!
 
     """
@@ -87,7 +87,7 @@ const organizationSchema = gql`
     removeOrgKey (
       orgId: String! @sv
       uuid: String! @sv
-      forceDeletion: Boolean @sv
+      forceDeletion: Boolean
     ): RemoveOrgKeyReply!
 
     """
@@ -96,8 +96,8 @@ const organizationSchema = gql`
     editOrgKey (
       orgId: String! @sv
       uuid: String! @sv
-      name: String @sv
-      primary: Boolean @sv
+      name: String
+      primary: Boolean
     ): EditOrgKeyReply!
   }
 `;

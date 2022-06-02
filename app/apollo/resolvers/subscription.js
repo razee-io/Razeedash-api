@@ -38,6 +38,9 @@ const { subscriptionsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
+//PLC
+const { validateString, validateJson } = require('../utils/directives');
+
 async function validateGroups(org_id, groups, context) {
   const { req_id, me, models, logger } = context;
   // validate cluster groups exists in the groups db
@@ -290,6 +293,14 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
+      groups.forEach( value => { validateString( 'groups', value ); } );
+      validateString( 'channel_uuid', channel_uuid );
+      validateString( 'version_uuid', version_uuid );
+      if( clusterId ) validateString( 'clusterId', clusterId );
+
       try{
         // validate the number of total subscriptions are under the limit
         const total = await models.Subscription.count({org_id});
@@ -352,6 +363,15 @@ const subscriptionResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
+
+      //PLC
+      validateString( 'orgId', orgId );
+      validateString( 'uuid', uuid );
+      validateString( 'name', name );
+      groups.forEach( value => { validateString( 'groups', value ); } );
+      validateString( 'channel_uuid', channel_uuid );
+      validateString( 'version_uuid', version_uuid );
+      if( clusterId ) validateString( 'clusterId', clusterId );
 
       try{
         const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'name', queryName, context);
@@ -453,6 +473,11 @@ const subscriptionResolvers = {
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      validateString( 'version_uuid', version_uuid );
+
       /*
       RBAC Sync:
       setSubscription only changes the Version used by a Subscription, so does
@@ -521,6 +546,10 @@ const subscriptionResolvers = {
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
 
       var success = false;
       try{

@@ -27,6 +27,9 @@ const yaml = require('js-yaml');
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
+//PLC
+const { validateString, validateJson } = require('../utils/directives');
+
 const channelResolvers = {
   Query: {
     channels: async(parent, { orgId }, context, fullQuery) => {
@@ -188,6 +191,10 @@ const channelResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
+
       try {
         // if there is a list of valid data locations, validate the data_location (if provided) is in the list
         if( Array.from(conf.storage.s3ConnectionMap.keys()).length > 0 ) {
@@ -235,6 +242,11 @@ const channelResolvers = {
       const queryName = 'editChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      validateString( 'name', name );
+
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
@@ -271,6 +283,13 @@ const channelResolvers = {
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description }, context)=>{
       const { models, me, req_id, logger } = context;
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'channel_uuid', channel_uuid );
+      validateString( 'name', name );
+      validateString( 'type', type );
+      validateString( 'content', content );
 
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
@@ -382,6 +401,9 @@ const channelResolvers = {
       const queryName = 'removeChannel';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
 
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+
       try{
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
@@ -432,6 +454,10 @@ const channelResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
+
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+
       try{
         const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
         if(subCount > 0){

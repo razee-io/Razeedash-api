@@ -65,6 +65,7 @@
     "graphql-subscriptions": "^2.0.0",
     "graphql-tag": "^2.12.6",
     "graphql-type-json": "^0.3.2",
+    "graphql-upload": "^15.0.1",
     "i18next": "^21.4.2",
     "i18next-fs-backend": "^1.1.1",
     "i18next-http-middleware": "^3.1.0",

@@ -27,6 +27,9 @@ const subscriptionResolvers = require('./subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
 
+//PLC
+const { validateString, validateJson } = require('../utils/directives');
+
 const serviceResolvers = {
 
   SubscriptionUnion: {
@@ -123,6 +126,13 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
+      //PLC
+      validateString( 'orgId', orgId );
+      validateString( 'name', name );
+      validateString( 'clusterId', clusterId );
+      validateString( 'channelUuid', channelUuid );
+      validateString( 'versionUuid', versionUuid );
+
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
       if(!cluster){
         throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
@@ -180,6 +190,13 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
+      //PLC
+      validateString( 'orgId', orgId );
+      validateString( 'ssid', ssid );
+      validateString( 'name', name );
+      validateString( 'channelUuid', channelUuid );
+      validateString( 'versionUuid', versionUuid );
+
       const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId }).lean({ virtuals: true });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
@@ -213,6 +230,10 @@ const serviceResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
+
+      //PLC
+      validateString( 'orgId', orgId );
+      validateString( 'ssid', ssid );
 
       const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId });
       if (!serviceSubscription) {

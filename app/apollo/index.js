@@ -21,6 +21,8 @@ const { makeExecutableSchema } = require( '@graphql-tools/schema' );
 let subscriptionServer;
 const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
 const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
+//const { upperDirectiveTypeDefs, upperDirectiveTransformer } = require('./utils/directives');
+//const { constraintDirective, constraintDirectiveTypeDefs } = require('graphql-constraint-directive');
 //PLC
 
 const http = require('http');
@@ -28,7 +30,7 @@ const express = require('express');
 const router = express.Router();
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-const { IdentifierDirective, JsonDirective } = require('./utils/directives');
+//PLC const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { createLogger, createExpressLogger } = require('../log');
 const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
@@ -150,14 +152,14 @@ const createApolloServer = (schema /*PLC*/) => {
     //PLC typeDefs,
     //PLC resolvers,
     schema,
-    //PLC FIXME schemaDirectives is no longer supported?
+    //PLC schemaDirectives for argument validation is no longer supported, instead resolvers must verify input directly.
     /*
     schemaDirectives: {
       sv: IdentifierDirective,
       jv: JsonDirective,
     },
     */
-    //PLC FIXME CSRF protection needs to be assessed
+    //PLC FIXME CSRF protection needs to be assessed (is this from graphql-upload?)
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -282,8 +284,43 @@ const apollo = async (options = {}) => {
 
     //PLC
     resolvers.Upload = GraphQLUpload;
+
     //PLC
     const schema = makeExecutableSchema({ typeDefs, resolvers });
+    /*
+    Directive like 'upper' is functional, but doesn't do validation, only output modification.
+    */
+    //const schema = (upperDirectiveTransformer('upper')( makeExecutableSchema({ typeDefs: [ upperDirectiveTypeDefs('upper'), ...typeDefs ], resolvers }) ));
+
+    /*
+    'constraint' is not exactly functional, apparently due to the way our GQL is defined.  Attempting to use the GQL API with @constraint results in an error like:
+    Variable \"$name\" of type \"String!\" used in position expecting type \"name_String_NotNull_minLength_5!\".
+    whether the input would pass the validation or not.
+    */
+    //const schema = constraintDirective()( makeExecutableSchema( { typeDefs: [constraintDirectiveTypeDefs, typeDefs] } ) );
+
+    /*
+    As noted in https://www.apollographql.com/blog/backend/validation/graphql-validation-using-directives/ :
+    > Today, people most commonly write this kind of validation logic in their resolver functions or models.
+    > However, this means we can’t easily see our validation logic, and we have to write some repetitive code
+    > to verify the same kinds of conditions over and over.
+    The blog goes on to describe how to use Directives, but using a directive to validate arguments doesn't seem feasible at this point.
+    The approach described (`graphql-constraint-directive`) works, but doesn't work with how our queries/mutations are defined,
+    resulting in errors like `Variable \"$name\" of type \"String!\" used in position expecting type \"name_String_NotNull_minLength_5!\".`
+    Changing the Graphql POST to be like this allows using the new type successfully with validation:
+      mutation ($orgId: String!, $name: name_String_NotNull_minLength_5!, $data_location: String) { addChannel(orgId: $orgId, name: $name, [...]
+    But we can't change the usage pattern to specify new types -- it would break anything using the existing API with `String!` (e.g. UI and CLI **at least**).
+
+    Instead, we need to use explicit validation.
+      - In each resolver <<<< THIS ONE
+        - Easiest to implement
+        - Easiest to 'miss' validation
+        - Does not honor `@sv` and `@jv` from the schema directly
+      - In new middleware, passed the schema
+        - Hardest to implement
+        - More consistent
+        - Honors `@sv` and `@jv` from the schema directly
+    */
 
     const server = createApolloServer(schema);
 

@@ -19,172 +19,118 @@ const { ValidationError } = require('apollo-server');
 const { DIRECTIVE_LIMITS } = require('../models/const');
 const mongoSanitize = require('express-mongo-sanitize');
 
-class Sanitizer {
-  constructor(name, arg) {
-    this.name = name;
-    this.arg = arg;
+//PLC
+//const { mapSchema, getDirective, MapperKind } = require('@graphql-tools/utils');
+//const { GraphQLSchema, isScalarType, isNonNullType, GraphQLScalarType, defaultFieldResolver } = require('graphql');
+//const { gql } = require('apollo-server-express');
+
+
+//PLC
+const validateString = function( name, value ) {
+  const methodName = 'validateString';
+
+  const MAXLEN = (name === 'content') ? DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH : DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
+  const MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
+  console.log( `PLC ${methodName} entry, name: '${name}', value: '${value}', MAXLEN: ${MAXLEN}, MINLEN: ${MINLEN}` );
+
+  if( value.length > MAXLEN || value.length < MINLEN ) {
+    throw new ValidationError(`The ${name}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
   }
 
-  sanitize() {
+  if (name !== 'content') {
+    if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
+      throw new ValidationError(`The ${name}'s value '${value}' should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
+    }
   }
-}
+};
 
-// in schema add following: might require graphql-tools 4.0.3+
-// directive @identifier(min: Int, max: Int) on ARGUMENT_DEFINITION
-// addGroup(orgId: String! name: String! @identifier(min: 3, max: 32)): AddGroupReply!
-class IdentifierSanitizer extends Sanitizer {
-
-  constructor(arg, minLength, maxLength) {
-    super(`Identifer_${minLength}_${maxLength}`, arg);
-    this.minLength = minLength;
-    this.maxLength = maxLength;
+//PLC
+const parseTree = function( name, parent, totalAllowed ) {
+  console.log( `PLC parseTree entry, name: ${name}, totalAllowed: ${totalAllowed}` );
+  var hasNonLeafNodes = false;
+  var childCount = 0;
+  var keylen = 0;
+  var valuelen = 0;
+  if (totalAllowed <= 0) {
+    throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
   }
-
-  sanitize(args) {
-    const value = args[this.arg];
-    if (value) {
-      if (value instanceof Array) {
-        if (((this.arg === 'clusters' || this.arg === 'clusterIds') && value.length > DIRECTIVE_LIMITS.MAX_CLUSTER_ARRAY_LEN) || ((this.arg === 'groupUuids' || this.arg === 'groups') && value.length > DIRECTIVE_LIMITS.MAX_GROUP_ARRAY_LEN)) {
-          throw new ValidationError(`The array ${this.arg}'s length '${value.length}' exceeded the allowed limit`);
+  for (var child in parent) {
+    if (typeof parent[child] === 'object') {
+      if (typeof child === 'string') {
+        keylen = child.length;
+        if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
+          throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
         }
-        value.forEach(element => {
-          this.validateString(element);
-        });
-      } else {
-        this.validateString(value);
+      }
+      // Parse this sub-category:
+      childCount += parseTree(name, parent[child], totalAllowed - childCount );
+      if (childCount > DIRECTIVE_LIMITS.MAX_JSON_ITEMS) {
+        throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
+      }
+      // Set the hasNonLeafNodes flag (used below):
+      hasNonLeafNodes = true;
+    }else if(typeof parent[child] === 'string') {
+      valuelen = parent[child].length;
+      if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
+        throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
+      }
+      if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
+        throw new ValidationError(`The ${name} value ${parent[child]} should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
       }
     }
-
   }
-
-  validateString(value) {
-    var MAXLEN = DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
-    var MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
-    if (this.arg === 'content')  MAXLEN = DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH;
-    if (this.maxLength !== undefined) MAXLEN = this.maxLength;
-    if (this.minLength !== undefined) MINLEN = this.minLength;
-    if( value.length > MAXLEN || value.length < MINLEN ) {
-      throw new ValidationError(`The ${this.arg}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
-    }
-    if (this.arg !== 'content') {
-      if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
-        throw new ValidationError(`The ${this.arg}'s value '${value}' should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
-      }
-    }
+  if (hasNonLeafNodes) {
+    return childCount + 1; // including this parent node
+  } else {
+    // This is a leaf item, so return 1:
+    return 1;
   }
 }
+const validateJson = function( name, value ) {
+  console.log( `PLC validateJson entry, name: ${name}` );
+  if (value) {
+    const hasProhibited = mongoSanitize.has(value);
+    if (hasProhibited) {
+      throw new ValidationError(`The json object ${name} contain illegal characters.`);
+    }
+    parseTree(name, value, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
+  }
+};
 
 /*
-PLC
-class IdentifierDirective extends SchemaDirectiveVisitor {
-  visitArgumentDefinition(param, details) {
-    const sanitizer = new IdentifierSanitizer(param.name, this.args.min, this.args.max);
-    const field = details.field;
-    if (!field.sanitizers) {
-      field.sanitizers = [];
-      const { resolve } = field;
-      field.resolve = async function (
-        source,
-        args,
-        context,
-        info,
-      ) {
-        for(const s of field.sanitizers) {
-          s.sanitize(args);
-        }
-        return resolve.call(this, source, args, context, info);
-      };
-    }
-    field.sanitizers.push(sanitizer);
-  }
-}
-*/
-
-class JsonSanitizer extends Sanitizer {
-
-  constructor(arg) {
-    super('Json_', arg);
-  }
-
-  parseTree(parent, totalAllowed) {
-    var hasNonLeafNodes = false;
-    var childCount = 0;
-    var keylen = 0;
-    var valuelen = 0;
-    if (totalAllowed <= 0) {
-      throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
-    }
-    for (var child in parent) {
-      if (typeof parent[child] === 'object') {
-        if (typeof child === 'string') {
-          keylen = child.length;
-          if (keylen > DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH) {
-            throw new ValidationError(`The json element ${child} exceeded the key length ${DIRECTIVE_LIMITS.MAX_JSON_KEY_LENGTH}.`);
+//PLC
+const upperDirectiveTransformer = (directiveName) => {
+  return schema => mapSchema(
+    schema,
+    {
+      [MapperKind.OBJECT_FIELD]: fieldConfig => {
+        //console.log( `PLC upper OBJECT_FIELD entry` );
+        const upperDirective = getDirective(schema, fieldConfig, directiveName)?.[0]
+        if (upperDirective) {
+          console.log( `PLC upper directive applies, fieldConfig: ${JSON.stringify( fieldConfig, null, 2 )}` );
+          //const { resolve = defaultFieldResolver } = fieldConfig;
+          const resolve = fieldConfig.resolve || defaultFieldResolver;
+          console.log( `PLC upper resolve: ${resolve}` );
+          return {
+            ...fieldConfig,
+            resolve: async function (source, args, context, info) {
+              console.log( `PLC upper resolving` );
+              const result = await resolve(source, args, context, info);
+              console.log( `PLC upper resolving result: ${result}` );
+              if (typeof result === 'string') {
+                return result.toUpperCase();
+              }
+              return result;
+            }
           }
         }
-        // Parse this sub-category:
-        childCount += this.parseTree(parent[child], totalAllowed - childCount );
-        if (childCount > DIRECTIVE_LIMITS.MAX_JSON_ITEMS) {
-          throw new ValidationError(`The json object has more than ${DIRECTIVE_LIMITS.MAX_JSON_ITEMS} items.`);
-        }
-        // Set the hasNonLeafNodes flag (used below):
-        hasNonLeafNodes = true;
-      }else if(typeof parent[child] === 'string') {
-        valuelen = parent[child].length;
-        if (valuelen > DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH) {
-          throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
-        }
-        if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
-          throw new ValidationError(`The ${this.arg} value ${parent[child]} should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
-        }
       }
     }
-    if (hasNonLeafNodes) {
-      return childCount + 1; // including this parent node
-    } else {
-      // This is a leaf item, so return 1:
-      return 1;
-    }
-  }
-
-
-  sanitize( args) {
-    const value = args[this.arg];
-    if (value) {
-      const hasProhibited = mongoSanitize.has(value);
-      if (hasProhibited) {
-        throw new ValidationError(`The json object ${this.arg} contain illegal characters.`);
-      }
-      this.parseTree(value, DIRECTIVE_LIMITS.MAX_JSON_ITEMS);
-    }
-  }
+  );
 }
-
-/*
-PLC
-class JsonDirective extends SchemaDirectiveVisitor {
-  visitArgumentDefinition(param, details) {
-    const sanitizer = new JsonSanitizer(param.name);
-    const field = details.field;
-    if (!field.sanitizers) {
-      field.sanitizers = [];
-      const { resolve } = field;
-      field.resolve = async function (
-        source,
-        args,
-        context,
-        info,
-      ) {
-        for(const s of field.sanitizers) {
-          s.sanitize(args);
-        }
-        return resolve.call(this, source, args, context, info);
-      };
-    }
-    field.sanitizers.push(sanitizer);
-  }
+const upperDirectiveTypeDefs = (directiveName) => {
+  return gql`directive @${directiveName} on FIELD_DEFINITION`;
 }
 */
 
-//PLC module.exports = { IdentifierDirective, JsonDirective };
-module.exports = {};
+module.exports = { /*upperDirectiveTransformer, upperDirectiveTypeDefs,*/ validateString, validateJson };

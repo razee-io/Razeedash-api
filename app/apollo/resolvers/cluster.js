@@ -23,6 +23,9 @@ const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
 
+//PLC
+const { validateString, validateJson } = require('../utils/directives');
+
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -330,6 +333,10 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'cluster_id', cluster_id );
+
       try {
         // Delete the Cluster record
         const deletedCluster = await models.Cluster.findOneAndDelete({ org_id, cluster_id });
@@ -376,6 +383,9 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
+      //PLC
+      validateString( 'org_id', org_id );
+
       try {
         // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
@@ -417,6 +427,10 @@ const clusterResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateJson( 'registration', registration );
 
       try {
         if (!registration.name) {
@@ -477,6 +491,10 @@ const clusterResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+
+      //PLC
+      validateString( 'org_id', org_id );
+      validateString( 'cluster_id', cluster_id );
 
       try {
         const updatedCluster = await models.Cluster.findOneAndUpdate(

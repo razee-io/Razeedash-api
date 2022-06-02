@@ -15,6 +15,7 @@ RAZEE_VARIABLES='{"userName":"'"${RAZEE_USER_NAME}"'","userPass":"'"${RAZEE_USER
 
 echo "" && echo "SIGNIN user"
 unset RAZEE_USER_TOKEN
+unset RAZEE_URL
 RESPONSE=$(${SCRIPT_DIR}/graphqlPost.sh  "${RAZEE_QUERY}" "${RAZEE_VARIABLES}")
 echo "Result: $?"
 
