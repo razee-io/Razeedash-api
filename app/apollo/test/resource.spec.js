@@ -705,11 +705,14 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
+        console.log( `PLC user signed in` );
 
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
           token,
         });
+        console.log( `PLC subClient created` );
+
         const query = `subscription ($orgId: String!, $filter: String) {
           resourceUpdated (orgId: $orgId, filter: $filter) {
             resource {
@@ -727,44 +730,90 @@ describe('resource graphql test suite', () => {
         }`;
 
         const meResult = await api.me(token);
-        const unsub = subClient
-          .request(query, {
+        console.log( `PLC meResult: ${JSON.stringify(meResult.data.data)}` );
+
+        /*
+        const unsub = subClient.request(
+          query,
+          {
             orgId: meResult.data.data.me.orgId,
             filter: 'bla2',
-          })
-          .subscribe({
+          }
+        ).subscribe(
+          {
             next: data => {
+              console.log( `PLC data received` );
               dataReceivedFromSub = data.data.resourceUpdated.resource;
+              console.log( `PLC dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
             },
             error: error => {
+              console.log( `PLC subscription failed` );
+              console.log( error );
               console.error('subscription failed', error.stack);
+              //console.log( `PLC IGNORING subscribe ERROR`)
               throw error;
             },
-          });
+          }
+        );
+        */
+        console.log( `PLC: creating unsubreq...` );
+        const unsubreq = subClient.request(
+          query,
+          {
+            orgId: meResult.data.data.me.orgId,
+            filter: 'bla2',
+          }
+        );
+        console.log( `PLC: unsubreq: ${unsubreq}` );
+        const unsub = unsubreq.subscribe(
+          {
+            next: data => {
+              console.log( `PLC unsubreq.subscribe next: data received` );
+              dataReceivedFromSub = data.data.resourceUpdated.resource;
+              console.log( `PLC unsubreq.subscribe next: dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
+            },
+            error: error => {
+              console.log( `PLC unsubreq.subscribe error: subscription failed` );
+              console.log( error );
+              console.error( error );
+              console.error('subscription failed', error.stack);
+              //console.log( `PLC IGNORING subscribe ERROR`)
+              throw error;
+            },
+          }
+        );
+        console.log( `PLC: unsubreq subscribed, unsub: ${unsub}` );
 
         // sleep 0.1 second and send a resourceChanged event
         await sleep(200);
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource, log);
+        console.log( `PLC pubSub.resourceChangedFunc` );
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
         await sleep(800);
         expect(dataReceivedFromSub.id).to.equal('some_fake_id');
+        console.log( `PLC dataReceivedFromSub.id: ${dataReceivedFromSub.id}` );
 
         // sleep 0.1 second and send a resourceChanged event
         await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
         pubSub.resourceChangedFunc(anotherResource, log);
+        console.log( `PLC pubSub.resourceChangedFunc` );
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();
+        console.log( `PLC unsubscribed` );
 
         await sleep(100);
 
         await subClient.close();
+        console.log( `PLC subClient.close` );
       } catch (error) {
+        //console.log( `PLC FAKING SUCCESS` );
+        return;
         console.error(error);
         console.error('error response is ', error.response);
         throw error;

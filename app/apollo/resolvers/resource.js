@@ -440,24 +440,30 @@ const resourceResolvers = {
   },
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { orgID: org_id, filter }, { models, req_id, logger }) => {
+      resolve: (parent, { orgId: org_id, filter, parent: parentPLC }, { models, req_id, logger }) => {
+        console.log( `PLC Subscription.resourceUpdated.resolve entry, parent: ${parent}, org_id: ${org_id}, filter: ${filter}, req_id: ${req_id}, parentPLC: ${parentPLC}` );
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, req_id },
           'Subscription.resourceUpdated.resolve',
         );
+
+        //PLC
+        if( !parent ) throw new Error( `PLC no parent error` );
+
         const { resourceUpdated } = parent;
         return resourceUpdated;
       },
-
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
+          console.log( `PLC Subscription.resourceUpdated.subscribe.withFilter entry` );
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.orgId);
           context.logger.debug({args, topic}, 'withFilter asyncIteratorFn');
           // TODO: in future probably we should valid authorization here
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
+          console.log( `PLC Subscription.resourceUpdated.subscribe.async entry` );
           const queryName = 'subscribe: withFilter';
           const { me, req_id, logger } = context;
           logger.debug( {req_id, user: whoIs(me), args },
