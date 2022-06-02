@@ -35,6 +35,16 @@ const OrganizationLocalSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  orgKeys2: [
+    {
+      orgKeyUuid: { type: String },
+      name: { type: String },
+      primary: { type: Boolean },
+      created: { type: Date },
+      updated: { type: Date },
+      key: { type: String }
+    },
+  ],
   type: {
     type: String,
     required: false,
@@ -71,8 +81,10 @@ OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
 
   if (!org) {
     const _id = args._id ? args._id : uuid();
-    const orgKey = 'orgApiKey-'+uuid();
-    org = await this.create({ ...args, _id, orgKeys: [orgKey] });
+    // Once OrgKeys2 support is added to all apis, this code needs to create an OrgKeys2 instead, e.g.:
+    //const orgKeyUuid = uuid();
+    //org = await this.create({ ...args, _id, orgKeys: [], orgKeys2: [{ orgKeyUuid: orgKeyUuid, name: 'Default', primary: true, created: Date.now(), updated: Date.now(), key: uuid() }] });
+    org = await this.create({ ...args, _id, orgKeys: ['orgApiKey-'+uuid()] });
   }
   return org;
 };

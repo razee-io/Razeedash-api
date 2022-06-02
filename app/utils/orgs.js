@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2019, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ const getOrg = async(req, res, next) => {
   }
 
   const Orgs = req.db.collection('orgs');
-  const org = await Orgs.findOne({ orgKeys: orgKey });
+  const org = await Orgs.findOne( { $or: [ { 'orgKeys2.key': orgKey }, { orgKeys: orgKey } ] } );
   if (!org) {
     res.status(403).send( `orgKey ${orgKey} not found` );
     return;

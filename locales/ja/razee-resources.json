@@ -40,6 +40,7 @@
   "group uuid \"{{uuid}}\" not found": "グループ uuid \"{{uuid}}\" が見つかりません",
   "hist _id \"{{histId}}\" not found": "hist _id \"{{histId}}\" が見つかりません",
   "Invalid razee-org-key was submitted for {{queryName}}": "無効な razee-org-key が {{queryName}} に対して送信されました",
+  "More than one {{type}} matches {{name}}": "複数の {{type}} が {{name}} に一致します。",
   "No org was found for the org key.": "org key の組織が見つかりませんでした。",
   "No razee-org-key was supplied.": "razee-org-key は提供されませんでした。",
   "None of the passed group uuids were found": "渡されたグループ uuid は見つかりませんでした",

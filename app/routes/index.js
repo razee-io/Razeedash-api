@@ -1,5 +1,5 @@
 /**
-* Copyright 2021 IBM Corp. All Rights Reserved.
+* Copyright 2021, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
+const ServiceSubscriptions = require('./v1/serviceSubscriptions.js');
 const V3Gql = require('./v3/gql');
 
 router.get('/v1/health', (req, res)=>{
@@ -105,6 +106,7 @@ router.use('/v2/resources', Resources);
 
 // Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
+router.use('/v1/serviceSubscriptions', ServiceSubscriptions);
 
 
 async function initialize(){
