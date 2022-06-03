@@ -30,7 +30,7 @@ const { groupsRbacSync } = require('../utils/rbacSync');
 const pubSub = GraphqlPubSub.getInstance();
 
 //PLC
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString } = require('../utils/directives');
 
 const groupResolvers = {
   Query: {
@@ -375,7 +375,7 @@ const groupResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
       //PLC
-      validateString( 'org_id', org_id );
+      validateString( 'orgId', orgId );
       validateString( 'clusterId', clusterId );
       groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 

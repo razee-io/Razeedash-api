@@ -39,7 +39,7 @@ const { subscriptionsRbacSync } = require('../utils/rbacSync');
 const pubSub = GraphqlPubSub.getInstance();
 
 //PLC
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString } = require('../utils/directives');
 
 async function validateGroups(org_id, groups, context) {
   const { req_id, me, models, logger } = context;

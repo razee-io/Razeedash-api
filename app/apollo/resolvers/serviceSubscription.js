@@ -28,7 +28,7 @@ const subscriptionResolvers = require('./subscription');
 const pubSub = GraphqlPubSub.getInstance();
 
 //PLC
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString } = require('../utils/directives');
 
 const serviceResolvers = {
 

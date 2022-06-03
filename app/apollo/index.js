@@ -219,7 +219,6 @@ const createApolloServer = (schema /*PLC*/) => {
 
 //PLC
 const createSubscriptionServer = (httpServer, apolloServer, schema) => {
-  console.log( `PLC createSubscriptionServer entry` );
   return SubscriptionServer.create(
     {
       // This is the `schema` we just created.
@@ -231,7 +230,6 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
       // `context` function in `ApolloServer`. Please [see the docs](https://github.com/apollographql/subscriptions-transport-ws#constructoroptions-socketoptions--socketserver)
       // for more information on this hook.
       onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
-        console.log( `PLC SubscriptionServer onConnect entry` );
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
@@ -260,7 +258,7 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
       path: apolloServer.graphqlPath,
     }
   );
-}
+};
 
 
 const stop = async (apollo) => {

@@ -28,7 +28,7 @@ const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, 
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 //PLC
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString } = require('../utils/directives');
 
 const channelResolvers = {
   Query: {

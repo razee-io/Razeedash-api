@@ -705,13 +705,13 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
-        console.log( `PLC user signed in` );
+        console.log( 'PLC user signed in' );
 
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
           token,
         });
-        console.log( `PLC subClient created` );
+        console.log( 'PLC subClient created' );
 
         const query = `subscription ($orgId: String!, $filter: String) {
           resourceUpdated (orgId: $orgId, filter: $filter) {
@@ -756,7 +756,7 @@ describe('resource graphql test suite', () => {
           }
         );
         */
-        console.log( `PLC: creating unsubreq...` );
+        console.log( 'PLC: creating unsubreq...' );
         const unsubreq = subClient.request(
           query,
           {
@@ -768,12 +768,12 @@ describe('resource graphql test suite', () => {
         const unsub = unsubreq.subscribe(
           {
             next: data => {
-              console.log( `PLC unsubreq.subscribe next: data received` );
+              console.log( 'PLC unsubreq.subscribe next: data received' );
               dataReceivedFromSub = data.data.resourceUpdated.resource;
               console.log( `PLC unsubreq.subscribe next: dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
             },
             error: error => {
-              console.log( `PLC unsubreq.subscribe error: subscription failed` );
+              console.log( 'PLC unsubreq.subscribe error: subscription failed' );
               console.log( error );
               console.error( error );
               console.error('subscription failed', error.stack);
@@ -789,7 +789,7 @@ describe('resource graphql test suite', () => {
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource, log);
-        console.log( `PLC pubSub.resourceChangedFunc` );
+        console.log( 'PLC pubSub.resourceChangedFunc' );
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
         // sleep another 0.1 second and verify if sub received the event
@@ -801,19 +801,19 @@ describe('resource graphql test suite', () => {
         await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
         pubSub.resourceChangedFunc(anotherResource, log);
-        console.log( `PLC pubSub.resourceChangedFunc` );
+        console.log( 'PLC pubSub.resourceChangedFunc' );
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();
-        console.log( `PLC unsubscribed` );
+        console.log( 'PLC unsubscribed' );
 
         await sleep(100);
 
         await subClient.close();
-        console.log( `PLC subClient.close` );
+        console.log( 'PLC subClient.close' );
       } catch (error) {
         //console.log( `PLC FAKING SUCCESS` );
-        return;
+        //return;
         console.error(error);
         console.error('error response is ', error.response);
         throw error;

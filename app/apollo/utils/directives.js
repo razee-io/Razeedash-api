@@ -85,7 +85,7 @@ const parseTree = function( name, parent, totalAllowed ) {
     // This is a leaf item, so return 1:
     return 1;
   }
-}
+};
 const validateJson = function( name, value ) {
   console.log( `PLC validateJson entry, name: ${name}` );
   if (value) {

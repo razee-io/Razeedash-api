@@ -448,7 +448,7 @@ const resourceResolvers = {
         );
 
         //PLC
-        if( !parent ) throw new Error( `PLC no parent error` );
+        //if( !parent ) throw new Error( `PLC no parent error` );
 
         const { resourceUpdated } = parent;
         return resourceUpdated;
@@ -456,14 +456,12 @@ const resourceResolvers = {
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {
-          console.log( `PLC Subscription.resourceUpdated.subscribe.withFilter entry` );
           const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, args.orgId);
           context.logger.debug({args, topic}, 'withFilter asyncIteratorFn');
           // TODO: in future probably we should valid authorization here
           return GraphqlPubSub.getInstance().pubSub.asyncIterator(topic);
         },
         async (parent, args, context) => {
-          console.log( `PLC Subscription.resourceUpdated.subscribe.async entry` );
           const queryName = 'subscribe: withFilter';
           const { me, req_id, logger } = context;
           logger.debug( {req_id, user: whoIs(me), args },

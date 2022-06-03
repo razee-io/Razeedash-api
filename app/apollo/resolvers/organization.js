@@ -19,7 +19,7 @@ const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError
 const { v4: UUID } = require('uuid');
 
 //PLC
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString } = require('../utils/directives');
 
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
   const sets = {};
