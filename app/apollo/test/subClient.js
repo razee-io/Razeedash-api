@@ -37,6 +37,7 @@ module.exports = class SubClient {
   }
 
   request(query, varibles) {
+    console.log( `PLC subClient request entry` );
     const operation = {
       query: gql`${query}`,
       variables: varibles

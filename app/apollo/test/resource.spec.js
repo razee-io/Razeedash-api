@@ -707,11 +707,30 @@ describe('resource graphql test suite', () => {
         token = await signInUser(models, api, user02Data);
         console.log( 'PLC user signed in' );
 
+        //PLC
+        await sleep(2000);
+        console.log( ' \n ' );
+        console.log( 'PLC calling pubSub.resourceChangedFunc (before subscribing to changes)' );
+        console.log( ' \n ' );
+        aResource.orgId = org_02._id;
+        pubSub.resourceChangedFunc(aResource, log);
+        console.log( ' \n ' );
+        console.log( 'PLC finished pubSub.resourceChangedFunc (before subscribing to changes)' );
+        console.log( ' \n ' );
+        await sleep(2000);
+
+
+        console.log( ' \n ' );
+        console.log( 'PLC creating subClient, subscriptionUrl: ${subscriptionUrl}...' );
+        console.log( ' \n ' );
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
           token,
         });
-        console.log( 'PLC subClient created' );
+        console.log( ' \n ' );
+        console.log( `PLC subClient created` );
+        console.log( ' \n ' );
+        await sleep(2000);
 
         const query = `subscription ($orgId: String!, $filter: String) {
           resourceUpdated (orgId: $orgId, filter: $filter) {
@@ -731,6 +750,8 @@ describe('resource graphql test suite', () => {
 
         const meResult = await api.me(token);
         console.log( `PLC meResult: ${JSON.stringify(meResult.data.data)}` );
+
+
 
         /*
         const unsub = subClient.request(
@@ -756,7 +777,9 @@ describe('resource graphql test suite', () => {
           }
         );
         */
-        console.log( 'PLC: creating unsubreq...' );
+        console.log( ' \n ' );
+        console.log( 'PLC: creating unsubreq (subClient.request)...' );
+        console.log( ' \n ' );
         const unsubreq = subClient.request(
           query,
           {
@@ -764,11 +787,16 @@ describe('resource graphql test suite', () => {
             filter: 'bla2',
           }
         );
-        console.log( `PLC: unsubreq: ${unsubreq}` );
+        console.log( `PLC: unsubreq: ${JSON.stringify(unsubreq)}` );
+        console.log( ' \n ' );
+        await sleep(2000);
+        console.log( ' \n ' );
+        console.log( 'PLC subscribing unsubreq (unsubreq.subscribe)...' );
         const unsub = unsubreq.subscribe(
           {
             next: data => {
-              console.log( 'PLC unsubreq.subscribe next: data received' );
+              console.log( `PLC unsubreq.subscribe next: data received: ${JSON.stringify(data)}` );
+              console.log( `PLC unsubreq.subscribe next: data.data.resourceUpdated.resource: ${data.data.resourceUpdated.resource}` );
               dataReceivedFromSub = data.data.resourceUpdated.resource;
               console.log( `PLC unsubreq.subscribe next: dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
             },
@@ -777,20 +805,35 @@ describe('resource graphql test suite', () => {
               console.log( error );
               console.error( error );
               console.error('subscription failed', error.stack);
-              //console.log( `PLC IGNORING subscribe ERROR`)
+              //console.log( `PLC IGNORING subscribe ERROR`);
               throw error;
+            },
+            plcCustom: o => {
+              console.log( `PLC this should never be called, added just to make it easier to identify the argument passed to subscribe()` );
             },
           }
         );
-        console.log( `PLC: unsubreq subscribed, unsub: ${unsub}` );
+        console.log( `PLC: unsubreq subscribed, unsub: ${JSON.stringify(unsub)}` );
+        console.log( ' \n ' );
 
         // sleep 0.1 second and send a resourceChanged event
-        await sleep(200);
+        await sleep(2000);  //PLC wait longer
+        console.log( ' \n ' );
+        console.log( 'PLC pubSub.resourceChangedFunc for changed resource....' );
+        console.log( ' \n ' );
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource, log);
-        console.log( 'PLC pubSub.resourceChangedFunc' );
+        console.log( ' \n ' );
+        console.log( 'PLC pubSub.resourceChangedFunc complete, expecting subscription message shortly....' );
+        console.log( ' \n ' );
         // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
+        await sleep(2000);  //PLC wait longer
+
+        console.log( ' \n ' );
+        console.log( 'ABORTING' );
+        console.log( ' \n ' );
+        throw new Error( `PLC ABORT -- should have received subscription in unsubreq 'next' by now... `)
 
         // sleep another 0.1 second and verify if sub received the event
         await sleep(800);
