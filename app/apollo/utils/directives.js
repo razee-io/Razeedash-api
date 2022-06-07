@@ -23,8 +23,6 @@ Note: validation is no longer done by 'directives', see comments in ../index.js 
 */
 
 const validateString = function( name, value ) {
-  const methodName = 'validateString';
-
   const MAXLEN = (name === 'content') ? DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH : DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
   const MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
 
