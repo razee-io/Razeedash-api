@@ -74,7 +74,6 @@ class PubSubImpl {
       if (this.pubSub && this.pubSub.close) {
         this.pubSub.close();
       }
-      console.log( `PLC creating redis pubsub at ${this.redisUrl}` );
       this.pubSub = new RedisPubSub({
         publisher: new Redis(this.redisUrl, options),
         subscriber: new Redis(this.redisUrl, options),
@@ -142,30 +141,22 @@ class PubSubImpl {
   }
 
   async resourceChangedFunc(resource, logger) {
-    //PLC
-    const methodName = 'resourceChangedFunc';
-    console.log( `PLC ${methodName} entry, resource: ${JSON.stringify( resource )}` );
-
     const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.orgId);
-    console.log( `PLC ${methodName} topic: ${JSON.stringify( topic )}` );
     if (this.enabled) {
       let op = 'upsert';
       if (resource.deleted) {
         op = 'delete';
       }
       try {
-        console.log( `PLC ${methodName} publishing resource updates: ${JSON.stringify( resource )}` );
         logger.debug({ op, resource: Object.assign({}, resource, {data: undefined, searchableData: undefined}), topic }, 'Publishing resource updates');  // Log without data / searchable data as they may contain user names in errors.
         await this.pubSub.publish(topic, {
           resourceUpdated: { resource, op },
         });
       } catch (error) {
-        console.log( `PLC ${methodName} Resource publish error: ${error.message}` );
         logger.error(error, 'Resource publish error');
         throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, please reload the page.'), context);
       }
     } else {
-      console.log( `PLC ${methodName} pubsub is not ready` );
       logger.warn( { resource, topic }, 'Failed to Publish resource update, since pubsub is not ready.');
       throw new RazeeQueryError(context.req.t('Failed to Publish resource notification, pubsub is not ready yet, please retry later.'), context);
     }

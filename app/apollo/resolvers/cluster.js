@@ -23,7 +23,6 @@ const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
 
-//PLC
 const { validateString, validateJson } = require('../utils/directives');
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
@@ -333,7 +332,6 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'cluster_id', cluster_id );
 
@@ -383,7 +381,6 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
 
       try {
@@ -428,7 +425,6 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateJson( 'registration', registration );
 
@@ -492,7 +488,6 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'cluster_id', cluster_id );
 

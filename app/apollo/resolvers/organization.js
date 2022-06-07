@@ -18,7 +18,6 @@ const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError, NotFoundError, RazeeForbiddenError } = require ('./common');
 const { v4: UUID } = require('uuid');
 
-//PLC
 const { validateString } = require('../utils/directives');
 
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
@@ -154,7 +153,6 @@ const organizationResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} user is authorized`);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'name', name );
 
@@ -222,7 +220,6 @@ const organizationResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} user is authorized`);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'uuid', uuid );
 
@@ -332,7 +329,6 @@ const organizationResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} user is authorized`);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'uuid', uuid );
       if( name ) validateString( 'name', name );

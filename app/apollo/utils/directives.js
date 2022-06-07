@@ -15,23 +15,18 @@
  */
 
 const { ValidationError } = require('apollo-server');
-//PLC const { SchemaDirectiveVisitor } = require('apollo-server-express');
 const { DIRECTIVE_LIMITS } = require('../models/const');
 const mongoSanitize = require('express-mongo-sanitize');
 
-//PLC
-//const { mapSchema, getDirective, MapperKind } = require('@graphql-tools/utils');
-//const { GraphQLSchema, isScalarType, isNonNullType, GraphQLScalarType, defaultFieldResolver } = require('graphql');
-//const { gql } = require('apollo-server-express');
+/*
+Note: validation is no longer done by 'directives', see comments in ../index.js before `createApolloServer` for details
+*/
 
-
-//PLC
 const validateString = function( name, value ) {
   const methodName = 'validateString';
 
   const MAXLEN = (name === 'content') ? DIRECTIVE_LIMITS.MAX_CONTENT_LENGTH : DIRECTIVE_LIMITS.MAX_STRING_LENGTH;
   const MINLEN = DIRECTIVE_LIMITS.MIN_STRING_LENGTH;
-  console.log( `PLC ${methodName} entry, name: '${name}', value: '${value}', MAXLEN: ${MAXLEN}, MINLEN: ${MINLEN}` );
 
   if( value.length > MAXLEN || value.length < MINLEN ) {
     throw new ValidationError(`The ${name}'s value '${value}' should be longer than ${MINLEN} and less then ${MAXLEN}`);
@@ -44,9 +39,7 @@ const validateString = function( name, value ) {
   }
 };
 
-//PLC
 const parseTree = function( name, parent, totalAllowed ) {
-  console.log( `PLC parseTree entry, name: ${name}, totalAllowed: ${totalAllowed}` );
   var hasNonLeafNodes = false;
   var childCount = 0;
   var keylen = 0;
@@ -87,7 +80,6 @@ const parseTree = function( name, parent, totalAllowed ) {
   }
 };
 const validateJson = function( name, value ) {
-  console.log( `PLC validateJson entry, name: ${name}` );
   if (value) {
     const hasProhibited = mongoSanitize.has(value);
     if (hasProhibited) {
@@ -97,40 +89,4 @@ const validateJson = function( name, value ) {
   }
 };
 
-/*
-//PLC
-const upperDirectiveTransformer = (directiveName) => {
-  return schema => mapSchema(
-    schema,
-    {
-      [MapperKind.OBJECT_FIELD]: fieldConfig => {
-        //console.log( `PLC upper OBJECT_FIELD entry` );
-        const upperDirective = getDirective(schema, fieldConfig, directiveName)?.[0]
-        if (upperDirective) {
-          console.log( `PLC upper directive applies, fieldConfig: ${JSON.stringify( fieldConfig, null, 2 )}` );
-          //const { resolve = defaultFieldResolver } = fieldConfig;
-          const resolve = fieldConfig.resolve || defaultFieldResolver;
-          console.log( `PLC upper resolve: ${resolve}` );
-          return {
-            ...fieldConfig,
-            resolve: async function (source, args, context, info) {
-              console.log( `PLC upper resolving` );
-              const result = await resolve(source, args, context, info);
-              console.log( `PLC upper resolving result: ${result}` );
-              if (typeof result === 'string') {
-                return result.toUpperCase();
-              }
-              return result;
-            }
-          }
-        }
-      }
-    }
-  );
-}
-const upperDirectiveTypeDefs = (directiveName) => {
-  return gql`directive @${directiveName} on FIELD_DEFINITION`;
-}
-*/
-
-module.exports = { /*upperDirectiveTransformer, upperDirectiveTypeDefs,*/ validateString, validateJson };
+module.exports = { validateString, validateJson };

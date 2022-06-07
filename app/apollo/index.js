@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-//PLC
 const { execute, subscribe } = require( 'graphql' );
 const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
 const { makeExecutableSchema } = require( '@graphql-tools/schema' );
 let subscriptionServer;
 const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
 const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
-//const { upperDirectiveTypeDefs, upperDirectiveTransformer } = require('./utils/directives');
-//const { constraintDirective, constraintDirectiveTypeDefs } = require('graphql-constraint-directive');
-//PLC
 
 const http = require('http');
 const express = require('express');
 const router = express.Router();
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-//PLC const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { createLogger, createExpressLogger } = require('../log');
 const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
@@ -120,10 +115,9 @@ const loadCustomPlugins =  () => {
 var SIGTERM = false;
 process.on('SIGTERM', () => SIGTERM = true);
 
-const createApolloServer = (schema /*PLC*/) => {
+const createApolloServer = (schema) => {
   const customPlugins = loadCustomPlugins();
 
-  //PLC
   customPlugins.push({
     async serverWillStart() {
       return {
@@ -149,16 +143,7 @@ const createApolloServer = (schema /*PLC*/) => {
     plugins: customPlugins,
     //PLC tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
     //PLC playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
-    //PLC typeDefs,
-    //PLC resolvers,
     schema,
-    //PLC schemaDirectives for argument validation is no longer supported, instead resolvers must verify input directly.
-    /*
-    schemaDirectives: {
-      sv: IdentifierDirective,
-      jv: JsonDirective,
-    },
-    */
     //PLC FIXME CSRF protection needs to be assessed (is this from graphql-upload?)
     formatError: error => {
       // remove the internal sequelize error message
@@ -179,58 +164,23 @@ const createApolloServer = (schema /*PLC*/) => {
         connection
       });
     },
-    /*
-    PLC
-    subscriptions: {
-      path: GRAPHQL_PATH,
-      keepAlive: 10000,
-      onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
-        let orgKey, orgId;
-        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
-          orgKey = connectionParams.headers['razee-org-key'];
-          const org = await models.Organization.findOne({ orgKeys: orgKey });
-          orgId = org._id;
-        }
-        const req_id = uuid();
-        const logger  = createLogger('razeedash-api/app/apollo/subscription', { req_id, org_id: orgId });
-
-        logger.debug('subscriptions:onConnect upgradeReq getMe');
-
-        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, logger},);
-        if (me === undefined) {
-          throw Error(
-            'Can not find the session for this subscription request.',
-          );
-        }
-        // add original upgrade request to the context
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
-      },
-      onDisconnect: (webSocket, context) => {
-        initLogger.debug(
-          { headers: context.request.headers },
-          'subscriptions:onDisconnect upgradeReq getMe',
-        );
-      },
-    },
-    */
   });
   return server;
 };
 
-//PLC
 const createSubscriptionServer = (httpServer, apolloServer, schema) => {
-  return SubscriptionServer.create(
+  return SubscriptionServer.create( // SubscriptionServer from subscriptions-transport-ws
     {
       // This is the `schema` we just created.
       schema,
       // These are imported from `graphql`.
       execute,
       subscribe,
+      keepAlive: 10000,
       // Providing `onConnect` is the `SubscriptionServer` equivalent to the
       // `context` function in `ApolloServer`. Please [see the docs](https://github.com/apollographql/subscriptions-transport-ws#constructoroptions-socketoptions--socketserver)
       // for more information on this hook.
       onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
-        console.log( `PLC index.SubscriptionServer.onConnect entry` );
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
@@ -249,7 +199,8 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
           );
         }
         // add original upgrade request to the context
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
+        const subscriptionContext = { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
+        return await buildCommonApolloContext( { models, req: context.request, res: { this_is_a_dummy_response: true }, connection: { context: subscriptionContext } } );
       },
     },
     {
@@ -283,22 +234,9 @@ const apollo = async (options = {}) => {
     app.use(GRAPHQL_PATH, router);
     initModule.initApp(app, models, initLogger);
 
-    //PLC
     resolvers.Upload = GraphQLUpload;
 
-    //PLC
     const schema = makeExecutableSchema({ typeDefs, resolvers });
-    /*
-    Directive like 'upper' is functional, but doesn't do validation, only output modification.
-    */
-    //const schema = (upperDirectiveTransformer('upper')( makeExecutableSchema({ typeDefs: [ upperDirectiveTypeDefs('upper'), ...typeDefs ], resolvers }) ));
-
-    /*
-    'constraint' is not exactly functional, apparently due to the way our GQL is defined.  Attempting to use the GQL API with @constraint results in an error like:
-    Variable \"$name\" of type \"String!\" used in position expecting type \"name_String_NotNull_minLength_5!\".
-    whether the input would pass the validation or not.
-    */
-    //const schema = constraintDirective()( makeExecutableSchema( { typeDefs: [constraintDirectiveTypeDefs, typeDefs] } ) );
 
     /*
     As noted in https://www.apollographql.com/blog/backend/validation/graphql-validation-using-directives/ :
@@ -312,15 +250,10 @@ const apollo = async (options = {}) => {
       mutation ($orgId: String!, $name: name_String_NotNull_minLength_5!, $data_location: String) { addChannel(orgId: $orgId, name: $name, [...]
     But we can't change the usage pattern to specify new types -- it would break anything using the existing API with `String!` (e.g. UI and CLI **at least**).
 
-    Instead, we need to use explicit validation.
-      - In each resolver <<<< THIS ONE
+    Instead, we need to use explicit validation in each resolver:
         - Easiest to implement
         - Easiest to 'miss' validation
         - Does not honor `@sv` and `@jv` from the schema directly
-      - In new middleware, passed the schema
-        - Hardest to implement
-        - More consistent
-        - Honors `@sv` and `@jv` from the schema directly
     */
 
     const server = createApolloServer(schema);
@@ -328,7 +261,6 @@ const apollo = async (options = {}) => {
     //PLC - may not jive with subscriptionserver?
     await server.start();
 
-    //PLC
     // This middleware should be added before calling `applyMiddleware`.
     app.use(graphqlUploadExpress());
 
@@ -349,7 +281,6 @@ const apollo = async (options = {}) => {
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
 
-    //PLC
     //server.installSubscriptionHandlers(httpServer);
     subscriptionServer = createSubscriptionServer( httpServer, server, schema );
 

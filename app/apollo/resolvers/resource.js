@@ -16,7 +16,6 @@
 
 const _ = require('lodash');
 
-//PLC const { withFilter } = require('apollo-server');
 const { withFilter } = require('graphql-subscriptions');
 
 const GraphqlFields = require('graphql-fields');
@@ -440,19 +439,15 @@ const resourceResolvers = {
   },
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { orgId: org_id, filter, parent: parentPLC }, { models, req_id, logger }) => {
-        console.log( `PLC Subscription.resourceUpdated.resolve entry, parent: ${parent}, org_id: ${org_id}, filter: ${filter}, req_id: ${req_id}, parentPLC: ${parentPLC}` );
+      resolve: (parent, { orgId: org_id, filter }, { models, req_id, logger }) => {
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, req_id },
           'Subscription.resourceUpdated.resolve',
         );
-
-        //PLC
-        //if( !parent ) throw new Error( `PLC no parent error` );
-
         const { resourceUpdated } = parent;
         return resourceUpdated;
       },
+
       subscribe: withFilter(
         // eslint-disable-next-line no-unused-vars
         (parent, args, context) => {

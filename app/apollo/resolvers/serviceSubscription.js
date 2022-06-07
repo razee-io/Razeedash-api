@@ -27,7 +27,6 @@ const subscriptionResolvers = require('./subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-//PLC
 const { validateString } = require('../utils/directives');
 
 const serviceResolvers = {
@@ -126,7 +125,6 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'name', name );
       validateString( 'clusterId', clusterId );
@@ -190,7 +188,6 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'ssid', ssid );
       validateString( 'name', name );
@@ -231,7 +228,6 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'ssid', ssid );
 

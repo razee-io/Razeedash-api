@@ -705,33 +705,11 @@ describe('resource graphql test suite', () => {
         let dataReceivedFromSub;
 
         token = await signInUser(models, api, user02Data);
-        console.log( 'PLC user signed in' );
 
-        //PLC
-        await sleep(2000);
-        console.log( ' \n ' );
-        console.log( 'PLC calling pubSub.resourceChangedFunc (before subscribing to changes)' );
-        console.log( ' \n ' );
-        aResource.orgId = org_02._id;
-        pubSub.resourceChangedFunc(aResource, log);
-        console.log( ' \n ' );
-        console.log( 'PLC finished pubSub.resourceChangedFunc (before subscribing to changes)' );
-        console.log( ' \n ' );
-        await sleep(2000);
-
-
-        console.log( ' \n ' );
-        console.log( 'PLC creating subClient, subscriptionUrl: ${subscriptionUrl}...' );
-        console.log( ' \n ' );
         const subClient = new SubClient({
           wsUrl: subscriptionUrl,
           token,
         });
-        console.log( ' \n ' );
-        console.log( `PLC subClient created` );
-        console.log( ' \n ' );
-        await sleep(2000);
-
         const query = `subscription ($orgId: String!, $filter: String) {
           resourceUpdated (orgId: $orgId, filter: $filter) {
             resource {
@@ -749,11 +727,7 @@ describe('resource graphql test suite', () => {
         }`;
 
         const meResult = await api.me(token);
-        console.log( `PLC meResult: ${JSON.stringify(meResult.data.data)}` );
 
-
-
-        /*
         const unsub = subClient.request(
           query,
           {
@@ -763,100 +737,37 @@ describe('resource graphql test suite', () => {
         ).subscribe(
           {
             next: data => {
-              console.log( `PLC data received` );
               dataReceivedFromSub = data.data.resourceUpdated.resource;
-              console.log( `PLC dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
             },
             error: error => {
-              console.log( `PLC subscription failed` );
-              console.log( error );
               console.error('subscription failed', error.stack);
-              //console.log( `PLC IGNORING subscribe ERROR`)
               throw error;
             },
           }
         );
-        */
-        console.log( ' \n ' );
-        console.log( 'PLC: creating unsubreq (subClient.request)...' );
-        console.log( ' \n ' );
-        const unsubreq = subClient.request(
-          query,
-          {
-            orgId: meResult.data.data.me.orgId,
-            filter: 'bla2',
-          }
-        );
-        console.log( `PLC: unsubreq: ${JSON.stringify(unsubreq)}` );
-        console.log( ' \n ' );
-        await sleep(2000);
-        console.log( ' \n ' );
-        console.log( 'PLC subscribing unsubreq (unsubreq.subscribe)...' );
-        const unsub = unsubreq.subscribe(
-          {
-            next: data => {
-              console.log( `PLC unsubreq.subscribe next: data received: ${JSON.stringify(data)}` );
-              console.log( `PLC unsubreq.subscribe next: data.data.resourceUpdated.resource: ${data.data.resourceUpdated.resource}` );
-              dataReceivedFromSub = data.data.resourceUpdated.resource;
-              console.log( `PLC unsubreq.subscribe next: dataReceivedFromSub: ${JSON.stringify(dataReceivedFromSub)}` );
-            },
-            error: error => {
-              console.log( 'PLC unsubreq.subscribe error: subscription failed' );
-              console.log( error );
-              console.error( error );
-              console.error('subscription failed', error.stack);
-              //console.log( `PLC IGNORING subscribe ERROR`);
-              throw error;
-            },
-            plcCustom: o => {
-              console.log( `PLC this should never be called, added just to make it easier to identify the argument passed to subscribe()` );
-            },
-          }
-        );
-        console.log( `PLC: unsubreq subscribed, unsub: ${JSON.stringify(unsub)}` );
-        console.log( ' \n ' );
 
         // sleep 0.1 second and send a resourceChanged event
-        await sleep(2000);  //PLC wait longer
-        console.log( ' \n ' );
-        console.log( 'PLC pubSub.resourceChangedFunc for changed resource....' );
-        console.log( ' \n ' );
+        await sleep(100);
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource, log);
-        console.log( ' \n ' );
-        console.log( 'PLC pubSub.resourceChangedFunc complete, expecting subscription message shortly....' );
-        console.log( ' \n ' );
-        // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
-        await sleep(2000);  //PLC wait longer
 
-        console.log( ' \n ' );
-        console.log( 'ABORTING' );
-        console.log( ' \n ' );
-        throw new Error( `PLC ABORT -- should have received subscription in unsubreq 'next' by now... `)
-
-        // sleep another 0.1 second and verify if sub received the event
+        // sleep another 0.8 second and verify if sub received the event
         await sleep(800);
         expect(dataReceivedFromSub.id).to.equal('some_fake_id');
-        console.log( `PLC dataReceivedFromSub.id: ${dataReceivedFromSub.id}` );
 
         // sleep 0.1 second and send a resourceChanged event
         await sleep(100);
         // const result1 = await api.resourceChanged({r: anotherResource});
         pubSub.resourceChangedFunc(anotherResource, log);
-        console.log( 'PLC pubSub.resourceChangedFunc' );
         // expect(result1.data.data.resourceChanged._id).to.equal('anther_fake_id');
 
         await unsub.unsubscribe();
-        console.log( 'PLC unsubscribed' );
 
         await sleep(100);
 
         await subClient.close();
-        console.log( 'PLC subClient.close' );
       } catch (error) {
-        //console.log( `PLC FAKING SUCCESS` );
-        //return;
         console.error(error);
         console.error('error response is ', error.response);
         throw error;

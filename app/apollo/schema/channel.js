@@ -17,11 +17,10 @@
 const { gql } = require('apollo-server-express');
 
 const channelSchema = gql`
-  # PLC
   # The implementation for this scalar is provided by the
   # 'GraphQLUpload' export from the 'graphql-upload' package
-  # in the resolver map below.
-  # PLC in the index.js actually
+  # in the index.js
+  # PLC
   scalar Upload
 
   type ChannelVersion {

@@ -29,7 +29,6 @@ const { groupsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-//PLC
 const { validateString } = require('../utils/directives');
 
 const groupResolvers = {
@@ -111,7 +110,6 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'name', name );
 
@@ -144,7 +142,6 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
 
@@ -186,7 +183,6 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'name', name );
 
@@ -248,7 +244,6 @@ const groupResolvers = {
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
       clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -332,7 +327,6 @@ const groupResolvers = {
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       groupUuids.forEach( value => validateString( 'groupUuids', value ) );
       clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -374,7 +368,6 @@ const groupResolvers = {
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'clusterId', clusterId );
       groupUuids.forEach( value => validateString( 'groupUuids', value ) );
@@ -426,7 +419,6 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
       clusters.forEach( value => validateString( 'clusters', value ) );
@@ -470,7 +462,6 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
       clusters.forEach( value => validateString( 'clusters', value ) );

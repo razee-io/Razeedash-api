@@ -17,7 +17,6 @@
 const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 
-//PLC const { withFilter } = require('apollo-server');
 const { withFilter } = require('graphql-subscriptions');
 
 const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
@@ -38,7 +37,6 @@ const { subscriptionsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-//PLC
 const { validateString } = require('../utils/directives');
 
 async function validateGroups(org_id, groups, context) {
@@ -293,7 +291,6 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'name', name );
       groups.forEach( value => { validateString( 'groups', value ); } );
@@ -364,7 +361,6 @@ const subscriptionResolvers = {
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
-      //PLC
       validateString( 'orgId', orgId );
       validateString( 'uuid', uuid );
       validateString( 'name', name );
@@ -473,7 +469,6 @@ const subscriptionResolvers = {
       const queryName = 'setSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
       validateString( 'version_uuid', version_uuid );
@@ -547,7 +542,6 @@ const subscriptionResolvers = {
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context);
 
-      //PLC
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
 
