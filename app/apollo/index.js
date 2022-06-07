@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,10 +141,7 @@ const createApolloServer = (schema) => {
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
-    //PLC tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    //PLC playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
     schema,
-    //PLC FIXME CSRF protection needs to be assessed (is this from graphql-upload?)
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -239,6 +236,7 @@ const apollo = async (options = {}) => {
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
     /*
+    Notes:
     As noted in https://www.apollographql.com/blog/backend/validation/graphql-validation-using-directives/ :
     > Today, people most commonly write this kind of validation logic in their resolver functions or models.
     > However, this means we can’t easily see our validation logic, and we have to write some repetitive code
@@ -258,11 +256,11 @@ const apollo = async (options = {}) => {
 
     const server = createApolloServer(schema);
 
-    //PLC - may not jive with subscriptionserver?
     await server.start();
 
     // This middleware should be added before calling `applyMiddleware`.
     app.use(graphqlUploadExpress());
+    //Note: there does not yet appear to be an automated test for upload, it is unclear if this even functioning.
 
     server.applyMiddleware({
       app,

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 const { gql } = require('apollo-server-express');
 
+/*
+Note: `scalar Upload` implementation is provided by GraphQLUpload in app/apollo/index.js
+*/
+
 const channelSchema = gql`
-  # The implementation for this scalar is provided by the
-  # 'GraphQLUpload' export from the 'graphql-upload' package
-  # in the index.js
-  # PLC
   scalar Upload
 
   type ChannelVersion {
