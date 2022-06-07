@@ -727,15 +727,12 @@ describe('resource graphql test suite', () => {
         }`;
 
         const meResult = await api.me(token);
-
-        const unsub = subClient.request(
-          query,
-          {
+        const unsub = subClient
+          .request(query, {
             orgId: meResult.data.data.me.orgId,
             filter: 'bla2',
-          }
-        ).subscribe(
-          {
+          })
+          .subscribe({
             next: data => {
               dataReceivedFromSub = data.data.resourceUpdated.resource;
             },
@@ -743,16 +740,16 @@ describe('resource graphql test suite', () => {
               console.error('subscription failed', error.stack);
               throw error;
             },
-          }
-        );
+          });
 
         // sleep 0.1 second and send a resourceChanged event
-        await sleep(100);
+        await sleep(200);
         aResource.orgId = org_02._id;
         // const result = await api.resourceChanged({r: aResource});
         pubSub.resourceChangedFunc(aResource, log);
+        // expect(result.data.data.resourceChanged._id).to.equal('some_fake_id');
 
-        // sleep another 0.8 second and verify if sub received the event
+        // sleep another 0.1 second and verify if sub received the event
         await sleep(800);
         expect(dataReceivedFromSub.id).to.equal('some_fake_id');
 
