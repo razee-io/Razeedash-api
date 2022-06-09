@@ -15,7 +15,9 @@
  */
 
 const _ = require('lodash');
-const { withFilter } = require('apollo-server');
+
+const { withFilter } = require('graphql-subscriptions');
+
 const GraphqlFields = require('graphql-fields');
 
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
@@ -437,7 +439,7 @@ const resourceResolvers = {
   },
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { orgID: org_id, filter }, { models, req_id, logger }) => {
+      resolve: (parent, { orgId: org_id, filter }, { models, req_id, logger }) => {
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, req_id },
           'Subscription.resourceUpdated.resolve',

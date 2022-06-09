@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ const fs = require('fs');
 const Redis = require('ioredis');
 const { RedisPubSub } = require('graphql-redis-subscriptions');
 const isPortReachable = require('is-port-reachable');
-const { PubSub } = require('apollo-server');
+const { PubSub } = require('graphql-subscriptions');
 const { APOLLO_STREAM_SHARDING } = require('../models/const');
 const { RazeeQueryError } = require('../resolvers/common');
 const { createLogger } = require('../../log');

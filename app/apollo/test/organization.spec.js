@@ -141,6 +141,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to add an OrgKey', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         console.log( `adding ${orgKeyName1} to '${orgTmp.id}'` );
@@ -168,6 +170,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to add a second OrgKey', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         console.log( `adding ${orgKeyName2} to '${orgTmp.id}'` );
@@ -195,6 +199,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to list OrgKeys', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -217,6 +223,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to get an OrgKey by UUID', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -243,6 +251,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to get an OrgKey by Name', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -269,6 +279,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to edit an OrgKey', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -317,6 +329,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to remove a non-Primary OrgKey', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         console.log( `removing ${orgKeyUuid2} from '${orgTmp.id}'` );
@@ -340,6 +354,8 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should NOT be able to remove a Primary OrgKey', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}'` );
@@ -358,6 +374,8 @@ describe('organization graphql test suite', () => {
       }
     });
     it('an admin user SHOULD be able to remove a Primary OrgKey with forceDeletion', async () => {
+      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
+
       token = await signInUser(models, api, rootData);
       try {
         console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}' with forceDeletion` );

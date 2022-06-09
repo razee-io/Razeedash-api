@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
+const { execute, subscribe } = require( 'graphql' );
+const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
+const { makeExecutableSchema } = require( '@graphql-tools/schema' );
+let subscriptionServer;
+const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
+const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
+
 const http = require('http');
 const express = require('express');
 const router = express.Router();
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-const { IdentifierDirective, JsonDirective } = require('./utils/directives');
 const { createLogger, createExpressLogger } = require('../log');
 const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
@@ -109,8 +115,19 @@ const loadCustomPlugins =  () => {
 var SIGTERM = false;
 process.on('SIGTERM', () => SIGTERM = true);
 
-const createApolloServer = () => {
+const createApolloServer = (schema) => {
   const customPlugins = loadCustomPlugins();
+
+  customPlugins.push({
+    async serverWillStart() {
+      return {
+        async drainServer() {
+          subscriptionServer.close();
+        }
+      };
+    }
+  });
+
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
     initLogger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
@@ -124,14 +141,7 @@ const createApolloServer = () => {
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
-    tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
-    typeDefs,
-    resolvers,
-    schemaDirectives: {
-      sv: IdentifierDirective,
-      jv: JsonDirective,
-    },
+    schema,
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -151,9 +161,22 @@ const createApolloServer = () => {
         connection
       });
     },
-    subscriptions: {
-      path: GRAPHQL_PATH,
+  });
+  return server;
+};
+
+const createSubscriptionServer = (httpServer, apolloServer, schema) => {
+  return SubscriptionServer.create( // SubscriptionServer from subscriptions-transport-ws
+    {
+      // This is the `schema` we just created.
+      schema,
+      // These are imported from `graphql`.
+      execute,
+      subscribe,
       keepAlive: 10000,
+      // Providing `onConnect` is the `SubscriptionServer` equivalent to the
+      // `context` function in `ApolloServer`. Please [see the docs](https://github.com/apollographql/subscriptions-transport-ws#constructoroptions-socketoptions--socketserver)
+      // for more information on this hook.
       onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
@@ -173,18 +196,19 @@ const createApolloServer = () => {
           );
         }
         // add original upgrade request to the context
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
-      },
-      onDisconnect: (webSocket, context) => {
-        initLogger.debug(
-          { headers: context.request.headers },
-          'subscriptions:onDisconnect upgradeReq getMe',
-        );
+        const subscriptionContext = { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
+        return await buildCommonApolloContext( { models, req: context.request, res: { this_is_a_dummy_response: true }, connection: { context: subscriptionContext } } );
       },
     },
-  });
-  return server;
+    {
+      // `httpServer` is the instance returned from `http.createServer`.
+      server: httpServer,
+      // `apolloServer` is the instance returned from `new ApolloServer`.
+      path: apolloServer.graphqlPath,
+    }
+  );
 };
+
 
 const stop = async (apollo) => {
   await apollo.db.connection.close();
@@ -207,7 +231,37 @@ const apollo = async (options = {}) => {
     app.use(GRAPHQL_PATH, router);
     initModule.initApp(app, models, initLogger);
 
-    const server = createApolloServer();
+    resolvers.Upload = GraphQLUpload;
+
+    const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+    /*
+    Notes:
+    As noted in https://www.apollographql.com/blog/backend/validation/graphql-validation-using-directives/ :
+    > Today, people most commonly write this kind of validation logic in their resolver functions or models.
+    > However, this means we can’t easily see our validation logic, and we have to write some repetitive code
+    > to verify the same kinds of conditions over and over.
+    The blog goes on to describe how to use Directives, but using a directive to validate arguments doesn't seem feasible at this point.
+    The approach described (`graphql-constraint-directive`) works, but doesn't work with how our queries/mutations are defined,
+    resulting in errors like `Variable \"$name\" of type \"String!\" used in position expecting type \"name_String_NotNull_minLength_5!\".`
+    Changing the Graphql POST to be like this allows using the new type successfully with validation:
+      mutation ($orgId: String!, $name: name_String_NotNull_minLength_5!, $data_location: String) { addChannel(orgId: $orgId, name: $name, [...]
+    But we can't change the usage pattern to specify new types -- it would break anything using the existing API with `String!` (e.g. UI and CLI **at least**).
+
+    Instead, we need to use explicit validation in each resolver:
+        - Easiest to implement
+        - Easiest to 'miss' validation
+        - Does not honor `@sv` and `@jv` from the schema directly
+    */
+
+    const server = createApolloServer(schema);
+
+    await server.start();
+
+    // This middleware should be added before calling `applyMiddleware`.
+    app.use(graphqlUploadExpress());
+    //Note: there does not yet appear to be an automated test for upload, it is unclear if this even functioning.
+
     server.applyMiddleware({
       app,
       cors: {origin: true},
@@ -224,7 +278,10 @@ const apollo = async (options = {}) => {
     });
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
-    server.installSubscriptionHandlers(httpServer);
+
+    //server.installSubscriptionHandlers(httpServer);
+    subscriptionServer = createSubscriptionServer( httpServer, server, schema );
+
     httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;

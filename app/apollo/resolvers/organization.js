@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 const { ACTIONS, TYPES } = require('../models/const');
 const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError, NotFoundError, RazeeForbiddenError } = require ('./common');
 const { v4: UUID } = require('uuid');
+
+const { validateString } = require('../utils/directives');
 
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
   const sets = {};
@@ -89,6 +91,8 @@ const organizationResolvers = {
       }
 
       try {
+        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
+
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} org retrieved`);
         //console.log( `org: ${JSON.stringify(org, null, 2)}` );
@@ -151,7 +155,12 @@ const organizationResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} user is authorized`);
 
+      validateString( 'orgId', orgId );
+      validateString( 'name', name );
+
       try {
+        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
+
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
         //console.log( `org: ${JSON.stringify(org, null, 2)}` );
@@ -215,7 +224,12 @@ const organizationResolvers = {
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} user is authorized`);
 
+      validateString( 'orgId', orgId );
+      validateString( 'uuid', uuid );
+
       try {
+        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
+
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} org retrieved`);
 
@@ -320,6 +334,10 @@ const organizationResolvers = {
 
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
       logger.info({ req_id, user: whoIs(me), orgId, uuid, name, primary }, `${queryName} user is authorized`);
+
+      validateString( 'orgId', orgId );
+      validateString( 'uuid', uuid );
+      if( name ) validateString( 'name', name );
 
       try {
         const org = await models.Organization.findById(orgId);

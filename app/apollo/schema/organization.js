@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ const organizationSchema = gql`
     addOrgKey (
       orgId: String! @sv
       name: String! @sv
-      primary: Boolean! @sv
+      primary: Boolean!
     ): AddOrgKeyReply!
 
     """
@@ -87,7 +87,7 @@ const organizationSchema = gql`
     removeOrgKey (
       orgId: String! @sv
       uuid: String! @sv
-      forceDeletion: Boolean @sv
+      forceDeletion: Boolean
     ): RemoveOrgKeyReply!
 
     """
@@ -96,8 +96,8 @@ const organizationSchema = gql`
     editOrgKey (
       orgId: String! @sv
       uuid: String! @sv
-      name: String @sv
-      primary: Boolean @sv
+      name: String
+      primary: Boolean
     ): EditOrgKeyReply!
   }
 `;
