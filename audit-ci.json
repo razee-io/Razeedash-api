@@ -1,6 +1,6 @@
 {
   "low": true,
-  "_allowlistInfo": "GHSA-wm7h-9275-46v2: dicer package has no available fix, separate branch will explore major version update to apollo-server-express to eliminate dependency.",
-  "allowlist": ["GHSA-wm7h-9275-46v2"],
+  "_allowlistInfo": "none",
+  "allowlist": [],
   "skip-dev": true
 }
