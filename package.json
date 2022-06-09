@@ -78,7 +78,7 @@
     "moment": "^2.29.2",
     "mongodb": "^3.6.5",
     "mongoose": "^5.13.9",
-    "mongoose-lean-defaults": "^2.0.1",
+    "mongoose-lean-defaults": "2.1.0",
     "mongoose-lean-virtuals": "^0.8.1",
     "mustache": "^4.1.0",
     "object-hash": "^2.1.1",
