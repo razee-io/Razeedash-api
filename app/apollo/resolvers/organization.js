@@ -91,8 +91,6 @@ const organizationResolvers = {
       }
 
       try {
-        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
-
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId }, `${queryName} org retrieved`);
         //console.log( `org: ${JSON.stringify(org, null, 2)}` );
@@ -159,8 +157,6 @@ const organizationResolvers = {
       validateString( 'name', name );
 
       try {
-        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
-
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
         //console.log( `org: ${JSON.stringify(org, null, 2)}` );
@@ -228,8 +224,6 @@ const organizationResolvers = {
       validateString( 'uuid', uuid );
 
       try {
-        if( !process.env.ORGKEYMGMT_ENABLED ) throw new Error( 'disabled' );
-
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} org retrieved`);
 

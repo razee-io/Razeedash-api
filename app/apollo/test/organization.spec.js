@@ -115,7 +115,8 @@ describe('organization graphql test suite', () => {
   describe('organisations(org_id: String!): URL!', () => {
     let token;
 
-    let orgTmp = {};
+    let readerOrg = {};
+    let adminOrg = {};
     const orgKeyName1 = 'orgKey1';
     const orgKeyName2 = 'orgKey2';
     let orgKeyUuid1 = null;
@@ -125,14 +126,28 @@ describe('organization graphql test suite', () => {
       try {
         token = await signInUser(models, api, user01Data);
 
+        const orgsResult = await api.organizations(token);
+        console.log(JSON.stringify(orgsResult.data));
+        expect(orgsResult.data.data.organizations).to.be.a('array');
+        expect(orgsResult.data.data.organizations.length).to.equal(1);
+
+        readerOrg = orgsResult.data.data.organizations[0];
+        console.log( `readerOrg: ${JSON.stringify(readerOrg, null, 2)}` );
+      } catch (error) {
+        console.error('error response is ', error.response);
+        // console.error('error response is ', JSON.stringify(error.response.data));
+        throw error;
+      }
+      try {
+        token = await signInUser(models, api, rootData);
 
         const orgsResult = await api.organizations(token);
         console.log(JSON.stringify(orgsResult.data));
         expect(orgsResult.data.data.organizations).to.be.a('array');
         expect(orgsResult.data.data.organizations.length).to.equal(1);
 
-        orgTmp = orgsResult.data.data.organizations[0];
-        console.log( `orgTmp: ${JSON.stringify(orgTmp, null, 2)}` );
+        adminOrg = orgsResult.data.data.organizations[0];
+        console.log( `adminOrg: ${JSON.stringify(adminOrg, null, 2)}` );
       } catch (error) {
         console.error('error response is ', error.response);
         // console.error('error response is ', JSON.stringify(error.response.data));
@@ -141,17 +156,15 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to add an OrgKey', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `adding ${orgKeyName1} to '${orgTmp.id}'` );
+        console.log( `adding ${orgKeyName1} to '${adminOrg.id}'` );
         const {
           data: {
             data: { addOrgKey },
           },
         } = await orgKeyApi.addOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           name: orgKeyName1,
           primary: true
         });
@@ -170,17 +183,15 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to add a second OrgKey', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `adding ${orgKeyName2} to '${orgTmp.id}'` );
+        console.log( `adding ${orgKeyName2} to '${adminOrg.id}'` );
         const {
           data: {
             data: { addOrgKey },
           },
         } = await orgKeyApi.addOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           name: orgKeyName2,
           primary: true
         });
@@ -199,8 +210,6 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to list OrgKeys', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -208,7 +217,7 @@ describe('organization graphql test suite', () => {
             data: { orgKeys },
           },
         } = await orgKeyApi.orgKeys(token, {
-          orgId: orgTmp.id
+          orgId: adminOrg.id
         });
         expect(orgKeys).to.be.a('array');
         expect(orgKeys.length).to.equal(3); // 3: original apikey plus the two just added
@@ -223,8 +232,6 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to get an OrgKey by UUID', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -232,7 +239,7 @@ describe('organization graphql test suite', () => {
             data: { orgKey },
           },
         } = await orgKeyApi.orgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: orgKeyUuid1,
           name: null
         });
@@ -251,8 +258,6 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to get an OrgKey by Name', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -260,7 +265,7 @@ describe('organization graphql test suite', () => {
             data: { orgKey },
           },
         } = await orgKeyApi.orgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: null,
           name: orgKeyName2
         });
@@ -279,8 +284,6 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to edit an OrgKey', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
         const {
@@ -288,7 +291,7 @@ describe('organization graphql test suite', () => {
             data: { editOrgKey },
           },
         } = await orgKeyApi.editOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: orgKeyUuid1,
           name: orgKeyName1+'_newname',
           primary: true
@@ -310,7 +313,7 @@ describe('organization graphql test suite', () => {
             data: { orgKey },
           },
         } = await orgKeyApi.orgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: null,
           name: orgKeyName1+'_newname'
         });
@@ -329,17 +332,15 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should be able to remove a non-Primary OrgKey', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `removing ${orgKeyUuid2} from '${orgTmp.id}'` );
+        console.log( `removing ${orgKeyUuid2} from '${adminOrg.id}'` );
         const {
           data: {
             data: { removeOrgKey },
           },
         } = await orgKeyApi.removeOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: orgKeyUuid2
         });
         expect(removeOrgKey.success).to.equal(true);
@@ -354,13 +355,11 @@ describe('organization graphql test suite', () => {
     });
 
     it('an admin user should NOT be able to remove a Primary OrgKey', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}'` );
+        console.log( `removing ${orgKeyUuid1} from '${adminOrg.id}'` );
         const response = await orgKeyApi.removeOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: orgKeyUuid1
         });
         expect(response.data.errors).to.exist;
@@ -374,17 +373,15 @@ describe('organization graphql test suite', () => {
       }
     });
     it('an admin user SHOULD be able to remove a Primary OrgKey with forceDeletion', async () => {
-      if( !process.env.ORGKEYMGMT_ENABLED ) { console.log( 'TEST DISABLED' ); return; }
-
       token = await signInUser(models, api, rootData);
       try {
-        console.log( `removing ${orgKeyUuid1} from '${orgTmp.id}' with forceDeletion` );
+        console.log( `removing ${orgKeyUuid1} from '${adminOrg.id}' with forceDeletion` );
         const {
           data: {
             data: { removeOrgKey },
           },
         } = await orgKeyApi.removeOrgKey(token, {
-          orgId: orgTmp.id,
+          orgId: adminOrg.id,
           uuid: orgKeyUuid1,
           forceDeletion: true
         });
