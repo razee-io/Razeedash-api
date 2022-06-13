@@ -36,7 +36,7 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
-const ServiceSubscriptions = require('./v1/serviceSubscriptions.js');
+const SystemSubscriptions = require('./v1/systemSubscriptions.js');
 const V3Gql = require('./v3/gql');
 
 router.get('/v1/health', (req, res)=>{
@@ -106,7 +106,7 @@ router.use('/v2/resources', Resources);
 
 // Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
-router.use('/v1/serviceSubscriptions', ServiceSubscriptions);
+router.use('/v1/systemSubscriptions', SystemSubscriptions);
 
 
 async function initialize(){
