@@ -85,11 +85,11 @@ const subscriptionResolvers = {
       try {
         // Add in OrgKey rollout System Subscription first, so it is most likely to be rolled out
         subs.push({
-          subscriptionUuid: `system-primaryorgkey`,
-          subscriptionName: `system-primaryorgkey`,  //Unused, but needs to be included for graphql response
-          subscriptionChannel: `system-primaryorgkey`,  //Unused, but needs to be included for graphql response
-          subscriptionVersion: `system-primaryorgkey`,  //Unused, but needs to be included for graphql response
-          url: `api/v1/systemSubscriptions/primaryOrgKey`,
+          subscriptionUuid: 'system-primaryorgkey',
+          subscriptionName: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          subscriptionChannel: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          subscriptionVersion: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          url: 'api/v1/systemSubscriptions/primaryOrgKey',
           kubeOwnerName: null,
         });
 
