@@ -26,7 +26,7 @@ const getPrimaryOrgKeySubscription = async(req, res) => {
   const razeeIdentitySecretYaml = `apiVersion: v1
 kind: Secret
 metadata:
-  name: razee-identity
+  name: razee-identity-test
   namespace: razeedeploy
   labels:
     razee/watch-resource: lite
