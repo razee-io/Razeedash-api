@@ -78,21 +78,28 @@ const subscriptionResolvers = {
       if (!cluster) {
         throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
       }
-      var clusterGroupNames = [];
-      if (cluster.groups) {
-        clusterGroupNames = cluster.groups.map(l => l.name);
-      }
+      const clusterGroupNames = (cluster.groups) ? cluster.groups.map(l => l.name) : [];
 
       logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${query} enter`);
-      let urls = [];
+      const subs = [];
       try {
-        // Return subscriptions that contain any clusterGroupNames passed in from the query
+        // Add in OrgKey rollout System Subscription first, so it is most likely to be rolled out
+        subs.push({
+          subscriptionUuid: 'system-primaryorgkey',
+          subscriptionName: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          subscriptionChannel: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          subscriptionVersion: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
+          url: 'api/v1/systemSubscriptions/primaryOrgKey',
+          kubeOwnerName: null,
+        });
+
+        // Add in any normal Subscriptions for the cluster's groups or cluster id
         // examples:
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        var foundSubscriptions = await models.Subscription.find({
+        const foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           $or: [
             { groups: { $in: clusterGroupNames } },
@@ -104,15 +111,20 @@ const subscriptionResolvers = {
             sub.channelName = sub.channel;
           }
         });
-        if(foundSubscriptions && foundSubscriptions.length > 0 ) {
-          urls = await getSubscriptionUrls(org_id, foundSubscriptions, cluster);
+        if( foundSubscriptions && foundSubscriptions.length > 0 ) {
+          const subscriptionUrls = await getSubscriptionUrls(org_id, foundSubscriptions, cluster);
+          subs.push( ...subscriptionUrls );
         }
+
+        // Add in any service subscriptions
         const serviceUrls = await getServiceSubscriptionUrls(cluster);
-        urls = urls.concat(serviceUrls);  // add service subscriptions
-      } catch (error) {
-        logger.error(error, `There was an error getting ${query} from mongo`);
+        subs.push( ...serviceUrls );
       }
-      return urls;
+      catch( error ) {
+        logger.error(error, `There was an error resolving ${query}`);
+        // Continue and return as many as possible
+      }
+      return subs;
     },
 
     subscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {

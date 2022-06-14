@@ -223,25 +223,7 @@ describe('subscriptions graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get should return a subscription for a cluster by calling subscriptionsByClusterId', async () => {
-    try {
-      const result = await subscriptionsApi.subscriptionsByClusterId(token, {
-        clusterId: cluster_id,
-      }, orgKey);
-      const subscriptionsByClusterId = result.data.data.subscriptionsByClusterId;
-      expect(subscriptionsByClusterId).to.have.length(1);
-      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
-  it('get should return a subscription for a cluster', async () => {
+  it('get should return SystemSubscriptions and regular subscriptions for a cluster with a group/subscription', async () => {
     try {
       const {
         data: {
@@ -251,8 +233,9 @@ describe('subscriptions graphql test suite', () => {
         clusterId: cluster_id
       }, orgKey);
 
-      expect(subscriptionsByClusterId).to.have.length(1);
-      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
+      expect(subscriptionsByClusterId).to.have.length(2); // one SystemSubscription, one test subscription
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
+      expect(subscriptionsByClusterId[1].subscriptionName).to.equal('fake_sub_01'); // Test subscription
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -263,7 +246,7 @@ describe('subscriptions graphql test suite', () => {
     }
   });
 
-  it('get should return an empty array when there are no matching groups', async () => {
+  it('get should return only SystemSubscriptions when a cluster has no matching groups', async () => {
     try {
       const {
         data: {
@@ -272,7 +255,8 @@ describe('subscriptions graphql test suite', () => {
       } = await subscriptionsApi.subscriptionsByClusterId(token, {
         clusterId: cluster_id_2
       }, orgKey);
-      expect(subscriptionsByClusterId).to.have.length(0);
+      expect(subscriptionsByClusterId).to.have.length(1); // one SystemSubscription, zero test subscriptions
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
