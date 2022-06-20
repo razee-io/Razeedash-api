@@ -64,9 +64,9 @@ const group_03_uuid = 'fake_group_03_uuid;';
 const group_01_77_uuid = 'fake_group_01_77_uuid;';
 const org_01_orgkey = 'orgApiKey-0a9f5ee7-c879-4302-907c-238178ec9071';
 const org_01_orgkey2 = {
- orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
- name: 'testOrgKey2',
- primary: true
+  orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
+  name: 'testOrgKey2',
+  primary: true
 };
 
 // If external auth model specified, use it.  Else use built-in auth model.
