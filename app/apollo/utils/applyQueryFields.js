@@ -98,6 +98,41 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       });
     }
   }
+
+  if(queryFields.lastOrgKey) {
+
+    const org = await models.Organization.findOne({ _id: orgId });
+        if (!org) {
+          throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+        }
+
+    clusters.forEach( c => {
+      const lastOrgKeyUuid = c.lastOrgKeyUuid;
+      if(lastOrgKeyUuid == null){
+        c.lastOrgKey = null;
+      }
+      else {
+        let lastOrgKeyName;
+        let lastOrgKey2;
+        if(org.orgKeys2){
+        lastOrgKey2 = org.orgKeys2.find( k => k.orgKeyUuid == lastOrgKeyUuid ); 
+        }
+        if(lastOrgKey2) {
+          lastOrgKeyName = lastOrgKey2.name;
+        }
+        else {
+          const lastOrgKey = org.orgKeys.find( k => k == lastOrgKeyUuid );
+          if(lastOrgKey) {
+            lastOrgKeyName = lastOrgKey.slice(-12);
+          }
+          else {
+            lastOrgKeyName = null;
+          }
+        }
+        c.lastOrgKey = { uuid: c.lastOrgKeyUuid, name: lastOrgKeyName };
+      }
+    });
+  }
 };
 
 const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{

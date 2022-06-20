@@ -29,6 +29,11 @@ const clusterSchema = gql`
     name: String!
   }
 
+  type LastOrgKey {
+    uuid: String!
+    name: String
+  }
+
   type ClusterIdentity {
     id: String!
     syncDate: String!
@@ -61,6 +66,7 @@ const clusterSchema = gql`
     updated: Date
     dirty: Boolean
     resources: [Resource!]
+    lastOrgKey: LastOrgKey
   }
 
   type KubeCountVersion {
