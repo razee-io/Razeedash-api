@@ -115,7 +115,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
         let lastOrgKeyName;
         let lastOrgKey2;
         if(org.orgKeys2){
-        lastOrgKey2 = org.orgKeys2.find( k => k.orgKeyUuid == lastOrgKeyUuid ); 
+          lastOrgKey2 = org.orgKeys2.find( k => k.orgKeyUuid == lastOrgKeyUuid ); 
         }
         if(lastOrgKey2) {
           lastOrgKeyName = lastOrgKey2.name;

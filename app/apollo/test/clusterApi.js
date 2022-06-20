@@ -37,6 +37,10 @@ const clusterFunc = grahqlUrl => {
                 uuid
                 name
               }
+              lastOrgKey {
+                uuid
+                name
+              }
           }
         }
     `,
@@ -60,6 +64,10 @@ const clusterFunc = grahqlUrl => {
               orgId
               status
               clusterId
+              lastOrgKey {
+                uuid
+                name
+              }
           }
         }
     `,
@@ -116,6 +124,10 @@ const clusterFunc = grahqlUrl => {
                 uuid
                 name
               }
+              lastOrgKey {
+                uuid
+                name
+              }
           }
         }
     `,
@@ -166,6 +178,10 @@ const clusterFunc = grahqlUrl => {
                 name
               }
               groupObjs {
+                uuid
+                name
+              }
+              lastOrgKey {
                 uuid
                 name
               }
@@ -267,6 +283,10 @@ const clusterFunc = grahqlUrl => {
                 name
               }
               groupObjs {
+                uuid
+                name
+              }
+              lastOrgKey {
                 uuid
                 name
               }
