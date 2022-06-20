@@ -62,6 +62,12 @@ const group_01_uuid = 'fake_group_01_uuid;';
 const group_02_uuid = 'fake_group_02_uuid;';
 const group_03_uuid = 'fake_group_03_uuid;';
 const group_01_77_uuid = 'fake_group_01_77_uuid;';
+const org_01_orgkey = 'orgApiKey-0a9f5ee7-c879-4302-907c-238178ec9071';
+const org_01_orgkey2 = {
+  orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
+  name: 'testOrgKey2',
+  primary: true
+};
 
 // If external auth model specified, use it.  Else use built-in auth model.
 
@@ -72,6 +78,8 @@ const createOrganizations = async () => {
       'utf8',
     ),
   );
+  // org01Data.orgKeys = [org_01_orgkey]; org model code autogenerates default org key
+  org01Data.orgKeys2 = [org_01_orgkey2];
   org01 = await prepareOrganization(models, org01Data);
   org77Data = JSON.parse(
     fs.readFileSync(
@@ -151,6 +159,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    lastOrgKeyUuid: org_01_orgkey,
     registration: { name: 'my-cluster1' },
     reg_state: 'registered',
   });
@@ -171,6 +180,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    lastOrgKeyUuid: org_01_orgkey2.orgKeyUuid,
     registration: { name: 'my-cluster2' },
     reg_state: 'registered',
     created: new Moment().subtract(2, 'day').toDate(),
@@ -363,6 +373,8 @@ describe('cluster graphql test suite', () => {
       expect(clusterByClusterId.groupObjs).to.have.length(3);
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
       expect(clusterByClusterId.status).to.equal('active');
+      expect(clusterByClusterId.lastOrgKey.uuid).to.equal(org_01_orgkey);
+
 
       //with group limit
       const result2 = await clusterApi.byClusterID(token, {
@@ -397,6 +409,8 @@ describe('cluster graphql test suite', () => {
 
       expect(clusterByClusterName.clusterId).to.equal(clusterId2);
       expect(clusterByClusterName.status).to.equal('inactive');
+      expect(clusterByClusterName.lastOrgKey.uuid).to.equal(org_01_orgkey2.orgKeyUuid);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -422,6 +436,11 @@ describe('cluster graphql test suite', () => {
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(4);
       expect(clustersByOrgId[0].resources).to.be.an('array');
+      expect(clustersByOrgId[3].lastOrgKey.uuid).to.equal(org_01_orgkey); // org model code autogenerates legacy orgkey, expects null name for cluster 1
+      expect(clustersByOrgId[2].lastOrgKey.uuid).to.equal(org_01_orgkey2.orgKeyUuid);
+      expect(clustersByOrgId[2].lastOrgKey.name).to.equal(org_01_orgkey2.name);
+      expect(clustersByOrgId[1].lastOrgKey).to.equal(null);
+      expect(clustersByOrgId[0].lastOrgKey).to.equal(null);
 
       // test skip and limit implementation
       const skipResponse = await clusterApi.byOrgID(token, {
