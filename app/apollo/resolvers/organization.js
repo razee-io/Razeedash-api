@@ -282,6 +282,13 @@ const organizationResolvers = {
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
+        // Ensure not removing the first orgKey - temporary restriction as it is used to encrypt deployable versions content before storage
+        if( org.orgKeys[0] == uuid ) {
+          // Forbidden, cannot force!
+          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (encryption)` );
+          throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+        }
+
         // Ensure not removing the last OrgKey, unless forced
         if( allOrgKeys.length == 1 ) {
           // Forbidden
