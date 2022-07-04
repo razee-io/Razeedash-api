@@ -77,7 +77,7 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.2",
     "mongodb": "^3.6.5",
-    "mongoose": "^5.13.9",
+    "mongoose": "^6.4.2",
     "mongoose-lean-defaults": "2.1.0",
     "mongoose-lean-virtuals": "^0.8.1",
     "mustache": "^4.1.0",
