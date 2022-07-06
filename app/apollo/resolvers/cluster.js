@@ -100,6 +100,8 @@ const clusterResolvers = {
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
 
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusterId, cluster }, `${queryName} found matching authorized cluster` );
+
       if(cluster){
         var { url } = await models.Organization.getRegistrationUrl(orgId, context);
         url = url + `&clusterId=${clusterId}`;
@@ -140,7 +142,7 @@ const clusterResolvers = {
 
       // If more than one matching cluster found, throw an error
       if( clusters.length > 1 ) {
-        logger.info({req_id, user: whoIs(me), org_id: orgId, clusterName }, `${queryName} found ${clusters.length} matching clusters` );
+        logger.info({req_id, user: whoIs(me), org_id: orgId, clusterName, clusters }, `${queryName} found ${clusters.length} matching clusters` );
         throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'cluster', 'name':clusterName}), context);
       }
       const cluster = clusters[0] || null;
@@ -202,6 +204,7 @@ const clusterResolvers = {
       }
 
       const clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
@@ -277,6 +280,7 @@ const clusterResolvers = {
       }
 
       const clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
@@ -429,6 +433,8 @@ const clusterResolvers = {
 
       validateString( 'org_id', org_id );
       validateJson( 'registration', registration );
+
+      logger.info({req_id, user: whoIs(me), registration}, `${queryName} creating cluster`);
 
       try {
         if (!registration.name) {

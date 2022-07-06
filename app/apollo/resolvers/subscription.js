@@ -63,9 +63,9 @@ const subscriptionResolvers = {
   Query: {
     subscriptionsByClusterId: async(parent, { clusterId: cluster_id, /* may add some unique data from the cluster later for verification. */ }, context) => {
       const { req_id, me, models, logger } = context;
-      const query = 'subscriptionsByClusterId';
-      logger.debug({req_id, user: whoIs(me), cluster_id,}, `${query} enter`);
-      await validClusterAuth(me, query, context);
+      const queryName = 'subscriptionsByClusterId';
+      logger.debug({req_id, user: whoIs(me), cluster_id,}, `${queryName} enter`);
+      await validClusterAuth(me, queryName, context);
 
       const org = await models.User.getOrg(models, me);
       if(!org) {
@@ -80,7 +80,7 @@ const subscriptionResolvers = {
       }
       const clusterGroupNames = (cluster.groups) ? cluster.groups.map(l => l.name) : [];
 
-      logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${query} enter`);
+      logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${queryName} enter`);
       const subs = [];
       try {
         // Add in OrgKey rollout System Subscription first, so it is most likely to be rolled out
@@ -106,6 +106,7 @@ const subscriptionResolvers = {
             { clusterId: cluster_id },
           ],
         }).lean(/* skip virtuals: true for now since it is class facing api. */);
+        logger.info({org_id, req_id, user: whoIs(me), cluster_id, clusterGroupNames}, `${queryName} found ${foundSubscriptions?foundSubscriptions.length:'ERR'} subscriptions for ${clusterGroupNames.length} groups`);
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
             sub.channelName = sub.channel;
@@ -121,9 +122,10 @@ const subscriptionResolvers = {
         subs.push( ...serviceUrls );
       }
       catch( error ) {
-        logger.error(error, `There was an error resolving ${query}`);
+        logger.error(error, `There was an error resolving ${queryName}`);
         // Continue and return as many as possible
       }
+      logger.info({org_id, req_id, user: whoIs(me), cluster_id, subs, clusterGroupNames}, `${queryName} returning ${subs.length} subscriptions for cluster ${cluster_id}`);
       return subs;
     },
 
@@ -139,7 +141,9 @@ const subscriptionResolvers = {
       let subs = [];
       try{
         subs = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+        logger.info({req_id, user: whoIs(me), org_id, subs}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
         subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
+        logger.info({req_id, user: whoIs(me), org_id, subs}, `${queryName} filtered to ${subs?subs.length:'ERR'} subscriptions`);
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
