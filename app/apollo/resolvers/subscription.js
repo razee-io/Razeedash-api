@@ -123,7 +123,8 @@ const subscriptionResolvers = {
       }
       catch( error ) {
         logger.error(error, `There was an error resolving ${queryName}`);
-        // Continue and return as many as possible
+        logger.info({org_id, req_id, user: whoIs(me), cluster_id}, `${queryName} There was an error resolving subscriptions: ${error.message}`);
+        // Continue and return as many as possible -- e.g. SystemSubscriptions like primaryOrgKey should be returned so they can be applied even if there was an error retrieving 'normal' subscriptions.
       }
       logger.info({org_id, req_id, user: whoIs(me), cluster_id, subs, clusterGroupNames}, `${queryName} returning ${subs.length} subscriptions for cluster ${cluster_id}`);
       return subs;
