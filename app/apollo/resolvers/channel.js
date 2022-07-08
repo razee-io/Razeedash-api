@@ -134,7 +134,7 @@ const channelResolvers = {
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
         }
-        const orgKey = _.first(org.orgKeys);
+        const orgKey = _.first(org.orgKeys);  //PLC this is problematic
 
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
@@ -174,7 +174,7 @@ const channelResolvers = {
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
         const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
-        deployableVersionObj.content = await handler.getDataAndDecrypt(orgKey, deployableVersionObj.iv);
+        deployableVersionObj.content = await handler.getDataAndDecrypt(orgKey, deployableVersionObj.iv);  //PLC this is where it's dangerous
 
         return deployableVersionObj;
       }catch(err){
@@ -295,7 +295,7 @@ const channelResolvers = {
       if (!org) {
         throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
       }
-      const orgKey = _.first(org.orgKeys);
+      const orgKey = _.first(org.orgKeys);  //PLC this is problematic
 
       if(!name){
         throw new RazeeValidationError(context.req.t('A "name" must be specified'), context);
@@ -353,7 +353,7 @@ const channelResolvers = {
       const path = `${org_id.toLowerCase()}-${channel.uuid}-${newVerUuid}`;
       const bucketName = conf.storage.getChannelBucket(channel.data_location);
       const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
-      const ivText = await handler.setDataAndEncrypt(content, orgKey);
+      const ivText = await handler.setDataAndEncrypt(content, orgKey);  //PLC this is where it's dangerous
       const data = handler.serialize();
 
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
