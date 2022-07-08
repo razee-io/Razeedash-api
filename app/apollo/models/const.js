@@ -97,7 +97,7 @@ const DIRECTIVE_LIMITS = {
   Consider adding '`\[\]\\\/*^. as additional invalid chars for identifiers, but until refactored thoroughly this will negatively affect other values.
   E.g. ConfigurationVersion "type" attribute value "application/yaml" needs to contain a "/" and "description" attributes can be more freeform.
   */
-  INVALID_PATTERN: /^\s|[<>$%&!@()}{"#\t\n\r]{1,}|\s$/,
+  INVALID_PATTERN: /^\s|[<>:;\*,$%&!@()}{"#\t\n\r]{1,}|\s$/,
 };
 
 // console.log('NODE_ENV: ' + config.util.getEnv('NODE_ENV') + `, DIRECTIVE_LIMITS: ${JSON.stringify(DIRECTIVE_LIMITS)}`);
