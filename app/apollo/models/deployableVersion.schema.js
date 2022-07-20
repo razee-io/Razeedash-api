@@ -42,6 +42,13 @@ const DeployableVersionSchema = new mongoose.Schema({
     type: String,
   },
   content: mongoose.Schema.Types.Mixed,
+  /*PLC*/
+  verifiedOrgKeyUuid: {
+    type: String,
+  },
+  desiredOrgKeyUuid: {
+    type: String,
+  },
   iv: {
     type: String,
   },

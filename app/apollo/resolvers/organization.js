@@ -20,6 +20,14 @@ const { v4: UUID } = require('uuid');
 
 const { validateString } = require('../utils/directives');
 
+const { getLegacyOrgKeyObject } = require( `../../utils/orgs.js` ); //PLC
+
+//PLC
+const updateVersionEncryption = async (version, orgKey) => {
+  // EMPTY PLACEHOLDER
+  return true;
+};
+
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
   const sets = {};
   sets['orgKeys2.$[elem].primary'] = false;
@@ -196,6 +204,25 @@ const organizationResolvers = {
             // If an error occurs while removing Primary from other OrgKeys, it can be logged and ignored -- the actual creation of the new OrgKey did succeed before this point is reached.
             logger.error({ req_id, user: whoIs(me), orgId, name, primary, res, error: error.message }, `${queryName} error removing primary from other OrgKeys, continuing`);
           }
+
+          // PLC Update version encryption to use the new Primary OrgKey
+          const versions = await models.DeployableVersion.find({ org_id: orgId });
+          for( const v of versions ) {
+            try {
+              const encryptionUpdated = await updateVersionEncryption( v, newOrgKey );
+              if( encryptionUpdated ) {
+                logger.info({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} version encryption updated successfully: ${v.channelUuid}:${v.uuid} / ${v.channelName}:${v.name}`);
+              }
+              else {
+                // log warning but continue
+                logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} version encryption was not updated, likely due to simultaneous updates`); // E.g. the Version was being deleted at the same time.
+              }
+            }
+            catch(e) {
+              // log error but continue
+              logger.error({ req_id, user: whoIs(me), orgId, name, primary, res, error: error.message }, `${queryName} error updating version content encryption with new primary OrgKey, continuing`);
+            }
+          }
         }
 
         // Return the new orgKey uuid and key value
@@ -207,7 +234,7 @@ const organizationResolvers = {
           throw error;
         }
 
-        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered`);
+        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered: ${e.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end createOrgKey
@@ -245,14 +272,7 @@ const organizationResolvers = {
         if( org.orgKeys ) {
           allOrgKeys.push(
             ...org.orgKeys.map( legacyOrgKey => {
-              return {
-                uuid: legacyOrgKey,
-                name: legacyOrgKey.slice( legacyOrgKey.length - 12 ),  // last segment of legacy key, which is essentially a UUID prefixed by `orgApiKey-`
-                primary: false,
-                created: null,
-                updated: null,
-                key: legacyOrgKey
-              };
+              return getLegacyOrgKeyObject( legacyOrgKey );
             } )
           );
           logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
@@ -260,21 +280,12 @@ const organizationResolvers = {
 
         // Add OrgKeys2
         allOrgKeys.push(
-          ...org.orgKeys2.map( orgKey => {
-            return {
-              uuid: orgKey.orgKeyUuid,
-              name: orgKey.name,
-              primary: orgKey.primary,
-              created: orgKey.created,
-              updated: orgKey.updated,
-              key: orgKey.key
-            };
-          } )
+          ...org.orgKeys2
         );
         logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
 
         const foundOrgKey = allOrgKeys.find( e => {
-          return( e.uuid === uuid );
+          return( e.orgKeyUuid === uuid );
         } );
 
         if( !foundOrgKey ){
@@ -282,11 +293,21 @@ const organizationResolvers = {
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
+        //PLC
+        /*
         // Ensure not removing the first orgKey - temporary restriction as it is used to encrypt deployable versions content before storage
         if( org.orgKeys[0] == uuid ) {
           // Forbidden, cannot force!
           logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (encryption)` );
           throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+        }
+        */
+        // Ensure not removing a potentially in-use OrgKey (for version content encryption)
+        const versionsUsingOrgKey = await models.DeployableVersion.find({ org_id: orgId, $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { desiredOrgKeyUuid: { $exists: false } }, {verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid}, {desiredOrgKeyUuid: foundOrgKey.orgKeyUuid} ] });
+        if( versionsUsingOrgKey.length > 0 ) {
+          // Forbidden
+          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (version encryption)` );
+          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
         }
 
         // Ensure not removing the last OrgKey, unless forced
@@ -316,7 +337,8 @@ const organizationResolvers = {
         logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey removed`);
 
         return { success: true };
-      } catch (error) {
+      }
+      catch (error) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
 
         if(error instanceof BasicRazeeError ){
