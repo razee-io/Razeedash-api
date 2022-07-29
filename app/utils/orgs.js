@@ -68,7 +68,6 @@ const decryptOrgData = (orgKey, data) => {
   return tokenCrypt.decrypt(data, orgKey);
 };
 
-//PLC
 /*
 Best OrgKey value is:
 - First found OrgKeys2 key marked as Primary

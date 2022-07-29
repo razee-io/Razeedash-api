@@ -206,8 +206,8 @@ describe('utils', () => {
         ]
       };
 
-      const bestOrgKey = bestOrgKey( testOrg ).key;
-      assert.equal(bestOrgKey, 'bestKey');
+      const orgKey = bestOrgKey( testOrg ).key;
+      assert.equal(orgKey, 'bestKey');
     });
   });
 });

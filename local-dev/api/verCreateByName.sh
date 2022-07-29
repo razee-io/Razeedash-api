@@ -12,7 +12,8 @@ RAZEE_CONFIG_UUID=${3:-${RAZEE_CONFIG_UUID:-pConfigUuid}}
 RAZEE_VER_DESCR=${4:-pVerDescription}
 
 RAZEE_QUERY='mutation($orgId: String!, $channelUuid: String!, $name: String!, $type: String!, $content: String!, $description: String) { addChannelVersion( orgId: $orgId channelUuid: $channelUuid name: $name type: $type content: $content description: $description ) { versionUuid success } }'
-CONTENT="{ \\\"apiVersion\\\": \\\"v1\\\",\\\"kind\\\": \\\"ConfigMap\\\",\\\"name\\\": \\\"${RAZEE_VER_NAME}-configmap\\\",\\\"namespace\\\": \\\"default\\\",\\\"data\\\": {\\\"DUMMYKEY\\\": \\\"DUMMYVAL\\\"}}"
+RANDOMSTRING=$(head /dev/random | LC_ALL=C tr -cd 'A-Za-z0-9' | head -c 10000)
+CONTENT="{ \\\"apiVersion\\\": \\\"v1\\\",\\\"kind\\\": \\\"ConfigMap\\\",\\\"name\\\": \\\"${RAZEE_VER_NAME}-configmap\\\",\\\"namespace\\\": \\\"default\\\",\\\"data\\\": {\\\"DUMMYKEY\\\": \\\"${RANDOMSTRING}\\\"}}"
 RAZEE_VARIABLES='{"name":"'"${RAZEE_VER_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","channelUuid":"'"${RAZEE_CONFIG_UUID}"'","type":"application/yaml","content":"'"${CONTENT}"'","description":"'"${RAZEE_VER_DESCR}"'"}'
 
 echo "" && echo "CREATE version by name"
