@@ -49,7 +49,7 @@ const getDecryptedContent = async ( context, org, version ) => {
   return retVal;
 };
 
-const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, verifiedOrgKeyUuid ) => {
+const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, verifiedOrgKeyUuid, newData ) => {
   const { models, me, req_id, logger } = context;
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, methodName: 'updateVersionKeys' };
   logger.info( logContext, `Entry, desiredOrgKeyUuid: ${desiredOrgKeyUuid}, verifiedOrgKeyUuid: ${verifiedOrgKeyUuid}` );
@@ -75,7 +75,7 @@ const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, veri
         uuid: version.uuid,
         $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { verifiedOrgKeyUuid: version.verifiedOrgKeyUuid } ]
       },
-      { $set: { verifiedOrgKeyUuid: verifiedOrgKeyUuid } }
+      { $set: { verifiedOrgKeyUuid: verifiedOrgKeyUuid, content: newData.data } }
     );
     return retVal;
   }
@@ -175,10 +175,20 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   else {
     // Version is not able to decrypt with the Primary OrgKey (though the primary is now set as the `desiredOrgKeyUuid`, the _actual_ working OrgKey is set as `verifiedOrgKeyUuid`)
     // Re-encryption needed
+    let newData;
     try {
-      // The Version contains all the data storage info needed (bucket name, data location, path), so channel is passed as 'null' for re-encryption.
-      // The Version's `content` is not changed by re-encryption, so `encryptAndStore` return value is not used.
-      await encryptAndStore( context, org, null, version, newOrgKey, content );
+      // For re-encryption, the Version contains all the data storage info needed (bucket name, data location, path), so channel is passed as 'null'.
+      newData = await encryptAndStore( context, org, null, version, newOrgKey, content );
+
+      /*
+      Dev Note:
+      The Version's `content` is not changed by re-encryption, so `encryptAndStore` return value is not used.
+      The `encryptAndStore` function name is a misnomer.  It uses `setDataAndEncrypt`, which uses `setDataAndEncrypt` on the appropriate storage handler.
+      However the storage handler behavior is inconsistent:
+        - embeddedResourceHandler does not actually *store/set* the data, it returns the data and relies on the calling function to persist the value into the database.
+        - s3ResourceHandler *does* actually store the data into an S3 bucket before returning, and the return value from the function is only needed the first time the database record is written.
+      I.e. when re-encrypting an embedded resource, the newData must be saved in updateVersionKeys below, but it does not need to be saved when re-encrypting an S3 resource.
+      */
     }
     catch( encryptErr ) {
       // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in `verifiedOrgKeyUuid`.
@@ -204,7 +214,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
 
     // After re-encrypting, update the Version to reflect the new `verifiedOrgKeyUuid`
     try {
-      const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid );
+      const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid, newData );
       if( result.nModified != 1 ) {
         // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
         // Re-encryption using the Primary DID occur here, the other process did the same (or is deleting the Version).
