@@ -108,7 +108,7 @@ const encryptAndStore = async ( context, org, channel, version, orgKey, content 
 };
 
 /*
-Update the Version to use the new orgKey for encryption.
+Update the Version to use the newOrgKey for encryption.
 Each Version tracks which OrgKey is currently used for encryption (verifiedOrgKeyUuid) and which OrgKey it is being re-encrypted with (desiredOrgKeyUuid).
 If execution is terminated during the re-encryption, one of these two will still be valid and ensures that decryption is always possible.
 
@@ -165,19 +165,19 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   }
 
   if( encryptionOrgKeyUuid == newOrgKey.orgKeyUuid ) {
-    // Version is already able to decrypt with the Primary OrgKey
-    // Version uses Primary OrgKey as `verifiedOrgKeyUuid` (if not already set, was set above)
-    // Version uses Primary OrgKey as `desiredOrgKeyUuid` (if not already set, was set above)
+    // Version is already able to decrypt with the newOrgKey
+    // Version uses newOrgKey as `verifiedOrgKeyUuid` (if not already set, was set above)
+    // Version uses newOrgKey as `desiredOrgKeyUuid` (if not already set, was set above)
     // No re-encryption needed
     logger.info( logContext, 'Encryption is already up to date.' );
     return( true );
   }
   else {
-    // Version is not able to decrypt with the Primary OrgKey (though the primary is now set as the `desiredOrgKeyUuid`, the _actual_ working OrgKey is set as `verifiedOrgKeyUuid`)
+    // Version is not able to decrypt with the newOrgKey (though the newOrgKey is now set as the `desiredOrgKeyUuid`, the _actual_ working OrgKey is set as `verifiedOrgKeyUuid`)
     // Re-encryption needed
     let newData;
     try {
-      // For re-encryption, the Version contains all the data storage info needed (bucket name, data location, path), so channel is passed as 'null'.
+      // For re-encryption, the Version contains all the data storage info needed (bucket name, data location, path for S3), so channel is passed as 'null'.
       newData = await encryptAndStore( context, org, null, version, newOrgKey, content );
 
       /*
@@ -187,7 +187,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
       However the storage handler behavior is inconsistent:
         - embeddedResourceHandler does not actually *store/set* the data, it returns the data and relies on the calling function to persist the value into the database.
         - s3ResourceHandler *does* actually store the data into an S3 bucket before returning, and the return value from the function is only needed the first time the database record is written.
-      I.e. when re-encrypting an embedded resource, the newData must be saved in updateVersionKeys below, but it does not need to be saved when re-encrypting an S3 resource.
+      I.e. when re-encrypting an embedded resource, the newData must be saved in updateVersionKeys below, but it does not need to be saved (the values wont change) when re-encrypting an S3 resource.
       */
     }
     catch( encryptErr ) {
@@ -198,14 +198,12 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     logger.info( logContext, 'Version content re-encrypted' );
 
     /*
-    Before 'updateVersionEncryption' was introduced, the iv (initialization vector) bytes would be stored separately from the encrypted data, in the db record.
+    Before 'updateVersionEncryption' was introduced, the iv (initialization vector) would be stored separately from the encrypted data, in the db record.
     This is problematic for re-encryption as any data reads _between_ storing the re-encrypted data and storing the iv in the db record will use incorrect iv and result in garbled response (not an exception).
     If the code happens to _exit for any reason_ between storing the encrypted data and updating the db record (e.g. crash, pod eviction, etc), the iv is permanently lost and the data permanently garbled.
     Initial version creation doesn't have this problem only because it writes the encrypted data first and then creates the Version record with the iv -- the data cannot be read before the Version record is created.
 
-    To address this problem and allow re-encrypting the data, all new encrypted data and re-encrypted data will store the iv along with the encrypted data, separated by a single char delimiter.
-    - If the retrieved data length is a multiple of 128 bits, it is just the encrypted data and iv from the db record must be used to decrypt.
-    - If the retrieved data length has 25 extra bytes on it, the extra bytes are the iv used to decrypt.
+    To address this problem and allow re-encrypting the data, all new encrypted data and re-encrypted data will store the iv along with the encrypted data.
 
     Alternative solutions considered include:
     - All new encryption / re-encryptionUse a different algorithm that doesn't rely on 'iv' text, such as 'AES'.  If unable to decrypt with old algorithm, fall back to 'AES'.
@@ -217,7 +215,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
       const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid, newData );
       if( result.nModified != 1 ) {
         // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
-        // Re-encryption using the Primary DID occur here, the other process did the same (or is deleting the Version).
+        // Re-encryption using the newOrgKey DID occur here, the other process did the same (or is deleting the Version).
         // The other process already updated the Version's `verifiedOrgKeyUuid`, so the fact that this process could not update it can be ignored (especially if the Version is being deleted).
         // Log a warning, but continue.
         logger.warn( logContext, `Simultaneous updates to Version '${version.uuid}' prevented updates to verifiedOrgKeyUuid, continuing.` );
