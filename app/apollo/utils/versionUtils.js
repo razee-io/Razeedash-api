@@ -15,7 +15,7 @@
  */
 
 const storageFactory = require('../../storage/storageFactory');
-const { getOrgKeyByUuid } = require('../../utils/orgs.js');
+const { getOrgKeyByUuid, bestOrgKey } = require('../../utils/orgs');
 const { whoIs } = require ('../resolvers/common');
 const conf = require('../../conf.js').conf;
 
@@ -31,13 +31,14 @@ const getDecryptedContent = async ( context, org, version ) => {
     retVal.encryptionOrgKeyUuid = version.desiredOrgKeyUuid || org.orgKeys[0];
     const orgKey = getOrgKeyByUuid( org, retVal.encryptionOrgKeyUuid );
     retVal.content = await handler.getDataAndDecrypt(orgKey.key, version.iv);
+    logger.info(logContext, `successfully decrypted version '${version.uuid}' with desiredOrgKeyUuid for request ${req_id}`);
   }
   catch( decryptError1 ) {
-    logger.info(logContext, `encountered an error when decrypting version '${version.uuid}' with desiredOrgKeyUuid for request ${req_id} (will try again with verifiedOrgKeyUuid): ${decryptError1.message}`);
     try {
       retVal.encryptionOrgKeyUuid = version.verifiedOrgKeyUuid || org.orgKeys[0];
       const orgKey = getOrgKeyByUuid( org, retVal.encryptionOrgKeyUuid );
       retVal.content = await handler.getDataAndDecrypt(orgKey.key, version.iv);
+      logger.info(logContext, `successfully decrypted version '${version.uuid}' with verifiedOrgKeyUuid for request ${req_id}`);
     }
     catch( decryptError2 ) {
       logContext.error = decryptError2.message;
@@ -52,7 +53,7 @@ const getDecryptedContent = async ( context, org, version ) => {
 const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, verifiedOrgKeyUuid, newData ) => {
   const { models, me, req_id, logger } = context;
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, methodName: 'updateVersionKeys' };
-  logger.info( logContext, `Entry, desiredOrgKeyUuid: ${desiredOrgKeyUuid}, verifiedOrgKeyUuid: ${verifiedOrgKeyUuid}` );
+  logger.info( logContext, `Entry, desiredOrgKeyUuid: ${desiredOrgKeyUuid}, verifiedOrgKeyUuid: ${verifiedOrgKeyUuid}, org._id: ${org._id}, version: ${JSON.stringify(version)}` );
 
   if( desiredOrgKeyUuid ) {
     const retVal = await models.DeployableVersion.updateOne(
@@ -98,32 +99,86 @@ const encryptAndStore = async ( context, org, channel, version, orgKey, content 
   const path = (version.content && version.content.data && version.content.data.path) ? version.content.data.path : `${org._id.toLowerCase()}-${version.channel_id}-${version.uuid}`;
   const dataLocation = (version.content && version.content.data && version.content.data.location) ? version.content.data.location : (channel ? channel.data_location : null);
   const bucketName = (version.content && version.content.data && version.content.data.bucketName) ? version.content.data.bucketName : conf.storage.getChannelBucket(dataLocation);
-  logger.info( logContext, `${(version.content && version.content.data) ? 'create object' : 'overwrite object'}, bucketName: ${bucketName}, path: ${path}` );
 
   const handler = storageFactory(logger).newResourceHandler(path, bucketName, dataLocation);
   await handler.setDataAndEncrypt(content, orgKey.key);
-  logger.info( logContext, 'data stored successfully' );
+  logger.info( logContext, `${(version.content && version.content.data) ? 'created object' : 'overwrote object'}, bucketName: ${bucketName}, path: ${path}` );
   const data = handler.serialize();
   return( {data} );
 };
 
+// Keep track of which orgs are updating version encryption to avoid repeated re-encryption.
+// This also serves to throttle repeated calls that could cause excess load by repeatedly re-encrypting.
+const orgsUpdatingVersionEncryption = {};
+
 /*
-Update the Version to use the newOrgKey for encryption.
+Update all Versions to use the newOrgKey for encryption.
 Each Version tracks which OrgKey is currently used for encryption (verifiedOrgKeyUuid) and which OrgKey it is being re-encrypted with (desiredOrgKeyUuid).
 If execution is terminated during the re-encryption, one of these two will still be valid and ensures that decryption is always possible.
 
-Return true if completely successful
-Return false if:
-  - Unable to update the Version record due to concurrent modification/deletion
-  - Unable to re-encrypt and store the Version content
-Throw error if:
-  - Unable to decrypt current version content
-  - Unable to communicate with the database to update the Version record
+Return object indicating how many Versions were successfully re-encrypted, how many failed to re-encrypt, and how many were not attempted.
+*/
+const updateAllVersionEncryption = async (context, org, versions, newOrgKey) => {
+  const retVal = { successful: 0, failed: 0, incomplete: versions.length };
+
+  const updatingOrgKey = orgsUpdatingVersionEncryption[ org._id ];
+  if( updatingOrgKey == newOrgKey.orgKeyUuid ) {
+    // Updating the encryption to use the newOrgKey is already in process.
+    throw new Error( 'already in progress' );
+  }
+  orgsUpdatingVersionEncryption[ org._id ] = newOrgKey.orgKeyUuid;
+
+  for( const v of versions ) {
+    try {
+      const result = await updateVersionEncryption( context, org, v, newOrgKey);
+      if( result ) {
+        // This version reencrypted successfully (or no-op), continue
+        retVal.successful++;
+        retVal.incomplete--;
+      }
+      else {
+        // Version re-encryption should halt now!
+        return( retVal );
+      }
+    }
+    catch( e ) {
+      // This Version did not re-encrypte successfully due to an error (e.g. unable to communicate with the database or unable to decrypt existing data)
+      // Re-encryption can continue.
+      retVal.failed++;
+      retVal.incomplete--;
+    }
+  }
+  delete orgsUpdatingVersionEncryption[ org._id ];
+  return( retVal );
+};
+
+/*
+Return true if Version re-encryption succeeded and re-encryption should continue.
+Return false if Version re-encryption should halt and re-encryption of this Version was not attempted.
+Throw an error if unable to re-encrypt.  Re-encryption should continue however.
 */
 const updateVersionEncryption = async (context, org, version, newOrgKey) => {
-  const { me, req_id, logger } = context;
+  const { me, req_id, logger, models } = context;
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, orgKey: newOrgKey.orgKeyUuid, methodName: 'updateVersionEncryption' };
   logger.info( logContext, 'Entry' );
+
+  // Re-retrieve the Org from the DB
+  try {
+    org = await models.Organization.findById(org._id);
+    const currentBestOrgKey = bestOrgKey( org );
+    if( currentBestOrgKey.orgKeyUuid != newOrgKey.orgKeyUuid ) {
+      // If the newOrgKey is no longer the best OrgKey, abort.
+      // This could occur if another OrgKey is created before re-encryption finishes.
+      logger.error( logContext, 'OrgKey has changed, aborting.' );
+      return false;
+    }
+  }
+  catch( e ) {
+    // If unable to determine if the newOrgKey is still the best OrgKey, abort.
+    logContext.error = e.message;
+    logger.error( logContext, 'Error while confirming OrgKey, aborting.' );
+    return false;
+  }
 
   let encryptionOrgKeyUuid, content;
   try {
@@ -146,12 +201,12 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     try {
       const result = await updateVersionKeys( context, org, version, newOrgKey.orgKeyUuid, encryptionOrgKeyUuid );
       logger.info( logContext, `Version key update result: ${JSON.stringify(result)}` );
-      if( result.nModified != 1 ) {
+      if( result.n != 1 ) {
         // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
         // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in either `verifiedOrgKeyUuid` or `desiredOrgKeyUuid`
-        // Additional future calls to this function will attempt to rectify this again, but Version content retrieval will continue to work in the mean time.
+        // Additional future calls to this function can attempt re-encryption, and Version content retrieval will continue to work.
         logger.warn( logContext, `Simultaneous updates to Version '${version.uuid}' prevented updates to verifiedOrgKeyUuid and desiredOrgKeyUuid, unable to update encryption.` );
-        return( false );
+        return( true );
       }
     }
     catch( e ) {
@@ -190,12 +245,14 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
       I.e. when re-encrypting an embedded resource, the newData must be saved in updateVersionKeys below, but it does not need to be saved (the values wont change) when re-encrypting an S3 resource.
       */
     }
-    catch( encryptErr ) {
-      // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in `verifiedOrgKeyUuid`.
+    catch( e ) {
+      // Re-encryption did not occur (e.g. error writing to S3) but the Version still has the OrgKey that is known to decrypt successfully in `verifiedOrgKeyUuid`.
       // Additional future calls to this function will attempt to rectify this again, but Version content retrieval will continue to work in the mean time.
-      return( false );
+      logContext.error = e.message;
+      logger.error( logContext, 'Error during data encryption update' );
+      throw e;
     }
-    logger.info( logContext, 'Version content re-encrypted' );
+    logger.info( logContext, 'Version content re-encrypted successfully' );
 
     /*
     Before 'updateVersionEncryption' was introduced, the iv (initialization vector) would be stored separately from the encrypted data, in the db record.
@@ -213,7 +270,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     // After re-encrypting, update the Version to reflect the new `verifiedOrgKeyUuid`
     try {
       const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid, newData );
-      if( result.nModified != 1 ) {
+      if( result.n != 1 ) {
         // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
         // Re-encryption using the newOrgKey DID occur here, the other process did the same (or is deleting the Version).
         // The other process already updated the Version's `verifiedOrgKeyUuid`, so the fact that this process could not update it can be ignored (especially if the Version is being deleted).
@@ -238,5 +295,5 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
 module.exports = {
   getDecryptedContent,
   encryptAndStore,
-  updateVersionEncryption,
+  updateAllVersionEncryption,
 };
