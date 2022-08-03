@@ -73,8 +73,7 @@ const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, veri
     const retVal = await models.DeployableVersion.updateOne(
       {
         org_id: org._id,
-        uuid: version.uuid,
-        $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { verifiedOrgKeyUuid: version.verifiedOrgKeyUuid } ]
+        uuid: version.uuid
       },
       { $set: { verifiedOrgKeyUuid: verifiedOrgKeyUuid, content: newData.data } }
     );
@@ -169,14 +168,14 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     if( currentBestOrgKey.orgKeyUuid != newOrgKey.orgKeyUuid ) {
       // If the newOrgKey is no longer the best OrgKey, abort.
       // This could occur if another OrgKey is created before re-encryption finishes.
-      logger.error( logContext, 'OrgKey has changed, aborting.' );
+      logger.info( logContext, 'Best OrgKey has changed.  Aborting.' );
       return false;
     }
   }
   catch( e ) {
     // If unable to determine if the newOrgKey is still the best OrgKey, abort.
     logContext.error = e.message;
-    logger.error( logContext, 'Error while confirming OrgKey, aborting.' );
+    logger.error( logContext, 'Error while confirming best OrgKey.  Aborting.' );
     return false;
   }
 
@@ -193,7 +192,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     logger.error( logContext, 'Unable to retrieve existing Version content' );
     throw( e );
   }
-  logger.info( logContext, `Version contents decrypted, encryptionOrgKeyUuid: ${encryptionOrgKeyUuid}` );
+  logger.info( logContext, `Existing Version contents decrypted successfully, encryption OrgKey: ${encryptionOrgKeyUuid}` );
 
   if( version.desiredOrgKeyUuid != newOrgKey.orgKeyUuid || version.verifiedOrgKeyUuid != newOrgKey.orgKeyUuid ) {
     // Version is not using the new OrgKey as BOTH `verifiedOrgKeyUuid` and `desiredOrgKeyUuid`.
@@ -202,20 +201,20 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
       const result = await updateVersionKeys( context, org, version, newOrgKey.orgKeyUuid, encryptionOrgKeyUuid );
       logger.info( logContext, `Version key update result: ${JSON.stringify(result)}` );
       if( result.n != 1 ) {
-        // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
-        // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in either `verifiedOrgKeyUuid` or `desiredOrgKeyUuid`
+        // Version update did not occur because another process was updating the Version record in parallel (changing used keys or deleting it).
+        // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in either `verifiedOrgKeyUuid` or `desiredOrgKeyUuid`.
         // Additional future calls to this function can attempt re-encryption, and Version content retrieval will continue to work.
-        logger.warn( logContext, `Simultaneous updates to Version '${version.uuid}' prevented updates to verifiedOrgKeyUuid and desiredOrgKeyUuid, unable to update encryption.` );
+        logger.warn( logContext, `Simultaneous updates to Version '${version.uuid}' detected, unable to update encryption safely.  Continuing.` );
         return( true );
       }
     }
     catch( e ) {
       // Error communicating with database, throw
       logContext.error = e.message;
-      logger.error( logContext, 'Error during database record update' );
+      logger.error( logContext, 'Error ocurred while updating Version keys.  Continuing.' );
       throw e;
     }
-    logger.info( logContext, 'Version keys update started' );
+    logger.info( logContext, 'Version keys update started, re-encrypting content next...' );
     // After updating the Version record with `verifiedOrgKeyUuid` and `desiredOrgKeyUuid`, continue and re-encrypt with new OrgKey if needed.
   }
 
@@ -224,7 +223,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     // Version uses newOrgKey as `verifiedOrgKeyUuid` (if not already set, was set above)
     // Version uses newOrgKey as `desiredOrgKeyUuid` (if not already set, was set above)
     // No re-encryption needed
-    logger.info( logContext, 'Encryption is already up to date.' );
+    logger.info( logContext, 'Encryption is already up to date.  Continuing.' );
     return( true );
   }
   else {
@@ -237,11 +236,10 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
 
       /*
       Dev Note:
-      The Version's `content` is not changed by re-encryption, so `encryptAndStore` return value is not used.
-      The `encryptAndStore` function name is a misnomer.  It uses `setDataAndEncrypt`, which uses `setDataAndEncrypt` on the appropriate storage handler.
+      The `encryptAndStore` function name is a misnomer.  It uses `setDataAndEncrypt` on the appropriate storage handler.
       However the storage handler behavior is inconsistent:
-        - embeddedResourceHandler does not actually *store/set* the data, it returns the data and relies on the calling function to persist the value into the database.
-        - s3ResourceHandler *does* actually store the data into an S3 bucket before returning, and the return value from the function is only needed the first time the database record is written.
+        - embeddedResourceHandler does not actually *store/set* the data, it returns the new data and relies on the calling function to persist the value into the database in the Version's `content` attribute.
+        - s3ResourceHandler *does* actually store the data into an S3 bucket before returning, and the return value from the function is only needed the first time the database record is written (it does not change on re-encryption).
       I.e. when re-encrypting an embedded resource, the newData must be saved in updateVersionKeys below, but it does not need to be saved (the values wont change) when re-encrypting an S3 resource.
       */
     }
@@ -249,10 +247,10 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
       // Re-encryption did not occur (e.g. error writing to S3) but the Version still has the OrgKey that is known to decrypt successfully in `verifiedOrgKeyUuid`.
       // Additional future calls to this function will attempt to rectify this again, but Version content retrieval will continue to work in the mean time.
       logContext.error = e.message;
-      logger.error( logContext, 'Error during data encryption update' );
+      logger.error( logContext, 'Error during data re-encryption.  Continuing.' );
       throw e;
     }
-    logger.info( logContext, 'Version content re-encrypted successfully' );
+    logger.info( logContext, 'Version content re-encrypted successfully, updating version keys next...' );
 
     /*
     Before 'updateVersionEncryption' was introduced, the iv (initialization vector) would be stored separately from the encrypted data, in the db record.
@@ -271,23 +269,19 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     try {
       const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid, newData );
       if( result.n != 1 ) {
-        // Version update did not occur because another process was updating the Version record in parallel (possibly even deleting it).
-        // Re-encryption using the newOrgKey DID occur here, the other process did the same (or is deleting the Version).
-        // The other process already updated the Version's `verifiedOrgKeyUuid`, so the fact that this process could not update it can be ignored (especially if the Version is being deleted).
-        // Log a warning, but continue.
-        logger.warn( logContext, `Simultaneous updates to Version '${version.uuid}' prevented updates to verifiedOrgKeyUuid, continuing.` );
+        // Version update did not occur because another process deleted it in parallel.
+        logger.warn( logContext, `Version '${version.uuid}' no longer exists when attempting final key update.` );
       }
-      logger.info( logContext, 'Version keys update finished' );
     }
     catch( e ) {
       // Error communicating with database, throw
       logContext.error = e.message;
-      logger.error( logContext, 'Error during database record update' );
+      logger.error( logContext, 'Error during final Version key update.  Continuing.' );
       throw e;
     }
 
     // Version updates and re-encryption successful (or no-op)
-    logger.info( logContext, 'Version updates and re-encryption successful (or no-op)' );
+    logger.info( logContext, 'Version key updates and re-encryption successful (or no-op).  Continuing.' );
     return( true );
   }
 };

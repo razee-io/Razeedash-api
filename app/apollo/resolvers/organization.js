@@ -209,6 +209,7 @@ const organizationResolvers = {
           The OrgKeys (originally just hard coded as the first `orgKeys` element before OrgKey management was enabled) are used to encrypt/decrypt Version content stored in S3 or embedded.
           When a new Primary OrgKey is identified, existing encrypted data must be re-encrypted so the old OrgKey can be eventually deleted.
           Only Versions need to be updated as only Versions use encryption when storing/retrieving data.  Resources just use setData/getData methods.
+          Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
           */
           const versions = await models.DeployableVersion.find({ org_id: orgId });
           // Start ASYNCHRONOUSLY updating Version encryption
@@ -297,6 +298,12 @@ const organizationResolvers = {
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
+        /*
+        The OrgKeys (originally just hard coded as the first `orgKeys` element before OrgKey management was enabled) are used to encrypt/decrypt Version content stored in S3 or embedded.
+        When a new Primary OrgKey is identified, existing encrypted data must be re-encrypted so the old OrgKey can be eventually deleted.
+        Only Versions need to be updated as only Versions use encryption when storing/retrieving data.  Resources just use setData/getData methods.
+        Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
+        */
         // Ensure not removing a potentially in-use OrgKey (for version content encryption) (cannot force)
         const versionsUsingOrgKey = await models.DeployableVersion.find({ org_id: orgId, $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { desiredOrgKeyUuid: { $exists: false } }, {verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid}, {desiredOrgKeyUuid: foundOrgKey.orgKeyUuid} ] });
         if( versionsUsingOrgKey.length > 0 ) {
