@@ -53,7 +53,7 @@ const getDecryptedContent = async ( context, org, version ) => {
 const updateVersionKeys = async ( context, org, version, desiredOrgKeyUuid, verifiedOrgKeyUuid, newData ) => {
   const { models, me, req_id, logger } = context;
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, methodName: 'updateVersionKeys' };
-  logger.info( logContext, `Entry, desiredOrgKeyUuid: ${desiredOrgKeyUuid}, verifiedOrgKeyUuid: ${verifiedOrgKeyUuid}, org._id: ${org._id}, version: ${JSON.stringify(version)}` );
+  logger.info( logContext, `Entry, desiredOrgKeyUuid: ${desiredOrgKeyUuid}, verifiedOrgKeyUuid: ${verifiedOrgKeyUuid}, org._id: ${org._id}, version: ${version.uuid}` );
 
   if( desiredOrgKeyUuid ) {
     const retVal = await models.DeployableVersion.updateOne(
