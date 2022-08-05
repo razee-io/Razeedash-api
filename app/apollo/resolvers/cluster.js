@@ -455,14 +455,13 @@ const clusterResolvers = {
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
 
-        if (await models.Cluster.findOne(
-          { $and: [
-            { org_id: org_id },
-            {$or: [
+        if (
+          await models.Cluster.findOne(
+            { $and: [
+              { org_id: org_id },
               {'registration.name': registration.name },
-              {'metadata.name': registration.name },
             ]}
-          ]}).lean()) {
+          ).lean()) {
           throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
         }
 
