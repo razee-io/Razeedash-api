@@ -51,6 +51,9 @@ const ClusterSchema = new mongoose.Schema({
     default: {},
   },
   metadata: {
+    name: {
+      type: String
+    },
     kube_version: {
       major: {
         type: String,
