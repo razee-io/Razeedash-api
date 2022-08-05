@@ -58,7 +58,7 @@ const connectDb = async mongoUrl => {
   await mongoose.connect(url, {
     ...mongooseOptions,
   });
-  return mongoose.connection;
+  return {connection: mongoose.connection};
 };
 
 const models = {
