@@ -200,7 +200,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     try {
       const result = await updateVersionKeys( context, org, version, newOrgKey.orgKeyUuid, encryptionOrgKeyUuid );
       logger.info( logContext, `Version key update result: ${JSON.stringify(result)}` );
-      if( result.n != 1 ) {
+      if( result.matchedCount != 1 ) {
         // Version update did not occur because another process was updating the Version record in parallel (changing used keys or deleting it).
         // Re-encryption did not occur but the Version still has the OrgKey that is known to decrypt successfully in either `verifiedOrgKeyUuid` or `desiredOrgKeyUuid`.
         // Additional future calls to this function can attempt re-encryption, and Version content retrieval will continue to work.
@@ -268,7 +268,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
     // After re-encrypting, update the Version to reflect the new `verifiedOrgKeyUuid`
     try {
       const result = await updateVersionKeys( context, org, version, null, newOrgKey.orgKeyUuid, newData );
-      if( result.n != 1 ) {
+      if( result.matchedCount != 1 ) {
         // Version update did not occur because another process deleted it in parallel.
         logger.warn( logContext, `Version '${version.uuid}' no longer exists when attempting final key update.` );
       }
