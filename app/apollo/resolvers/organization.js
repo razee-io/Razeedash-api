@@ -20,6 +20,12 @@ const { v4: UUID } = require('uuid');
 
 const { validateString } = require('../utils/directives');
 
+const { getLegacyOrgKeyObject, bestOrgKey } = require( '../../utils/orgs' );
+const { updateAllVersionEncryption } = require( '../utils/versionUtils' );
+
+// Limit orgKeys to a small number.  In normal usage there should never be more than two or three (previous orgkey, new primary orgkey).
+const ORGKEY_LIMIT = 5;
+
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
   const sets = {};
   sets['orgKeys2.$[elem].primary'] = false;
@@ -159,13 +165,15 @@ const organizationResolvers = {
       try {
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
-        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
+
+        if( (org.orgKeys ? org.orgKeys.length : 0) + (org.orgKeys2 ? org.orgKeys2.length : 0) >= ORGKEY_LIMIT ) {
+          throw new RazeeValidationError(context.req.t('Maximum number of Organization Keys reached: {{number}}', {'number':ORGKEY_LIMIT}), context);
+        }
 
         // Attempt to prevent name duplication
         if( org.orgKeys2 && org.orgKeys2.find( e => { return e.name === name; } ) ) {
           throw new RazeeValidationError(context.req.t('The provided name is already in use: {{name}}', {'name':name}), context);
         }
-        logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} OrgKey '${name}' does not  already exist`);
 
         // Define the new OrgKey
         const newOrgKeyUuid = UUID();
@@ -196,6 +204,30 @@ const organizationResolvers = {
             // If an error occurs while removing Primary from other OrgKeys, it can be logged and ignored -- the actual creation of the new OrgKey did succeed before this point is reached.
             logger.error({ req_id, user: whoIs(me), orgId, name, primary, res, error: error.message }, `${queryName} error removing primary from other OrgKeys, continuing`);
           }
+
+          /*
+          The OrgKeys (originally just hard coded as the first `orgKeys` element before OrgKey management was enabled) are used to encrypt/decrypt Version content stored in S3 or embedded.
+          When a new Primary OrgKey is identified, existing encrypted data must be re-encrypted so the old OrgKey can be eventually deleted.
+          Only Versions need to be updated as only Versions use encryption when storing/retrieving data.  Resources just use setData/getData methods.
+          Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
+          */
+          const versions = await models.DeployableVersion.find({ org_id: orgId });
+          // Start ASYNCHRONOUSLY updating Version encryption
+          updateAllVersionEncryption( context, org, versions, newOrgKey ).then( (result) => {
+            if( result.incomplete > 0 ) {
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' was interrupted by additional changes, result: ${JSON.stringify(result)}`);
+            }
+            else if( result.failed > 0 ) {
+              // This is not fatal -- Versions still keep track of both the verifiedOrgKeyUuid and desiredOrgKeyUuid, and can use one of the two to decrypt existing data.
+              logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' encountered errors, result: ${JSON.stringify(result)}`);
+            }
+            else {
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' was sucessful, result: ${JSON.stringify(result)}`);
+            }
+          }).catch( (e) => {
+            // The only error that should be thrown is 'already in progress', which is unexpected here as a NEW OrgKey is being created, but can be ignored.
+            logger.warning({ req_id, user: whoIs(me), orgId, name, primary, res, error: e.message }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' is already in progress`);
+          });
         }
 
         // Return the new orgKey uuid and key value
@@ -207,7 +239,7 @@ const organizationResolvers = {
           throw error;
         }
 
-        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered`);
+        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end createOrgKey
@@ -235,7 +267,7 @@ const organizationResolvers = {
           if( thisOrgKey && thisOrgKey.primary ) {
             // Forbidden
             logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (primary)` );
-            if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+            if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is the only Primary key.', {id: uuid} ), context );
           }
         }
 
@@ -245,14 +277,7 @@ const organizationResolvers = {
         if( org.orgKeys ) {
           allOrgKeys.push(
             ...org.orgKeys.map( legacyOrgKey => {
-              return {
-                uuid: legacyOrgKey,
-                name: legacyOrgKey.slice( legacyOrgKey.length - 12 ),  // last segment of legacy key, which is essentially a UUID prefixed by `orgApiKey-`
-                primary: false,
-                created: null,
-                updated: null,
-                key: legacyOrgKey
-              };
+              return getLegacyOrgKeyObject( legacyOrgKey );
             } )
           );
           logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} legacy OrgKeys added: ${org.orgKeys.length}`);
@@ -260,21 +285,12 @@ const organizationResolvers = {
 
         // Add OrgKeys2
         allOrgKeys.push(
-          ...org.orgKeys2.map( orgKey => {
-            return {
-              uuid: orgKey.orgKeyUuid,
-              name: orgKey.name,
-              primary: orgKey.primary,
-              created: orgKey.created,
-              updated: orgKey.updated,
-              key: orgKey.key
-            };
-          } )
+          ...org.orgKeys2
         );
         logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKeys2 added: ${org.orgKeys2.length}`);
 
         const foundOrgKey = allOrgKeys.find( e => {
-          return( e.uuid === uuid );
+          return( e.orgKeyUuid === uuid );
         } );
 
         if( !foundOrgKey ){
@@ -282,18 +298,50 @@ const organizationResolvers = {
           throw new NotFoundError( context.req.t( 'Could not find the organization key.' ), context );
         }
 
-        // Ensure not removing the first orgKey - temporary restriction as it is used to encrypt deployable versions content before storage
-        if( org.orgKeys[0] == uuid ) {
-          // Forbidden, cannot force!
-          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (encryption)` );
-          throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+        /*
+        The OrgKeys (originally just hard coded as the first `orgKeys` element before OrgKey management was enabled) are used to encrypt/decrypt Version content stored in S3 or embedded.
+        When a new Primary OrgKey is identified, existing encrypted data must be re-encrypted so the old OrgKey can be eventually deleted.
+        Only Versions need to be updated as only Versions use encryption when storing/retrieving data.  Resources just use setData/getData methods.
+        Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
+        */
+        // Ensure not removing a potentially in-use OrgKey (for version content encryption) (cannot force)
+        const versionsUsingOrgKey = await models.DeployableVersion.find({ org_id: orgId, $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { desiredOrgKeyUuid: { $exists: false } }, {verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid}, {desiredOrgKeyUuid: foundOrgKey.orgKeyUuid} ] });
+        if( versionsUsingOrgKey.length > 0 ) {
+          // Forbidden
+          logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (version encryption).` );
+
+          // If NOT deleting the best OrgKey...
+          const newOrgKey = bestOrgKey(org);
+          if( newOrgKey.orgKeyUuid != uuid ) {
+            // Start ASYNCHRONOUSLY updating Version encryption
+            updateAllVersionEncryption( context, org, versionsUsingOrgKey, newOrgKey ).then( (result) => {
+              if( result.incomplete > 0 ) {
+                logger.info({ req_id, user: whoIs(me), orgId, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' was interrupted by additional changes, result: ${JSON.stringify(result)}`);
+              }
+              else if( result.failed > 0 ) {
+                // This is not fatal -- Versions still keep track of both the verifiedOrgKeyUuid and desiredOrgKeyUuid, and can use one of the two to decrypt existing data.
+                logger.warn({ req_id, user: whoIs(me), orgId, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' encountered errors, result: ${JSON.stringify(result)}`);
+              }
+              else {
+                logger.info({ req_id, user: whoIs(me), orgId, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' was successful, result: ${JSON.stringify(result)}`);
+              }
+            }).catch( (e) => {
+              // The only error that should be thrown is 'already in progress', which is ignored
+              logger.info({ req_id, user: whoIs(me), orgId, error: e.message }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' is already in progress`);
+            });
+
+            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use for data encryption.  Data re-encryption is in progress, please try again in a few minutes.', {id: uuid} ), context );
+          }
+          else {
+            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use for data encryption.  Create a new key and then wait a few minutes before retrying.', {id: uuid} ), context );
+          }
         }
 
-        // Ensure not removing the last OrgKey, unless forced
+        // Ensure not removing the last OrgKey (cannot force)
         if( allOrgKeys.length == 1 ) {
           // Forbidden
           logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (last one)` );
-          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+          throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is the last one.', {id: uuid} ), context );
         }
 
         // Ensure not removing an orgKey that was the last one used by at least one managed cluster, unless forced
@@ -302,9 +350,9 @@ const organizationResolvers = {
           lastOrgKeyUuid: uuid,
         } ).lean({ virtuals: true });
         if( clusterUsingOrgKey ) {
-          // Forbidden
+          // Forbidden, but can force (stopped/deleted cluster might never report in again, or update its orgkey)
           logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (cluster)` );
-          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+          if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use by one or more clusters.', {id: uuid} ), context );
         }
 
         // Remove the OrgKey from both orgKeys and orgKeys2
@@ -313,10 +361,11 @@ const organizationResolvers = {
           orgKeys2: { orgKeyUuid: uuid }
         };
         await models.Organization.updateOne( { _id: orgId }, { $pull: pull } );
-        logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey removed`);
+        logger.info({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey with value '${foundOrgKey.key}' removed`);
 
         return { success: true };
-      } catch (error) {
+      }
+      catch (error) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
 
         if(error instanceof BasicRazeeError ){
@@ -373,7 +422,7 @@ const organizationResolvers = {
           if( orgKey.primary && primaryOrgKeys.length < 2 ) {
             // Forbidden
             logger.warn({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey cannot be altered because it is in use (primary)` );
-            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+            throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is the only Primary key.', {id: uuid} ), context );
           }
         }
 

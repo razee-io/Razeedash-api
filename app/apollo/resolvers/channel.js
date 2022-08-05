@@ -23,6 +23,8 @@ const pLimit = require('p-limit');
 const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = require('../utils/applyQueryFields');
 const storageFactory = require('./../../storage/storageFactory');
 const yaml = require('js-yaml');
+const { bestOrgKey } = require('../../utils/orgs');
+const { getDecryptedContent, encryptAndStore } = require('../utils/versionUtils');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
@@ -134,7 +136,6 @@ const channelResolvers = {
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
         }
-        const orgKey = _.first(org.orgKeys);
 
         // search channel by channel uuid or channel name
         const channelFilter = channelName ? { name: channelName, org_id } : { uuid: channelUuid, org_id } ;
@@ -161,11 +162,12 @@ const channelResolvers = {
           logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${versionObjs.length} matching versions` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'version', 'name':versionName}), context);
         }
-        const versionObj = versionObjs[0] || null;
 
+        const versionObj = versionObjs[0] || null;
         if (!versionObj) {
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
+
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
         if (!deployableVersionObj) {
@@ -173,8 +175,14 @@ const channelResolvers = {
         }
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
-        const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
-        deployableVersionObj.content = await handler.getDataAndDecrypt(orgKey, deployableVersionObj.iv);
+        try {
+          const decryptedContentResult = await getDecryptedContent( context, org, deployableVersionObj );
+          deployableVersionObj.content = decryptedContentResult.content;
+        }
+        catch( e ) {
+          logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${versionObj.uuid}' for request ${req_id}: ${e.message}`);
+          throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+        }
 
         return deployableVersionObj;
       }catch(err){
@@ -295,7 +303,6 @@ const channelResolvers = {
       if (!org) {
         throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
       }
-      const orgKey = _.first(org.orgKeys);
 
       if(!name){
         throw new RazeeValidationError(context.req.t('A "name" must be specified'), context);
@@ -318,13 +325,15 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
       const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
+
+      // Prevent duplicate names
       const versionNameExists = !!versions.find((version)=>{
         return (version.name == name);
       });
-
       if(versionNameExists) {
         throw new RazeeValidationError(context.req.t('The version name {{name}} already exists', {'name':name}), context);
       }
+
       // validate the number of total configuration channel versions are under the limit
       const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
@@ -350,12 +359,7 @@ const channelResolvers = {
       }
 
       const newVerUuid = UUID();
-      const path = `${org_id.toLowerCase()}-${channel.uuid}-${newVerUuid}`;
-      const bucketName = conf.storage.getChannelBucket(channel.data_location);
-      const handler = storageFactory(logger).newResourceHandler(path, bucketName, channel.data_location);
-      const ivText = await handler.setDataAndEncrypt(content, orgKey);
-      const data = handler.serialize();
-
+      const orgKey = bestOrgKey( org );
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const deployableVersionObj = {
         _id: UUID(),
@@ -365,28 +369,31 @@ const channelResolvers = {
         channelName: channel.name,
         name,
         description,
-        content: data,
-        iv: ivText,
         type,
         ownerId: me._id,
         kubeOwnerId,
+        verifiedOrgKeyUuid: orgKey.orgKeyUuid,
+        desiredOrgKeyUuid: orgKey.orgKeyUuid,
       };
+      const { data } = await encryptAndStore( context, org, channel, deployableVersionObj, orgKey, content);
+      deployableVersionObj.content = data;
 
       // Note: if failure occurs here, the data has already been stored by storageFactory.
       // A cleanup mechanism is needed.
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
+
+      // Note: if failure occurs here, the data has already been stored by storageFactory and the Version document saved.
+      // A cleanup mechanism is needed, or elimination of the need to update the Channel.
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description,
         created: dObj.created
       };
-
-      // Note: if failure occurs here, the data has already been stored by storageFactory and the Version document saved.
-      // A cleanup mechanism is needed, or elimination of the need to update the Channel.
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
         { $push: { versions: versionObj } }
       );
+
       return {
         success: true,
         versionUuid: versionObj.uuid,
