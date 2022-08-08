@@ -366,8 +366,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {
@@ -414,8 +414,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedClusters.deletedCount,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {
@@ -455,14 +455,13 @@ const clusterResolvers = {
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
 
-        if (await models.Cluster.findOne(
-          { $and: [
-            { org_id: org_id },
-            {$or: [
+        if (
+          await models.Cluster.findOne(
+            { $and: [
+              { org_id: org_id },
               {'registration.name': registration.name },
-              {'metadata.name': registration.name },
             ]}
-          ]}).lean()) {
+          ).lean()) {
           throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
         }
 
