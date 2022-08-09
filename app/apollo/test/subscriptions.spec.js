@@ -592,7 +592,6 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  /*
   it('add a subscription', async () => {
     try {
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
@@ -636,6 +635,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  /*
   it('edit a subscription', async () => {
     try {
       //step1, edit the subscription
@@ -735,6 +735,7 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
+  */
 
   it('remove a subscription', async () => {
     try {
@@ -769,5 +770,4 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
-  */
 });
