@@ -211,8 +211,11 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
 
 
 const stop = async (apollo) => {
-  await apollo.db.connection.close();
-  await apollo.server.stop();
+  console.log('🏄 Closing database connection');
+  await apollo.db.connection.close( true ); // Use 'true' to force close and prevent timeout during unit tests
+  console.log('🏄 Stopping apollo server');
+  await apollo.server.stop(); // stopgGracePeriodMillis defaults to 10 seconds
+  console.log('🏄 Closing httpserver.');
   await apollo.httpServer.close(() => {
     console.log('🏄 Apollo Server closed.');
   });
