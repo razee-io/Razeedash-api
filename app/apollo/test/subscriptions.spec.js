@@ -635,7 +635,6 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  /*
   it('edit a subscription', async () => {
     try {
       //step1, edit the subscription
@@ -701,6 +700,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  /*
   it('set a subscription configurationVersion', async () => {
     try {
       //step1, edit the subscription's configurationVerision
