@@ -492,6 +492,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  /*
   it('get subscription by subscription uuid', async () => {
     try {
       const result = await subscriptionApi.subscription(token01, {
@@ -768,4 +769,5 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
+  */
 });
