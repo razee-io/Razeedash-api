@@ -700,7 +700,6 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  /*
   it('set a subscription configurationVersion', async () => {
     try {
       //step1, edit the subscription's configurationVerision
@@ -735,7 +734,6 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
-  */
 
   it('remove a subscription', async () => {
     try {
