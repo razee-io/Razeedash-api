@@ -37,9 +37,6 @@ const rbacSync = require('../utils/rbacSync.js');
 
 const { GraphqlPubSub } = require('../subscription');
 
-//const why = require('why-is-node-running');
-
-
 let mongoServer;
 let myApollo;
 
@@ -395,13 +392,15 @@ const sleep = async ( ms ) => {
 describe('subscription graphql test suite', () => {
 
   before(async () => {
+    console.log( 'subscription.spec.js before entry' );
+
     process.env.NODE_ENV = 'test';
     rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
 
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
-    console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
+    console.log(`subscriptions.spec.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
       mongo_url: mongoUrl,
@@ -423,15 +422,15 @@ describe('subscription graphql test suite', () => {
     //await getPresetOrgs();
     //await getPresetUsers();
     await getPresetClusters();
+    console.log( 'subscription.spec.js before exit' );
   }); // before
 
   after(async () => {
+    console.log( 'subscription.spec.js after entry' );
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
-    // setTimeout(function() {
-    //  why(); // logs out active handles that are keeping node running
-    // }, 5000);
+    console.log( 'subscription.spec.js after exit' );
   }); // after
 
   it('get subscriptions', async () => {

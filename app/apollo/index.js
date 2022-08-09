@@ -209,16 +209,33 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
   );
 };
 
-
+// Clean exit is necessary for unit tests, so that one set of tests does not prevent creating a new database connection in the next set of tests for example.
 const stop = async (apollo) => {
-  console.log('🏄 Closing database connection');
-  await apollo.db.connection.close( true ); // Use 'true' to force close and prevent timeout during unit tests
-  console.log('🏄 Stopping apollo server');
-  await apollo.server.stop(); // stopgGracePeriodMillis defaults to 10 seconds
-  console.log('🏄 Closing httpserver.');
-  await apollo.httpServer.close(() => {
-    console.log('🏄 Apollo Server closed.');
-  });
+  try {
+    let t;
+    console.log( '🚣 Disconnecting database' );
+    console.log( `connection.readyState: ${apollo.db.connection.readyState}` );
+    t = Date.now();
+    await apollo.db.disconnect();
+    console.log( `final connection.readyState: ${apollo.db.connection.readyState}` );
+    console.log( `Database disconnected in ${Date.now()-t} ms` );
+
+    console.log( '🚣 Stopping apollo server' );
+    t = Date.now();
+    await apollo.server.stop(); // stopgGracePeriodMillis defaults to 10 seconds
+    console.log( `Apollo server stopped in ${Date.now()-t} ms` );
+
+    console.log('🚣 Closing httpserver.');
+    t = Date.now();
+    await apollo.httpServer.close(() => {
+      console.log('🏄 Apollo Server closed.');
+    });
+    console.log( `Apollo httpServer closed in ${Date.now()-t} ms` );
+  }
+  catch( e ) {
+    console.log( `🏊 Error during stop: ${e.message}` );
+    throw e;
+  }
 };
 
 const apollo = async (options = {}) => {
