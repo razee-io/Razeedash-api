@@ -492,7 +492,6 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  /*
   it('get subscription by subscription uuid', async () => {
     try {
       const result = await subscriptionApi.subscription(token01, {
@@ -593,6 +592,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
+  /*
   it('add a subscription', async () => {
     try {
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
