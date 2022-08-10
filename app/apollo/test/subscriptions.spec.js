@@ -695,7 +695,7 @@ describe('subscription graphql test suite', () => {
       //PLC TEST, get the updated subscription
       const {
         data: {
-          data: { subscription },
+          data: { plcsubscription },
         },
       } = await subscriptionApi.subscription(adminToken, {
         orgId: org01._id,
