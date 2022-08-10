@@ -213,27 +213,27 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
 const stop = async (apollo) => {
   try {
     let t;
-    console.log( '🚣 Disconnecting database' );
+    console.log( `🚣 Disconnecting database, time: ${Date.now()}` );
     console.log( `connection.readyState: ${apollo.db.connection.readyState}` );
     t = Date.now();
     await apollo.db.disconnect();
     console.log( `final connection.readyState: ${apollo.db.connection.readyState}` );
-    console.log( `Database disconnected in ${Date.now()-t} ms` );
+    console.log( `Database disconnected in ${Date.now()-t} ms, time: ${Date.now()}` );
 
     console.log( '🚣 Stopping apollo server' );
     t = Date.now();
     await apollo.server.stop(); // stopgGracePeriodMillis defaults to 10 seconds
-    console.log( `Apollo server stopped in ${Date.now()-t} ms` );
+    console.log( `Apollo server stopped in ${Date.now()-t} ms, time: ${Date.now()}` );
 
     console.log('🚣 Closing httpserver.');
     t = Date.now();
     await apollo.httpServer.close(() => {
-      console.log('🏄 Apollo Server closed.');
+      console.log( `🏄 Apollo Server closed, time: ${Date.now()}` );
     });
-    console.log( `Apollo httpServer closed in ${Date.now()-t} ms` );
+    console.log( `Apollo httpServer closed in ${Date.now()-t} ms, time: ${Date.now()}` );
   }
   catch( e ) {
-    console.log( `🏊 Error during stop: ${e.message}` );
+    console.log( `🏊 Error during stop: ${e.message}, time: ${Date.now()}` );
     throw e;
   }
 };
