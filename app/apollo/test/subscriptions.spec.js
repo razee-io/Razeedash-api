@@ -700,12 +700,10 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  //PLC dev note: if this test executes, the db will not disconnect :-(
   it('set a subscription configurationVersion', async () => {
     console.log( 'test setSubscription entry' );
     try {
       //step1, edit the subscription's configurationVerision
-      /*test Do not calling setSubscription temporarily
       const {
         data: {
           data: { setSubscription },
@@ -717,7 +715,7 @@ describe('subscription graphql test suite', () => {
       });
       expect(setSubscription.uuid).to.be.an('string');
       expect(setSubscription.success).to.equal(true);
-      */
+      /*PLC dev note: if this test executes, the db will not disconnect :-(
       //step2, get the updated subscription
       const {
         data: {
@@ -727,7 +725,8 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: subscription_02_uuid,
       });
-      //test expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
+      expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
+      */
       console.log( 'test setSubscription exit' );
     } catch (error) {
       if (error.response) {
