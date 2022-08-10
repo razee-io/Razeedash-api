@@ -237,7 +237,6 @@ const createSubscriptions = async () => {
 
 describe('channel graphql test suite', () => {
   before(async () => {
-    console.log( `channel.spec.js before entry, time: ${Date.now()}` );
     process.env.NODE_ENV = 'test';
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
@@ -266,7 +265,6 @@ describe('channel graphql test suite', () => {
   after(async () => {
     await myApollo.stop(myApollo);
     await mongoServer.stop();
-    console.log( `channel.spec.js after exit, time: ${Date.now()}` );
   }); // after
 
   it('get channels', async () => {

@@ -392,8 +392,6 @@ const sleep = async ( ms ) => {
 describe('subscription graphql test suite', () => {
 
   before(async () => {
-    console.log( `subscription.spec.js before entry, time: ${Date.now()}` );
-
     process.env.NODE_ENV = 'test';
     rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
 
@@ -422,17 +420,12 @@ describe('subscription graphql test suite', () => {
     //await getPresetOrgs();
     //await getPresetUsers();
     await getPresetClusters();
-    console.log( `subscription.spec.js before exit, time: ${Date.now()}` );
   }); // before
 
   after(async () => {
-    console.log( `subscription.spec.js after entry, time: ${Date.now()}` );
     await myApollo.stop(myApollo);
-    console.log( `subscription.spec.js apollo stopped, time: ${Date.now()}` );
     GraphqlPubSub.deleteInstance();
-    console.log( `subscription.spec.js pubsub deleted, time: ${Date.now()}` );
     await mongoServer.stop();
-    console.log( `subscription.spec.js after exit, time: ${Date.now()}` );
   }); // after
 
   it('get subscriptions', async () => {
@@ -703,7 +696,6 @@ describe('subscription graphql test suite', () => {
   });
 
   it('set a subscription configurationVersion', async () => {
-    console.log( `test setSubscription entry, time: ${Date.now()}` );
     try {
       //step1, edit the subscription's configurationVerision
       const {
@@ -727,20 +719,17 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_02_uuid,
       });
       expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
-      console.log( `test setSubscription exit, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
       } else {
         console.error('error encountered:  ', error);
       }
-      console.log( `test setSubscription error, time: ${Date.now()}` );
       throw error;
     }
   });
 
   it('remove a subscription', async () => {
-    console.log( `test remove a subscription entry, time: ${Date.now()}` );
     try {
       //step1, remove the subscription
       const {
@@ -763,15 +752,12 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_01_uuid,
       });
       expect(subscription).to.equal(null);
-
-      console.log( `test remove a subscription exit, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
       } else {
         console.error('error encountered:  ', error);
       }
-      console.log( `test remove a subscription error, time: ${Date.now()}` );
       throw error;
     }
   });
