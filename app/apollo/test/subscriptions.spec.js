@@ -719,7 +719,6 @@ describe('subscription graphql test suite', () => {
       });
       expect(setSubscription.uuid).to.be.an('string');
       expect(setSubscription.success).to.equal(true);
-      */
       //step2, get the updated subscription
       const {
         data: {
@@ -729,7 +728,8 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: subscription_02_uuid,
       });
-      //expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
+      expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
+      */
       console.log( `test setSubscription exit, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
