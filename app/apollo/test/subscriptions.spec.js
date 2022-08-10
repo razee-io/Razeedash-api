@@ -692,12 +692,6 @@ describe('subscription graphql test suite', () => {
       expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
       expect(result4.data.data.subscription.custom.forType).to.equal('new');
 
-      //PLC TEST, get the updated subscription
-      const result5 = await subscriptionApi.subscription(token77, {
-        orgId: org77._id,
-        uuid: subscription_04_uuid,
-      });
-      console.log( `edit subscription completed the query that causes problem in 'set a sub' test, but with different values, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -708,11 +702,9 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  //PLC dev note: if this test executes, the db will not disconnect :-( -- apparently either the setSubscription *or* the subscription (get) or both will trigger the problem.
   it('set a subscription configurationVersion', async () => {
     console.log( `test setSubscription entry, time: ${Date.now()}` );
     try {
-      /*
       //step1, edit the subscription's configurationVerision
       const {
         data: {
@@ -735,7 +727,6 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_02_uuid,
       });
       expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
-      */
       console.log( `test setSubscription exit, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
