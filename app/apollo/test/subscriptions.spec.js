@@ -428,7 +428,9 @@ describe('subscription graphql test suite', () => {
   after(async () => {
     console.log( `subscription.spec.js after entry, time: ${Date.now()}` );
     await myApollo.stop(myApollo);
+    console.log( `subscription.spec.js apollo stopped, time: ${Date.now()}` );
     GraphqlPubSub.deleteInstance();
+    console.log( `subscription.spec.js pubsub deleted, time: ${Date.now()}` );
     await mongoServer.stop();
     console.log( `subscription.spec.js after exit, time: ${Date.now()}` );
   }); // after
