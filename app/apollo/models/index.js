@@ -57,9 +57,24 @@ const connectDb = async mongoUrl => {
     mongooseOptions['tlsCAFile'] = mongoConf.mongo.cert;
   }
 
+  //PLC
+  mongoose.set('bufferCommands', false);
+
   await mongoose.connect(url, {
     ...mongooseOptions,
   });
+
+  //PLC
+  await User.createCollection();
+  await Resource.createCollection();
+  await Cluster.createCollection();
+  await Organization.createCollection();
+  await Channel.createCollection();
+  await Subscription.createCollection();
+  await ServiceSubscription.createCollection();
+  await DeployableVersion.createCollection();
+  await ResourceYamlHist.createCollection();
+  await Group.createCollection();
 
   return mongoose;
 };
