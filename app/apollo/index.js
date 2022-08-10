@@ -213,9 +213,18 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
 const stop = async (apollo) => {
   try {
     let t;
-    console.log( `🚣 Disconnecting database, time: ${Date.now()}` );
+    console.log( `🚣 Stopping, time: ${Date.now()}` );
     console.log( `connection.readyState: ${apollo.db.connection.readyState}` );
+    console.log( `connections: ${apollo.db.connections.length}` );
     t = Date.now();
+    try {
+      console.log( `🚣 Closing default connection, time: ${Date.now()}` );
+      await apollo.db.connection.close(true);
+    }
+    catch(e){
+      console.log( `🏊 Error closing default connection, time: ${Date.now()}, error: ${e.message}` );
+    }
+    console.log( `🚣 Disconnecting database, time: ${Date.now()}` );
     await apollo.db.disconnect();
     console.log( `final connection.readyState: ${apollo.db.connection.readyState}` );
     console.log( `Database disconnected in ${Date.now()-t} ms, time: ${Date.now()}` );
