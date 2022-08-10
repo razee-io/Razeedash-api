@@ -693,15 +693,11 @@ describe('subscription graphql test suite', () => {
       expect(result4.data.data.subscription.custom.forType).to.equal('new');
 
       //PLC TEST, get the updated subscription
-      const {
-        data: {
-          data: { plcsubscription },
-        },
-      } = await subscriptionApi.subscription(adminToken, {
-        orgId: org01._id,
-        uuid: subscription_02_uuid,
+      const result5 = await subscriptionApi.subscription(token77, {
+        orgId: org77._id,
+        uuid: subscription_04_uuid,
       });
-      console.log( `edit subscription completed the query that causes problem in 'set a sub' test, time: ${Date.now()}` );
+      console.log( `edit subscription completed the query that causes problem in 'set a sub' test, but with different values, time: ${Date.now()}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
