@@ -42,12 +42,14 @@ const connectDb = async mongoUrl => {
       autoIndex: false,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 10000,
+      minPoolSize: 15,
     };
   } else {
     mongooseOptions = {
       autoIndex: true,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 10000,
+      minPoolSize: 15,
     };
   }
 
@@ -58,7 +60,8 @@ const connectDb = async mongoUrl => {
   await mongoose.connect(url, {
     ...mongooseOptions,
   });
-  return {connection: mongoose.connection};
+
+  return mongoose;
 };
 
 const models = {
