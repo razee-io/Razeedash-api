@@ -402,7 +402,7 @@ const organizationResolvers = {
         }
 
         return {
-          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+          modified: res.nModified
         };
       } catch (error) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.

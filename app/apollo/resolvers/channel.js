@@ -250,7 +250,7 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom } }, {omitUndefined:true});
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, data_location, custom } }, {});
 
         // find any subscriptions for this configuration channel and update channelName in those subs
         await models.Subscription.updateMany(
