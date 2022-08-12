@@ -372,6 +372,7 @@ describe('organization graphql test suite', () => {
         throw error;
       }
     });
+
     it('an admin user SHOULD be able to remove a Primary OrgKey with forceDeletion', async () => {
       token = await signInUser(models, api, rootData);
       try {
@@ -395,5 +396,18 @@ describe('organization graphql test suite', () => {
         throw error;
       }
     });
+
+    /*
+    Tests needed:
+    - create a Version, create a new primary org key, retrieve Version with /v1/channels/[channelid]/[versionid] (might occur prior to re-encryption), wait a few seconds, retrieve Version with /v1/channels/[id]/[id] again (should be after re-encryption)
+    - create a Cluster, ClusterGroup, Config, Version, Subscription, then create a new primary org key, retrieve with graphql `subscriptionsByClusterId` with OrgKey
+
+    - When driver was bad, it was still possible to create Versions, but they were not retrievable.
+      - ??? Should have been retrievable as long as orgKeys[0] was still used
+        - With bad drvier, when retrieved by /api/v1/[channelName]/[versionUuid], got back invalid json apparently -- errors occurred when trying to apply it.
+        - Possibly has to do with using orgKeys[0] for encryption instead of orgKeys2?
+        -
+      - After rollback, would be unretrievable because the `iv` is included in the COS data but rolled back code does not know how to use it.
+    */
   });
 });
