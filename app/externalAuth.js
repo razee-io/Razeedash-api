@@ -30,8 +30,6 @@ E.g. to support setting `AUTH_MODEL` to `iam`, the JSON string would be:
 
 const ExternalAuthModels = process.env.EXTERNAL_AUTH_MODELS ? JSON.parse(process.env.EXTERNAL_AUTH_MODELS) : {};
 
-console.log( `External Auth Models: ${JSON.stringify(ExternalAuthModels, null, 4)}` );
-
 module.exports = {
   ExternalAuthModels: ExternalAuthModels
 };

@@ -17,6 +17,15 @@
 const _ = require('lodash');
 const tokenCrypt = require('./crypt.js');
 
+const getOrgForOrgKey = async(models, orgKey) => {
+  console.log( `PLC orgKey: ${orgKey}` );
+  const org = await models.Organization.findOne( {
+    $or: [ { orgKeys: orgKey }, { 'orgKeys2.key': orgKey } ]
+  } ).lean( { virtuals: true } );
+  console.log( `PLC org: ${JSON.stringify(org,null,2)}` );
+  return org;
+};
+
 const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
   if (!orgKey) {
@@ -113,4 +122,4 @@ const getOrgKeyByUuid = (org, uuid) => {
   throw new Error( `OrgKey '${uuid}' not found for organization ${org._id}` );
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKey, getOrgKeyByUuid, getLegacyOrgKeyObject };
+module.exports = { getOrgForOrgKey, getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKey, getOrgKeyByUuid, getLegacyOrgKeyObject };

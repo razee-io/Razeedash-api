@@ -26,6 +26,8 @@ const _ = require('lodash');
 const { ACTIONS, AUTH_MODEL } = require('./const');
 const SECRET = require('./const').SECRET;
 
+const { getOrgForOrgKey } = require( '../../utils/orgs' );
+
 const UserPassportLocalSchema = new mongoose.Schema({
   _id: {
     type: String,
@@ -273,7 +275,7 @@ UserPassportLocalSchema.statics.getMeFromConnectionParams = async function(
 UserPassportLocalSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
 
-  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  const org = await getOrgForOrgKey( models, me.orgKey );
   if(!org) {
     logger.error('An org was not found for this razee-org-key');
     throw new ForbiddenError('org id was not found');
@@ -340,8 +342,7 @@ UserPassportLocalSchema.statics.isAuthorized = async function(me, orgId, action,
 };
 
 UserPassportLocalSchema.statics.getOrg = async function(models, me) {
-  let org;
-  org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
+  const org = await getOrgForOrgKey( models, me.orgKey );
   return org;
 };
 

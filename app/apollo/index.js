@@ -50,6 +50,9 @@ const pubSub = GraphqlPubSub.getInstance();
 const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
+
+const { getOrgForOrgKey } = require( '../utils/orgs' );
+
 i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   //debug: true,
   backend: {
@@ -86,7 +89,7 @@ const buildCommonApolloContext = async ({ models, req, res, connection }) => {
     const logger = req.log; // request context logger created by express-bunyan-logger
     const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
     if (context.me && context.me.orgKey) {
-      const org = await models.Organization.findOne({ orgKeys: context.me.orgKey });
+      const org = await getOrgForOrgKey( models, context.me.orgKey );
       logger.fields.org_id = org._id;
     }
     if (context.me && context.me.org_id) {
@@ -181,7 +184,7 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
-          const org = await models.Organization.findOne({ orgKeys: orgKey });
+          const org = await getOrgForOrgKey( models, orgKey );
           orgId = org._id;
         }
         const req_id = uuid();
