@@ -366,8 +366,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
-          deletedResourceCount: deletedResources.nModified,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.nModified,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {
@@ -414,8 +414,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedClusters.deletedCount,
-          deletedResourceCount: deletedResources.nModified,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.nModified,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {

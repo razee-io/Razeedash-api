@@ -306,7 +306,7 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
         return {
-          modified: res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -347,7 +347,7 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
         return {
-          modified: res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -404,7 +404,7 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
         return {
-          modified: res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -449,7 +449,7 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
-        return {modified: res.nModified };
+        return {modified: res.modifiedCount };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -483,7 +483,7 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-        return {modified: res.nModified };
+        return {modified: res.modifiedCount };
 
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);

@@ -398,7 +398,7 @@ describe('subscription graphql test suite', () => {
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
-    console.log(`subscription.spec.js in memory test mongodb url is ${mongoUrl}`);
+    console.log(`subscriptions.spec.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
       mongo_url: mongoUrl,

@@ -60,6 +60,7 @@ const connectDb = async mongoUrl => {
   await mongoose.connect(url, {
     ...mongooseOptions,
   });
+
   return mongoose;
 };
 

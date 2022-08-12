@@ -161,11 +161,12 @@ const channelResolvers = {
           logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${versionObjs.length} matching versions` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'version', 'name':versionName}), context);
         }
-        const versionObj = versionObjs[0] || null;
 
+        const versionObj = versionObjs[0] || null;
         if (!versionObj) {
           throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
         }
+
         const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
         const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
         if (!deployableVersionObj) {
@@ -318,13 +319,15 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
       const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
+
+      // Prevent duplicate names
       const versionNameExists = !!versions.find((version)=>{
         return (version.name == name);
       });
-
       if(versionNameExists) {
         throw new RazeeValidationError(context.req.t('The version name {{name}} already exists', {'name':name}), context);
       }
+
       // validate the number of total configuration channel versions are under the limit
       const total = await models.DeployableVersion.count({org_id, channel_id: channel_uuid});
       if (total >= CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
@@ -375,6 +378,7 @@ const channelResolvers = {
       // Note: if failure occurs here, the data has already been stored by storageFactory.
       // A cleanup mechanism is needed.
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
+
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description,
@@ -387,6 +391,7 @@ const channelResolvers = {
         { org_id, uuid: channel.uuid },
         { $push: { versions: versionObj } }
       );
+
       return {
         success: true,
         versionUuid: versionObj.uuid,
