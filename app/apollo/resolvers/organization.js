@@ -20,6 +20,9 @@ const { v4: UUID } = require('uuid');
 
 const { validateString } = require('../utils/directives');
 
+// Limit orgKeys to a small number.  In normal usage there should never be more than two or three (previous orgkey, new primary orgkey).
+const ORGKEY_LIMIT = 5;
+
 const unsetPrimaryUnless = async (models, orgId, orgKeyUuid) => {
   const sets = {};
   sets['orgKeys2.$[elem].primary'] = false;
@@ -159,13 +162,15 @@ const organizationResolvers = {
       try {
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} org retrieved`);
-        //console.log( `org: ${JSON.stringify(org, null, 2)}` );
+
+        if( (org.orgKeys ? org.orgKeys.length : 0) + (org.orgKeys2 ? org.orgKeys2.length : 0) >= ORGKEY_LIMIT ) {
+          throw new RazeeValidationError(context.req.t('Maximum number of Organization Keys reached: {{number}}', {'number':ORGKEY_LIMIT}), context);
+        }
 
         // Attempt to prevent name duplication
         if( org.orgKeys2 && org.orgKeys2.find( e => { return e.name === name; } ) ) {
           throw new RazeeValidationError(context.req.t('The provided name is already in use: {{name}}', {'name':name}), context);
         }
-        logger.info({ req_id, user: whoIs(me), orgId, name, primary }, `${queryName} OrgKey '${name}' does not  already exist`);
 
         // Define the new OrgKey
         const newOrgKeyUuid = UUID();
@@ -207,7 +212,7 @@ const organizationResolvers = {
           throw error;
         }
 
-        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered`);
+        logger.error({ req_id, user: whoIs(me), orgId, name, primary, error }, `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end createOrgKey
@@ -235,7 +240,7 @@ const organizationResolvers = {
           if( thisOrgKey && thisOrgKey.primary ) {
             // Forbidden
             logger.warn({ req_id, user: whoIs(me), orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (primary)` );
-            if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is in use.', {id: uuid} ), context );
+            if( !forceDeletion ) throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is the only Primary key.', {id: uuid} ), context );
           }
         }
 

@@ -379,14 +379,13 @@ const channelResolvers = {
       // A cleanup mechanism is needed.
       const dObj = await models.DeployableVersion.create(deployableVersionObj);
 
+      // Note: if failure occurs here, the data has already been stored by storageFactory and the Version document saved.
+      // A cleanup mechanism is needed, or elimination of the need to update the Channel.
       const versionObj = {
         uuid: deployableVersionObj.uuid,
         name, description,
         created: dObj.created
       };
-
-      // Note: if failure occurs here, the data has already been stored by storageFactory and the Version document saved.
-      // A cleanup mechanism is needed, or elimination of the need to update the Channel.
       await models.Channel.updateOne(
         { org_id, uuid: channel.uuid },
         { $push: { versions: versionObj } }
