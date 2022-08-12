@@ -42,13 +42,6 @@ const DeployableVersionSchema = new mongoose.Schema({
     type: String,
   },
   content: mongoose.Schema.Types.Mixed,
-  verifiedOrgKeyUuid: {
-    type: String,
-  },
-  desiredOrgKeyUuid: {
-    type: String,
-  },
-  /* iv is only used for legacy data, see ../utils/versionUtils.js for additional details */
   iv: {
     type: String,
   },

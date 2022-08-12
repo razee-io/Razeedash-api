@@ -17,7 +17,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const { getOrg, bestOrgKey } = require('../../utils/orgs');
+const { getOrg, bestOrgKeyValue } = require('../../utils/orgs');
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
@@ -32,7 +32,7 @@ metadata:
     razee/watch-resource: lite
     addonmanager.kubernetes.io/mode: Reconcile
 data:
-  RAZEE_ORG_KEY: ${Buffer.from( bestOrgKey( req.org ).key ).toString('base64')}
+  RAZEE_ORG_KEY: ${Buffer.from( bestOrgKeyValue( req.org ) ).toString('base64')}
 type: Opaque
 `;
 

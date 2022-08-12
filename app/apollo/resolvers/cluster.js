@@ -22,7 +22,7 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
-const { bestOrgKey } = require('../../utils/orgs');
+const { bestOrgKeyValue } = require('../../utils/orgs');
 
 
 const { validateString, validateJson } = require('../utils/directives');
@@ -477,7 +477,7 @@ const clusterResolvers = {
             url += `&args=${arg}`;
           });
         }
-        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
+        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKeyValue( org ), regState: reg_state, registration };
       } catch (error) {
         if(error instanceof BasicRazeeError ){
           throw error;

@@ -72,45 +72,20 @@ const decryptOrgData = (orgKey, data) => {
 Best OrgKey value is:
 - First found OrgKeys2 key marked as Primary
 - First found OrgKeys2 key if no Primary identified
-- First OrgKeys if no OrgKeys2 exist
+- First OrgKeys OrgKey if no OrgKeys2 exist
 */
-const bestOrgKey = (org) => {
+const bestOrgKeyValue = (org) => {
   if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
     const bestOrgKey = org.orgKeys2.find( o => {
       return( o.primary );
     } );
-    return( bestOrgKey || org.orgKeys2[0] );
+    return( bestOrgKey.key || org.orgKeys2[0].key );
   }
   else if( org.orgKeys && org.orgKeys.length > 0 ) {
-    return( getLegacyOrgKeyObject( org.orgKeys[0] ) );
+    return( org.orgKeys[0] );
   }
 
   throw new Error( `No valid OrgKey found for organization ${org._id}` );
 };
-const getLegacyOrgKeyObject = (legacyOrgKey) => {
-  return( {
-    orgKeyUuid: legacyOrgKey,
-    name: legacyOrgKey.slice( legacyOrgKey.length - 12 ),  // last segment of legacy key, which is essentially a UUID prefixed by `orgApiKey-`
-    primary: false,
-    created: null,
-    updated: null,
-    key: legacyOrgKey
-  } );
-};
-const getOrgKeyByUuid = (org, uuid) => {
-  if( org.orgKeys2 ) {
-    const orgKey = org.orgKeys2.find( o => {
-      return( o.orgKeyUuid == uuid );
-    } );
-    if( orgKey ) return( orgKey );
-  }
 
-  if( org.orgKeys ) {
-    const index = org.orgKeys.indexOf( uuid );
-    if( index >= 0 ) return getLegacyOrgKeyObject( org.orgKeys[index] );
-  }
-
-  throw new Error( `OrgKey '${uuid}' not found for organization ${org._id}` );
-};
-
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKey, getOrgKeyByUuid, getLegacyOrgKeyObject };
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKeyValue };

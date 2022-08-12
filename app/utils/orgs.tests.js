@@ -19,7 +19,7 @@ const mongodb = require('mongo-mock');
 const httpMocks = require('node-mocks-http');
 const { log } = require('../log');
 
-const { getOrg, verifyAdminOrgKey, bestOrgKey } = require('./orgs');
+const { getOrg, verifyAdminOrgKey, bestOrgKeyValue } = require('./orgs');
 
 let db = {};
 
@@ -206,8 +206,8 @@ describe('utils', () => {
         ]
       };
 
-      const orgKey = bestOrgKey( testOrg ).key;
-      assert.equal(orgKey, 'bestKey');
+      const bestOrgKey = bestOrgKeyValue( testOrg );
+      assert.equal(bestOrgKey, 'bestKey');
     });
   });
 });
