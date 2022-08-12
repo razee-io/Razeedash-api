@@ -37,6 +37,9 @@ const rbacSync = require('../utils/rbacSync.js');
 
 const { GraphqlPubSub } = require('../subscription');
 
+//const why = require('why-is-node-running');
+
+
 let mongoServer;
 let myApollo;
 
@@ -398,7 +401,7 @@ describe('subscription graphql test suite', () => {
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
-    console.log(`subscriptions.spec.js in memory test mongodb url is ${mongoUrl}`);
+    console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
       mongo_url: mongoUrl,
@@ -426,6 +429,9 @@ describe('subscription graphql test suite', () => {
     await myApollo.stop(myApollo);
     GraphqlPubSub.deleteInstance();
     await mongoServer.stop();
+    // setTimeout(function() {
+    //  why(); // logs out active handles that are keeping node running
+    // }, 5000);
   }); // after
 
   it('get subscriptions', async () => {
@@ -719,6 +725,7 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_02_uuid,
       });
       expect(subscription.versionUuid).to.equal(channelVersion_01_uuid);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -752,6 +759,7 @@ describe('subscription graphql test suite', () => {
         uuid: subscription_01_uuid,
       });
       expect(subscription).to.equal(null);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

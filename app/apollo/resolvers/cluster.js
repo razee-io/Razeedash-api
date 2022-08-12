@@ -22,7 +22,7 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
-const { bestOrgKey } = require('../../utils/orgs');
+const { bestOrgKeyValue } = require('../../utils/orgs');
 
 
 const { validateString, validateJson } = require('../utils/directives');
@@ -366,8 +366,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
-          deletedResourceCount: deletedResources.modifiedCount,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {
@@ -414,8 +414,8 @@ const clusterResolvers = {
 
         return {
           deletedClusterCount: deletedClusters.deletedCount,
-          deletedResourceCount: deletedResources.modifiedCount,
-          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
+          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount !== undefined ? deletedResourceYamlHist.modifiedCount : deletedResourceYamlHist.nModified,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
         };
       } catch (error) {
@@ -455,13 +455,14 @@ const clusterResolvers = {
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
 
-        if (
-          await models.Cluster.findOne(
-            { $and: [
-              { org_id: org_id },
+        if (await models.Cluster.findOne(
+          { $and: [
+            { org_id: org_id },
+            {$or: [
               {'registration.name': registration.name },
+              {'metadata.name': registration.name },
             ]}
-          ).lean()) {
+          ]}).lean()) {
           throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
         }
 
@@ -477,7 +478,7 @@ const clusterResolvers = {
             url += `&args=${arg}`;
           });
         }
-        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
+        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKeyValue( org ), regState: reg_state, registration };
       } catch (error) {
         if(error instanceof BasicRazeeError ){
           throw error;

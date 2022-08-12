@@ -31,7 +31,7 @@ const mongoConf = require('../../conf.js').conf;
 mongoose.Promise = global.Promise; // use global es6 promises
 
 
-const connectDb = async mongoUrl => {
+const connectDb = mongoUrl => {
   let mongooseOptions;
   const url =
     mongoUrl || process.env.MONGO_URL || 'mongodb://localhost:3001/meteor';
@@ -42,14 +42,22 @@ const connectDb = async mongoUrl => {
       autoIndex: false,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 10000,
-      minPoolSize: 15,
+      poolSize: 15,
+      useNewUrlParser: true,
+      useFindAndModify: true,
+      useCreateIndex: true,
+      useUnifiedTopology: true,
     };
   } else {
     mongooseOptions = {
       autoIndex: true,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 10000,
-      minPoolSize: 15,
+      poolSize: 15,
+      useNewUrlParser: true,
+      useFindAndModify: true,
+      useCreateIndex: true,
+      useUnifiedTopology: true,
     };
   }
 
@@ -57,11 +65,9 @@ const connectDb = async mongoUrl => {
     mongooseOptions['tlsCAFile'] = mongoConf.mongo.cert;
   }
 
-  await mongoose.connect(url, {
+  return mongoose.connect(url, {
     ...mongooseOptions,
   });
-
-  return mongoose;
 };
 
 const models = {
