@@ -86,7 +86,7 @@ const buildCommonApolloContext = async ({ models, req, res, connection }) => {
     const logger = req.log; // request context logger created by express-bunyan-logger
     const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
     if (context.me && context.me.orgKey) {
-      const org = await models.Organization.findOne( { $or: [ { orgKeys: context.me.orgKey }, { orgKeys2.key: context.me.orgKey } ] } );
+      const org = await models.Organization.findOne( { $or: [ { orgKeys: context.me.orgKey }, { 'orgKeys2.key': context.me.orgKey } ] } );
       logger.fields.org_id = org._id;
     }
     if (context.me && context.me.org_id) {
@@ -181,7 +181,7 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
         let orgKey, orgId;
         if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
           orgKey = connectionParams.headers['razee-org-key'];
-          const org = await models.Organization.findOne( { $or: [ { orgKeys: orgKey }, { orgKeys2.key: orgKey } ] } );
+          const org = await models.Organization.findOne( { $or: [ { orgKeys: orgKey }, { 'orgKeys2.key': orgKey } ] } );
           orgId = org._id;
         }
         const req_id = uuid();
