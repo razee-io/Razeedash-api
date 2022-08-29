@@ -20,6 +20,7 @@ const conf = require('../conf.js').conf;
 const S3ClientClass = require('./s3NewClient');
 const cipher = require('./cipher');
 const _ = require('lodash');
+const iv_delim = ' ';
 
 class S3LegacyResourceHandler {
 
@@ -52,12 +53,12 @@ class S3LegacyResourceHandler {
   }
 
   async setDataAndEncrypt(stringOrBuffer, key) {
-    this.logInfo(`Uploading object ${this.bucketName}:${this.resourceKey} ...`);
+    this.logInfo(`Uploading encrypted object ${this.bucketName}:${this.resourceKey} ...`);
     const { encryptedBuffer, ivText } = cipher.encrypt(stringOrBuffer, key);
-    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, encryptedBuffer);
-    this.urlString = result.Location;
-    this.logInfo(`Uploaded object to ${result.Location}`);
-    return ivText;
+    const ivBuffer = Buffer.from( ivText+iv_delim, 'utf8' );
+    const s_combinedBuffer = Buffer.concat( [ivBuffer, encryptedBuffer] );
+    const result = await this.s3NewClient.upload(this.bucketName, this.resourceKey, s_combinedBuffer);
+    this.logInfo(`Uploaded encrypted object to ${result.Location}`);
   }
 
   async setData(stringOrBuffer) {
@@ -67,11 +68,22 @@ class S3LegacyResourceHandler {
     this.logInfo(`Uploaded object to ${result.Location}`);
   }
 
+  // If data embeds iv, ignore passed iv (passed iv only for legacy data)
   async getDataAndDecrypt(key, iv) {
     this.logInfo(`Downloading object ${this.bucketName}:${this.resourceKey} ...`);
     const response = await this.s3NewClient.getObject(this.bucketName, this.resourceKey);
     const encryptedBuffer = Buffer.from(response.Body);
-    return cipher.decryptBuffer(encryptedBuffer, key, iv); // utf-8 text
+
+    const delimIdx = encryptedBuffer.indexOf( iv_delim, 0, 'utf8' );
+    // If iv is embedded, first 24 bytes are the embedded iv.  The rest of the buffer is the delimiter and the encrypted content, which will be multiples of 8 bytes.
+    if( delimIdx == 24 && encryptedBuffer.length % 8 == iv_delim.length ) {
+      this.logInfo( `retrieved buffer (len: ${encryptedBuffer.length}) embeds iv` );
+      let s_iv = encryptedBuffer.subarray(0,delimIdx).toString('utf8');
+      const s_encryptedBuffer = encryptedBuffer.subarray( delimIdx + iv_delim.length );
+      return cipher.decryptBuffer(s_encryptedBuffer, key, s_iv); // utf-8 text
+    }
+    this.logInfo( `retrieved buffer (len: ${encryptedBuffer.length}) does not embed iv` );
+    return cipher.decryptBuffer(encryptedBuffer, key, iv);
   }
 
   async getData() {
