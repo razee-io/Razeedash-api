@@ -15,9 +15,7 @@
  */
 
 const mongoose = require('mongoose');
-const { bestOrgKeyValue } = require('razeedash-api/app/utils/orgs');
 const { v4: uuid } = require('uuid');
-
 const OrganizationLocalSchema = new mongoose.Schema({
   _id: {
     type: String,
@@ -72,7 +70,7 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
     host = process.env.EXTERNAL_HOST;
   }
   return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKeyValue(org)}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
   };
 };
 
