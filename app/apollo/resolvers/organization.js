@@ -419,7 +419,7 @@ const organizationResolvers = {
           const primaryOrgKeys = org.orgKeys2.filter( orgKey => {
             return( orgKey.primary );
           } );
-          if( orgKey.primary && primaryOrgKeys.length < 2 ) {
+          if( orgKey.primary && primaryOrgKeys.length <= 1 ) {
             // Forbidden
             logger.warn({ req_id, user: whoIs(me), orgId, uuid }, `${queryName} OrgKey cannot be altered because it is in use (primary)` );
             throw new RazeeForbiddenError( context.req.t( 'Organization key {{id}} cannot be removed or altered because it is the only Primary key.', {id: uuid} ), context );
@@ -448,6 +448,30 @@ const organizationResolvers = {
             // If an error occurs while removing Primary from other OrgKeys, it can be logged and ignored -- the actual creation of the new OrgKey did succeed before this point is reached.
             logger.error({ req_id, user: whoIs(me), orgId, name, primary, res, error: error.message }, `${queryName} error removing primary from other OrgKeys, continuing`);
           }
+
+          /*
+          The OrgKeys (originally just hard coded as the first `orgKeys` element before OrgKey management was enabled) are used to encrypt/decrypt Version content stored in S3 or embedded.
+          When a new Primary OrgKey is identified, existing encrypted data must be re-encrypted so the old OrgKey can be eventually deleted.
+          Only Versions need to be updated as only Versions use encryption when storing/retrieving data.  Resources just use setData/getData methods.
+          Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
+          */
+          const versions = await models.DeployableVersion.find({ org_id: orgId });
+          // Start ASYNCHRONOUSLY updating Version encryption
+          updateAllVersionEncryption( context, org, versions, orgKey ).then( (result) => {
+            if( result.incomplete > 0 ) {
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was interrupted by additional changes, result: ${JSON.stringify(result)}`);
+            }
+            else if( result.failed > 0 ) {
+              // This is not fatal -- Versions still keep track of both the verifiedOrgKeyUuid and desiredOrgKeyUuid, and can use one of the two to decrypt existing data.
+              logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' encountered errors, result: ${JSON.stringify(result)}`);
+            }
+            else {
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was sucessful, result: ${JSON.stringify(result)}`);
+            }
+          }).catch( (e) => {
+            // The only error that should be thrown is 'already in progress', which is ignored
+            logger.info({ req_id, user: whoIs(me), orgId, error: e.message }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' is already in progress`);
+          });
         }
 
         return {

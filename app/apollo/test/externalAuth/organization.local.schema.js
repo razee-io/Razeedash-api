@@ -69,8 +69,12 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   if (process.env.EXTERNAL_HOST) {
     host = process.env.EXTERNAL_HOST;
   }
+  let bestOrgKeyValue = org.orgKeys[0];
+  if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
+    bestOrgKeyValue = ( org.orgKeys2.find( ok => { return ok.primary } ) || org.orgKeys2[0] ).key;
+  }
   return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKeyValue}`,
   };
 };
 
