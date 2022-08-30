@@ -131,7 +131,6 @@ describe('organization graphql test suite', () => {
     let orgKeyVal1 = null;
     let channel1Uuid = null;
     let initialOrgKeyVersionUuid = null;
-    let remainingOrgKeyVersionUuid = null;
 
     it('a user should be able to get organizations associated with him.', async () => {
       try {
@@ -139,7 +138,7 @@ describe('organization graphql test suite', () => {
 
         const response = await api.organizations(token);
         console.log( `organizations (user01) response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const organizations = response.data.data.organizations;
 
         expect(organizations).to.be.a('array');
@@ -157,7 +156,7 @@ describe('organization graphql test suite', () => {
 
         const response = await api.organizations(token);
         console.log( `organizations (admin) response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const organizations = response.data.data.organizations;
 
         expect(organizations).to.be.a('array');
@@ -179,7 +178,7 @@ describe('organization graphql test suite', () => {
           orgId: adminOrg.id
         });
         console.log( `orgKeys response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const orgKeys = response.data.data.orgKeys;
 
         expect(orgKeys).to.be.a('array');
@@ -205,7 +204,7 @@ describe('organization graphql test suite', () => {
           data_location: 'dal'
         });
         console.log( `addChannel 'a_random_name' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const addChannel = response.data.data.addChannel;
 
         channel1Uuid = addChannel.uuid;
@@ -219,7 +218,7 @@ describe('organization graphql test suite', () => {
           description: 'Version encrypted with origOrgKey'
         });
         console.log( `addChannelVersion 'ver1-origOrgKey' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const addChannelVersion = response.data.data.addChannelVersion;
 
         expect(addChannelVersion.success).to.equal(true);
@@ -248,7 +247,7 @@ describe('organization graphql test suite', () => {
           primary: true
         });
         console.log( `addOrgKey '${orgKeyName1}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const addOrgKey = response.data.data.addOrgKey;
         expect(addOrgKey.uuid).to.be.an('string');
 
@@ -282,7 +281,7 @@ describe('organization graphql test suite', () => {
           primary: true
         });
         console.log( `addOrgKey '${orgKeyName2}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const addOrgKey = response.data.data.addOrgKey;
         expect(addOrgKey.uuid).to.be.an('string');
 
@@ -313,7 +312,7 @@ describe('organization graphql test suite', () => {
           orgId: adminOrg.id
         });
         console.log( `orgKeys response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const orgKeys = response.data.data.orgKeys;
 
         expect(orgKeys).to.be.a('array');
@@ -337,7 +336,7 @@ describe('organization graphql test suite', () => {
           name: null
         });
         console.log( `orgKey '${orgKeyUuid1}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const orgKey = response.data.data.orgKey;
 
         expect(orgKey.uuid).to.equal(orgKeyUuid1);
@@ -365,7 +364,7 @@ describe('organization graphql test suite', () => {
           name: orgKeyName2
         });
         console.log( `orgKey '${orgKeyName2}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const orgKey = response.data.data.orgKey;
 
         expect(orgKey.uuid).to.equal(orgKeyUuid2);
@@ -392,7 +391,7 @@ describe('organization graphql test suite', () => {
           primary: true
         });
         console.log( `editOrgKey '${orgKeyUuid1}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const editOrgKey = response.data.data.editOrgKey;
 
         expect(editOrgKey.modified).to.equal(1);
@@ -420,7 +419,7 @@ describe('organization graphql test suite', () => {
           name: orgKeyName1+'_newname'
         });
         console.log( `orgKey '${orgKeyName1+'_newname'}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const orgKey = response.data.data.orgKey;
 
         expect(orgKey.uuid).to.equal(orgKeyUuid1);
@@ -446,7 +445,7 @@ describe('organization graphql test suite', () => {
           uuid: orgKeyUuid0
         });
         console.log( `removeOrgKey '${orgKeyUuid0}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const removeOrgKey = response.data.data.removeOrgKey;
 
         expect(removeOrgKey.success).to.equal(true);
@@ -477,7 +476,7 @@ describe('organization graphql test suite', () => {
           uuid: orgKeyUuid2
         });
         console.log( `removeOrgKey '${orgKeyUuid2}' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const removeOrgKey = response.data.data.removeOrgKey;
 
         expect(removeOrgKey.success).to.equal(true);
@@ -541,7 +540,7 @@ describe('organization graphql test suite', () => {
           registration: { name: 'newOrgKeyCluster' },
         });
         console.log( `registerCluster 'newOrgKeyCluster' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const registerCluster = response.data.data.registerCluster;
 
         expect(registerCluster.url).to.be.an('string');
@@ -568,11 +567,10 @@ describe('organization graphql test suite', () => {
           description: 'Version encrypted with remainingOrgKey'
         });
         console.log( `addChannelVersion 'ver2-remainingOrgKey' response: ${JSON.stringify( response.data, null, 2 )}` );
-        if (response.data.errors) expect.fail(errors[0].message);
+        if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
         const addChannelVersion = response.data.data.addChannelVersion;
 
         expect(addChannelVersion.success).to.equal(true);
-        remainingOrgKeyVersionUuid = addChannelVersion.versionUuid;
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
@@ -583,7 +581,7 @@ describe('organization graphql test suite', () => {
       }
     });
 
-    it('debug all versions', async () => {
+    it('Version contents originally encrypted with different OrgKeys should be retrievable', async () => {
       token = await signInUser(models, api, rootData);
       try {
         // Get all Versions from the DB
@@ -598,7 +596,7 @@ describe('organization graphql test suite', () => {
             versionUuid: v.uuid,
           });
           console.log( `version '${v.uuid} response': ${JSON.stringify( response.data, null, 2 )}` );
-          if (response.data.errors) expect.fail(errors[0].message);
+          if (response.data.errors && response.data.errors.length > 0) expect.fail(response.data.errors[0].message);
           const channelVersion = response.data.data.channelVersion;
 
           expect(channelVersion.content).to.contain('This content encrypted with');

@@ -459,14 +459,14 @@ const organizationResolvers = {
           // Start ASYNCHRONOUSLY updating Version encryption
           updateAllVersionEncryption( context, org, versions, orgKey ).then( (result) => {
             if( result.incomplete > 0 ) {
-              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was interrupted by additional changes, result: ${JSON.stringify(result)}`);
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was interrupted by additional changes, result: ${JSON.stringify(result)}`);
             }
             else if( result.failed > 0 ) {
               // This is not fatal -- Versions still keep track of both the verifiedOrgKeyUuid and desiredOrgKeyUuid, and can use one of the two to decrypt existing data.
-              logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' encountered errors, result: ${JSON.stringify(result)}`);
+              logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' encountered errors, result: ${JSON.stringify(result)}`);
             }
             else {
-              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res, newOrgKey: newOrgKey.orgKeyUuid, result }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was sucessful, result: ${JSON.stringify(result)}`);
+              logger.info({ req_id, user: whoIs(me), orgId, name, primary, res }, `${queryName} version re-encryption to use '${orgKey.orgKeyUuid}' was sucessful, result: ${JSON.stringify(result)}`);
             }
           }).catch( (e) => {
             // The only error that should be thrown is 'already in progress', which is ignored
