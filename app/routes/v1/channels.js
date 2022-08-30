@@ -32,7 +32,7 @@ router.use(asyncHandler(async (req, res, next) => {
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res)=>{
+const getChannelVersion = async (req, res) => {
   var orgId = req.org._id;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
@@ -74,11 +74,13 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res)=>{
   try {
     const data = await getDecryptedContent( {logger: req.log, req_id: req.id, me: null}, org, deployableVersion );
     res.set('Content-Type', deployableVersion.type);
-    res.status(200).send(data);
+    res.status(200).send(data.content);
   } catch (error) {
     req.log.error(error);
     return res.status(500).json({ status: 'error', message: error.message});
   }
-}));
+};
+
+router.get('/:channelName/:versionId', getOrg, asyncHandler(getChannelVersion));
 
 module.exports = router;
