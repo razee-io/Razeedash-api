@@ -154,7 +154,7 @@ UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type,
 
 UserDefaultSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
-  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  const org = await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean();
   if(!org) {
     logger.error('An org was not found for this razee-org-key');
     throw new ForbiddenError('org id was not found');
@@ -186,7 +186,7 @@ UserDefaultSchema.statics.getOrgById = async function(models, orgId) {
 };
 
 UserDefaultSchema.statics.getOrg = async function(models, me) {
-  return await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
+  return await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean({ virtuals: true });
 };
 
 UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){
