@@ -30,6 +30,26 @@ const ChannelSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
+  contentType: {
+    type: String,
+  },
+  remote: {
+    type: {
+      type: String,
+    },
+    parameters: {
+      type: Map,
+    },
+  },
+  versionDefaults: {
+    content: {
+      remote: {
+        parameters: {
+          type: Map,
+        },
+      },
+    },
+  },
   data_location: {
     type: String,
   },
@@ -43,6 +63,10 @@ const ChannelSchema = new mongoose.Schema({
     type: String,
   },
   created: {
+    type: Date,
+    default: Date.now,
+  },
+  updated: {
     type: Date,
     default: Date.now,
   },

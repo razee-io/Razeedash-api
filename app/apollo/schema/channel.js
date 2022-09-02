@@ -30,12 +30,26 @@ const channelSchema = gql`
     created: Date
     location: String
   }
+  type ChannelRemoteSource {
+    type: String!
+    parameters: JSON!
+  }
+  type VersionRemoteSource {
+    parameters: JSON!
+  }
+  type ChannelVersionDefaults {
+    remote: VersionRemoteSource
+  }
   type Channel {
     uuid: String!
     orgId: String!
     name: String!
+    contentType: String!
+    remote: ChannelRemoteSource
     data_location: String
     created: Date!
+    updated: Date!
+    versionDefaults: ChannelVersionDefaults
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
@@ -73,9 +87,11 @@ const channelSchema = gql`
     type: String!
     description: String
     content: String
+    remote: VersionRemoteSource
     owner: BasicUser
     kubeOwnerName: String
     created: Date!
+    updated: Date!
   }
 
   extend type Query {
@@ -114,18 +130,18 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: JSON, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
 
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: JSON, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
 
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, remote: JSON, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
      """
      Removes a channel
      """
@@ -134,7 +150,7 @@ const channelSchema = gql`
      """
      Removes a channel version
      """
-     removeChannelVersion(orgId: String! @sv, uuid: String! @sv): RemoveChannelVersionReply!
+     removeChannelVersion(orgId: String! @sv, uuid: String! @sv, deleteSubscriptions: Boolean): RemoveChannelVersionReply!
   }
 `;
 
