@@ -16,11 +16,10 @@
  */
 const assert = require('assert');
 const mongodb = require('mongo-mock');
-var httpMocks = require('node-mocks-http');
-const log = require('../log').log;
+const httpMocks = require('node-mocks-http');
+const { log } = require('../log');
 
-let getOrg = require('./orgs').getOrg;
-let verifyAdminOrgKey = require('./orgs').verifyAdminOrgKey;
+const { getOrg, verifyAdminOrgKey, bestOrgKey } = require('./orgs');
 
 let db = {};
 
@@ -176,6 +175,39 @@ describe('utils', () => {
 
       assert.equal(request.org.somedata, 'xyz');
       assert.equal(nextCalled, true);
+    });
+
+    it('should identify the best OrgKey', async () => {
+      // Setup
+      const Orgs = db.collection('orgs');
+      await Orgs.insertOne({ orgKeys: 11, somedata: 'xyz' });
+      const testOrg = {
+        _id: 'dummyid',
+        orgKeys: [
+          'worstKey1',
+          'worstKey2',
+        ],
+        orgKeys2: [
+          {
+            orgKeyUuid: 'non-primary-uuid1',
+            primary: false,
+            key: 'badKey1'
+          },
+          {
+            orgKeyUuid: 'primary-uuid1',
+            primary: true,
+            key: 'bestKey'
+          },
+          {
+            orgKeyUuid: 'non-primary-uuid2',
+            primary: false,
+            key: 'badKey2'
+          }
+        ]
+      };
+
+      const orgKey = bestOrgKey( testOrg ).key;
+      assert.equal(orgKey, 'bestKey');
     });
   });
 });

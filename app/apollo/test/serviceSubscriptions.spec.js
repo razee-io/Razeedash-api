@@ -17,7 +17,11 @@
 'use strict';
 
 const { AUTH_MODEL } = require('../models/const');
-const { signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { signInUser } = require(testHelperPath);
 
 // Service subscriptions require super-user,
 // which is implemented only in local auth model
@@ -59,8 +63,9 @@ describe('Service subscription graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
     process.env.ORG_ADMIN_KEY = orgAdminKey;
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getUri();
+    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    await mongoServer.start();
+    const mongoUrl = mongoServer.getUri();
     console.log(`\tCluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
@@ -157,6 +162,12 @@ describe('Service subscription graphql test suite', () => {
     printResults(result);
     expect(result.data.serviceSubscription.ssid).to.equal(testData.serSub1._id);
     expect(result.data.serviceSubscription.owner.name).to.equal('user02');
+    // Cluster orgId should be returned and match cluster2 test data
+    expect(result.data.serviceSubscription.cluster.orgId).to.equal(testData.cluster2Data.org_id);
+    // ServiceSubscription orgId should be returned and match org01 test data
+    expect(result.data.serviceSubscription.orgId).to.equal(testData.org01._id);
+    // ServiceSubscription orgId should not match Cluster orgId
+    expect(result.data.serviceSubscription.orgId).to.not.equal(result.data.serviceSubscription.cluster.orgId);
   });
 
   it('Deleting cluster should not cause service subscriptions retrieval to fail', async () => {

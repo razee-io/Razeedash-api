@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,79 @@ const organizationSchema = gql`
     name: String!
   }
 
+  type OrgKey {
+    uuid: String!
+    name: String!
+    primary: Boolean!
+    created: Date
+    updated: Date
+    key: String
+  }
+
+  type AddOrgKeyReply {
+    uuid: String!
+    key: String!
+  }
+
+  type RemoveOrgKeyReply {
+    success: Boolean!
+  }
+
+  type EditOrgKeyReply {
+    modified: Int!
+  }
+
   extend type Query {
     """
     Return Organizations the current user belongs to.
     """
     organizations: [Organization!]
+
+    """
+    List OrgKeys.
+    """
+    orgKeys(
+      orgId: String! @sv
+    ): [OrgKey!]
+
+    """
+    Get OrgKey.
+    """
+    orgKey(
+      orgId: String! @sv
+      uuid: String @sv
+      name: String @sv
+    ): OrgKey!
+  }
+
+  extend type Mutation {
+    """
+    Add OrgKey
+    """
+    addOrgKey (
+      orgId: String! @sv
+      name: String! @sv
+      primary: Boolean!
+    ): AddOrgKeyReply!
+
+    """
+    Remove OrgKey
+    """
+    removeOrgKey (
+      orgId: String! @sv
+      uuid: String! @sv
+      forceDeletion: Boolean
+    ): RemoveOrgKeyReply!
+
+    """
+    Update OrgKey
+    """
+    editOrgKey (
+      orgId: String! @sv
+      uuid: String! @sv
+      name: String
+      primary: Boolean
+    ): EditOrgKeyReply!
   }
 `;
 

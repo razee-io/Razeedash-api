@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,26 @@ const clusterSchema = gql`
     name: String!
   }
 
+  type LastOrgKey {
+    uuid: String!
+    name: String
+  }
+
+  type ClusterIdentity {
+    id: String!
+    syncDate: String!
+    syncStatus: String!
+    syncMessage: String
+  }
+
+  type BasicCluster {
+    id: ID!
+    orgId: String!
+    clusterId: String!
+    name: String
+    registration: JSON
+  }
+
   type Cluster {
     id: ID!
     orgId: String!
@@ -40,11 +60,13 @@ const clusterSchema = gql`
     status: String
     regState: String
     groups: [ClusterGroup]
+    syncedIdentities: [ClusterIdentity]
     groupObjs: [GroupDetail!]
     created: Date
     updated: Date
     dirty: Boolean
     resources: [Resource!]
+    lastOrgKey: LastOrgKey
   }
 
   type KubeCountVersion {
@@ -59,7 +81,9 @@ const clusterSchema = gql`
 
   type DeleteClustersResponse {
     deletedClusterCount: Int,
-    deletedResourceCount: Int
+    deletedResourceCount: Int,
+    deletedResourceYamlHistCount: Int,
+    deletedServiceSubscriptionCount: Int
   }
 
   type RegisterClusterResponse {
@@ -102,6 +126,7 @@ const clusterSchema = gql`
       clusterId: String @sv
       "**limit**: Number of docs to return. default 50, 0 means return all"
       limit: Int = 50
+      skip: Int = 0
       "**startingAfter**: For pagination. Specify the **id** of the document you want results older than."
       startingAfter: String @sv
       ${globalGraphqlInputs}
@@ -155,7 +180,7 @@ const clusterSchema = gql`
 
     """
     Register a cluster with razee api for an organization. registration.name is required.
-    """ 
+    """
     registerCluster (
       orgId: String! @sv
       registration: JSON! @jv

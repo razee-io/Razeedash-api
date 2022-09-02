@@ -27,13 +27,14 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
                 name
                 description
-                location
               }
+              custom 
           }
         }
     `,
@@ -56,13 +57,14 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
                 name
                 description
-                location
               }
+              custom 
           }
         }
     `,
@@ -85,13 +87,14 @@ const channelFunc = grahqlUrl => {
               uuid
               orgId
               name
+              data_location
               created
               versions {
                 uuid
                 name
                 description
-                location
               }
+              custom
           }
         }
     `,
@@ -207,8 +210,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!,$name: String!, $data_location: String) {
-            addChannel(orgId: $orgId name: $name, data_location: $data_location) {
+          mutation($orgId: String!,$name: String!, $data_location: String, $custom: JSON) {
+            addChannel(orgId: $orgId name: $name, data_location: $data_location, custom: $custom) {
               uuid
           }
         }
@@ -227,8 +230,8 @@ const channelFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!) {
-            editChannel(orgId: $orgId uuid: $uuid name: $name) {
+          mutation($orgId: String!, $uuid: String!, $name: String! $custom: JSON) {
+            editChannel(orgId: $orgId uuid: $uuid name: $name, custom: $custom) {
               uuid
               success
               name
@@ -280,5 +283,3 @@ const channelFunc = grahqlUrl => {
 };
 
 module.exports = channelFunc;
-
-

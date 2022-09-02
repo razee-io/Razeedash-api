@@ -1,5 +1,5 @@
 /**
-* Copyright 2021 IBM Corp. All Rights Reserved.
+* Copyright 2021, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const getBunyanConfig = require('../utils/bunyan.js').getBunyanConfig;
-const bunyan = require('bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api'));
-const ebl = require('express-bunyan-logger');
+const { createLogger, createExpressLogger } = require('../log');
+const logger = createLogger('razeedash-api');
 
 const MongoClientClass = require('../mongo/mongoClient.js');
 const conf = require('../conf.js').conf;
-const S3ClientClass = require('../s3/s3Client');
 const { maintenanceMode, maintenanceMessage } = require('../utils/maintenance.js');
 
 const MongoClient = new MongoClientClass(conf);
@@ -39,6 +36,8 @@ const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
 const Channels = require('./v1/channels.js');
+const SystemSubscriptions = require('./v1/systemSubscriptions.js');
+const V3Gql = require('./v3/gql');
 
 router.get('/v1/health', (req, res)=>{
   res.json({
@@ -49,21 +48,11 @@ router.get('/v1/health', (req, res)=>{
 });
 
 router.use('/kube', Kube);
-router.use(ebl(getBunyanConfig('razeedash-api/api')));
+router.use(createExpressLogger('razeedash-api/api'));
 
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');
   req.db = db;
-  next();
-}));
-
-router.use(asyncHandler(async (req, res, next) => {
-  let s3Client = null;
-  if (conf.s3.endpoint) {
-    s3Client = new S3ClientClass(conf);
-    s3Client.log=logger;
-  }
-  req.s3 = s3Client;
   next();
 }));
 
@@ -89,23 +78,36 @@ if(conf.maintenance.flag && conf.maintenance.key) {
 // won't have a razee-org-key when creating an org for the first time.
 router.use('/v2/orgs', Orgs);
 
-router.use((req, res, next) => {
+// the gql endpoints should be above the razee-org-key checks since it passes
+// all headers to the graphql handler code, which then does it own auth
+router.use('/v3/', V3Gql);
+
+router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
     orgKey = req.query.orgKey;
     if(!orgKey){
-      return res.status(401).send( 'razee-org-key required' );
+      return res.status(401).json('{"msg": "razee-org-key required"}');
     }
   }
-  req.orgKey=orgKey;
+  req.orgKey = orgKey;
+  const log = req.log;
+  const orgDb = req.db.collection('orgs');
+  const org = await orgDb.findOne( { $or: [ { orgKeys: orgKey }, { 'orgKeys2.key': orgKey } ] } );
+  if (org) log.fields.org_id = org._id;
   next();
 });
+
+
 router.use(getOrg);
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
 
+// Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
+router.use('/v1/systemSubscriptions', SystemSubscriptions);
+
 
 async function initialize(){
   const options = {
@@ -175,6 +177,10 @@ async function initialize(){
         {
           keys: { org_id: 1, channel_id: 1, name: 1},
           options: { name: 'org_id.channel_id.name', unique: true }
+        },
+        {
+          keys: { 'content.data.bucketName': 1, 'content.data.path': 1},
+          options: { name: 'bucketName.path' }
         }
       ],
       groups: [
@@ -221,6 +227,20 @@ async function initialize(){
         {
           keys: { cluster_id: 'text', selfLink: 'text', 'searchableData.searchableExpression': 'text' },
           options: { name: 'cluster_id_text_selfLink_text_searchableData.searchableExpression_text', }
+        },
+        {
+          keys: { 'data.data.bucketName': 1, 'data.data.path': 1},
+          options: { name: 'bucketName.path' }
+        }
+      ],
+      resourceYamlHist:[
+        {
+          keys: { org_id: 1, cluster_id: 1, resourceSelfLink: 1 },
+          options: { name: 'main-search', }
+        },
+        {
+          keys: { 'yamlStr.data.bucketName': 1, 'yamlStr.data.path': 1},
+          options: { name: 'bucketName.path' }
         }
       ],
       messages:[

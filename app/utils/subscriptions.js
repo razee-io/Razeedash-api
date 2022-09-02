@@ -12,6 +12,12 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
 
   const matchingChannelsByName = _.keyBy(matchingChannels, 'name');
 
+  const kubeOwnerIds = _.uniq(_.map(matchingSubscriptions, 'kubeOwnerId'));
+  let kubeOwnerIdsToNames = {};
+  if(cluster.registration.location){
+    kubeOwnerIdsToNames = await models.User.buildKubeOwnerIdToNameMapping(kubeOwnerIds);
+  }
+
   let urls = _.map(matchingSubscriptions, (subscription)=>{
     const deployable = matchingChannelsByName[subscription.channelName];
     const foundVersion = deployable.versions.filter( (ver) => {
@@ -24,7 +30,19 @@ const getSubscriptionUrls = async(orgId, matchingSubscriptions, cluster) => {
     }
     let kubeOwnerName = null;
     if(cluster.registration.location){
-      kubeOwnerName = subscription.kubeOwnerName;
+      kubeOwnerName = kubeOwnerIdsToNames[subscription.kubeOwnerId] || null;
+      if(!kubeOwnerName){
+        // for now, falls back to sub.kubeOwnerName if kubeOwnerId wasnt set (i.e. for old db objs that havent been migrated yet)
+        // todo: delete this if-statement once we're done migrating
+        kubeOwnerName = subscription.kubeOwnerName;
+      }
+    }
+    if(kubeOwnerName){
+      // forces iam usernames to be lowercase
+      const iamMatch = kubeOwnerName.match(/^(IAM#)(.*)$/);
+      if(iamMatch){
+        kubeOwnerName = `${iamMatch[1]}${iamMatch[2].toLowerCase()}`;
+      }
     }
     return {
       subscriptionName: subscription.name,

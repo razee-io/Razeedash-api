@@ -25,7 +25,12 @@ const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 const { GraphqlPubSub } = require('../subscription');
 
-const { prepareOrganization } = require(`./testHelper.${AUTH_MODEL}`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareOrganization } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
+
 let mongoServer;
 let myApollo;
 const graphqlPort = 18000;
@@ -54,10 +59,16 @@ const sub_02_version = '0.0.1';
 const sub_02_version_uuid = 'fake_sub_02_verison_uuid';
 const sub_02_groups = 'prod';
 
+const sub_03_name = 'fake_sub_03';
+const sub_03_uuid = 'fake_sub_03_uuid';
+const sub_03_version = '0.0.1';
+const sub_03_version_uuid = 'fake_sub_03_verison_uuid';
+const sub_03_groups = 'prod';
+
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_01.json`,
+      `${testDataPath}/cluster.spec.org_01.json`,
       'utf8',
     ),
   );
@@ -125,15 +136,18 @@ const createChannels = async () => {
       {
         uuid: sub_01_version_uuid,
         name: sub_01_version,
-        description: 'test01',
-        location: 'mongo'
+        description: 'test01'
       },
       {
         uuid: sub_02_version_uuid,
         name: sub_02_version,
-        description: 'test02',
-        location: 'mongo'
-      }
+        description: 'test02'
+      },
+      {
+        uuid: sub_03_version_uuid,
+        name: sub_03_version,
+        description: 'test03'
+      },
     ]
   });
 
@@ -165,6 +179,20 @@ const createSubscriptions = async () => {
     version_uuid: sub_02_version_uuid,
     owner: 'tester'
   });
+
+  await models.Subscription.create({
+    _id: 'fake_sub_id_3',
+    org_id: org01._id,
+    name: sub_03_name,
+    uuid: sub_03_uuid,
+    groups: sub_03_groups,
+    channel_uuid: channel_01_uuid,
+    channelName: channel_01_name,
+    version: sub_03_version,
+    version_uuid: sub_03_version_uuid,
+    owner: 'tester',
+    custom: { forEnv: 'testing', forType: 'testing' }
+  });
 };
 
 const getOrgKey = async () => {
@@ -175,8 +203,9 @@ const getOrgKey = async () => {
 describe('subscriptions graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getConnectionString();
+    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    await mongoServer.start();
+    const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({ mongo_url: mongoUrl, graphql_port: graphqlPort, });
@@ -194,25 +223,7 @@ describe('subscriptions graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('get should return a subscription for a cluster by calling subscriptionsByClusterId', async () => {
-    try {
-      const result = await subscriptionsApi.subscriptionsByClusterId(token, {
-        clusterId: cluster_id,
-      }, orgKey);
-      const subscriptionsByClusterId = result.data.data.subscriptionsByClusterId;
-      expect(subscriptionsByClusterId).to.have.length(1);
-      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
-  });
-
-  it('get should return a subscription for a cluster', async () => {
+  it('get should return SystemSubscriptions and regular subscriptions for a cluster with a group/subscription', async () => {
     try {
       const {
         data: {
@@ -222,8 +233,9 @@ describe('subscriptions graphql test suite', () => {
         clusterId: cluster_id
       }, orgKey);
 
-      expect(subscriptionsByClusterId).to.have.length(1);
-      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('fake_sub_01');
+      expect(subscriptionsByClusterId).to.have.length(2); // one SystemSubscription, one test subscription
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
+      expect(subscriptionsByClusterId[1].subscriptionName).to.equal('fake_sub_01'); // Test subscription
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -234,7 +246,7 @@ describe('subscriptions graphql test suite', () => {
     }
   });
 
-  it('get should return an empty array when there are no matching groups', async () => {
+  it('get should return only SystemSubscriptions when a cluster has no matching groups', async () => {
     try {
       const {
         data: {
@@ -243,7 +255,8 @@ describe('subscriptions graphql test suite', () => {
       } = await subscriptionsApi.subscriptionsByClusterId(token, {
         clusterId: cluster_id_2
       }, orgKey);
-      expect(subscriptionsByClusterId).to.have.length(0);
+      expect(subscriptionsByClusterId).to.have.length(1); // one SystemSubscription, zero test subscriptions
+      expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,32 @@
  * limitations under the License.
  */
 
-const { GraphQLDateTime } = require('graphql-iso-date');
-const GraphQLJSON = require('graphql-type-json');
+/*
+Custom resolvers can be specified by environment variable.
+This allows, for example, replacing the built in 'user' resolver with a custom one that does not provide `Mutation.signUp` or `Mutation.signIn`.
+*/
 
-const userResolvers = require('./user');
-const resourceResolvers = require('./resource');
-const groupResolvers = require('./group');
-const clusterResolvers = require('./cluster');
-const channelResolvers = require('./channel');
-const subscriptionResolvers = require('./subscription');
-const serviceResolvers = require('./serviceSubscription');
-const organizationResolvers = require('./organization');
-
-const customScalarResolver = {
-  DateTime: GraphQLDateTime,
-  JSON: GraphQLJSON,
+const resolversMap = {
+  'user': './user',
+  'resource': './resource',
+  'group': './group',
+  'cluster': './cluster',
+  'channel': './channel',
+  'subscription': './subscription',
+  'serviceSubscription': './serviceSubscription',
+  'organization': './organization',
+  'customScalar': './customScalar'
 };
-
-const resolvers = [
-  customScalarResolver,
-  organizationResolvers,
-  userResolvers,
-  resourceResolvers,
-  groupResolvers,
-  clusterResolvers,
-  subscriptionResolvers,
-  serviceResolvers,
-  channelResolvers,
-];
+if( process.env.CUSTOM_RESOLVERS ) {
+  const customResolvers = JSON.parse( process.env.CUSTOM_RESOLVERS );
+  for( const key in customResolvers ) {
+    resolversMap[key] = customResolvers[key];
+  }
+}
+const resolvers = [];
+for( const key in resolversMap ) {
+  console.log( `Loading resolver '${key}' from '${resolversMap[key]}'`);
+  resolvers.push( require(resolversMap[key]) );
+}
 
 module.exports = resolvers;

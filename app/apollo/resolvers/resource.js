@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 
 const _ = require('lodash');
-const { withFilter} = require('apollo-server');
+
+const { withFilter } = require('graphql-subscriptions');
+
 const GraphqlFields = require('graphql-fields');
 
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
@@ -25,46 +27,50 @@ const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, No
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
-const conf = require('../../conf.js').conf;
-const S3ClientClass = require('../../s3/s3Client');
-const url = require('url');
+const storageFactory = require('./../../storage/storageFactory');
 
-// Filters out the namespaces you dont have access to. has to get all the resources first.
-const filterNamespaces = async (data, me, orgId, queryName, context) => {
-
-  if (data.resources.length === 0) return data;
-  const namespaces = data.resources.map(d => d.searchableData.namespace).filter((v, i, a) => a.indexOf(v) === i).filter(x => x);
-  const deleteArray = await Promise.all(namespaces.map(async n => {
-    const invalid = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
-    return invalid ? n : false;
-  }));
-
-  // find and push good resources to new array
-  const filteredData = [];
-  data.resources.map( (d, i) => {
-    const findInArray = deleteArray.filter(del => del === d.searchableData.namespace).filter(x => x)[0];
-    if (!findInArray) filteredData.push(data.resources[i]);
-  });
-
-  return {
-    count: filteredData.length,
-    totalCount: filteredData.length,
-    resources: filteredData
-  };
-};
-
-// This is service level search function which does not verify user tag permission
-const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, skip=0, queryFields, sort={created: -1} }) => { // eslint-disable-line
+// Find resources while enforcing namespace access
+const commonResourcesSearch = async ({ me, queryName, orgId, context, searchFilter, limit=500, skip=0, queryFields, sort={created: -1} }) => { // eslint-disable-line
   const {  models, req_id, logger } = context;
   try {
-    const resources = await models.Resource.find(searchFilter)
+    /*
+    Filtering resources by Namespace access must be done as part of the database query.
+    If it is done as a separate filter *after* retrieving data from the database, it becomes
+    impossible to use pagination (limit+skip).  A client receiving a partial response
+    would be unable to tell whether there are more results, or how many to skip.
+    */
+    // To exclude resources based on Namespaces access, first build a list of all allowed Namespaces
+    const nsField = 'searchableData.namespace';
+    const allResourceNamespaces = await models.Resource.distinct( nsField, searchFilter );
+    // Then determine to which the user has access
+    const nsAllowedResults = await Promise.all(
+      allResourceNamespaces.map( async n => {
+        const forbidden = await validAuth(me, orgId, ACTIONS.READ, TYPES.RESOURCE, queryName, context, [n]);
+        return !forbidden;
+      } )
+    );
+    const allAllowedResourceNamespaces = allResourceNamespaces.filter((_v, index) => nsAllowedResults[index]);
+    // Then update the searchFilter to require one of the allowed namespaces (or no namespace)
+    allAllowedResourceNamespaces.push( null ); // If no namespace is specified, it's allowed
+    searchFilter[nsField] = { $in: allAllowedResourceNamespaces };
+
+    // Always exclude deleted records
+    searchFilter.deleted = { $ne: true };
+
+    // Finally, search including user provided filter with Namespace access filtering added
+    const resources = await models.Resource
+      .find(searchFilter)
       .sort(sort)
       .limit(limit)
       .skip(skip)
       .lean({ virtuals: true, defaults: true })
     ;
-    var count = await models.Resource.find(searchFilter).count();
-    var totalCount = await models.Resource.find({ org_id: orgId, deleted: false }).count();
+
+    // `count` is the number of records in this payload (taking into account `limit`)
+    const count = resources.length;
+    // `totalCount` is the total number of records matching the search
+    const totalCount = await models.Resource.find(searchFilter).count();
+
     return {
       count,
       totalCount,
@@ -76,53 +82,21 @@ const commonResourcesSearch = async ({ orgId, context, searchFilter, limit=500, 
   }
 };
 
-const isLink = (s) => {
-  return /^(http|https):\/\/?/.test(s);
-};
-
-const s3IsDefined = () => {
-  return conf.s3.endpoint;
-};
-
-const getS3Data = async (s3Link, logger, context) => {
-  try {
-    const s3Client = new S3ClientClass(conf);
-    const link = url.parse(s3Link);
-    const paths = link.path.split('/');
-    const bucket = paths[1];
-    // we do not need to decode URL here because path[2] and path[3] are hash code
-    // path[2] stores keyHash , path[3] stores searchableDataHash
-    const resourceName = paths.length > 3 ? paths[2] + '/' + paths[3] : paths[2];
-    const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
-    const yaml = await readS3File(s3stream);
-    return yaml;
-  } catch (error) {
-    logger.error(error, 'Error retrieving data from s3 bucket');
-    throw new BasicRazeeError(context.req.t('Error retrieving data from s3 bucket. {{error.message}}', {'error.message':error.message}), context);
-  }
-};
-
-const readS3File = async (readable) => {
-  readable.setEncoding('utf8');
-  let data = '';
-  for await (const chunk of readable) {
-    data += chunk;
-  }
-  return data;
-};
-
 const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
   const { models, me, req_id, logger } = context;
   try {
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
-    searchFilter['deleted'] = false;
+    // Always exclude deleted records
+    searchFilter.deleted = { $ne: true };
+
     let resource = await models.Resource.findOne(searchFilter).lean({ virtuals: true, defaults: true });
 
     if (!resource) return resource;
 
-    if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-      const yaml = await getS3Data(resource.data, logger);
+    if (queryFields['data'] && resource.data) {
+      const handler = storageFactory(logger).deserialize(resource.data);
+      const yaml = await handler.getData();
       resource.data = yaml;
     }
 
@@ -162,19 +136,18 @@ const resourceResolvers = {
       const queryName = 'resourcesCount';
       const { models, me, req_id, logger } = context;
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      let count = 0;
       try {
-        count = await models.Resource.count({
+        return await models.Resource.count({
           org_id: org_id,
-          deleted: false,
+          deleted: { $ne: true }, /* Always exclude deleted records */
         });
       } catch (error) {
         logger.error(error, 'resourcesCount encountered an error');
         throw new RazeeQueryError(context.req.t('resourcesCount encountered an error. {{error.message}}', {'error.message':error.message}), context);
       }
-      return count;
     },
     resources: async (
       parent,
@@ -195,7 +168,7 @@ const resourceResolvers = {
 
       sort = buildSortObj(sort);
 
-      let searchFilter = { org_id: orgId, deleted: false, };
+      let searchFilter = { org_id: orgId };
       if(kinds.length > 0){
         searchFilter['searchableData.kind'] = { $in: kinds };
       }
@@ -213,16 +186,14 @@ const resourceResolvers = {
           ]
         };
       }
-      const resourcesResult = await commonResourcesSearch({ orgId, models, searchFilter, limit, skip, queryFields: queryFields.resources, sort, context });
-
+      const resourcesResult = await commonResourcesSearch({ me, queryName, orgId, models, searchFilter, limit, skip, queryFields: queryFields.resources, sort, context });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId, subscriptionsLimit }, context);
-
-      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
+      return resourcesResult;
     },
 
     resourcesByCluster: async (
       parent,
-      { orgId, clusterId: cluster_id, filter, limit },
+      { orgId, clusterId: cluster_id, filter, limit, skip },
       context,
       fullQuery
     ) => {
@@ -232,6 +203,7 @@ const resourceResolvers = {
       logger.debug( {req_id, user: whoIs(me), orgId, filter, limit, queryFields }, `${queryName} enter`);
 
       limit = _.clamp(limit, 1, 10000);
+      skip = _.clamp(skip, 0, Number.MAX_SAFE_INTEGER);
 
       const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
@@ -253,15 +225,14 @@ const resourceResolvers = {
       let searchFilter = {
         org_id: orgId,
         cluster_id: cluster_id,
-        deleted: false,
       };
       if (filter && filter !== '') {
         searchFilter = buildSearchForResources(searchFilter, filter);
       }
       logger.debug({req_id}, `searchFilter=${JSON.stringify(searchFilter)}`);
-      const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, limit, queryFields });
+      const resourcesResult = await commonResourcesSearch({ me, queryName, orgId, context, searchFilter, limit, skip, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
-      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
+      return resourcesResult;
     },
 
     resource: async (parent, { orgId: org_id, id: _id, histId }, context, fullQuery) => {
@@ -285,8 +256,9 @@ const resourceResolvers = {
         }
         resource.histId = resourceYamlHistObj._id;
         resource.data = resourceYamlHistObj.yamlStr;
-        if (queryFields['data'] && resource.data && isLink(resource.data) && s3IsDefined()) {
-          const yaml = await getS3Data(resource.data, logger);
+        if (queryFields['data'] && resource.data) {
+          const handler = storageFactory(logger).deserialize(resource.data);
+          const yaml = await handler.getData();
           resource.data = yaml;
         }
         resource.updated = resourceYamlHistObj.updated;
@@ -326,7 +298,7 @@ const resourceResolvers = {
       return resource;
     },
 
-    resourcesBySubscription: async ( parent, { orgId, subscriptionId: subscription_id}, context, fullQuery) => {
+    resourcesBySubscription: async ( parent, { orgId, subscriptionId: subscription_id, limit, skip }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'resourcesBySubscription';
       const {  me, models, req_id, logger } = context;
@@ -348,19 +320,20 @@ const resourceResolvers = {
           return false;
         });
       }
-      const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id, deleted: false, };
-      const resourcesResult = await commonResourcesSearch({ orgId, context, searchFilter, queryFields });
+      const searchFilter = { org_id: orgId, 'searchableData.subscription_id': subscription_id };
+      const resourcesResult = await commonResourcesSearch({ me, queryName, orgId, context, searchFilter, limit, skip, queryFields });
       await applyQueryFieldsToResources(resourcesResult.resources, queryFields.resources, { orgId }, context);
-      return await filterNamespaces(resourcesResult, me, orgId, queryName, context);
+      return resourcesResult;
     },
 
-    resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, context)=>{
+    resourceHistory: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, beforeDate, afterDate, limit, skip }, context)=>{
       const { models, me, req_id, logger } = context;
 
       limit = _.clamp(limit, 1, 1000);
+      skip = _.clamp(skip, 0, Number.MAX_SAFE_INTEGER);
 
       const queryName = 'resourceHistory';
-      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit }, `${queryName} enter`);
+      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, beforeDate, afterDate, limit, skip }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
       let cluster = await models.Cluster.findOne({ org_id: org_id, cluster_id, ...conditions}).lean({ virtuals: true });
@@ -368,10 +341,14 @@ const resourceResolvers = {
         throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster group permission.'), context);
       }
 
-      var searchObj = {
+      const searchFilter = {
         org_id, cluster_id, resourceSelfLink
       };
-      var updatedSearchObj = {};
+
+      // Always exclude deleted records
+      searchFilter.deleted = { $ne: true };
+
+      const updatedSearchObj = {};
       if(beforeDate){
         updatedSearchObj.$lte = beforeDate;
       }
@@ -379,14 +356,25 @@ const resourceResolvers = {
         updatedSearchObj.$gte = afterDate;
       }
       if(!_.isEmpty(updatedSearchObj)){
-        searchObj.updated = updatedSearchObj;
+        searchFilter.updated = updatedSearchObj;
       }
 
-      const histObjs = await models.ResourceYamlHist.find(searchObj, { _id:1, updated:1 }, { limit }).lean({ virtuals: true });
-      const count = await models.ResourceYamlHist.find(searchObj).count();
+      const histObjs = await models.ResourceYamlHist
+        .find(searchFilter)
+        .sort({ _id:1, updated:1 })
+        .limit(limit)
+        .skip(skip)
+        .lean({ virtuals: true })
+      ;
+
+      // `count` is the number of records in this payload (taking into account `limit`)
+      const count = histObjs.length;
+      // `totalCount` is the total number of records matching the search
+      const totalCount = await models.ResourceYamlHist.find( searchFilter ).count();
 
       return {
         count,
+        totalCount,
         items: histObjs,
       };
     },
@@ -394,8 +382,10 @@ const resourceResolvers = {
     resourceContent: async(parent, { orgId: org_id, clusterId: cluster_id, resourceSelfLink, histId=null }, context)=>{
       const { models, me, req_id, logger } = context;
 
+      const logContext = {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId };
+
       const queryName = 'resourceContent';
-      logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, resourceSelfLink, histId }, `${queryName} enter`);
+      logger.debug( logContext, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
@@ -404,19 +394,18 @@ const resourceResolvers = {
         throw new RazeeForbiddenError(context.req.t('You are not allowed to access this resource due to missing cluster group permission.'), context);
       }
 
-      var getContent = async(obj)=>{
-        return obj.yamlStr;
-      };
-
       const resource = await models.Resource.findOne({ org_id, cluster_id, selfLink: resourceSelfLink },  {},  { lean:true });
       if(!resource){
-        return null;
+        logger.info( logContext, 'Resource for org_id, cluster_id, selfLink not found in database' );
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
-      if(!histId || histId == resource._id.toString()){
+      if( !histId || histId == resource.histId || histId == resource._id.toString() ){
+        logger.info( logContext, `Getting content for current resource (_id: '${resource._id.toString()}', histId: '${resource.histId}')` );
         let content = resource.data;
-        if ( content && isLink(content) && s3IsDefined()) {
-          const yaml = await getS3Data(content, logger);
+        if ( content ) {
+          const handler = storageFactory(logger).deserialize(content);
+          const yaml = await handler.getData();
           content = yaml;
         }
         return {
@@ -426,29 +415,31 @@ const resourceResolvers = {
           updated: resource.updated,
         };
       }
+      logger.info( logContext, `Getting content for resource history (current resource _id: '${resource._id.toString()}', histId: '${resource.histId})` );
 
-      const obj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
-      if(!obj){
-        return null;
+      const histObj = await models.ResourceYamlHist.findOne({ org_id, cluster_id, resourceSelfLink, _id: histId }, {}, { lean:true });
+      if(!histObj){
+        logger.info( logContext, 'Resource History for org_id, cluster_id, selfLink, histId not found in database' );
+        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {queryName, req_id}), context);
       }
 
-      var content = await getContent(obj);
-      if ( content && isLink(content) && s3IsDefined()) {
-        const yaml = await getS3Data(content, logger);
-        content = yaml;
+      let content = histObj.yamlStr;
+      if(content) {
+        const handler = storageFactory(logger).deserialize(content);
+        content = await handler.getData();
       }
 
       return {
         id: resource._id,
-        histId: obj._id,
+        histId: histObj._id,
         content,
-        updated: obj.updated,
+        updated: histObj.updated,
       };
     },
   },
   Subscription: {
     resourceUpdated: {
-      resolve: (parent, { orgID: org_id, filter }, { models, req_id, logger }) => {
+      resolve: (parent, { orgId: org_id, filter }, { models, req_id, logger }) => {
         logger.debug(
           { modelKeys: Object.keys(models), org_id, filter, req_id },
           'Subscription.resourceUpdated.resolve',

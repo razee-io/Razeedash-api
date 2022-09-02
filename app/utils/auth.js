@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-const { AUTH_MODEL_CLASS } = require('./auth.consts');
-const AuthClass = require(`${AUTH_MODEL_CLASS}`);
+// If external auth model specified, use it.  Else use built-in auth model.
+const { AUTH_MODEL, AUTH_MODEL_CLASS } = require('./auth.consts');
+const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
+const AuthClass = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].classPath) : require(`${AUTH_MODEL_CLASS}`);
 const auth = new AuthClass();
 
 module.exports = { auth };

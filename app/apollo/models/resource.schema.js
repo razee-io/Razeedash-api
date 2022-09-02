@@ -37,9 +37,7 @@ const ResourceSchema = new mongoose.Schema({
   hash: {
     type: String,
   },
-  data: {
-    type: String,
-  },
+  data: mongoose.Schema.Types.Mixed,
   deleted: {
     type: Boolean,
     default: false,

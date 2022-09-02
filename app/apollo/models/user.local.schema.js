@@ -15,7 +15,6 @@
  */
 
 const bcrypt = require('bcrypt');
-const bunyan = require('bunyan');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -24,13 +23,7 @@ const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-s
 const _ = require('lodash');
 
 const { ACTIONS, AUTH_MODEL } = require('./const');
-const { getBunyanConfig } = require('../../utils/bunyan');
-
 const SECRET = require('./const').SECRET;
-
-const logger = bunyan.createLogger(
-  getBunyanConfig('razeedash-api/apollo/models/user.local.schema'),
-);
 
 const UserLocalSchema = new mongoose.Schema({
   _id: {
@@ -160,8 +153,16 @@ UserLocalSchema.statics.createToken = async (user, secret, expiresIn) => {
   });
 };
 
-UserLocalSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+UserLocalSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
+};
+
+UserLocalSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
 };
 
 UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
@@ -187,7 +188,7 @@ UserLocalSchema.statics.getCurrentUser = ({me , req_id, logger}) => {
 };
 
 UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
-  logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
+  context.logger.debug({ req_id: context.req_id }, `local signUp ${args}`);
 
   const user = await models.User.createUser(models, args);
   return { token: models.User.createToken(user, secret, '240m') };
@@ -195,15 +196,15 @@ UserLocalSchema.statics.signUp = async (models, args, secret, context) => {
 };
 
 UserLocalSchema.statics.signIn = async (models, login, password, secret, context) => {
-  logger.debug({login, req_id: context.req_id}, 'local signIn enter');
+  context.logger.debug({login, req_id: context.req_id}, 'local signIn enter');
   const user = await models.User.findByLogin(login);
   if (!user) {
-    logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
+    context.logger.warn({ req_id: context.req_id },'No user found with this login credentials.');
     throw new UserInputError('No user found with this login credentials.');
   }
   const isValid = await user.validatePassword(password);
   if (!isValid) {
-    logger.warn({ req_id: context.req_id }, 'Invalid password.');
+    context.logger.warn({ req_id: context.req_id }, 'Invalid password.');
     throw new AuthenticationError('Invalid password.');
   }
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
@@ -264,10 +265,10 @@ UserLocalSchema.statics.getMeFromConnectionParams = async function(
   return null;
 };
 
-UserLocalSchema.statics.isValidOrgKey = async function(models, me) {
+UserLocalSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
 
-  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  const org = await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean();
   if(!org) {
     logger.error('An org was not found for this razee-org-key');
     throw new ForbiddenError('org id was not found');
@@ -284,7 +285,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
     // say no for if it is cluster facing api
     logger.debug({ req_id, orgId, reason: 'me is empty or cluster type'},'local isAuthorizedBatch exit..');
     var result = false;
-    if(await models.User.isValidOrgKey(models, me)){
+    if(await models.User.isValidOrgKey(models, me, logger)){
       result = true;
     }
     return new Array(objectArray.length).fill(result);
@@ -318,12 +319,11 @@ UserLocalSchema.statics.userTokenIsAuthorized = async function(me, orgId, action
 UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
   const { req_id, logger } = context;
   logger.debug({ req_id },`local isAuthorized ${action} ${type} ${attributes}`);
-
-  if (!me || me === null || me.type === 'cluster') {
+  if (!me || me === null || me.type === 'cluster'){
     // say no for if it is cluster facing api
     return false;
   }
-  if (me.org_admin) {
+  if (me.org_admin){
     return true;
   }
   const orgMeta = me.meta.orgs.find((o)=>{
@@ -341,7 +341,7 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
 
 UserLocalSchema.statics.getOrg = async function(models, me) {
   let org;
-  org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
+  org = await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean({ virtuals: true });
   return org;
 };
 

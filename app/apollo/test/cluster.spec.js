@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,13 @@ const clusterFunc = require('./clusterApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
-const { prepareUser, prepareOrganization, signInUser } = require(`./testHelper.${AUTH_MODEL}`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuth = require('../../externalAuth.js');
+const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
+const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
+const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
+
 const ObjectId = require('mongoose').Types.ObjectId;
 
 let mongoServer;
@@ -56,18 +62,28 @@ const group_01_uuid = 'fake_group_01_uuid;';
 const group_02_uuid = 'fake_group_02_uuid;';
 const group_03_uuid = 'fake_group_03_uuid;';
 const group_01_77_uuid = 'fake_group_01_77_uuid;';
+const org_01_orgkey = 'orgApiKey-0a9f5ee7-c879-4302-907c-238178ec9071';
+const org_01_orgkey2 = {
+  orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
+  name: 'testOrgKey2',
+  primary: true
+};
+
+// If external auth model specified, use it.  Else use built-in auth model.
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_01.json`,
+      `${testDataPath}/cluster.spec.org_01.json`,
       'utf8',
     ),
   );
+  // org01Data.orgKeys = [org_01_orgkey]; org model code autogenerates default org key
+  org01Data.orgKeys2 = [org_01_orgkey2];
   org01 = await prepareOrganization(models, org01Data);
   org77Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.org_77.json`,
+      `${testDataPath}/cluster.spec.org_77.json`,
       'utf8',
     ),
   );
@@ -77,21 +93,21 @@ const createOrganizations = async () => {
 const createUsers = async () => {
   user01Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user01.json`,
+      `${testDataPath}/cluster.spec.user01.json`,
       'utf8',
     ),
   );
   await prepareUser(models, user01Data);
   user77Data = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.user77.json`,
+      `${testDataPath}/cluster.spec.user77.json`,
       'utf8',
     ),
   );
   await prepareUser(models, user77Data);
   userRootData = JSON.parse(
     fs.readFileSync(
-      `./app/apollo/test/data/${AUTH_MODEL}/cluster.spec.root.json`,
+      `${testDataPath}/cluster.spec.root.json`,
       'utf8',
     ),
   );
@@ -143,6 +159,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    lastOrgKeyUuid: org_01_orgkey,
     registration: { name: 'my-cluster1' },
     reg_state: 'registered',
   });
@@ -163,6 +180,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    lastOrgKeyUuid: org_01_orgkey2.orgKeyUuid,
     registration: { name: 'my-cluster2' },
     reg_state: 'registered',
     created: new Moment().subtract(2, 'day').toDate(),
@@ -312,8 +330,9 @@ const groupClusters = async () => {
 describe('cluster graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer();
-    const mongoUrl = await mongoServer.getConnectionString();
+    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    await mongoServer.start();
+    const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
 
     myApollo = await apollo({
@@ -354,6 +373,8 @@ describe('cluster graphql test suite', () => {
       expect(clusterByClusterId.groupObjs).to.have.length(3);
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
       expect(clusterByClusterId.status).to.equal('active');
+      expect(clusterByClusterId.lastOrgKey.uuid).to.equal(org_01_orgkey);
+
 
       //with group limit
       const result2 = await clusterApi.byClusterID(token, {
@@ -388,6 +409,8 @@ describe('cluster graphql test suite', () => {
 
       expect(clusterByClusterName.clusterId).to.equal(clusterId2);
       expect(clusterByClusterName.status).to.equal('inactive');
+      expect(clusterByClusterName.lastOrgKey.uuid).to.equal(org_01_orgkey2.orgKeyUuid);
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -413,6 +436,28 @@ describe('cluster graphql test suite', () => {
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(4);
       expect(clustersByOrgId[0].resources).to.be.an('array');
+      expect(clustersByOrgId[3].lastOrgKey.uuid).to.equal(org_01_orgkey); // org model code autogenerates legacy orgkey, expects null name for cluster 1
+      expect(clustersByOrgId[2].lastOrgKey.uuid).to.equal(org_01_orgkey2.orgKeyUuid);
+      expect(clustersByOrgId[2].lastOrgKey.name).to.equal(org_01_orgkey2.name);
+      expect(clustersByOrgId[1].lastOrgKey).to.equal(null);
+      expect(clustersByOrgId[0].lastOrgKey).to.equal(null);
+
+      // test skip and limit implementation
+      const skipResponse = await clusterApi.byOrgID(token, {
+        orgId: org01._id,
+        skip: 2, limit: 1,
+      });
+      const skipLimitedClustersByOrgId = skipResponse.data.data.clustersByOrgId;
+      expect(skipLimitedClustersByOrgId[0].clusterId).to.equal('cluster_02');
+      expect(skipLimitedClustersByOrgId).to.have.length(1);
+
+      // test skipping a bunch doesn't throw error
+      const skipResponse2 = await clusterApi.byOrgID(token, {
+        orgId: org01._id,
+        skip: 500, limit: 1,
+      });
+      const skipLimitedClustersByOrgId2 = skipResponse2.data.data.clustersByOrgId;
+      expect(skipLimitedClustersByOrgId2).to.have.length(0);
 
       // with group limit
       const {
@@ -745,7 +790,9 @@ describe('cluster graphql test suite', () => {
       });
 
       expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
-      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedResourceCount).to.equal(1);
+      expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
+      expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -796,11 +843,12 @@ describe('cluster graphql test suite', () => {
         },
       } = await clusterApi.deleteClusters(adminToken, {
         orgId: org01._id,
-        clusterId: clusterIdToBeDeleted,
       });
 
       expect(deleteClusters.deletedClusterCount).to.be.above(0);
       expect(deleteClusters.deletedResourceCount).to.be.above(0);
+      expect(deleteClusters.deletedResourceYamlHistCount).to.equal(0);
+      expect(deleteClusters.deletedServiceSubscriptionCount).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

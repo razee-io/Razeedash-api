@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,37 @@
  * limitations under the License.
  */
 
+const { execute, subscribe } = require( 'graphql' );
+const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
+const { makeExecutableSchema } = require( '@graphql-tools/schema' );
+let subscriptionServer;
+const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
+const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
+
 const http = require('http');
 const express = require('express');
 const router = express.Router();
-const ebl = require('express-bunyan-logger');
-const bunyan = require('bunyan');
 const { ApolloServer } = require('apollo-server-express');
 const addRequestId = require('express-request-id')();
-const { IdentifierDirective, JsonDirective } = require('./utils/directives');
-const { getBunyanConfig } = require('./utils/bunyan');
+const { createLogger, createExpressLogger } = require('../log');
+const initLogger = createLogger('razeedash-api/app/apollo/index');
 const { AUTH_MODEL, GRAPHQL_PATH } = require('./models/const');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const recoveryHintsMap = require('./resolvers/recoveryHintsMap');
 const { models, connectDb } = require('./models');
-const bunyanConfig = getBunyanConfig('razeedash-api/apollo');
-const logger = bunyan.createLogger(bunyanConfig);
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
-const initModule = require(`./init.${AUTH_MODEL}`);
-const conf = require('../conf.js').conf;
 
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuthModels = require('../externalAuth.js').ExternalAuthModels;
+const initModule = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].initPath) : require(`./init.${AUTH_MODEL}`);
+
+const conf = require('../conf.js').conf;
+const { v4: uuid } = require('uuid');
 const pubSub = GraphqlPubSub.getInstance();
 
 const i18next = require('i18next');
@@ -61,41 +68,32 @@ const createDefaultApp = () => {
   const app = express();
   app.set('trust proxy', true);
   app.use(addRequestId);
-  app.use(function errorHandler(err, req, res, next) {
-    if (err) {
-      if (req.log && req.log.error) req.log.error(err);
-      else logger.error(err);
-      if (!res.headersSent) {
-        const statusCode = err.statusCode || 500;
-        return res.status(statusCode).send();
-      }
-      return next(err);
-    }
-    return next();
-  });
   app.use(i18nextMiddleware.handle(i18next));
   return app;
 };
 
-const buildCommonApolloContext = async ({ models, req, res, connection, logger }) => {
-  let context = await initModule.buildApolloContext({
-    models,
-    req,
-    res,
-    connection,
-    logger,
-  });
-  // populate req and req_id to apollo context
-  if (connection) {
-    const upgradeReq = connection.context.upgradeReq;
+const buildCommonApolloContext = async ({ models, req, res, connection }) => {
+  if (connection) { // Operation is a Subscription
+    const logger = connection.context.logger;
+    const req_id = connection.context.logger.fields.req_id;
+    const req = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
     const orgId = connection.context.orgId;
-    context = { apiKey: apiKey, req: upgradeReq, req_id: upgradeReq ? upgradeReq.id : undefined, userToken, recoveryHintsMap, orgId, ...context };
-  } else if (req) {
-    context = { req, req_id: req.id, recoveryHintsMap, ...context };
+    const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
+    return { apiKey, req, req_id, userToken, recoveryHintsMap, orgId, ...context };
+  } else if (req) { // Operation is a Query/Mutation
+    const logger = req.log; // request context logger created by express-bunyan-logger
+    const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
+    if (context.me && context.me.orgKey) {
+      const org = await models.Organization.findOne( { $or: [ { orgKeys: context.me.orgKey }, { 'orgKeys2.key': context.me.orgKey } ] } );
+      logger.fields.org_id = org._id;
+    }
+    if (context.me && context.me.org_id) {
+      logger.fields.org_id = context.me.org_id;
+    }
+    return { req, req_id: logger.fields.req_id, recoveryHintsMap, ...context }; // req_id = req.id
   }
-  return context;
 };
 
 const loadCustomPlugins =  () => {
@@ -103,11 +101,11 @@ const loadCustomPlugins =  () => {
     try {
       const pluginStrs = process.env.GRAPHQL_CUSTOM_PLUGINS.split(';');
       return pluginStrs.map( str => {
-        logger.info('Loading custom plugin: ' + str);
+        initLogger.info('Loading custom plugin: ' + str);
         return require(str);
       });
     } catch (err) {
-      logger.error(err, 'Error encountered when loading custom plugin.');
+      initLogger.error(err, 'Error encountered when loading custom plugin.');
       process.exit(1);
     }
   }
@@ -117,29 +115,33 @@ const loadCustomPlugins =  () => {
 var SIGTERM = false;
 process.on('SIGTERM', () => SIGTERM = true);
 
-const createApolloServer = () => {
+const createApolloServer = (schema) => {
   const customPlugins = loadCustomPlugins();
+
+  customPlugins.push({
+    async serverWillStart() {
+      return {
+        async drainServer() {
+          subscriptionServer.close();
+        }
+      };
+    }
+  });
+
   if (process.env.GRAPHQL_ENABLE_TRACING === 'true') {
-    logger.info('Adding metrics plugin: apollo-metrics');
+    initLogger.info('Adding metrics plugin: apollo-metrics');
     customPlugins.push(apolloMetricsPlugin);
   }
   if(conf.maintenance.flag && conf.maintenance.key) {
-    logger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
+    initLogger.info('Adding graphql plugin apolloMaintenancePlugin to disable all mutations');
     customPlugins.push(apolloMaintenancePlugin);
   }
 
-  logger.info(customPlugins, 'Apollo server custom plugin are loaded.');
+  initLogger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
-    tracing: process.env.GRAPHQL_ENABLE_TRACING === 'true',
-    playground: process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true',
-    typeDefs,
-    resolvers,
-    schemaDirectives: {
-      sv: IdentifierDirective,
-      jv: JsonDirective,
-    },
+    schema,
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
@@ -156,53 +158,93 @@ const createApolloServer = () => {
         models,
         req,
         res,
-        connection,
-        logger,
+        connection
       });
-    },
-    subscriptions: {
-      path: GRAPHQL_PATH,
-      keepAlive: 10000,
-      onConnect: async (connectionParams, webSocket, context) => {
-        const req_id = webSocket.upgradeReq.id;
-
-        let orgKey, orgId;
-        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
-          orgKey = connectionParams.headers['razee-org-key'];
-          const org = await models.Organization.findOne({ orgKeys: orgKey });
-          orgId = org._id;
-        }
-
-        logger.trace({ req_id, connectionParams, context }, 'subscriptions:onConnect');
-        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, models, logger, ...context},);
-
-        logger.debug({}, 'subscriptions:onConnect upgradeReq getMe');
-        if (me === undefined) {
-          throw Error(
-            'Can not find the session for this subscription request.',
-          );
-        }
-
-        // add original upgrade request to the context
-        return { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
-      },
-      onDisconnect: (webSocket, context) => {
-        logger.debug(
-          { req_id: webSocket.upgradeReq.id, headers: context.request.headers },
-          'subscriptions:onDisconnect upgradeReq getMe',
-        );
-      },
     },
   });
   return server;
 };
 
+const createSubscriptionServer = (httpServer, apolloServer, schema) => {
+  return SubscriptionServer.create( // SubscriptionServer from subscriptions-transport-ws
+    {
+      // This is the `schema` we just created.
+      schema,
+      // These are imported from `graphql`.
+      execute,
+      subscribe,
+      keepAlive: 10000,
+      // Providing `onConnect` is the `SubscriptionServer` equivalent to the
+      // `context` function in `ApolloServer`. Please [see the docs](https://github.com/apollographql/subscriptions-transport-ws#constructoroptions-socketoptions--socketserver)
+      // for more information on this hook.
+      onConnect: async (connectionParams, webSocket, context) => { // eslint-disable-line no-unused-vars
+        let orgKey, orgId;
+        if(connectionParams.headers && connectionParams.headers['razee-org-key']) {
+          orgKey = connectionParams.headers['razee-org-key'];
+          const org = await models.Organization.findOne( { $or: [ { orgKeys: orgKey }, { 'orgKeys2.key': orgKey } ] } );
+          orgId = org._id;
+        }
+        const req_id = uuid();
+        const logger  = createLogger('razeedash-api/app/apollo/subscription', { req_id, org_id: orgId });
+
+        logger.debug('subscriptions:onConnect upgradeReq getMe');
+
+        const me = await models.User.getMeFromConnectionParams( connectionParams, {req_id, logger},);
+        if (me === undefined) {
+          throw Error(
+            'Can not find the session for this subscription request.',
+          );
+        }
+        // add original upgrade request to the context
+        const subscriptionContext = { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
+        return await buildCommonApolloContext( { models, req: context.request, res: { this_is_a_dummy_response: true }, connection: { context: subscriptionContext } } );
+      },
+    },
+    {
+      // `httpServer` is the instance returned from `http.createServer`.
+      server: httpServer,
+      // `apolloServer` is the instance returned from `new ApolloServer`.
+      path: apolloServer.graphqlPath,
+    }
+  );
+};
+
+// Clean exit is necessary for unit tests, so that one set of tests does not prevent creating a new database connection in the next set of tests for example.
 const stop = async (apollo) => {
-  await apollo.db.connection.close();
-  await apollo.server.stop();
-  await apollo.httpServer.close(() => {
-    console.log('🏄 Apollo Server closed.');
-  });
+  try {
+    let t;
+    console.log( `🚣 Stopping, time: ${Date.now()}` );
+    console.log( `connection.readyState: ${apollo.db.connection.readyState}` );
+    console.log( `connections: ${apollo.db.connections.length}` );
+    t = Date.now();
+    try {
+      console.log( `🚣 Closing default connection, time: ${Date.now()}` );
+      await apollo.db.connection.close(true);
+    }
+    catch(e){
+      console.log( `🏊 Error closing default connection, time: ${Date.now()}, error: ${e.message}` );
+    }
+    console.log( `🚣 Disconnecting database, time: ${Date.now()}` );
+    await apollo.db.disconnect();
+    console.log( `final connection.readyState: ${apollo.db.connection.readyState}` );
+    console.log( `Database disconnected in ${Date.now()-t} ms, time: ${Date.now()}` );
+
+    console.log( '🚣 Stopping apollo server' );
+    t = Date.now();
+    await apollo.server.stop(); // stopgGracePeriodMillis defaults to 10 seconds
+    console.log( `Apollo server stopped in ${Date.now()-t} ms, time: ${Date.now()}` );
+
+    console.log('🚣 Closing httpserver.');
+    t = Date.now();
+    await apollo.httpServer.close(() => {
+      console.log( `🏄 Apollo Server closed, time: ${Date.now()}` );
+    });
+    console.log( `Apollo httpServer closed in ${Date.now()-t} ms, time: ${Date.now()}` );
+  }
+  catch( e ) {
+    console.log( `🏊 Error during stop: ${e.message}, time: ${Date.now()}` );
+    throw e;
+  }
 };
 
 const apollo = async (options = {}) => {
@@ -210,17 +252,48 @@ const apollo = async (options = {}) => {
   try {
     const db = await connectDb(options.mongo_url);
     const app = options.app ? options.app : createDefaultApp();
-    app.use(ebl(getBunyanConfig('razeedash-api/apollo')));
+    app.use(createExpressLogger('razeedash-api/apollo'));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {
-      logger.info('Enabled playground route with authorization enforcement.');
+      initLogger.info('Enabled playground route with authorization enforcement.');
       app.get(GRAPHQL_PATH, initModule.playgroundAuth);
     }
     app.use(GRAPHQL_PATH, router);
-    initModule.initApp(app, models, logger);
+    initModule.initApp(app, models, initLogger);
 
-    const server = createApolloServer();
+    resolvers.Upload = GraphQLUpload;
+
+    const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+    /*
+    Notes:
+    As noted in https://www.apollographql.com/blog/backend/validation/graphql-validation-using-directives/ :
+    > Today, people most commonly write this kind of validation logic in their resolver functions or models.
+    > However, this means we can’t easily see our validation logic, and we have to write some repetitive code
+    > to verify the same kinds of conditions over and over.
+    The blog goes on to describe how to use Directives, but using a directive to validate arguments doesn't seem feasible at this point.
+    The approach described (`graphql-constraint-directive`) works, but doesn't work with how our queries/mutations are defined,
+    resulting in errors like `Variable \"$name\" of type \"String!\" used in position expecting type \"name_String_NotNull_minLength_5!\".`
+    Changing the Graphql POST to be like this allows using the new type successfully with validation:
+      mutation ($orgId: String!, $name: name_String_NotNull_minLength_5!, $data_location: String) { addChannel(orgId: $orgId, name: $name, [...]
+    But we can't change the usage pattern to specify new types -- it would break anything using the existing API with `String!` (e.g. UI and CLI **at least**).
+
+    Instead, we need to use explicit validation in each resolver:
+        - Easiest to implement
+        - Easiest to 'miss' validation
+        - Does not honor `@sv` and `@jv` from the schema directly
+    */
+
+    const server = createApolloServer(schema);
+
+    await server.start();
+
+    // This middleware should be added before calling `applyMiddleware`.
+    app.use(graphqlUploadExpress());
+    //Note: there does not yet appear to be an automated test for upload, it is unclear if this even functioning.
+
     server.applyMiddleware({
       app,
+      cors: {origin: true},
       path: GRAPHQL_PATH,
       onHealthCheck: async () => {
         if (SIGTERM) {
@@ -234,11 +307,14 @@ const apollo = async (options = {}) => {
     });
 
     const httpServer = options.httpServer ? options.httpServer : http.createServer(app);
-    server.installSubscriptionHandlers(httpServer);
+
+    //server.installSubscriptionHandlers(httpServer);
+    subscriptionServer = createSubscriptionServer( httpServer, server, schema );
+
     httpServer.on('listening', () => {
       const addrHost = httpServer.address().address;
       const addrPort = httpServer.address().port;
-      logger.info(
+      initLogger.info(
         `🏄 Apollo server listening on http://[${addrHost}]:${addrPort}${GRAPHQL_PATH}`,
       );
     });
@@ -252,7 +328,7 @@ const apollo = async (options = {}) => {
     }
     return { db, server, httpServer, stop};
   } catch (err) {
-    logger.error(err, 'Apollo api error');
+    initLogger.error(err, 'Apollo api error');
     process.exit(1);
   }
 };

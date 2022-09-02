@@ -16,6 +16,7 @@
 
 const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
+const { bestOrgKey } = require('../../utils/orgs');
 const OrganizationLocalSchema = new mongoose.Schema({
   _id: {
     type: String,
@@ -33,6 +34,16 @@ const OrganizationLocalSchema = new mongoose.Schema({
   orgKeys: [
     {
       type: String,
+    },
+  ],
+  orgKeys2: [
+    {
+      orgKeyUuid: { type: String },
+      name: { type: String },
+      primary: { type: Boolean },
+      created: { type: Date },
+      updated: { type: Date },
+      key: { type: String }
     },
   ],
   type: {
@@ -60,7 +71,7 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
     host = process.env.EXTERNAL_HOST;
   }
   return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${org.orgKeys[0]}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(org).key}`,
   };
 };
 
@@ -71,8 +82,10 @@ OrganizationLocalSchema.statics.createLocalOrg = async function(args) {
 
   if (!org) {
     const _id = args._id ? args._id : uuid();
-    const orgKey = 'orgApiKey-'+uuid();
-    org = await this.create({ ...args, _id, orgKeys: [orgKey] });
+    // Once OrgKeys2 support is added to all apis, this code needs to create an OrgKeys2 instead, e.g.:
+    //const orgKeyUuid = uuid();
+    //org = await this.create({ ...args, _id, orgKeys: [], orgKeys2: [{ orgKeyUuid: orgKeyUuid, name: 'Default', primary: true, created: Date.now(), updated: Date.now(), key: uuid() }] });
+    org = await this.create({ ...args, _id, orgKeys: ['orgApiKey-'+uuid()] });
   }
   return org;
 };

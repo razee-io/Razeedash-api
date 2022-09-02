@@ -41,13 +41,15 @@ const DeployableVersionSchema = new mongoose.Schema({
   uuid: {
     type: String,
   },
-  content: {
+  content: mongoose.Schema.Types.Mixed,
+  verifiedOrgKeyUuid: {
     type: String,
   },
+  desiredOrgKeyUuid: {
+    type: String,
+  },
+  /* iv is only used for legacy data, see ../utils/versionUtils.js for additional details */
   iv: {
-    type: String,
-  },
-  location: {
     type: String,
   },
   type: {
@@ -57,6 +59,9 @@ const DeployableVersionSchema = new mongoose.Schema({
     type: String,
   },
   kubeOwnerName: {
+    type: String,
+  },
+  kubeOwnerId: {
     type: String,
   },
   created: {

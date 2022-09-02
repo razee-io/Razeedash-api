@@ -30,8 +30,10 @@ const ResourceYamlHistSchema = new mongoose.Schema({
   resourceSelfLink: {
     type: String,
   },
-  yamlStr: {
-    type: String,
+  yamlStr: mongoose.Schema.Types.Mixed,
+  deleted: {
+    type: Boolean,
+    default: false,
   },
   updated: {
     type: Date,
@@ -42,4 +44,3 @@ const ResourceYamlHistSchema = new mongoose.Schema({
 });
 
 module.exports = ResourceYamlHistSchema;
-

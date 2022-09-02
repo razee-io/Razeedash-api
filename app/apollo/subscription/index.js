@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const bunyan = require('bunyan');
 const fs = require('fs');
 const Redis = require('ioredis');
 const { RedisPubSub } = require('graphql-redis-subscriptions');
 const isPortReachable = require('is-port-reachable');
-const { PubSub } = require('apollo-server');
+const { PubSub } = require('graphql-subscriptions');
 const { APOLLO_STREAM_SHARDING } = require('../models/const');
 const { RazeeQueryError } = require('../resolvers/common');
-const { getBunyanConfig } = require('../../utils/bunyan');
-
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/apollo/subscription'));
+const { createLogger } = require('../../log');
 
 const EVENTS = {
   RESOURCE: {
@@ -57,7 +54,8 @@ class PubSubImpl {
     this.enabled = false;
     this.pubSub = new PubSub();
     this.redisUrl = params.redisUrl || process.env.REDIS_PUBSUB_URL || 'redis://127.0.0.1:6379/0';
-    logger.info(
+    this.initLogger = createLogger('razeedash-api/app/apollo/subscription/index');
+    this.initLogger.info(
       `Apollo streaming service is configured on redisUrl: ${obscureUrl(
         this.redisUrl,
       )}`,
@@ -81,7 +79,7 @@ class PubSubImpl {
         subscriber: new Redis(this.redisUrl, options),
       });
       this.enabled = true;
-      logger.info(
+      this.initLogger.info(
         `Apollo streaming is enabled on redis endpoint ${url.hostname}:${url.port}`,
       );
       this.livenessCheckPublisher();
@@ -89,7 +87,7 @@ class PubSubImpl {
       return true;
     }
 
-    logger.warn(
+    this.initLogger.warn(
       `Apollo streaming is not ready yet, because redis port is unreachable, will retry init in 10 seconds, already retried ${this.initRetries}.`,
     );
 
@@ -130,19 +128,19 @@ class PubSubImpl {
     const topic = getStreamingTopic(EVENTS.CHANNEL.UPDATED, data.org_id);
     if (this.enabled) {
       try {
-        logger.info({ data, topic }, 'Publishing channel subscription update');
+        context.logger.info({ data, topic }, 'Publishing channel subscription update');
         await this.pubSub.publish(topic, { subscriptionUpdated: { data }, });
       } catch (error) {
-        logger.error(error, 'Channel subscription publish error');        throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, please retry.'), context);
+        context.logger.error(error, 'Channel subscription publish error');        throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, please retry.'), context);
       }
     } else {
-      logger.warn( { data, topic }, 'Failed to Publish subscription update, since pubsub is not ready.');
+      context.logger.warn( { data, topic }, 'Failed to Publish subscription update, since pubsub is not ready.');
       throw new RazeeQueryError(context.req.t('Failed to Publish subscription notification to clusters, pubsub is not ready yet, please retry.'), context);
     }
     return data;
   }
 
-  async resourceChangedFunc(resource) {
+  async resourceChangedFunc(resource, logger) {
     const topic = getStreamingTopic(EVENTS.RESOURCE.UPDATED, resource.orgId);
     if (this.enabled) {
       let op = 'upsert';
@@ -150,7 +148,7 @@ class PubSubImpl {
         op = 'delete';
       }
       try {
-        logger.debug({ op, resource, topic }, 'Publishing resource updates');
+        logger.debug({ op, resource: Object.assign({}, resource, {data: undefined, searchableData: undefined}), topic }, 'Publishing resource updates');  // Log without data / searchable data as they may contain user names in errors.
         await this.pubSub.publish(topic, {
           resourceUpdated: { resource, op },
         });

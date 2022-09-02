@@ -1,17 +1,27 @@
+/**
+* Copyright 2019, 2021 IBM Corp. All Rights Reserved.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const mongoConf = require('../../conf.js').conf;
 const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
-const conf = require('../../conf.js').conf;
-const S3ClientClass = require('../../s3/s3Client');
-const url = require('url');
-const crypto = require('crypto');
-const tokenCrypt = require('../../utils/crypt');
-const algorithm = 'aes-256-cbc';
-
 const getOrg = require('../../utils/orgs.js').getOrg;
+const { getDecryptedContent } = require('../../apollo/utils/versionUtils');
 
 router.use(asyncHandler(async (req, res, next) => {
   req.db = await MongoClient.getClient();
@@ -22,9 +32,8 @@ router.use(asyncHandler(async (req, res, next) => {
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
-router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next)=>{
+const getChannelVersion = async (req, res) => {
   var orgId = req.org._id;
-  var orgKey = req.orgKey;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
   var Channels = req.db.collection('channels');
@@ -32,6 +41,8 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
   var Clusters = req.db.collection('clusters');
   var Orgs = req.db.collection('orgs');
   var DeployableVersions = req.db.collection('deployableVersions');
+
+  let org = req.org;
 
   var deployable = await Channels.findOne({ org_id: orgId, name: channelName});
   if (!deployable) {
@@ -46,7 +57,7 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     if (ourServiceSubscription) {
       req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
       orgId = ourServiceSubscription.org_id;
-      orgKey = (await Orgs.findOne({ _id: orgId })).orgKeys[0];
+      org = await Orgs.findOne({ _id: orgId });
       deployable = await Channels.findOne({ org_id: orgId, name: channelName});
     } else {
       res.status(404).send({ status: 'error', message: `channel "${channelName}" not found for this org` });
@@ -60,47 +71,16 @@ router.get('/:channelName/:versionId', getOrg, asyncHandler(async(req, res, next
     return;
   }
 
-  if(deployableVersion.location === 's3') {
-    if (conf.s3.endpoint) {
-      try {
-        const s3Client = new S3ClientClass(conf);
-        const link = url.parse(deployableVersion.content);
-        const iv = Buffer.from(deployableVersion.iv, 'base64');
-        const paths = link.path.split('/');
-        const bucket = paths[1];
-        const resourceName = decodeURI(paths[2]);
-        const key = Buffer.concat([Buffer.from(orgKey)], 32);
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        const s3stream = s3Client.getObject(bucket, resourceName).createReadStream();
-        s3stream.on('error', function(error) {
-          req.log.error(error);
-          return res.status(403).json({ status: 'error', message: error.message});
-        });
-        s3stream.pipe(decipher).pipe(res);
-        s3stream.on('httpError', (error) => {
-          req.log.error(error, 'Error GETting data using the S3 client');
-          if (!res.headersSent) {
-            res.status(error.statusCode || 500).json(error);
-          } else {
-            next(error);
-          }
-        });
-      } catch (error) {
-        return res.status(403).json({ status: 'error', message: error.message});
-      }
-    } else {
-      return res.status(403).json({ status: 'error', message: 'An endpoint must be configured for the S3 client'});
-    }
-  } else {
-    // in this case the resource was stored directly in mongo rather than in COS
-    try {
-      const data = tokenCrypt.decrypt(deployableVersion.content, orgKey);
-      res.set('Content-Type', deployableVersion.type);
-      res.status(200).send(data);
-    } catch (error) {
-      return res.status(500).json({ status: 'error', message: error });
-    }
+  try {
+    const data = await getDecryptedContent( {logger: req.log, req_id: req.id, me: null}, org, deployableVersion );
+    res.set('Content-Type', deployableVersion.type);
+    res.status(200).send(data.content);
+  } catch (error) {
+    req.log.error(error);
+    return res.status(500).json({ status: 'error', message: error.message});
   }
-}));
+};
+
+router.get('/:channelName/:versionId', getOrg, asyncHandler(getChannelVersion));
 
 module.exports = router;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,30 @@
 
 const { gql } = require('apollo-server-express');
 
+/*
+Note: `scalar Upload` implementation is provided by GraphQLUpload in app/apollo/index.js
+*/
+
 const channelSchema = gql`
-  
+  scalar Upload
+
   type ChannelVersion {
     uuid: String!
     name: String!
     description: String
-    location: String!
     created: Date
+    location: String
   }
   type Channel {
     uuid: String!
     orgId: String!
     name: String!
+    data_location: String
     created: Date!
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
+    custom: JSON
     owner: BasicUser
     kubeOwnerName: String
   }
@@ -93,12 +100,12 @@ const channelSchema = gql`
      channelsByTags(orgId: String! @sv, tags: [String!]!): [Channel]!
 
      """
-     Gets a channel version info from this channel uuid and version uuid 
+     Gets a channel version info from this channel uuid and version uuid
      """
      channelVersion(orgId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): DeployableVersion!
 
      """
-     Gets a channel version info from this channel name and version name 
+     Gets a channel version info from this channel name and version name
      """
      channelVersionByName(orgId: String! @sv, channelName: String! @sv, versionName: String! @sv): DeployableVersion!
   }
@@ -107,13 +114,13 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!]): AddChannelReply!
-     
+     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
+
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!]): EditChannelReply!
-     
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload

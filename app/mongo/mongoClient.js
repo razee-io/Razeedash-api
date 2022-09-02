@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2019, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -104,7 +104,12 @@ module.exports = class MongoClient {
         this.log.info(`Created new View ${view.name}`);
         result.push(v);
       } catch (e) {
-        this.log.warn(e);
+        if( e.message && e.message === 'Namespace already exists' ) {
+          this.log.info(`View ${view.name} already exists`);
+        }
+        else {
+          this.log.warn(e,`Error creating View ${view.name}`);
+        }
       }
     }
     return result;

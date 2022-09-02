@@ -19,7 +19,7 @@
 FROM node:12-alpine as buildImg
 
 RUN apk update
-RUN apk --no-cache add python make g++
+RUN apk --no-cache add python2 make g++
 
 USER node
 WORKDIR /home/node

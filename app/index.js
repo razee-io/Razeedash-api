@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
+module.exports = {};
+
 const express = require('express');
 const app = express();
 const http = require('http');
 const compression = require('compression');
 const body_parser = require('body-parser');
+const _ = require('lodash');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
-const log = require('./log').log;
+const log = require('./log').createLogger('razeedash-api/app/index');
 const port = 3333;
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
+if(process.env.EXTERNAL_HOST){
+  swaggerDocument.host = process.env.EXTERNAL_HOST;
+}
+
 const apollo = require('./apollo');
 
 const promClient = require('prom-client');
@@ -35,9 +42,21 @@ const connections = new promClient.Gauge({ name: 'razee_server_connections_count
 const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);
+app.set('x-powered-by', false); // hide x-powered-by header!
+
+app.use(function (req, res, next) {  // for owasp-zap security scanner
+  res.setHeader(
+    'Content-Security-Policy',
+    'default-src "self"; font-src "self"; img-src "self"; script-src "self"; style-src "self"; frame-src "self"; form-action "self"; frame-ancestors "self"'
+  );
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 app.use(addRequestId);
 app.use(compression());
 
@@ -46,22 +65,6 @@ app.use(body_parser.urlencoded({ extended: false }));
 app.set('port', port);
 app.use('/api', router); // only for everything under /api
 
-// eslint-disable-next-line no-unused-vars
-app.use(function errorHandler(err, req, res, next) {
-  if (err) {
-    if (req.log && req.log.error)
-      req.log.error(err);
-    else
-      log.error(err);
-    if (!res.headersSent) {
-      let statusCode = err.statusCode || 500;
-      return res.status(statusCode).send();
-    } else {
-      return next(err);
-    }
-  }
-  next();
-});
 i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   backend: {
     loadPath:'./locales/{{lng}}/razee-resources.json'
@@ -75,9 +78,25 @@ i18next.use(i18nextBackend).use(i18nextMiddleware.LanguageDetector).init({
   keySeparator: '#|#'
 });
 app.use(i18nextMiddleware.handle(i18next));
+
 app.get('/metrics', async function (request, response) {
   response.writeHead(200, {'Content-Type': promClient.register.contentType});
   response.end(await promClient.register.metrics());
+});
+
+// Ensure server-health, often used in liveness/readiness checks, is allowed
+app.get('/.well-known/apollo/server-health', function(req, res, next) {
+  res.locals.isHealthCheck = true;
+  next();
+});
+
+app.get('*', function(req, res, next) { // this must be the last route
+  if( res.locals && res.locals.isHealthCheck ) {
+    next();
+  }
+  else {
+    res.status(400).json('{"msg": "Method/Url not allowed"}');
+  }
 });
 
 const server = http.createServer(app);
@@ -94,7 +113,24 @@ initialize().then((db) => {
 
 
 async function onReady() {
-  await apollo({app, httpServer: server});
+  await apollo({ app, httpServer: server });
+
+  app.use(function errorHandler(err, req, res, next) {
+    if (err) {
+      if (req.log && req.log.error)
+        req.log.error(err);
+      else
+        log.error(err);
+      if (!res.headersSent) {
+        let statusCode = err.statusCode || 500;
+        return res.status(statusCode).send();
+      } else {
+        return next(err);
+      }
+    }
+    next();
+  });
+
   server.listen(port);
 }
 
@@ -134,3 +170,8 @@ function onConnection(){
     connections.set(count);
   });
 }
+
+// Export server app so that REST interface can send request to the Graphql handler
+_.assign(module.exports, {
+  app,
+});

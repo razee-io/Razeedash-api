@@ -61,6 +61,9 @@ const SubscriptionSchema = new mongoose.Schema({
   kubeOwnerName: {
     type: String,
   },
+  kubeOwnerId: {
+    type: String,
+  },
   created: {
     type: Date,
     default: Date.now,
@@ -68,6 +71,9 @@ const SubscriptionSchema = new mongoose.Schema({
   updated: {
     type: Date,
     default: Date.now,
+  },
+  custom: {
+    type: Map,
   },
 }, {
   strict:'throw',

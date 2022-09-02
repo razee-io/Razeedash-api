@@ -13,14 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const bunyan = require('bunyan');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
-const { getBunyanConfig } = require('../../utils/bunyan');
-const logger = bunyan.createLogger(getBunyanConfig('razeedash-api/kube/liveness'));
+const logger = require('../../log').createLogger('razeedash-api/kube/liveness');
 const timeInterval = 300000; //5 mintues
 
 // /kube/liveness

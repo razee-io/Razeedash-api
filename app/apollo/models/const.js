@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ const SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SUBSCRIPTION_MAX_TOTAL_LIMIT ||
 const SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT = process.env.SERVICE_SUBSCRIPTION_MAX_TOTAL_LIMIT || 100;
 
 // Set Yaml file maximum size allowed in MB
-const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 2;
+const CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB = process.env.CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB || 3;
 
 // controls static args to be passed to reazeedeploy-job
 const RDD_STATIC_ARGS = process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [];
@@ -72,6 +72,14 @@ const CLUSTER_STATUS = {
   INACTIVE: 'inactive'
 };
 
+// RBAC Sync
+const CLUSTER_IDENTITY_SYNC_STATUS = {
+  UNKNOWN: 'unknown', // really shouldn't happen
+  PENDING: 'pending',
+  FAILED: 'failed',
+  SYNCED: 'synced',
+};
+
 const DIRECTIVE_LIMITS = {
   MAX_STRING_LENGTH: config.has('directive_limits.max_string_length') ? config.get('directive_limits.max_string_length') : 256,
   MIN_STRING_LENGTH: config.has('directive_limits.min_string_length') ? config.get('directive_limits.min_string_length') : 1,
@@ -96,4 +104,4 @@ const DIRECTIVE_LIMITS = {
 
 module.exports = { RDD_STATIC_ARGS, ACTIONS, TYPES, AUTH_MODELS, AUTH_MODEL, SECRET, GRAPHQL_PATH , APOLLO_STREAM_SHARDING,
   CLUSTER_LIMITS, CLUSTER_REG_STATES, CLUSTER_STATUS, RESOURCE_LIMITS, CHANNEL_LIMITS, CHANNEL_VERSION_LIMITS, SUBSCRIPTION_LIMITS,
-  SERVICE_SUBSCRIPTION_LIMITS, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, DIRECTIVE_LIMITS};
+  SERVICE_SUBSCRIPTION_LIMITS, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CLUSTER_IDENTITY_SYNC_STATUS, DIRECTIVE_LIMITS};

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const { ACTIONS, TYPES, SERVICE_SUBSCRIPTION_LIMITS } = require('../models/const');
 const {
@@ -27,6 +26,8 @@ const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields')
 const subscriptionResolvers = require('./subscription');
 
 const pubSub = GraphqlPubSub.getInstance();
+
+const { validateString } = require('../utils/directives');
 
 const serviceResolvers = {
 
@@ -86,16 +87,6 @@ const serviceResolvers = {
 
       serviceSubscriptions.forEach(i => i.ssid = i.uuid);
 
-      // render owner information if users ask for
-      if(queryFields.owner && serviceSubscriptions) {
-        const ownerIds = _.map(serviceSubscriptions, 'owner');
-        const owners = await models.User.getBasicUsersByIds(ownerIds);
-        serviceSubscriptions = serviceSubscriptions.map((sub)=>{
-          sub.owner = owners[sub.owner];
-          return sub;
-        });
-      }
-
       await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
 
       return serviceSubscriptions;
@@ -134,6 +125,12 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
+      validateString( 'orgId', orgId );
+      validateString( 'name', name );
+      validateString( 'clusterId', clusterId );
+      validateString( 'channelUuid', channelUuid );
+      validateString( 'versionUuid', versionUuid );
+
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
       if(!cluster){
         throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
@@ -145,22 +142,22 @@ const serviceResolvers = {
 
         const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
-          throw new RazeeValidationError(context.req.t('Too many service subscriptions are registered for {{orgId}}.', { 'orgId': orgId }), context);
+          throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', { 'org_id': orgId }), context);
         }
 
         const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
         if (!channel) {
-          throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
         }
 
         const version = channel.versions.find((version) => {
           return (version.uuid == versionUuid);
         });
         if (!version) {
-          throw new NotFoundError(context.req.t('version uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
+          throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
         }
 
-        const kubeOwnerName = await models.User.getKubeOwnerName(context);
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
         const ssid = UUID();
 
@@ -168,7 +165,7 @@ const serviceResolvers = {
           _id: ssid,
           uuid: ssid, org_id: orgId, name, groups: [], owner: me._id,
           channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
-          clusterId, kubeOwnerName, clusterOrgId: cluster.org_id
+          clusterId, kubeOwnerId, clusterOrgId: cluster.org_id
         });
 
         pubSub.channelSubChangedFunc({org_id: cluster.org_id}, context); // notify cluster should re-fetch its subscriptions
@@ -191,6 +188,12 @@ const serviceResolvers = {
 
       await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
+      validateString( 'orgId', orgId );
+      validateString( 'ssid', ssid );
+      validateString( 'name', name );
+      validateString( 'channelUuid', channelUuid );
+      validateString( 'versionUuid', versionUuid );
+
       const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId }).lean({ virtuals: true });
       if (!serviceSubscription) {
         throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
@@ -200,7 +203,7 @@ const serviceResolvers = {
 
       const channel = await models.Channel.findOne({ org_id: orgId, uuid: channelUuid }); // search only in the user org
       if (!channel) {
-        throw new NotFoundError(context.req.t('Channel uuid "{{channelUuid}}" not found', { 'channelUuid': channelUuid }), context);
+        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
       }
 
       const version = channel.versions.find((version) => {
@@ -224,6 +227,9 @@ const serviceResolvers = {
       logger.debug({req_id, user: whoIs(me), orgId}, `${queryName} enter`);
 
       await validAuth(me, orgId, ACTIONS.DELETE, TYPES.SERVICESUBSCRIPTION, queryName, context);
+
+      validateString( 'orgId', orgId );
+      validateString( 'ssid', ssid );
 
       const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId });
       if (!serviceSubscription) {

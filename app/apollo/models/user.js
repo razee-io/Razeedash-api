@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2021 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@
 const mongoose = require('mongoose');
 
 const { AUTH_MODEL } = require('./const');
-const UserSchema = require(`./user.${AUTH_MODEL}.schema`);
+
+// If external auth model specified, use it.  Else use built-in auth model.
+const externalAuthModels = require('../../externalAuth.js').ExternalAuthModels;
+const UserSchema = externalAuthModels[AUTH_MODEL] ? require(externalAuthModels[AUTH_MODEL].schemaPath) : require(`./user.${AUTH_MODEL}.schema`);
 
 const User = mongoose.model('users', UserSchema);
 

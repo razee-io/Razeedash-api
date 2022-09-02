@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2019, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ const getOrg = async(req, res, next) => {
   const orgKey = req.orgKey;
   if (!orgKey) {
     req.log.info( 'Missing razee-org-key' );
-    res.status(401).send( 'razee-org-key required' );
+    res.status(401).json('{"msg": "razee-org-key required"}');
     return;
   }
 
   const Orgs = req.db.collection('orgs');
-  const org = await Orgs.findOne({ orgKeys: orgKey });
+  const org = await Orgs.findOne( { $or: [ { 'orgKeys2.key': orgKey }, { orgKeys: orgKey } ] } );
   if (!org) {
     res.status(403).send( `orgKey ${orgKey} not found` );
     return;
@@ -40,7 +40,7 @@ const verifyAdminOrgKey = async(req, res, next) => {
   const receivedAdminKey = req.get('org-admin-key');
   if(!receivedAdminKey) {
     req.log.warn(`org-admin-key not specified on route ${req.url}`);
-    return res.status(400).send( 'org-admin-key required' );
+    return res.status(400).json('{"msg": "org-admin-key required"}');
   }
 
   const storedAdminKey = process.env.ORG_ADMIN_KEY;
@@ -68,4 +68,49 @@ const decryptOrgData = (orgKey, data) => {
   return tokenCrypt.decrypt(data, orgKey);
 };
 
-module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData};
+/*
+Best OrgKey value is:
+- First found OrgKeys2 key marked as Primary
+- First found OrgKeys2 key if no Primary identified
+- First OrgKeys if no OrgKeys2 exist
+*/
+const bestOrgKey = (org) => {
+  if( org.orgKeys2 && org.orgKeys2.length > 0 ) {
+    const bestOrgKey = org.orgKeys2.find( o => {
+      return( o.primary );
+    } );
+    return( bestOrgKey || org.orgKeys2[0] );
+  }
+  else if( org.orgKeys && org.orgKeys.length > 0 ) {
+    return( getLegacyOrgKeyObject( org.orgKeys[0] ) );
+  }
+
+  throw new Error( `No valid OrgKey found for organization ${org._id}` );
+};
+const getLegacyOrgKeyObject = (legacyOrgKey) => {
+  return( {
+    orgKeyUuid: legacyOrgKey,
+    name: legacyOrgKey.slice( legacyOrgKey.length - 12 ),  // last segment of legacy key, which is essentially a UUID prefixed by `orgApiKey-`
+    primary: false,
+    created: null,
+    updated: null,
+    key: legacyOrgKey
+  } );
+};
+const getOrgKeyByUuid = (org, uuid) => {
+  if( org.orgKeys2 ) {
+    const orgKey = org.orgKeys2.find( o => {
+      return( o.orgKeyUuid == uuid );
+    } );
+    if( orgKey ) return( orgKey );
+  }
+
+  if( org.orgKeys ) {
+    const index = org.orgKeys.indexOf( uuid );
+    if( index >= 0 ) return getLegacyOrgKeyObject( org.orgKeys[index] );
+  }
+
+  throw new Error( `OrgKey '${uuid}' not found for organization ${org._id}` );
+};
+
+module.exports = { getOrg, verifyAdminOrgKey, encryptOrgData, decryptOrgData, bestOrgKey, getOrgKeyByUuid, getLegacyOrgKeyObject };

@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - "lts/*"
+  - 14
 
 services:
   - docker
@@ -9,13 +9,14 @@ before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
 
 script:
-  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.
-  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --low -a node-fetch; else npx audit-ci --low -a node-fetch || true; fi
+  # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
+  - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --config ./audit-ci.json; else npx audit-ci --config ./audit-ci.json || true; fi
   - npm run lint
   - npm test
   - npm run test:apollo:default
   - npm run test:apollo:local
   - npm run test:apollo:passport.local
+  - npm run test:apollo:extauthtest
   - export BUILD_TIME=`date '+%Y-%m-%d %H:%M:%S'`
   - docker build --rm --build-arg BUILD_TIME="$BUILD_TIME" --build-arg BUILD_ID="${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}" -t "quay.io/razee/razeedash-api:${TRAVIS_COMMIT}" .
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi

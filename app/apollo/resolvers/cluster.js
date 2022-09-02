@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
 const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
+const { bestOrgKey } = require('../../utils/orgs');
+
+
+const { validateString, validateJson } = require('../utils/directives');
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
@@ -79,7 +83,7 @@ const clusterResolvers = {
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clusterByClusterId';
       const { models, me, req_id, logger } = context;
-      logger.debug({req_id, user: whoIs(me), orgId, clusterId}, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), orgId, clusterId }, `${queryName} enter`);
 
       //await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
@@ -95,6 +99,8 @@ const clusterResolvers = {
       }
 
       await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
+
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusterId, cluster }, `${queryName} found matching authorized cluster` );
 
       if(cluster){
         var { url } = await models.Organization.getRegistrationUrl(orgId, context);
@@ -128,11 +134,18 @@ const clusterResolvers = {
       // await validAuth(me, orgId, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
       const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'uuid', queryName, context);
 
-      const cluster = await models.Cluster.findOne({
+      const clusters = await models.Cluster.find({
         org_id: orgId,
         'registration.name': clusterName,
         ...conditions
-      }).lean({ virtuals: true });
+      }).limit(2).lean({ virtuals: true });
+
+      // If more than one matching cluster found, throw an error
+      if( clusters.length > 1 ) {
+        logger.info({req_id, user: whoIs(me), org_id: orgId, clusterName, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'cluster', 'name':clusterName}), context);
+      }
+      const cluster = clusters[0] || null;
 
       if(!cluster){
         throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
@@ -169,7 +182,7 @@ const clusterResolvers = {
       context,
       fullQuery
     ) => {
-      var { orgId, limit, startingAfter, clusterId} = args;
+      var { orgId, limit, skip, startingAfter, clusterId } = args;
       const queryFields = GraphqlFields(fullQuery);
       const queryName = 'clustersByOrgId';
       const { models, me, req_id, logger } = context;
@@ -190,7 +203,8 @@ const clusterResolvers = {
         searchFilter = { org_id: orgId, ...conditions };
       }
 
-      const clusters = await commonClusterSearch(models, searchFilter, { limit, startingAfter });
+      const clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
@@ -266,6 +280,7 @@ const clusterResolvers = {
       }
 
       const clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
+      logger.info({req_id, user: whoIs(me), org_id: orgId, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
       await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
@@ -323,22 +338,40 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
+      validateString( 'org_id', org_id );
+      validateString( 'cluster_id', cluster_id );
+
       try {
-        const deletedCluster = await models.Cluster.findOneAndDelete({org_id,
-          cluster_id});
+        // Delete the Cluster record
+        const deletedCluster = await models.Cluster.findOneAndDelete({ org_id, cluster_id });
+        logger.info({req_id, user: whoIs(me), org_id, cluster_id, deletedCluster}, `Cluster '${cluster_id}' deletion complete`);
 
-        //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag.
-        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id },
-          {$set: { deleted: true }}, { upsert: false });
+        /*
+        Delete children/references to the Cluster:
+        - No need to check/modify groups as they do not reference member clusters
+        - Delete any cluster ServiceSubscriptions
+          - ServiceSubscriptions are only on a per-Cluster basis at this time (see serviceSubscription.schema.js)
+          - If ever extended to Groups instead, code may need to be updated to ensure ServiceSubscription is not incorrectly deleted
+        - Soft-delete any cluster resource
+        - Soft-delete any cluster resourceYamlHist
 
-        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources, deletedCluster}, `${queryName} results are`);
+        Soft-deletion: mark the record as deleted, a background process must clean up S3 object and actually delete the db record
+        */
+        const deletedServiceSubscription = await models.ServiceSubscription.deleteMany({ org_id, clusterId: cluster_id });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedServiceSubscription}, 'Subscriptions deletion complete');
+        const deletedResources = await models.Resource.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResources}, 'Resources soft-deletion complete');
+        const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
-        return {deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id?  1: 0) : 0,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-
+        return {
+          deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
+          deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+        };
       } catch (error) {
-        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered`);
+        logger.error({req_id, user: whoIs(me), org_id, cluster_id, error } , `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id and cluster_id
@@ -354,21 +387,39 @@ const clusterResolvers = {
 
       await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
+      validateString( 'org_id', org_id );
+
       try {
+        // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
+        logger.info({req_id, user: whoIs(me), org_id, deletedClusters}, 'Clusters deletion complete');
 
-        //TODO: soft delete the resources for now. We need to have a background process to
-        // clean up S3 contents based on deleted flag.
-        const deletedResources = await models.Resource.updateMany({ org_id },
-          {$set: { deleted: true }}, { upsert: false });
+        /*
+        Delete children/references to any Clusters:
+        - No need to check/modify groups as they do not reference member clusters
+        - Delete any cluster ServiceSubscriptions
+          - ServiceSubscriptions are only on a per-Cluster basis at this time (see serviceSubscription.schema.js)
+          - If ever extended to Groups instead, code may need to be updated to ensure ServiceSubscription is not incorrectly deleted
+        - Soft-delete any cluster resource
+        - Soft-delete any cluster resourceYamlHist
 
-        logger.debug({req_id, user: whoIs(me), org_id, deletedResources, deletedClusters}, `${queryName} results are`);
+        Soft-deletion: mark the record as deleted, a background process must clean up S3 object and actually delete the db record
+        */
+        const deletedServiceSubscription = await models.ServiceSubscription.deleteMany({ org_id });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedServiceSubscription}, 'Subscriptions deletion complete');
+        const deletedResources = await models.Resource.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResources}, 'Resources soft-deletion complete');
+        const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
+        logger.debug({req_id, user: whoIs(me), org_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
-        return {deletedClusterCount: deletedClusters.deletedCount,
-          deletedResourceCount: deletedResources.modifiedCount !== undefined ? deletedResources.modifiedCount : deletedResources.nModified };
-
+        return {
+          deletedClusterCount: deletedClusters.deletedCount,
+          deletedResourceCount: deletedResources.modifiedCount,
+          deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
+          deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+        };
       } catch (error) {
-        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered`);
+        logger.error({req_id, user: whoIs(me), org_id, error } , `${queryName} error encountered: ${error.message}`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
       }
     }, // end delete cluster by org_id
@@ -379,6 +430,11 @@ const clusterResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, registration }, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
+
+      validateString( 'org_id', org_id );
+      validateJson( 'registration', registration );
+
+      logger.info({req_id, user: whoIs(me), registration}, `${queryName} creating cluster`);
 
       try {
         if (!registration.name) {
@@ -399,14 +455,13 @@ const clusterResolvers = {
 
         // we do not handle cluster groups here, it is handled by groupCluster Api
 
-        if (await models.Cluster.findOne(
-          { $and: [
-            { org_id: org_id },
-            {$or: [
+        if (
+          await models.Cluster.findOne(
+            { $and: [
+              { org_id: org_id },
               {'registration.name': registration.name },
-              {'metadata.name': registration.name },
             ]}
-          ]}).lean()) {
+          ).lean()) {
           throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
         }
 
@@ -422,7 +477,7 @@ const clusterResolvers = {
             url += `&args=${arg}`;
           });
         }
-        return { url, orgId: org_id, clusterId: cluster_id, orgKey: org.orgKeys[0], regState: reg_state, registration };
+        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
       } catch (error) {
         if(error instanceof BasicRazeeError ){
           throw error;
@@ -439,6 +494,9 @@ const clusterResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id }, `${queryName} enter`);
 
       await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+
+      validateString( 'org_id', org_id );
+      validateString( 'cluster_id', cluster_id );
 
       try {
         const updatedCluster = await models.Cluster.findOneAndUpdate(

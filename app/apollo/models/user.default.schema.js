@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-const bunyan = require('bunyan');
 const mongoose = require('mongoose');
 const { ForbiddenError } = require('apollo-server');
-const { getBunyanConfig } = require('../../utils/bunyan');
 
 const _ = require('lodash');
-
-const logger = bunyan.createLogger(
-  getBunyanConfig('razeedash-api/apollo/models/user.default.schema'),
-);
 
 const UserDefaultSchema = new mongoose.Schema({
   _id: {
@@ -48,8 +42,16 @@ const UserDefaultSchema = new mongoose.Schema({
   strict:'throw',
 });
 
-UserDefaultSchema.statics.getKubeOwnerName = async(context)=>{ // eslint-disable-line no-unused-vars
+UserDefaultSchema.statics.getKubeOwnerId = async(context)=>{ // eslint-disable-line no-unused-vars
   return null;
+};
+
+UserDefaultSchema.statics.buildKubeOwnerIdToNameMapping = async(ids)=>{
+  const out = {};
+  _.each(ids, (id)=>{
+    out[id] = null;
+  });
+  return out;
 };
 
 UserDefaultSchema.statics.getMeFromRequest = async function(req, context) {
@@ -137,7 +139,8 @@ UserDefaultSchema.statics.isAuthorizedBatch = async function(me, orgId, objectAr
   return new Array(objectArray.length).fill(true);
 };
 
-UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, req_id) {
+UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type, attributes, context) {
+  const { req_id, logger } = context;
   logger.debug({ req_id: req_id },`default isAuthorized ${action} ${type} ${attributes}`);
 
   const user = await this.findOne({ apiKey: me.apiKey }).lean();
@@ -149,9 +152,9 @@ UserDefaultSchema.statics.isAuthorized = async function(me, orgId, action, type,
   return user;
 };
 
-UserDefaultSchema.statics.isValidOrgKey = async function(models, me) {
+UserDefaultSchema.statics.isValidOrgKey = async function(models, me, logger) {
   logger.debug('default isValidOrgKey');
-  const org = await models.Organization.findOne({ orgKeys: me.orgKey }).lean();
+  const org = await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean();
   if(!org) {
     logger.error('An org was not found for this razee-org-key');
     throw new ForbiddenError('org id was not found');
@@ -183,7 +186,7 @@ UserDefaultSchema.statics.getOrgById = async function(models, orgId) {
 };
 
 UserDefaultSchema.statics.getOrg = async function(models, me) {
-  return await models.Organization.findOne({ orgKeys: me.orgKey }).lean({ virtuals: true });
+  return await models.Organization.findOne( { $or: [ { orgKeys: me.orgKey }, { 'orgKeys2.key': me.orgKey } ] } ).lean({ virtuals: true });
 };
 
 UserDefaultSchema.statics.getBasicUsersByIds = async function(ids){

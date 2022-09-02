@@ -39,6 +39,7 @@ const { CLUSTER_LIMITS, RESOURCE_LIMITS, CLUSTER_REG_STATES } = require('../../a
 const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
+const storageFactory = require('./../../storage/storageFactory');
 
 const addUpdateCluster = async (req, res, next) => {
   try {
@@ -121,21 +122,15 @@ var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   }
 };
 
-// eslint-disable-next-line no-unused-vars
-async function pushToS3(req, key, searchableDataHash, dataStr) {
-  const rsp = pushToS3Sync(req, key, searchableDataHash, dataStr);
-  await rsp.promise;
-  return rsp.url;
-}
-
-function pushToS3Sync(req, key, searchableDataHash, dataStr){
+function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
   //if its a new or changed resource, write the data out to an S3 object
-  const result={};
-  const bucket = conf.s3.resourceBucket;
+  const result = {};
+  const bucket = conf.storage.getResourceBucket(data_location);
   const hash = crypto.createHash('sha256');
   const keyHash = hash.update(JSON.stringify(key)).digest('hex');
-  result.promise=req.s3.createBucketAndObject(bucket, `${keyHash}/${searchableDataHash}`, dataStr);
-  result.url=`https://${req.s3.endpoint}/${bucket}/${keyHash}/${searchableDataHash}`;
+  const handler = storageFactory(logger).newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
+  result.promise = handler.setData(dataStr);
+  result.encodedData = handler.serialize();
   return result;
 }
 
@@ -202,8 +197,45 @@ const updateClusterResources = async (req, res, next) => {
       resources = [body];
     }
 
+    /*
+    If multiple 'MODIFIED' updates to the same resource are received in the same
+    payload, keep only the the last 'MODIFIED' update from the payload.
+    This is intended to limit noise from a resource that is experiencing many
+    rapid updates.
+    Ref: satellite-config/issues/1440
+    */
+    const dedupUpdates = ['MODIFIED'];
+    const dedupedResources = [];
+    for( let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+      const selfLink = (resource.object.metadata && resource.object.metadata.annotations && resource.object.metadata.annotations.selfLink) ? resource.object.metadata.annotations.selfLink : (resource.object.metadata ? resource.object.metadata.selfLink : null);
+      const type = resource['type'] || 'other';
+      let isLastUpdate = true;
+      // If the resource update is a de-dupable update, check to see if the same payload also includes additional de-dupable updates to the same resource.
+      if( selfLink && dedupUpdates.includes(type) ) {
+        // Check each of the resource updates AFTER the current one.
+        for( let j = i+1; j < resources.length; j++) {
+          const checkResource = resources[j];
+          const checkResourceType = checkResource['type'] || 'other';
+          const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : (checkResource.object.metadata ? checkResource.object.metadata.selfLink : null);
+          // If the checked resource update is same type for the same resource, it shouldn't be kept.
+          if( selfLink == checkResourceSelfLink && type == checkResourceType ) {
+            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update in same payload, truncated' );
+            isLastUpdate = false;
+            break; // No need to check for further resources.
+          }
+        }
+      }
+      // Keep this resource if its the last update of this type for the selfLink
+      if( isLastUpdate ) dedupedResources.push( resource );
+    }
+    resources = dedupedResources;
+
     const Resources = req.db.collection('resources');
     const Stats = req.db.collection('resourceStats');
+
+    const cluster = await req.db.collection('clusters').findOne({ org_id: req.org._id, cluster_id: clusterId});
+    const data_location = cluster.registration.data_location;
 
     const limit = pLimit(10);
     await Promise.all(resources.map(async (resource) => {
@@ -272,10 +304,10 @@ const updateClusterResources = async (req, res, next) => {
             req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.findOne.currentResource', 'data': key}, 'satcon-performance');
             const hasSearchableDataChanges = (currentResource && searchableDataHash != _.get(currentResource, 'searchableDataHash'));
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-            if (req.s3 && (!currentResource || resourceHash !== currentResource.hash)) {
+            if (!currentResource || resourceHash !== currentResource.hash) {
               let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
-              dataStr=s3UploadWithPromiseResponse.url;
+              s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
+              dataStr=s3UploadWithPromiseResponse.encodedData;
               s3UploadWithPromiseResponse.logUploadDuration = () => {req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync', 'data': key }, 'satcon-performance');};
             }
             var changes = null;
@@ -346,7 +378,7 @@ const updateClusterResources = async (req, res, next) => {
                 pubSub.resourceChangedFunc(
                   {_id: resourceId, data: dataStr, created: resourceCreated,
                     deleted: false, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink,
-                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+                    hash: resourceHash, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
               }
             }
             if(s3UploadWithPromiseResponse!==undefined){
@@ -375,12 +407,10 @@ const updateClusterResources = async (req, res, next) => {
             const searchableDataHash = buildSearchableDataObjHash(searchableDataObj);
             const currentResource = await Resources.findOne(key);
             const pushCmd = buildPushObj(searchableDataObj, _.get(currentResource, 'searchableData', null));
-            if (req.s3) {
-              let start = Date.now();
-              s3UploadWithPromiseResponse = pushToS3Sync(req, key, searchableDataHash, dataStr);
-              dataStr = s3UploadWithPromiseResponse.url;
-              s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
-            }
+            let start = Date.now();
+            s3UploadWithPromiseResponse = pushToS3Sync(key, searchableDataHash, dataStr, data_location, req.log);
+            dataStr = s3UploadWithPromiseResponse.encodedData;
+            s3UploadWithPromiseResponse.logUploadDuration = () => { req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:pushToS3Sync:Deleted', 'data': key }, 'satcon-performance'); };
             if (currentResource) {
               let start = Date.now();
               await Resources.updateOne(
@@ -392,7 +422,8 @@ const updateClusterResources = async (req, res, next) => {
               );
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:Resources.updateOne.Deleted:', 'data': key}, 'satcon-performance');
               await addResourceYamlHistObj(req, req.org._id, clusterId, selfLink, '');
-              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id, cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash});
+              pubSub.resourceChangedFunc({ _id: currentResource._id, created: currentResource.created, deleted: true, org_id: req.org._id,
+                cluster_id: req.params.cluster_id, selfLink: selfLink, searchableData: searchableDataObj, searchableDataHash: searchableDataHash}, req.log);
             }
             if (s3UploadWithPromiseResponse !== undefined) {
               await s3UploadWithPromiseResponse.promise;

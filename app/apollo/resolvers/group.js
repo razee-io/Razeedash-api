@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,17 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError } = require ('./common');
+const { whoIs, validAuth, NotFoundError, RazeeValidationError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
 
+// RBAC Sync
+const { groupsRbacSync } = require('../utils/rbacSync');
+
 const pubSub = GraphqlPubSub.getInstance();
+
+const { validateString } = require('../utils/directives');
 
 const groupResolvers = {
   Query: {
@@ -75,9 +80,17 @@ const groupResolvers = {
       // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
 
       try{
-        let group = await models.Group.findOne({ org_id: orgId, name }).lean({ virtuals: true });
+        const groups = await models.Group.find({ org_id: orgId, name }).limit(2).lean({ virtuals: true });
+
+        // If more than one matching group found, throw an error
+        if( groups.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id: orgId, name }, `${queryName} found ${groups.length} matching groups` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
+        }
+        const group = groups[0] || null;
+
         if (!group) {
-          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}));
+          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
         await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
@@ -96,6 +109,9 @@ const groupResolvers = {
       const queryName = 'addGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
 
       try {
         // might not necessary with unique index. Worth to check to return error better.
@@ -125,6 +141,9 @@ const groupResolvers = {
       const queryName = 'removeGroup';
       logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
 
       try{
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
@@ -164,8 +183,19 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
+      validateString( 'org_id', org_id );
+      validateString( 'name', name );
+
       try{
-        const group = await models.Group.findOne({ name, org_id: org_id }).lean();
+        const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
+
+        // If more than one matching group found, throw an error
+        if( groups.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id, name }, `${queryName} found ${groups.length} matching groups` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
+        }
+        const group = groups[0] || null;
+
         if(!group){
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
@@ -211,27 +241,35 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'assignClusterGroups';
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
+
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
+      validateString( 'orgId', orgId );
+      groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+
       try {
-        var groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
+        const groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
+
         groupUuids = _.map(groups, 'uuid');
-        var groupObjsToAdd = _.map(groups, (group)=>{
+
+        const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
             name: group.name,
           };
         });
+
         // because we cant do $addToSet with objs as inputs, we'll need to split into two queries
         // first we pull out all groups with matching uuids
         // then we insert the group objs
         // the end result is we have all the input groups inserted while also not having any duplicates
         // overall its bad to do this in two queries due to the second query potentially failing after the first one removes items, but i cant think of a better way
         // if we ever change the schema for this to just be a list of group ids, we can swap over to $addToSet and only need one query
-        var ops = [
+        const ops = [
           {
             updateMany: {
               filter: {
@@ -255,12 +293,20 @@ const groupResolvers = {
             }
           }
         ];
-        var res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
+        const res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
+
+        pubSub.channelSubChangedFunc({org_id: orgId}, context);
+
+        /*
+        Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, Group (Cluster) update is successful.
+        */
+        groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
-        pubSub.channelSubChangedFunc({org_id: orgId}, context);
         return {
-          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -278,11 +324,16 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'unassignClusterGroups';
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
+
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      validateString( 'orgId', orgId );
+      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
       try {
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
-        var res = await models.Cluster.updateMany(
+        const res = await models.Cluster.updateMany(
           {
             org_id: orgId,
             cluster_id: { $in: clusterIds },
@@ -292,10 +343,11 @@ const groupResolvers = {
           }
         );
 
-        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: orgId}, context);
+
+        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
         return {
-          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -313,30 +365,46 @@ const groupResolvers = {
       const { models, me, req_id, logger } = context;
       const queryName = 'editClusterGroups';
       logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId }, `${queryName} enter`);
+
       await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
+      validateString( 'orgId', orgId );
+      validateString( 'clusterId', clusterId );
+      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+
       try {
-        var groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
+        const groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
+
         groupUuids = _.map(groups, 'uuid');
-        var groupObjsToAdd = _.map(groups, (group)=>{
+
+        const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
             name: group.name,
           };
         });
-        var sets = {
+        const sets = {
           groups: groupObjsToAdd,
         };
-
         const res = await models.Cluster.updateOne({ org_id: orgId, cluster_id: clusterId }, { $set: sets });
 
-        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: orgId}, context);
+
+        /*
+        Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, Group (Cluster) update is successful.
+
+        Ideally, code should identify which groups are *new* for this cluster and only trigger sync for those.
+        */
+        groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
+
+        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
         return {
-          modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified
+          modified: res.modifiedCount
         };
       }
       catch(err){
@@ -351,12 +419,15 @@ const groupResolvers = {
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      try{
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      clusters.forEach( value => validateString( 'clusters', value ) );
 
+      try{
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
@@ -368,8 +439,17 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-        return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
 
+        /*
+        Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
+        RBAC Sync completes asynchronously, so no `await`.
+        Even if RBAC Sync errors, Group (Cluster) update is successful.
+
+        Ideally, code should identify which groups are *new* for this cluster and only trigger sync for those.
+        */
+        groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
+
+        return {modified: res.modifiedCount };
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw err;
@@ -381,6 +461,10 @@ const groupResolvers = {
       const queryName = 'unGroupClusters';
       logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
       // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+      clusters.forEach( value => validateString( 'clusters', value ) );
 
       try{
 
@@ -399,7 +483,7 @@ const groupResolvers = {
 
         logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-        return {modified: res.modifiedCount !== undefined ? res.modifiedCount : res.nModified };
+        return {modified: res.modifiedCount };
 
       } catch(err){
         logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
