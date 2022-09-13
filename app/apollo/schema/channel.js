@@ -85,6 +85,10 @@ const channelSchema = gql`
     versionUuid: String!
     success: Boolean!
   }
+  type EditChannelVersionReply {
+    uuid: String!
+    success: Boolean
+  }
   type RemoveChannelReply {
     uuid: String!
     success: Boolean
@@ -153,10 +157,16 @@ const channelSchema = gql`
      editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
 
      """
-     Adds a yaml version to this channel
+     Adds a version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, description: String @sv, content: String @sv, file: Upload, remote: VersionRemoteInput): AddChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, uuid: String! @sv, description: String @sv, remote: VersionRemoteInput): EditChannelVersionReply!
+
+     """
+     Edits a version
+     """
+     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+
      """
      Removes a channel
      """

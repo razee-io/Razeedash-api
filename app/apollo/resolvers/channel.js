@@ -175,6 +175,7 @@ const channelResolvers = {
         }
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
+        // If channel is Uploaded type, replace the `content` attribute with the actual content data string
         if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           try {
             const decryptedContentResult = await getDecryptedContent( context, org, deployableVersionObj );
@@ -184,6 +185,11 @@ const channelResolvers = {
             logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${versionObj.uuid}' for request ${req_id}: ${e.message}`);
             throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
           }
+        }
+        // If channel is Remote type, remove the `content` attribute and set the `remote` attribute instead
+        else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
+          deployableVersionObj.remote = deployableVersionObj.content.remote;
+          deployableVersionObj.content = null;
         }
 
         return deployableVersionObj;
@@ -550,6 +556,22 @@ const channelResolvers = {
         versionUuid: deployableVersionObj.uuid,
       };
     },
+    editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
+      const { models, me, req_id, logger } = context;
+
+      validateString( 'org_id', org_id );
+      validateString( 'uuid', uuid );
+
+      const queryName = 'editChannelVersion';
+      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
+
+      /*
+      Edit Channel Version not yet implemented.
+      - Allow changing description
+      - Allow altering `remote.parameters`
+      */
+      throw new RazeeValidationError( context.req.t( 'Unsupported query: {api}', { api: queryName } ), context );
+    },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
@@ -577,7 +599,7 @@ const channelResolvers = {
         }
 
         if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-          // deletes the linked deployableVersions in s3
+          // deletes the linked deployableVersions data
           var versionsToDeleteFromS3 = await models.DeployableVersion.find({ org_id, channel_id: channel.uuid });
           const limit = pLimit(5);
           await Promise.all(_.map(versionsToDeleteFromS3, deployableVersionObj => {
@@ -588,13 +610,12 @@ const channelResolvers = {
           }));
         }
 
-        // delete the subscriptions to Versions in this Channel
-        /* PLC THIS CODE IS MISSING, FIXME */
+        // Subscriptions are not automatically deleted -- deletion is blocked above if subscriptions or serviceSubscriptions exist
 
-        // deletes the linked deployableVersions in db
+        // Delete the channel's Versions
         await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
 
-        // deletes the configuration channel
+        // Deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
 
         return {
