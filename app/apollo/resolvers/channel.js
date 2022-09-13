@@ -358,7 +358,7 @@ const channelResolvers = {
             { org_id: org_id, channel_uuid: uuid },
             { $set: { channelName: name } }
           );
-        } catch(e) {
+        } catch(err) {
           logger.error(err, `${queryName} failed to update the channel name in subscriptions when serving ${req_id}.`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
@@ -367,7 +367,7 @@ const channelResolvers = {
             { org_id: org_id, channel_id: uuid },
             { $set: { channel_name: name } }
           );
-        } catch(e) {
+        } catch(err) {
           logger.error(err, `${queryName} failed to update the channel name in versions when serving ${req_id}.`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
@@ -474,12 +474,11 @@ const channelResolvers = {
         throw new RazeeValidationError(context.req.t('Too many configuration channel versions are registered under {{channel_uuid}}.', {'channel_uuid':channel_uuid}), context);
       }
 
-      const newVerUuid = UUID();
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const deployableVersionObj = {
         _id: UUID(),
         org_id,
-        uuid: newVerUuid,
+        uuid: UUID(),
         channel_id: channel.uuid,
         channelName: channel.name,
         name,
@@ -541,8 +540,8 @@ const channelResolvers = {
           { org_id, uuid: channel.uuid },
           { $push: { versions: versionObj } }
         );
-      } catch(e) {
-        logger.error(err, `${queryName} failed to update the channel to reference the new Version '${name}' / '${newVerUuid}' when serving ${req_id}.`);
+      } catch(err) {
+        logger.error(err, `${queryName} failed to update the channel to reference the new Version '${name}' / '${deployableVersionObj.uuid}' when serving ${req_id}.`);
         // Cannot fail here, the Version has already been created.  Continue.
       }
 
@@ -685,8 +684,8 @@ const channelResolvers = {
             { $pull: { versions: { uuid: uuid } } }
           );
           logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version reference removed`);
-        } catch(e) {
-          logger.error(err, `${queryName} failed to update the channel to remove the version reference '${name}' / '${newVerUuid}' when serving ${req_id}.`);
+        } catch(err) {
+          logger.error(err, `${queryName} failed to update the channel to remove the version reference '${name}' / '${uuid}' when serving ${req_id}.`);
           // Cannot fail here, the Version has already been removed.  Continue.
         }
 
