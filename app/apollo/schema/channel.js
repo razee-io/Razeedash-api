@@ -160,12 +160,12 @@ const channelSchema = gql`
      Adds a version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, uuid: String! @sv, description: String @sv, remote: VersionRemoteInput): EditChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, description: String @sv, type: String! @sv, content: String @sv, file: Upload, remote: VersionRemoteInput): AddChannelVersionReply!
 
      """
      Edits a version
      """
-     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, description: String @sv, remote: VersionRemoteInput, ): EditChannelVersionReply!
 
      """
      Removes a channel
