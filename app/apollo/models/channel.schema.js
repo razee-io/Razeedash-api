@@ -34,19 +34,33 @@ const ChannelSchema = new mongoose.Schema({
     type: String,
   },
   remote: {
-    type: {
+    remoteType: {
       type: String,
     },
-    parameters: {
-      type: Map,
-    },
+    parameters: [
+      {
+        key: {
+          type: String,
+        },
+        value: {
+          type: String,
+        },
+      }
+    ],
   },
   versionDefaults: {
     content: {
       remote: {
-        parameters: {
-          type: Map,
-        },
+        parameters: [
+          {
+            key: {
+              type: String,
+            },
+            value: {
+              type: String,
+            },
+          }
+        ],
       },
     },
   },

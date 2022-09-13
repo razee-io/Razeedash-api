@@ -23,6 +23,21 @@ Note: `scalar Upload` implementation is provided by GraphQLUpload in app/apollo/
 const channelSchema = gql`
   scalar Upload
 
+  input ParameterInput {
+    key: String!
+    value: String!
+  }
+  input ChannelRemoteInput {
+    remoteType: String
+    parameters: [ParameterInput]
+  }
+  input VersionRemoteInput {
+    parameters: [ParameterInput]
+  }
+  type ParameterTuple {
+    key: String!
+    value: String!
+  }
   type ChannelVersion {
     uuid: String!
     name: String!
@@ -31,11 +46,11 @@ const channelSchema = gql`
     location: String
   }
   type ChannelRemoteSource {
-    type: String!
-    parameters: JSON!
+    remoteType: String!
+    parameters: [ParameterTuple]
   }
   type VersionRemoteSource {
-    parameters: JSON!
+    parameters: [ParameterTuple]
   }
   type ChannelVersionDefaults {
     remote: VersionRemoteSource
@@ -44,7 +59,7 @@ const channelSchema = gql`
     uuid: String!
     orgId: String!
     name: String!
-    contentType: String!
+    contentType: String
     remote: ChannelRemoteSource
     data_location: String
     created: Date!
@@ -130,18 +145,18 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: JSON, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
 
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: JSON, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
 
      """
      Adds a yaml version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, remote: JSON, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, description: String @sv, content: String @sv, file: Upload, remote: VersionRemoteInput): AddChannelVersionReply!
      """
      Removes a channel
      """

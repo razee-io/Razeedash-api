@@ -175,13 +175,15 @@ const channelResolvers = {
         }
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
-        try {
-          const decryptedContentResult = await getDecryptedContent( context, org, deployableVersionObj );
-          deployableVersionObj.content = decryptedContentResult.content;
-        }
-        catch( e ) {
-          logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${versionObj.uuid}' for request ${req_id}: ${e.message}`);
-          throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+        if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+          try {
+            const decryptedContentResult = await getDecryptedContent( context, org, deployableVersionObj );
+            deployableVersionObj.content = decryptedContentResult.content;
+          }
+          catch( e ) {
+            logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${versionObj.uuid}' for request ${req_id}: ${e.message}`);
+            throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+          }
         }
 
         return deployableVersionObj;
@@ -205,14 +207,14 @@ const channelResolvers = {
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS ) {
           // Block experimental features
-          if( contentType || remote || versionDefaults ) {
+          if( contentType !== CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED || remote || versionDefaults ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'contentType remote versionDefaults' } ), context );
           }
         }
         else {
           // Validate contentType
-          if( !CHANNEL_CONSTANTS.CONTENTTYPES.has( contentType ) ) {
-            throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( CHANNEL_CONSTANTS.CONTENTTYPES.values() ).join(' ') } ), context );
+          if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
+            throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( Object.values(CHANNEL_CONSTANTS.CONTENTTYPES) ).join(' ') } ), context );
           }
         }
 
@@ -240,9 +242,9 @@ const channelResolvers = {
             throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
           }
 
-          // Validate remote.type
-          if( !remote.type || !CHANNEL_CONSTANTS.REMOTE.TYPES.has( remote.type ) ) {
-            throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: remote.type, 'remoteTypes': Array.from( CHANNEL_CONSTANTS.REMOTE.TYPES.values() ).join(' ') } ), context );
+          // Validate remote.remoteType
+          if( !remote.remoteType || !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( remote.remoteType ) ) {
+            throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: remote.remoteType, 'remoteTypes': Array.from( Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES) ).join(' ') } ), context );
           }
 
           // Validate remote.parameters (length)
@@ -272,7 +274,7 @@ const channelResolvers = {
         const uuid = UUID();
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
-        await models.Channel.create({
+        const newChannelObj = {
           _id: UUID(),
           uuid,
           org_id,
@@ -283,10 +285,11 @@ const channelResolvers = {
           ownerId: me._id,
           kubeOwnerId,
           custom,
-          data_location,
-          remote,
-          versionDefaults,
-        });
+        };
+        if( data_location ) newChannelObj.data_location = data_location;
+        if( remote ) newChannelObj.remote = remote;
+        if( versionDefaults ) newChannelObj.versionDefaults = versionDefaults;
+        await models.Channel.create(newChannelObj);
         return {
           uuid,
         };
@@ -329,9 +332,9 @@ const channelResolvers = {
             throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
           }
 
-          // Validate remote.type
-          if( remote.type ) {
-            throw new RazeeValidationError( context.req.t( 'The remote type cannot be changed.  Current value: [{{remoteType}}]', { remoteType: channel.remote.type } ), context );
+          // Validate remote.remoteType
+          if( remote.remoteType ) {
+            throw new RazeeValidationError( context.req.t( 'The remote type cannot be changed.  Current value: [{{remoteType}}]', { remoteType: channel.remote.remoteType } ), context );
           }
 
           // Validate remote.parameters (length)
@@ -390,7 +393,7 @@ const channelResolvers = {
       validateString( 'channel_uuid', channel_uuid );
       validateString( 'name', name );
       validateString( 'type', type );
-      validateString( 'content', content );
+      if( content ) validateString( 'content', content );
 
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
@@ -545,7 +548,7 @@ const channelResolvers = {
 
       return {
         success: true,
-        versionUuid: versionObj.uuid,
+        versionUuid: deployableVersionObj.uuid,
       };
     },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
@@ -587,7 +590,7 @@ const channelResolvers = {
         }
 
         // delete the subscriptions to Versions in this Channel
-        /* THIS CODE IS MISSING, FIXME */
+        /* PLC THIS CODE IS MISSING, FIXME */
 
         // deletes the linked deployableVersions in db
         await models.DeployableVersion.deleteMany({ org_id, channel_id: channel.uuid });
@@ -665,7 +668,7 @@ const channelResolvers = {
         if(deployableVersionObj){
           if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
             // Delete Version data
-            const handler = storageFactory(logger).deserialize(deployableVersionObj.content);             //PLC can storagefactory handle whether it is uploaded or not internally?
+            const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
             await handler.deleteData();
             logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} data removed`);
           }
