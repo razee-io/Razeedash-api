@@ -78,6 +78,7 @@
   "Too many configuration channels are registered under {{org_id}}.": "在 {{org_id}} 下注册了过多的配置通道。",
   "Too many subscriptions are registered under {{org_id}}.": "在 {{org_id}} 下注册了过多的预订。",
   "Unsupported arguments: [{{args}}]": "Unsupported arguments: [{{args}}]",
+  "Unsupported query: {api}": "Unsupported query: {api}",
   "version uuid \"{{uuid}}\" not found and no references found": "未找到版本 uuid“{{uuid}}”以及任何引用",
   "version uuid \"{{version_uuid}}\" not found": "未找到版本 uuid“{{version_uuid}}”",
   "Version uuid \"{{version_uuid}}\" not found.": "未找到版本 uuid“{{version_uuid}}”。",

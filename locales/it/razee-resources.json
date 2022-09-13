@@ -78,6 +78,7 @@
   "Too many configuration channels are registered under {{org_id}}.": "Troppi canali di configurazione registrati in {{org_id}}.",
   "Too many subscriptions are registered under {{org_id}}.": "Troppe sottoscrizioni registrate con {{org_id}}.",
   "Unsupported arguments: [{{args}}]": "Unsupported arguments: [{{args}}]",
+  "Unsupported query: {api}": "Unsupported query: {api}",
   "version uuid \"{{uuid}}\" not found and no references found": "UUID versione \"{{uuid}}\" non trovato e anche nessun riferimento",
   "version uuid \"{{version_uuid}}\" not found": "UUID versione \"{{version_uuid}}\" non trovato",
   "Version uuid \"{{version_uuid}}\" not found.": "UUID versione \"{{version_uuid}}\" non trovato.",

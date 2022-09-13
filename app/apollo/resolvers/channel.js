@@ -557,13 +557,13 @@ const channelResolvers = {
       };
     },
     editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
-      const { models, me, req_id, logger } = context;
+      const { /*models,*/ me, req_id, logger } = context;
 
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
 
       const queryName = 'editChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
+      logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
 
       /*
       Edit Channel Version not yet implemented.
