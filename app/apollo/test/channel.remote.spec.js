@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2022 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
+const channelFunc = require('./channelApi');
 const channelRemoteFunc = require('./channelRemoteApi');
 
 const apollo = require('../index');
@@ -37,6 +38,7 @@ let myApollo;
 const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
+const channelApi = channelFunc(graphqlUrl);
 const channelRemoteApi = channelRemoteFunc(graphqlUrl);
 
 let userRootData;
@@ -63,6 +65,9 @@ const createUsers = async () => {
   await prepareUser(models, userRootData);
 };
 
+let channel01Uuid;
+let ver01Uuid;
+
 describe('channel remote graphql test suite', () => {
   before(async () => {
     process.env.EXPERIMENTAL_GITOPS = 'true';
@@ -87,11 +92,11 @@ describe('channel remote graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  it('add a remote channel', async () => {
+  it('add a remote channel of remoteType github with a remote parameter', async () => {
     try {
       const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
         orgId: org01._id,
-        name: 'a_remote_channel',
+        name: 'origname',
         contentType: 'remote',
         remote: {
           remoteType: 'github',
@@ -103,13 +108,13 @@ describe('channel remote graphql test suite', () => {
           ],
         },
       });
+      console.log( `addRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
       const addChannel = result.data.data.addChannel;
 
       expect(addChannel.uuid).to.be.an('string');
 
-      const channel1 = await models.Channel.findOne({uuid: addChannel.uuid});
-      console.log( `PLC channel1: ${JSON.stringify( channel1, null, 2 )}` );
-      expect(channel1.remote.remoteType).to.equal('github');
+      // Save uuid for later use in tests
+      channel01Uuid = addChannel.uuid;
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -119,4 +124,200 @@ describe('channel remote graphql test suite', () => {
       throw error;
     }
   });
+
+  it('get the created remote channel', async () => {
+    try {
+      const result = await channelRemoteApi.getRemoteChannelByUuid(userRootToken, {
+        orgId: org01._id,
+        uuid: channel01Uuid,
+      });
+      console.log( `getRemoteChannelByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const retrievedChannel = result.data.data.channel;
+
+      expect(retrievedChannel.name).to.equal('origname');
+      expect(retrievedChannel.remote.remoteType).to.equal('github');
+      expect(retrievedChannel.remote.parameters[0].key).to.equal('k1');
+      expect(retrievedChannel.remote.parameters[0].value).to.equal('v1');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('edit the created remote channel and change the remote parameter', async () => {
+    try {
+      const result = await channelRemoteApi.editRemoteChannel(userRootToken, {
+        orgId: org01._id,
+        uuid: channel01Uuid,
+        name: 'newname',
+        remote: {
+          parameters: [
+            {
+              key: 'newkey1',
+              value: 'newval1',
+            },
+          ],
+        },
+      });
+      console.log( `editRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const editChannel = result.data.data.editChannel;
+
+      expect(editChannel.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get the edited remote channel', async () => {
+    try {
+      const result = await channelRemoteApi.getRemoteChannelByUuid(userRootToken, {
+        orgId: org01._id,
+        uuid: channel01Uuid,
+      });
+      console.log( `getRemoteChannelByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const retrievedChannel = result.data.data.channel;
+
+      expect(retrievedChannel.name).to.equal('newname');
+      expect(retrievedChannel.remote.remoteType).to.equal('github');
+      expect(retrievedChannel.remote.parameters[0].key).to.equal('newkey1');
+      expect(retrievedChannel.remote.parameters[0].value).to.equal('newval1');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add a version under the remote channel ', async () => {
+    try {
+      const result = await channelRemoteApi.addRemoteChannelVersion(userRootToken, {
+        orgId: org01._id,
+        channelUuid: channel01Uuid,
+        name: 'origvername',
+        description: 'origverdesc',
+        type: 'yaml',
+        remote: {
+          parameters: [
+            {
+              key: 'origverkey1',
+              value: 'origverval1',
+            },
+          ],
+        },
+      });
+      console.log( `addRemoteChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannelVersion = result.data.data.addChannelVersion;
+
+      expect(addChannelVersion.success).to.equal(true);
+      expect(addChannelVersion.versionUuid).to.be.an('string');
+
+      // Save uuid for later use in tests
+      ver01Uuid = addChannelVersion.versionUuid;
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get the created remote channel version', async () => {
+    try {
+      const result = await channelRemoteApi.getRemoteChannelVersionByUuid(userRootToken, {
+        orgId: org01._id,
+        channelUuid: channel01Uuid,
+        versionUuid: ver01Uuid,
+      });
+      console.log( `getRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const retrievedVersion = result.data.data.channelVersion;
+
+      expect(retrievedVersion.name).to.equal('origvername');
+      expect(retrievedVersion.remote.parameters[0].key).to.equal('origverkey1');
+      expect(retrievedVersion.remote.parameters[0].value).to.equal('origverval1');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('edit the created remote channel version and change the remote parameter', async () => {
+    try {
+      const result = await channelRemoteApi.editRemoteChannelVersion(userRootToken, {
+        orgId: org01._id,
+        uuid: channel01Uuid,
+        name: 'newvername',
+        description: 'newverdesc',
+        remote: {
+          parameters: [
+            {
+              key: 'newverkey1',
+              value: 'newverval1',
+            },
+          ],
+        },
+      });
+      console.log( `editRemoteChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+
+      /*
+      const editChannelVersion = result.data.data.editChannelVersion;
+
+      expect(editChannel.success).to.equal(true);
+      */
+
+      const errors = result.data.errors;
+
+      expect(errors[0].message).to.equal('Unsupported query: editChannelVersion');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get the edited remote channel version', async () => {
+    try {
+      const result = await channelRemoteApi.getRemoteChannelVersionByUuid(userRootToken, {
+        orgId: org01._id,
+        channelUuid: channel01Uuid,
+        versionUuid: ver01Uuid,
+      });
+      console.log( `getRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const retrievedVersion = result.data.data.channelVersion;
+
+      // Expect orig values currently as editChannelVersion is not yet implemented
+      expect(retrievedVersion.name).to.equal('origvername');
+      expect(retrievedVersion.description).to.equal('origverdesc');
+      expect(retrievedVersion.remote.parameters[0].key).to.equal('origverkey1');
+      expect(retrievedVersion.remote.parameters[0].value).to.equal('origverval1');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
 });

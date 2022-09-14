@@ -342,6 +342,7 @@ const channelResolvers = {
           if( remote.remoteType ) {
             throw new RazeeValidationError( context.req.t( 'The remote type cannot be changed.  Current value: [{{remoteType}}]', { remoteType: channel.remote.remoteType } ), context );
           }
+          remote.remoteType = channel.remote.remoteType;  // keep original remoteType
 
           // Validate remote.parameters (length)
           if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
@@ -558,11 +559,11 @@ const channelResolvers = {
     },
     editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
       const { /*models,*/ me, req_id, logger } = context;
+      const queryName = 'editChannelVersion';
 
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
 
-      const queryName = 'editChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
 
       /*
@@ -570,7 +571,7 @@ const channelResolvers = {
       - Allow changing description
       - Allow altering `remote.parameters`
       */
-      throw new RazeeValidationError( context.req.t( 'Unsupported query: {api}', { api: queryName } ), context );
+      throw new RazeeValidationError( context.req.t( 'Unsupported query: {{api}}', { api: queryName } ), context );
     },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
