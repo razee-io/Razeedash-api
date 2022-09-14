@@ -16,11 +16,13 @@
 
 const { expect } = require('chai');
 const fs = require('fs');
+const { v4: UUID } = require('uuid');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
 const channelRemoteFunc = require('./channelRemoteApi');
+const subscriptionFunc = require('./subscriptionsApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
@@ -38,10 +40,14 @@ const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
 const channelRemoteApi = channelRemoteFunc(graphqlUrl);
+const subscriptionApi = subscriptionFunc(graphqlUrl);
 
 let userRootData;
 let userRootToken;
 let org01;
+let channel01Uuid;
+let ver01Uuid;
+let sub01Uuid;
 
 const createOrganizations = async () => {
   const org01Data = JSON.parse(
@@ -63,8 +69,14 @@ const createUsers = async () => {
   await prepareUser(models, userRootData);
 };
 
-let channel01Uuid;
-let ver01Uuid;
+const createGroups = async () => {
+  await models.Group.create({
+    _id: UUID(),
+    org_id: org01._id,
+    uuid: UUID(),
+    name: 'testgroup',
+  });
+};
 
 describe('channel remote graphql test suite', () => {
   before(async () => {
@@ -81,6 +93,7 @@ describe('channel remote graphql test suite', () => {
 
     await createOrganizations();
     await createUsers();
+    await createGroups();
 
     userRootToken = await signInUser(models, resourceApi, userRootData);
   }); // before
@@ -113,6 +126,7 @@ describe('channel remote graphql test suite', () => {
 
       // Save uuid for later use in tests
       channel01Uuid = addChannel.uuid;
+      console.log( `channel created: ${channel01Uuid}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -223,6 +237,7 @@ describe('channel remote graphql test suite', () => {
 
       // Save uuid for later use in tests
       ver01Uuid = addChannelVersion.versionUuid;
+      console.log( `version created: ${sub01Uuid}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -233,6 +248,32 @@ describe('channel remote graphql test suite', () => {
     }
   });
 
+  it('add a subscription to the remote channel version', async () => {
+    try {
+      const result = await subscriptionApi.addSubscription(userRootToken, {
+        orgId: org01._id,
+        channelUuid: channel01Uuid,
+        versionUuid: ver01Uuid,
+        name: 'remotesub1',
+        groups: ['testgroup'],
+      });
+      console.log( `addSubscription result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addSubscription = result.data.data.addSubscription;
+
+      expect(addSubscription.uuid).to.be.an('string');
+
+      // Save uuid for later use in tests
+      sub01Uuid = addSubscription.uuid;
+      console.log( `subscription created: ${sub01Uuid}` );
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
   it('get the created remote channel version', async () => {
     try {
       const result = await channelRemoteApi.getRemoteChannelVersionByUuid(userRootToken, {
@@ -318,4 +359,45 @@ describe('channel remote graphql test suite', () => {
     }
   });
 
+  it('prevent removing the remote channel version while it has subscriptions', async () => {
+    try {
+      const result = await channelRemoteApi.removeRemoteChannelVersionByUuid(userRootToken, {
+        orgId: org01._id,
+        uuid: ver01Uuid,
+        deleteSubscriptions: false,
+      });
+      console.log( `removeRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const errors = result.data.errors;
+
+      expect(errors[0].message).to.contain('subscriptions depend on this');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('allow deleting the remote channel version with its subscriptions', async () => {
+    try {
+      const result = await channelRemoteApi.removeRemoteChannelVersionByUuid(userRootToken, {
+        orgId: org01._id,
+        uuid: ver01Uuid,
+        deleteSubscriptions: true,
+      });
+      console.log( `removeRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const removeChannelVersion = result.data.data.removeChannelVersion;
+
+      expect(removeChannelVersion.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });

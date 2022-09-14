@@ -158,6 +158,25 @@ const channelRemoteFunc = grahqlUrl => {
     },
   );
 
+  const removeRemoteChannelVersionByUuid = async (token, variables) => axios.post(
+    grahqlUrl,
+    {
+      query: `
+        mutation($orgId: String!, $uuid: String!, $deleteSubscriptions: Boolean) {
+          removeChannelVersion(orgId: $orgId, uuid: $uuid, deleteSubscriptions: $deleteSubscriptions) {
+            success
+        }
+      }
+      `,
+      variables,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
   return {
     addRemoteChannel,
     getRemoteChannelByUuid,
@@ -165,6 +184,7 @@ const channelRemoteFunc = grahqlUrl => {
     addRemoteChannelVersion,
     getRemoteChannelVersionByUuid,
     editRemoteChannelVersion,
+    removeRemoteChannelVersionByUuid,
   };
 };
 
