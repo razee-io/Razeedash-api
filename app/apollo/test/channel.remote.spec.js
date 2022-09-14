@@ -103,6 +103,36 @@ describe('channel remote graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
+  it('block remote Channels if EXPERIMENTAL_GITOPS not set', async () => {
+    delete process.env.EXPERIMENTAL_GITOPS;
+    console.log( `PLC disabled EGO: ${process.env.EXPERIMENTAL_GITOPS}` );
+    try {
+      const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
+        orgId: org01._id,
+        name: 'anyname',
+        contentType: 'remote',
+        remote: {
+          remoteType: 'github',
+          parameters: [],
+        },
+      });
+      console.log( `addRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const errors = result.data.errors;
+
+      expect(errors[0].message).to.contain('Unsupported arguments');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    } finally {
+      process.env.EXPERIMENTAL_GITOPS = 'true';
+      console.log( `PLC final EGO: ${process.env.EXPERIMENTAL_GITOPS}` );
+    }
+  });
+
   it('add a remote channel of remoteType github with a remote parameter', async () => {
     try {
       const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
