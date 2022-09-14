@@ -209,12 +209,9 @@ const channelResolvers = {
       validateString( 'org_id', org_id );
       validateString( 'name', name );
 
-      console.log( `PLC code EGO: ${process.env.EXPERIMENTAL_GITOPS}` );
-
       try {
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS ) {
-          console.log( `PLC EGO not enabled, fail if not uploaded` );
           // Block experimental features
           if( contentType !== CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED || remote || versionDefaults ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'contentType remote versionDefaults' } ), context );

@@ -105,7 +105,7 @@ describe('channel remote graphql test suite', () => {
 
   it('block remote Channels if EXPERIMENTAL_GITOPS not set', async () => {
     delete process.env.EXPERIMENTAL_GITOPS;
-    console.log( `PLC disabled EGO: ${process.env.EXPERIMENTAL_GITOPS}` );
+    console.log( 'Disabled EXPERIMENTAL_GITOPS for this testcase only' );
     try {
       const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
         orgId: org01._id,
@@ -129,7 +129,6 @@ describe('channel remote graphql test suite', () => {
       throw error;
     } finally {
       process.env.EXPERIMENTAL_GITOPS = 'true';
-      console.log( `PLC final EGO: ${process.env.EXPERIMENTAL_GITOPS}` );
     }
   });
 
