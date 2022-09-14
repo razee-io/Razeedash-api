@@ -20,7 +20,6 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
-const channelFunc = require('./channelApi');
 const channelRemoteFunc = require('./channelRemoteApi');
 
 const apollo = require('../index');
@@ -38,7 +37,6 @@ let myApollo;
 const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
-const channelApi = channelFunc(graphqlUrl);
 const channelRemoteApi = channelRemoteFunc(graphqlUrl);
 
 let userRootData;

@@ -78,7 +78,7 @@
   "Too many configuration channels are registered under {{org_id}}.": "Trop de canaux de configuration sont enregistrés sous {{org_id}}.",
   "Too many subscriptions are registered under {{org_id}}.": "Trop d'abonnements sont enregistrés sous {{org_id}}.",
   "Unsupported arguments: [{{args}}]": "Unsupported arguments: [{{args}}]",
-  "Unsupported query: {api}": "Unsupported query: {api}",
+  "Unsupported query: {{api}}": "Unsupported query: {{api}}",
   "version uuid \"{{uuid}}\" not found and no references found": "identificateur unique universel de version \"{{uuid}}\" introuvable et aucune référence trouvée",
   "version uuid \"{{version_uuid}}\" not found": "identificateur unique universel de version \"{{version_uuid}}\" introuvable",
   "Version uuid \"{{version_uuid}}\" not found.": "Identificateur unique universel de version \"{{version_uuid}}\" introuvable.",

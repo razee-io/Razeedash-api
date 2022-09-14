@@ -78,7 +78,7 @@
   "Too many configuration channels are registered under {{org_id}}.": "{{org_id}}에 구성 채널이 너무 많이 등록되었습니다.",
   "Too many subscriptions are registered under {{org_id}}.": "{{org_id}}에 구독이 너무 많이 등록되었습니다.",
   "Unsupported arguments: [{{args}}]": "Unsupported arguments: [{{args}}]",
-  "Unsupported query: {api}": "Unsupported query: {api}",
+  "Unsupported query: {{api}}": "Unsupported query: {{api}}",
   "version uuid \"{{uuid}}\" not found and no references found": "버전 uuid \"{{uuid}}\"을(를) 찾을 수 없고 참조도 없음",
   "version uuid \"{{version_uuid}}\" not found": "버전 uuid \"{{version_uuid}}\"을(를) 찾을 수 없음",
   "Version uuid \"{{version_uuid}}\" not found.": "버전 uuid \"{{version_uuid}}\"을(를) 찾을 수 없습니다.",
