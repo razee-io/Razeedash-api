@@ -47,11 +47,16 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
       };
       if(versionRefs.length > 0) {
         const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: versionRefs[0].uuid } );
-        // Override channel parameters with version parameters, if they exist
+        // Combine channel and version remote params
         if( version && version.content.remote.parameters ) {
           version.content.remote.parameters.forEach( vp => {
-            const sp = sub.remote.parameters.find( p => p.key == vp.key ) || vp;
-            sp.value = vp.value;
+            const sp = sub.remote.parameters.find( p => p.key == vp.key );
+            if( sp ) {
+              sp.value = vp.value;  // Override the channel param with the value from the version param
+            }
+            else {
+              sub.remote.parameters.push( vp ); // Add the version param
+            }
           } );
         }
       }

@@ -45,9 +45,14 @@ const subscriptionApi = subscriptionFunc(graphqlUrl);
 let userRootData;
 let userRootToken;
 let org01;
+let org01Key;
 let channel01Uuid;
 let ver01Uuid;
 let sub01Uuid;
+
+const cluster01Uuid = UUID();
+const group01Uuid = UUID();
+const group01Name = 'testGroup';
 
 const createOrganizations = async () => {
   const org01Data = JSON.parse(
@@ -57,6 +62,7 @@ const createOrganizations = async () => {
     ),
   );
   org01 = await prepareOrganization(models, org01Data);
+  org01Key = org01.orgKeys[0];
 };
 
 const createUsers = async () => {
@@ -73,8 +79,21 @@ const createGroups = async () => {
   await models.Group.create({
     _id: UUID(),
     org_id: org01._id,
-    uuid: UUID(),
-    name: 'testgroup',
+    uuid: group01Uuid,
+    name: group01Name,
+  });
+};
+
+const createClusters = async () => {
+  await models.Cluster.create({
+    org_id: org01._id,
+    cluster_id: cluster01Uuid,
+    groups: [
+      {
+        'uuid': group01Uuid,
+        'name': group01Name
+      }
+    ],
   });
 };
 
@@ -93,6 +112,7 @@ describe('channel remote graphql test suite', () => {
 
     await createOrganizations();
     await createUsers();
+    await createClusters();
     await createGroups();
 
     userRootToken = await signInUser(models, resourceApi, userRootData);
@@ -136,14 +156,14 @@ describe('channel remote graphql test suite', () => {
     try {
       const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
         orgId: org01._id,
-        name: 'origname',
+        name: 'origchannelname',
         contentType: 'remote',
         remote: {
           remoteType: 'github',
           parameters: [
             {
-              key: 'k1',
-              value: 'v1',
+              key: 'origchannelkey1',
+              value: 'origchannelval1',
             },
           ],
         },
@@ -175,10 +195,10 @@ describe('channel remote graphql test suite', () => {
       console.log( `getRemoteChannelByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
       const retrievedChannel = result.data.data.channel;
 
-      expect(retrievedChannel.name).to.equal('origname');
+      expect(retrievedChannel.name).to.equal('origchannelname');
       expect(retrievedChannel.remote.remoteType).to.equal('github');
-      expect(retrievedChannel.remote.parameters[0].key).to.equal('k1');
-      expect(retrievedChannel.remote.parameters[0].value).to.equal('v1');
+      expect(retrievedChannel.remote.parameters[0].key).to.equal('origchannelkey1');
+      expect(retrievedChannel.remote.parameters[0].value).to.equal('origchannelval1');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -194,12 +214,12 @@ describe('channel remote graphql test suite', () => {
       const result = await channelRemoteApi.editRemoteChannel(userRootToken, {
         orgId: org01._id,
         uuid: channel01Uuid,
-        name: 'newname',
+        name: 'newchannelname',
         remote: {
           parameters: [
             {
-              key: 'newkey1',
-              value: 'newval1',
+              key: 'newchannelkey1',
+              value: 'newchannelval1',
             },
           ],
         },
@@ -227,10 +247,10 @@ describe('channel remote graphql test suite', () => {
       console.log( `getRemoteChannelByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
       const retrievedChannel = result.data.data.channel;
 
-      expect(retrievedChannel.name).to.equal('newname');
+      expect(retrievedChannel.name).to.equal('newchannelname');
       expect(retrievedChannel.remote.remoteType).to.equal('github');
-      expect(retrievedChannel.remote.parameters[0].key).to.equal('newkey1');
-      expect(retrievedChannel.remote.parameters[0].value).to.equal('newval1');
+      expect(retrievedChannel.remote.parameters[0].key).to.equal('newchannelkey1');
+      expect(retrievedChannel.remote.parameters[0].value).to.equal('newchannelval1');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -284,7 +304,7 @@ describe('channel remote graphql test suite', () => {
         channelUuid: channel01Uuid,
         versionUuid: ver01Uuid,
         name: 'remotesub1',
-        groups: ['testgroup'],
+        groups: [group01Name],
       });
       console.log( `addSubscription result: ${JSON.stringify( result.data, null, 2 )}` );
       const addSubscription = result.data.data.addSubscription;
@@ -303,6 +323,7 @@ describe('channel remote graphql test suite', () => {
       throw error;
     }
   });
+
   it('get the created remote channel version', async () => {
     try {
       const result = await channelRemoteApi.getRemoteChannelVersionByUuid(userRootToken, {
@@ -399,6 +420,29 @@ describe('channel remote graphql test suite', () => {
       const errors = result.data.errors;
 
       expect(errors[0].message).to.contain('subscriptions depend on this');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('allow retrieving remote channel version subscriptions with remote parameters', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionsByClusterId(userRootToken, {
+        clusterId: cluster01Uuid
+      }, org01Key);
+      console.log( `subscriptionsByClusterId result: ${JSON.stringify( result.data, null, 2 )}` );
+      const subscriptions = result.data.data.subscriptionsByClusterId;
+
+      const sub01 = subscriptions.find( s => s.subscriptionUuid == sub01Uuid );
+      expect(sub01).to.be.an('object');
+      expect(sub01.remote).to.be.an('object');
+      expect(sub01.remote.remoteType).to.equal('github');
+      expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
