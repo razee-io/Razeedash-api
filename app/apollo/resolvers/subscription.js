@@ -26,8 +26,8 @@ const {
   getGroupConditionsIncludingEmpty,
   NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
 } = require ('./common');
-const getSubscriptionUrls = require('../../utils/subscriptions.js').getSubscriptionUrls;
-const getServiceSubscriptionUrls = require('../../utils/serviceSubscriptions.js').getServiceSubscriptionUrls;
+const getSubscriptionDetails = require('../../utils/subscriptions.js').getSubscriptionDetails;
+const getServiceSubscriptionDetails = require('../../utils/serviceSubscriptions.js').getServiceSubscriptionDetails;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
@@ -113,13 +113,13 @@ const subscriptionResolvers = {
           }
         });
         if( foundSubscriptions && foundSubscriptions.length > 0 ) {
-          const subscriptionUrls = await getSubscriptionUrls(org_id, foundSubscriptions, cluster);
-          subs.push( ...subscriptionUrls );
+          const subscriptionDetails = await getSubscriptionDetails(org_id, foundSubscriptions, cluster);
+          subs.push( ...subscriptionDetails );
         }
 
         // Add in any service subscriptions
-        const serviceUrls = await getServiceSubscriptionUrls(cluster);
-        subs.push( ...serviceUrls );
+        const serviceSubDetails = await getServiceSubscriptionDetails(cluster);
+        subs.push( ...serviceSubDetails );
       }
       catch( error ) {
         logger.error(error, `There was an error resolving ${queryName}`);

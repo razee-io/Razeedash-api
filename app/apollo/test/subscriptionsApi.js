@@ -29,6 +29,7 @@ const subscriptionsFunc = grahqlUrl => {
               subscriptionUuid
               subscriptionVersion
               url
+              remote { remoteType, parameters { key, value } }
           }
         }
     `,
