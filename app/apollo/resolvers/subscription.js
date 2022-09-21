@@ -39,24 +39,7 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const { validateString } = require('../utils/directives');
 
-async function validateGroups(org_id, groups, context) {
-  const { req_id, me, models, logger } = context;
-  // validate cluster groups exists in the groups db
-  let groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
-  if (groupCount < groups.length) {
-    if (process.env.LABEL_VALIDATION_REQUIRED) {
-      throw new RazeeValidationError(context.req.t('Could not find all the cluster groups {{groups}} in the groups database, please create them first.', {'groups':groups}), context);
-    } else {
-      // in migration period, we automatically populate groups into label db
-      logger.info({req_id, user: whoIs(me), org_id}, `could not find all the cluster groups ${groups}, migrate them into label database.`);
-      await models.Group.findOrCreateList(models, org_id, groups, context);
-      groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
-    }
-  }
-  logger.debug({req_id, user: whoIs(me), groups, org_id, groupCount}, 'validateGroups');
-  return groupCount;
-}
-
+const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils.js');
 
 
 const subscriptionResolvers = {
@@ -317,10 +300,7 @@ const subscriptionResolvers = {
 
       try{
         // validate the number of total subscriptions are under the limit
-        const total = await models.Subscription.count({org_id});
-        if (total >= SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
-          throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', {'org_id':org_id}), context);
-        }
+        await validateSubscriptionLimit( org_id, 1, context );
 
         // loads the channel
         const channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
@@ -328,7 +308,7 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
-        // validate groups are all exists in label dbs
+        // validate groups all exist
         await validateGroups(org_id, groups, context);
 
         // loads the version
@@ -403,7 +383,7 @@ const subscriptionResolvers = {
           throw  new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
-        // validate groups are all exists in label dbs
+        // validate groups all exist
         await validateGroups(orgId, groups, context);
 
         // loads the version

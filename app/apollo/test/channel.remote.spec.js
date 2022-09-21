@@ -21,6 +21,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
+const channelFunc = require('./channelApi');
 const channelRemoteFunc = require('./channelRemoteApi');
 const subscriptionFunc = require('./subscriptionsApi');
 
@@ -39,6 +40,7 @@ let myApollo;
 const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 const resourceApi = resourceFunc(graphqlUrl);
+const channelApi = channelFunc(graphqlUrl);
 const channelRemoteApi = channelRemoteFunc(graphqlUrl);
 const subscriptionApi = subscriptionFunc(graphqlUrl);
 
@@ -286,7 +288,7 @@ describe('channel remote graphql test suite', () => {
 
       // Save uuid for later use in tests
       ver01Uuid = addChannelVersion.versionUuid;
-      console.log( `version created: ${sub01Uuid}` );
+      console.log( `version created: ${ver01Uuid}` );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -464,6 +466,186 @@ describe('channel remote graphql test suite', () => {
       const removeChannelVersion = result.data.data.removeChannelVersion;
 
       expect(removeChannelVersion.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add a version and subscription under the remote channel', async () => {
+    try {
+      const result = await channelRemoteApi.addRemoteChannelVersion(userRootToken, {
+        orgId: org01._id,
+        channelUuid: channel01Uuid,
+        name: 'vws-name',
+        description: 'version with a subscription created at the same time (vws means version with subscription)',
+        type: 'yaml',
+        remote: {
+          parameters: [
+            {
+              key: 'orig-vws-key1',
+              value: 'orig-vws-val1',
+            },
+          ],
+        },
+        subscriptions: [{
+          name: 'vws-subscription',
+          versionName: 'vws-name',
+          groups: [group01Name],
+        }],
+      });
+      console.log( `addRemoteChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannelVersion = result.data.data.addChannelVersion;
+
+      expect(addChannelVersion.success).to.equal(true);
+      expect(addChannelVersion.versionUuid).to.be.an('string');
+
+      // Save uuid for later use in tests
+      ver01Uuid = addChannelVersion.versionUuid;
+      console.log( `version created: ${ver01Uuid}` );
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('verify subscriptions created with the version', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionsByClusterId(userRootToken, {
+        clusterId: cluster01Uuid
+      }, org01Key);
+      console.log( `subscriptionsByClusterId result: ${JSON.stringify( result.data, null, 2 )}` );
+      const subscriptions = result.data.data.subscriptionsByClusterId;
+
+      const sub01 = subscriptions.find( s => s.subscriptionName == 'vws-subscription' );
+      expect(sub01).to.be.an('object');
+      expect(sub01.remote).to.be.an('object');
+      expect(sub01.remote.remoteType).to.equal('github');
+      expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('allow deleting the remote channel version and the subscriptions created at the same time', async () => {
+    try {
+      const result = await channelRemoteApi.removeRemoteChannelVersionByUuid(userRootToken, {
+        orgId: org01._id,
+        uuid: ver01Uuid,
+        deleteSubscriptions: true,
+      });
+      console.log( `removeRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const removeChannelVersion = result.data.data.removeChannelVersion;
+
+      expect(removeChannelVersion.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('allow deleting the remote channel with no versions/subscriptions', async () => {
+    try {
+      const result = await channelApi.removeChannel(userRootToken, {
+        orgId: org01._id,
+        uuid: channel01Uuid,
+      });
+      console.log( `removeRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
+      const removeChannel = result.data.data.removeChannel;
+
+      expect(removeChannel.success).to.equal(true);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('add a remote channel with version and subscription', async () => {
+    try {
+      const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
+        orgId: org01._id,
+        name: 'cwvs-name',
+        contentType: 'remote',
+        remote: {
+          remoteType: 'github',
+          parameters: [
+            {
+              key: 'orig-cwvs-channel-key1',
+              value: 'orig-cwvs-channel-val1',
+            },
+          ],
+        },
+        versions: [{
+          name: 'cwvs-version',
+          description: 'version created at same time as channel (cwvs means channel with version and subscription)',
+          type: 'yaml',
+          remote: {
+            parameters: [
+              {
+                key: 'orig-cwvs-ver-key1',
+                value: 'orig-cwvs-ver-val1',
+              },
+            ],
+          }
+        }],
+        subscriptions: [{
+          name: 'cwvs-subscription',
+          versionName: 'cwvs-version',
+          groups: [group01Name],
+        }],
+      });
+      console.log( `addRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannel = result.data.data.addChannel;
+
+      expect(addChannel.uuid).to.be.an('string');
+
+      // Save uuid for later use in tests
+      channel01Uuid = addChannel.uuid;
+      console.log( `channel created: ${channel01Uuid}` );
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('verify subscriptions created with the channel', async () => {
+    try {
+      const result = await subscriptionApi.subscriptionsByClusterId(userRootToken, {
+        clusterId: cluster01Uuid
+      }, org01Key);
+      console.log( `subscriptionsByClusterId result: ${JSON.stringify( result.data, null, 2 )}` );
+      const subscriptions = result.data.data.subscriptionsByClusterId;
+
+      const sub01 = subscriptions.find( s => s.subscriptionName == 'cwvs-subscription' );
+      expect(sub01).to.be.an('object');
+      expect(sub01.remote).to.be.an('object');
+      expect(sub01.remote.remoteType).to.equal('github');
+      expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -48,22 +48,6 @@ const ChannelSchema = new mongoose.Schema({
       }
     ],
   },
-  versionDefaults: {
-    content: {
-      remote: {
-        parameters: [
-          {
-            key: {
-              type: String,
-            },
-            value: {
-              type: String,
-            },
-          }
-        ],
-      },
-    },
-  },
   data_location: {
     type: String,
   },

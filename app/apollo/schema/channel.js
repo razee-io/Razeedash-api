@@ -34,6 +34,20 @@ const channelSchema = gql`
   input VersionRemoteInput {
     parameters: [ParameterInput]
   }
+  input VersionInput {
+    name: String!
+    description: String
+    type: String!
+    content: String
+    file: Upload
+    remote: VersionRemoteInput
+  }
+  input SubscriptionInput {
+    name: String!
+    versionName: String!
+    groups: [String!]
+    custom: JSON
+  }
   type ParameterTuple {
     key: String!
     value: String!
@@ -52,9 +66,6 @@ const channelSchema = gql`
   type VersionRemoteSource {
     parameters: [ParameterTuple]
   }
-  type ChannelVersionDefaults {
-    remote: VersionRemoteSource
-  }
   type Channel {
     uuid: String!
     orgId: String!
@@ -64,7 +75,6 @@ const channelSchema = gql`
     data_location: String
     created: Date!
     updated: Date!
-    versionDefaults: ChannelVersionDefaults
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
@@ -149,7 +159,7 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON, versions: [VersionInput!], subscriptions: [SubscriptionInput!]): AddChannelReply!
 
      """
      Edits a channel
@@ -160,7 +170,7 @@ const channelSchema = gql`
      Adds a version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, description: String @sv, type: String! @sv, content: String @sv, file: Upload, remote: VersionRemoteInput): AddChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, description: String @sv, type: String! @sv, content: String @sv, file: Upload, remote: VersionRemoteInput, subscriptions: [SubscriptionInput!]): AddChannelVersionReply!
 
      """
      Edits a version

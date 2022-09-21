@@ -16,8 +16,9 @@
 
 const storageFactory = require('../../storage/storageFactory');
 const { getOrgKeyByUuid, bestOrgKey } = require('../../utils/orgs');
-const { whoIs } = require ('../resolvers/common');
+const { whoIs, RazeeValidationError } = require ('../resolvers/common');
 const conf = require('../../conf.js').conf;
+const { CHANNEL_VERSION_LIMITS } = require('../models/const');
 
 const getDecryptedContent = async ( context, org, version ) => {
   const { me, req_id, logger } = context;
@@ -286,8 +287,18 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   }
 };
 
+// validate the number of total versions are under the limit
+const validateVersionLimit = async ( org_id, channel_uuid, newCount, context ) => {
+  const { models } = context;
+  const total = await models.DeployableVersion.count( { org_id, channel_id: channel_uuid } );
+  if( total+newCount > CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
+    throw new RazeeValidationError( context.req.t( 'Too many configuration channel versions are registered under {{channel_uuid}}.', { 'channel_uuid': channel_uuid } ), context );
+  }
+};
+
 module.exports = {
   getDecryptedContent,
   encryptAndStore,
   updateAllVersionEncryption,
+  validateVersionLimit,
 };
