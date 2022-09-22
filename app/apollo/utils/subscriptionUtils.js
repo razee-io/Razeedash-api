@@ -35,7 +35,7 @@ const validateGroups = async ( org_id, groups, context ) => {
 
 // validate the number of total subscriptions are under the limit
 const validateSubscriptionLimit = async ( org_id, newCount, context ) => {
-  const { req_id, me, models, logger } = context;
+  const { models } = context;
   const total = await models.Subscription.count({org_id});
   if( total+newCount > SUBSCRIPTION_LIMITS.MAX_TOTAL ) {
     throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', {'org_id':org_id}), context);

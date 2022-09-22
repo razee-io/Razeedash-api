@@ -425,7 +425,7 @@ const channelResolvers = {
           if( !contentType || contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
             try {
               if(v.file){
-                var tempFileStream = (await file).createReadStream();
+                const tempFileStream = (await v.file).createReadStream();
                 v.content = await streamToString(tempFileStream);
               }
               let yamlSize = Buffer.byteLength(v.content);
@@ -741,7 +741,7 @@ const channelResolvers = {
       if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
         try {
           if(file){
-            var tempFileStream = (await file).createReadStream();
+            const tempFileStream = (await file).createReadStream();
             content = await streamToString(tempFileStream);
           }
           let yamlSize = Buffer.byteLength(content);
@@ -825,7 +825,7 @@ const channelResolvers = {
           subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
         }
         catch( e ) {
-          logger.error(err, `${queryName} failed to create subscription '${subscriptionObj.name}' when serving ${req_id}.`);
+          logger.error(e, `${queryName} failed to create subscription '${subscription.name}' when serving ${req_id}.`);
           // Cannot fail here, the Version has already been created.  Continue.
         }
       } ) );

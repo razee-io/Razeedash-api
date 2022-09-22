@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 
 const { withFilter } = require('graphql-subscriptions');
 
-const { ACTIONS, TYPES, SUBSCRIPTION_LIMITS } = require('../models/const');
+const { ACTIONS, TYPES } = require('../models/const');
 const {
   whoIs, validAuth, validClusterAuth,
   getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
