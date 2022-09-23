@@ -253,7 +253,7 @@ const channelResolvers = {
 
           // Validate remote
           if( !remote ) {
-            throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
+            throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.', {} ), context );
           }
 
           // Validate remote.remoteType
@@ -263,7 +263,7 @@ const channelResolvers = {
 
           // Validate remote.parameters (length)
           if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-            throw new RazeeValidationError( context.req.t( 'The remote parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+            throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
           }
         }
 
@@ -281,91 +281,64 @@ const channelResolvers = {
 
         // If adding Versions at same time as the Channel...
         if( versions.length > 0 ) {
-          // Prevent duplicate names
-          const versionsWithDuplicateNames = versions.filter( (version, idx) => {
-            const foundIdx = versions.findIndex( v => v.name === version.name );
-            return idx !== foundIdx ;
-          });
-          if(versionsWithDuplicateNames.length > 0) {
-            throw new RazeeValidationError(context.req.t('The version name {{name}} cannot be used more than once.', {'name':versionsWithDuplicateNames[0].name}), context);
-          }
-
           // validate the number of total versions are under the limit
           await validateVersionLimit( org_id, UUID(), versions.length, context ); // just use a new uuid here -- it won't exist.
 
-          //PLC need more validation here
-          /*
-          validateString( 'org_id', org_id );
-          validateString( 'channel_uuid', channel_uuid );
-          validateString( 'name', name );
-          validateString( 'type', type );
-          if( content ) validateString( 'content', content );
+          for( const v of versions ) {
+            // Vasic validations
+            validateString( 'name', v.name );
+            validateString( 'type', v.type );
+            if( v.content ) validateString( 'content', v.content );
 
-          const queryName = 'addChannelVersion';
-          logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
+            if( !name ) throw new RazeeValidationError(context.req.t('Versions must specify a "name".'), context);
 
-          // Experimental
-          if( !process.env.EXPERIMENTAL_GITOPS ) {
-            // Block experimental features
-            if( remote || subscriptions.length > 0 ) {
-              throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote subscriptions' } ), context );
-            }
-          }
-
-          // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
-
-          const org = await models.Organization.findOne({ _id: org_id });
-          if (!org) {
-            throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
-          }
-
-          if(!name){
-            throw new RazeeValidationError(context.req.t('A "name" must be specified'), context);
-          }
-          if(!channel_uuid){
-            throw new RazeeValidationError(context.req.t('A "channel_uuid" must be specified'), context);
-          }
-
-          const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
-          if(!channel){
-            throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
-          }
-
-          // Validate UPLOADED-specific values
-          if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-            // Normalize
-            remote = null;
-
-            if(!type || type !== 'yaml' && type !== 'application/yaml'){
-              throw new RazeeValidationError(context.req.t('A "type" of application/yaml must be specified'), context);
-            }
-            if(!file && !content){
-              throw new RazeeValidationError(context.req.t('A "file" or "content" must be specified'), context);
-            }
-          }
-          // Validate REMOTE-specific values
-          else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-            // Normalize
-            content = null;
-            file = null;
-
-            // Validate remote
-            if( !remote ) {
-              throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
+            // Prevent duplicate names
+            const versionsWithDuplicateNames = versions.filter( (version) => {
+              return version.name === v.name;
+            });
+            if(versionsWithDuplicateNames.length > 0) {
+              throw new RazeeValidationError(context.req.t('The version name "{{name}}" cannot be used more than once.', {'name':v.name}), context);
             }
 
-            remote = { parameters: remote.parameters };
+            // Validate UPLOADED-specific values
+            if( !contentType || contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+              // Normalize
+              v.remote = null;
 
-            // Validate remote.parameters (length)
-            if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-              throw new RazeeValidationError( context.req.t( 'The remote parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
-            }
+              if(!v.type || v.type !== 'yaml' && v.type !== 'application/yaml'){
+                throw new RazeeValidationError(context.req.t('Versions must specify a "type" of "application/yaml".'), context);
+              }
+              if(!v.file && !v.content){
+                throw new RazeeValidationError(context.req.t('Uploaded versions must specify a "file" or "content".'), context);
+              }
+            } // end UPLOADED validation
+            // Validate REMOTE-specific values
+            else if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
+              // Normalize
+              v.content = null;
+              v.file = null;
+
+              // Validate remote
+              if( !v.remote ) {
+                throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.' ), context );
+              }
+
+              // Normalize (ensure no extra attributes)
+              v.remote = { parameters: v.remote.parameters };
+
+              // Validate remote.parameters (length)
+              if( v.remote.parameters && JSON.stringify(v.remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
+                throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+              }
+            } // end REMOTE validation
           }
-          */
-        }
+        } // end versions validation
 
-        // If adding Subscription(s) at same time as the Version(s)...
+        // If adding Subscription(s) at same time as the Channel and Version(s)...
         if( subscriptions.length > 0 ) {
+          // validate the number of total subscriptions are under the limit
+          await validateSubscriptionLimit( org_id, subscriptions.length, context );
+
           for( const s of subscriptions ) {
             // Basic validations
             validateString( 'name', s.name );
@@ -377,12 +350,9 @@ const channelResolvers = {
             // validate the subscription references the version(s) being created
             const badVersionRef = versions.find( v => v.name === s.versionName ).length == 0;
             if( badVersionRef ) {
-              throw new RazeeValidationError(context.req.t('Added subscription {{name}} must reference a version being created.', { 'name': s.name } ), context);
+              throw new RazeeValidationError(context.req.t('Added subscription "{{name}}" must reference a valid version.', {'name':s.name}), context);
             }
           }
-
-          // validate the number of total subscriptions are under the limit
-          await validateSubscriptionLimit( org_id, subscriptions.length, context );
         }
 
         const uuid = UUID();
@@ -466,7 +436,6 @@ const channelResolvers = {
             // Keep version uuid for later use when creating subscriptions
             v.uuid = versionObj.uuid;
 
-
             // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
             try {
               const channelVersionObj = {
@@ -489,7 +458,6 @@ const channelResolvers = {
             // Cannot fail here, the Channel has already been created.  Continue.
           }
         } ) );
-
 
         // Attempt to create subscription(s)
         await Promise.all( subscriptions.map( async (s) => {
@@ -567,7 +535,7 @@ const channelResolvers = {
         if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
           // Validate remote
           if( !remote ) {
-            throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
+            throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.', {} ), context );
           }
 
           // Validate remote.remoteType
@@ -578,7 +546,7 @@ const channelResolvers = {
 
           // Validate remote.parameters (length)
           if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-            throw new RazeeValidationError( context.req.t( 'The remote parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+            throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
           }
         }
 
@@ -664,10 +632,10 @@ const channelResolvers = {
         remote = null;
 
         if(!type || type !== 'yaml' && type !== 'application/yaml'){
-          throw new RazeeValidationError(context.req.t('A "type" of application/yaml must be specified'), context);
+          throw new RazeeValidationError(context.req.t('Versions must specify a "type" of "application/yaml".'), context);
         }
         if(!file && !content){
-          throw new RazeeValidationError(context.req.t('A "file" or "content" must be specified'), context);
+          throw new RazeeValidationError(context.req.t('Uploaded versions must specify a "file" or "content".'), context);
         }
       }
       // Validate REMOTE-specific values
@@ -678,14 +646,14 @@ const channelResolvers = {
 
         // Validate remote
         if( !remote ) {
-          throw new RazeeValidationError( context.req.t( 'The remote source details must be provided.', {} ), context );
+          throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.', {} ), context );
         }
 
         remote = { parameters: remote.parameters };
 
         // Validate remote.parameters (length)
         if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-          throw new RazeeValidationError( context.req.t( 'The remote parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+          throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
         }
       }
 
@@ -713,13 +681,13 @@ const channelResolvers = {
           validateString( 'name', s.name );
           s.groups.forEach( value => { validateString( 'groups', value ); } );
 
-          // validate the subscription references the version being created
-          if( s.versionName !== name ) {
-            throw new RazeeValidationError(context.req.t('Added subscriptions must reference the version name {{name}} being created.', {'name':name}), context);
-          }
-
           // validate groups all exist
           await validateGroups(org_id, s.groups, context);
+
+          // validate the subscription references the version being created
+          if( s.versionName !== name ) {
+            throw new RazeeValidationError(context.req.t('Added subscription "{{name}}" must reference a valid version.', {'name':s.versionName}), context);
+          }
         }
       }
 
