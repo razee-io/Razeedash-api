@@ -25,7 +25,7 @@ const storageFactory = require('./../../storage/storageFactory');
 const yaml = require('js-yaml');
 const { bestOrgKey } = require('../../utils/orgs');
 const { getDecryptedContent, encryptAndStore, validateNewVersions } = require('../utils/versionUtils');
-const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils');
+const { validateNewSubscriptions } = require('../utils/subscriptionUtils');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
@@ -300,23 +300,7 @@ const channelResolvers = {
 
         // If adding Subscription(s) at same time as the Channel and Version(s)...
         if( subscriptions.length > 0 ) {
-          // validate the number of total subscriptions are under the limit
-          await validateSubscriptionLimit( org_id, subscriptions.length, context );
-
-          for( const s of subscriptions ) {
-            // Basic validations
-            validateString( 'name', s.name );
-            s.groups.forEach( value => { validateString( 'groups', value ); } );
-
-            // validate groups all exist
-            await validateGroups(org_id, s.groups, context);
-
-            // validate the subscription references the version(s) being created
-            const badVersionRef = versions.find( v => v.name === s.versionName ).length == 0;
-            if( badVersionRef ) {
-              throw new RazeeValidationError(context.req.t('Added subscription "{{name}}" must reference a valid version.', {'name':s.name}), context);
-            }
-          }
+          await validateNewSubscriptions( org_id, { versions: versions, newSubscriptions: subscriptions }, context );
         }
 
         // Save Channel
@@ -588,24 +572,8 @@ const channelResolvers = {
       // Validate new version
       await validateNewVersions( org_id, { channel: channel, newVersions: [newVersionObj] }, context );
 
-      // If adding subscriptions at same time as the Version...
-      if( subscriptions.length > 0 ) {
-        // validate the number of total subscriptions are under the limit
-        await validateSubscriptionLimit( org_id, subscriptions.length, context );
-
-        for( const s of subscriptions ) {
-          validateString( 'name', s.name );
-          s.groups.forEach( value => { validateString( 'groups', value ); } );
-
-          // validate groups all exist
-          await validateGroups(org_id, s.groups, context);
-
-          // validate the subscription references the version being created
-          if( s.versionName !== name ) {
-            throw new RazeeValidationError(context.req.t('Added subscription "{{name}}" must reference a valid version.', {'name':s.versionName}), context);
-          }
-        }
-      }
+      // Validate new subscription(s)
+      await validateNewSubscriptions( org_id, { versions: [newVersionObj], newSubscriptions: subscriptions }, context );
 
       // If content is UPLOADED, get the content, encrypt and store, and add the results to the Version object
       if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {

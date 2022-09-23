@@ -16,6 +16,7 @@
 
 const { whoIs, RazeeValidationError } = require ('../resolvers/common');
 const { SUBSCRIPTION_LIMITS } = require('../models/const');
+const { validateString } = require('./directives');
 
 const validateGroups = async ( org_id, groups, context ) => {
   const { req_id, me, models, logger } = context;
@@ -42,7 +43,32 @@ const validateSubscriptionLimit = async ( org_id, newCount, context ) => {
   }
 };
 
+const validateNewSubscriptions = async ( org_id, { versions, newSubscriptions }, context ) => {
+  // If no new subscriptions to validate, just return
+  if( !newSubscriptions || newSubscriptions.length == 0 ) return;
+
+  // validate the number of total subscriptions are under the limit
+  await validateSubscriptionLimit( org_id, newSubscriptions.length, context );
+
+  for( const s of newSubscriptions ) {
+    // Basic validations
+    validateString( 'name', s.name );
+    s.groups.forEach( value => { validateString( 'groups', value ); } );
+
+    // validate groups all exist
+    await validateGroups(org_id, s.groups, context);
+
+    // validate the subscription references the version(s)
+    const badVersionRef = versions.find( v => v.name === s.versionName ).length == 0;
+    if( badVersionRef ) {
+      throw new RazeeValidationError(context.req.t('Added subscription "{{name}}" must reference a valid version.', {'name':s.name}), context);
+    }
+  }
+};
+
+
 module.exports = {
   validateGroups,
   validateSubscriptionLimit,
+  validateNewSubscriptions,
 };
