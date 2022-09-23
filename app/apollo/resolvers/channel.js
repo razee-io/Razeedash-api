@@ -24,7 +24,7 @@ const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = req
 const storageFactory = require('./../../storage/storageFactory');
 const yaml = require('js-yaml');
 const { bestOrgKey } = require('../../utils/orgs');
-const { getDecryptedContent, encryptAndStore, validateVersionLimit } = require('../utils/versionUtils');
+const { getDecryptedContent, encryptAndStore, validateNewVersions } = require('../utils/versionUtils');
 const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils');
 
 const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
@@ -213,7 +213,23 @@ const channelResolvers = {
       logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
-      const org = await models.Organization.findOne({ _id: org_id });
+      // Create the channel object to be saved.
+      const uuid = UUID();
+      const kubeOwnerId = await models.User.getKubeOwnerId(context);
+      const newChannelObj = {
+        _id: UUID(),
+        uuid,
+        org_id,
+        contentType,
+        name,
+        versions: [],
+        tags,
+        ownerId: me._id,
+        kubeOwnerId,
+        custom,
+      };
+      if( data_location ) newChannelObj.data_location = data_location;
+      if( remote ) newChannelObj.remote = remote;
 
       validateString( 'org_id', org_id );
       validateString( 'name', name );
@@ -236,8 +252,8 @@ const channelResolvers = {
         // Validate UPLOADED-specific values
         if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           // Normalize
-          data_location = data_location ? data_location.toLowerCase() : conf.storage.defaultLocation;
-          remote = null;
+          newChannelObj.data_location = newChannelObj.data_location ? newChannelObj.data_location.toLowerCase() : conf.storage.defaultLocation;
+          delete newChannelObj.remote;
 
           // if there is a list of valid data locations, validate the data_location (if provided) is in the list
           if( Array.from(conf.storage.s3ConnectionMap.keys()).length > 0 ) {
@@ -249,7 +265,7 @@ const channelResolvers = {
         // Validate REMOTE-specific values
         else if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
           // Normalize
-          data_location = null;
+          delete newChannelObj.data_location;
 
           // Validate remote
           if( !remote ) {
@@ -279,60 +295,8 @@ const channelResolvers = {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
 
-        // If adding Versions at same time as the Channel...
-        if( versions.length > 0 ) {
-          // validate the number of total versions are under the limit
-          await validateVersionLimit( org_id, UUID(), versions.length, context ); // just use a new uuid here -- it won't exist.
-
-          for( const v of versions ) {
-            // Vasic validations
-            validateString( 'name', v.name );
-            validateString( 'type', v.type );
-            if( v.content ) validateString( 'content', v.content );
-
-            if( !name ) throw new RazeeValidationError(context.req.t('Versions must specify a "name".'), context);
-
-            // Prevent duplicate names
-            const versionsWithDuplicateNames = versions.filter( (version) => {
-              return version.name === v.name;
-            });
-            if(versionsWithDuplicateNames.length > 0) {
-              throw new RazeeValidationError(context.req.t('The version name "{{name}}" cannot be used more than once.', {'name':v.name}), context);
-            }
-
-            // Validate UPLOADED-specific values
-            if( !contentType || contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-              // Normalize
-              v.remote = null;
-
-              if(!v.type || v.type !== 'yaml' && v.type !== 'application/yaml'){
-                throw new RazeeValidationError(context.req.t('Versions must specify a "type" of "application/yaml".'), context);
-              }
-              if(!v.file && !v.content){
-                throw new RazeeValidationError(context.req.t('Uploaded versions must specify a "file" or "content".'), context);
-              }
-            } // end UPLOADED validation
-            // Validate REMOTE-specific values
-            else if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-              // Normalize
-              v.content = null;
-              v.file = null;
-
-              // Validate remote
-              if( !v.remote ) {
-                throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.' ), context );
-              }
-
-              // Normalize (ensure no extra attributes)
-              v.remote = { parameters: v.remote.parameters };
-
-              // Validate remote.parameters (length)
-              if( v.remote.parameters && JSON.stringify(v.remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-                throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
-              }
-            } // end REMOTE validation
-          }
-        } // end versions validation
+        // Validate new versions, if any
+        await validateNewVersions( org_id, { channel: newChannelObj, newVersions: versions }, context );
 
         // If adding Subscription(s) at same time as the Channel and Version(s)...
         if( subscriptions.length > 0 ) {
@@ -355,26 +319,8 @@ const channelResolvers = {
           }
         }
 
-        const uuid = UUID();
-        const kubeOwnerId = await models.User.getKubeOwnerId(context);
-
-        const newChannelObj = {
-          _id: UUID(),
-          uuid,
-          org_id,
-          contentType,
-          name,
-          versions: [],
-          tags,
-          ownerId: me._id,
-          kubeOwnerId,
-          custom,
-        };
-        if( data_location ) newChannelObj.data_location = data_location;
-        if( remote ) newChannelObj.remote = remote;
-
         // Save Channel
-        await models.Channel.create(newChannelObj);
+        await models.Channel.create( newChannelObj );
 
         // Attempt to create version(s)
         await Promise.all( versions.map( async (v) => {
@@ -411,6 +357,7 @@ const channelResolvers = {
               throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
             }
 
+            const org = await models.Organization.findOne({ _id: org_id });
             const orgKey = bestOrgKey( org );
             const { data } = await encryptAndStore( context, org, newChannelObj, versionObj, orgKey, v.content);
 
@@ -590,14 +537,45 @@ const channelResolvers = {
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description, remote, subscriptions=[] }, context)=>{
       const { models, me, req_id, logger } = context;
 
+      // validate org_id, channel_uuid
       validateString( 'org_id', org_id );
       validateString( 'channel_uuid', channel_uuid );
-      validateString( 'name', name );
-      validateString( 'type', type );
-      if( content ) validateString( 'content', content );
 
       const queryName = 'addChannelVersion';
       logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
+
+      // get org
+      const org = await models.Organization.findOne({ _id: org_id });
+      if (!org) {
+        throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+      }
+
+      // get channel
+      const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+      if(!channel){
+        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
+      }
+
+      // create newVersionObj
+      const kubeOwnerId = await models.User.getKubeOwnerId(context);
+      const newVersionObj = {
+        _id: UUID(),
+        org_id,
+        uuid: UUID(),
+        channel_id: channel.uuid,
+        channelName: channel.name,
+        name,
+        description,
+        type,
+        ownerId: me._id,
+        kubeOwnerId,
+      };
+      if( remote ) newVersionObj.remote = remote;
+      if( content ) newVersionObj.content = content;
+      if( file ) newVersionObj.file = file;
+
+      // validate authorization on the channel
+      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
       // Experimental
       if( !process.env.EXPERIMENTAL_GITOPS ) {
@@ -607,70 +585,8 @@ const channelResolvers = {
         }
       }
 
-      // slightly modified code from /app/routes/v1/channelsStream.js. changed to use mongoose and graphql
-
-      const org = await models.Organization.findOne({ _id: org_id });
-      if (!org) {
-        throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
-      }
-
-      if(!name){
-        throw new RazeeValidationError(context.req.t('A "name" must be specified'), context);
-      }
-      if(!channel_uuid){
-        throw new RazeeValidationError(context.req.t('A "channel_uuid" must be specified'), context);
-      }
-
-      const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
-      if(!channel){
-        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
-      }
-
-      // Validate UPLOADED-specific values
-      if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-        // Normalize
-        remote = null;
-
-        if(!type || type !== 'yaml' && type !== 'application/yaml'){
-          throw new RazeeValidationError(context.req.t('Versions must specify a "type" of "application/yaml".'), context);
-        }
-        if(!file && !content){
-          throw new RazeeValidationError(context.req.t('Uploaded versions must specify a "file" or "content".'), context);
-        }
-      }
-      // Validate REMOTE-specific values
-      else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-        // Normalize
-        content = null;
-        file = null;
-
-        // Validate remote
-        if( !remote ) {
-          throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.', {} ), context );
-        }
-
-        remote = { parameters: remote.parameters };
-
-        // Validate remote.parameters (length)
-        if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
-          throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
-        }
-      }
-
-      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-
-      const versions = await models.DeployableVersion.find({ org_id, channel_id: channel_uuid });
-
-      // Prevent duplicate names
-      const versionNameExists = !!versions.find((version)=>{
-        return (version.name == name);
-      });
-      if(versionNameExists) {
-        throw new RazeeValidationError(context.req.t('The version name {{name}} already exists', {'name':name}), context);
-      }
-
-      // validate the number of total versions are under the limit
-      await validateVersionLimit( org_id, channel_uuid, 1, context );
+      // Validate new version
+      await validateNewVersions( org_id, { channel: channel, newVersions: [newVersionObj] }, context );
 
       // If adding subscriptions at same time as the Version...
       if( subscriptions.length > 0 ) {
@@ -690,20 +606,6 @@ const channelResolvers = {
           }
         }
       }
-
-      const kubeOwnerId = await models.User.getKubeOwnerId(context);
-      const deployableVersionObj = {
-        _id: UUID(),
-        org_id,
-        uuid: UUID(),
-        channel_id: channel.uuid,
-        channelName: channel.name,
-        name,
-        description,
-        type,
-        ownerId: me._id,
-        kubeOwnerId,
-      };
 
       // If content is UPLOADED, get the content, encrypt and store, and add the results to the Version object
       if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
@@ -726,30 +628,32 @@ const channelResolvers = {
         }
 
         const orgKey = bestOrgKey( org );
-        const { data } = await encryptAndStore( context, org, channel, deployableVersionObj, orgKey, content);
+        const { data } = await encryptAndStore( context, org, channel, newVersionObj, orgKey, content);
 
         // Note: if failure occurs after this point, the data has already been stored by storageFactory even if the Version document doesnt get saved.
 
-        deployableVersionObj.content = data;
-        deployableVersionObj.verifiedOrgKeyUuid = orgKey.orgKeyUuid;
-        deployableVersionObj.desiredOrgKeyUuid = orgKey.orgKeyUuid;
+        newVersionObj.content = data;
+        delete newVersionObj.file;
+        newVersionObj.verifiedOrgKeyUuid = orgKey.orgKeyUuid;
+        newVersionObj.desiredOrgKeyUuid = orgKey.orgKeyUuid;
       }
       else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-        deployableVersionObj.content = {
+        newVersionObj.content = {
           metadata: {
             type: 'remote',
           },
           remote: remote,
         };
+        delete newVersionObj.remote;
       }
 
       // Save Version
-      const dObj = await models.DeployableVersion.create(deployableVersionObj);
+      const dObj = await models.DeployableVersion.create(newVersionObj);
 
       // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
       try {
         const versionObj = {
-          uuid: deployableVersionObj.uuid,
+          uuid: newVersionObj.uuid,
           name, description,
           created: dObj.created
         };
@@ -758,7 +662,7 @@ const channelResolvers = {
           { $push: { versions: versionObj } }
         );
       } catch(err) {
-        logger.error(err, `${queryName} failed to update the channel to reference the new Version '${name}' / '${deployableVersionObj.uuid}' when serving ${req_id}.`);
+        logger.error(err, `${queryName} failed to update the channel to reference the new Version '${name}' / '${newVersionObj.uuid}' when serving ${req_id}.`);
         // Cannot fail here, the Version has already been created.  Continue.
       }
 
@@ -773,8 +677,8 @@ const channelResolvers = {
           owner: me._id,
           channelName: channel.name,
           channel_uuid: channel.uuid,
-          version: deployableVersionObj.name,
-          version_uuid: deployableVersionObj.uuid,
+          version: newVersionObj.name,
+          version_uuid: newVersionObj.uuid,
           clusterId: null,
           kubeOwnerId: kubeOwnerId,
           custom: s.custom
@@ -800,7 +704,7 @@ const channelResolvers = {
 
       return {
         success: true,
-        versionUuid: deployableVersionObj.uuid,
+        versionUuid: newVersionObj.uuid,
       };
     },
     editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
