@@ -21,8 +21,8 @@ const channelRemoteFunc = grahqlUrl => {
     grahqlUrl,
     {
       query: `
-        mutation( $orgId: String!, $name: String!, $contentType: String, $remote: ChannelRemoteInput ) {
-          addChannel(orgId: $orgId name: $name, contentType: $contentType, remote: $remote) {
+        mutation( $orgId: String!, $name: String!, $contentType: String, $remote: ChannelRemoteInput, $versions: [VersionInput!], $subscriptions: [SubscriptionInput!] ) {
+          addChannel(orgId: $orgId name: $name, contentType: $contentType, remote: $remote, versions: $versions, subscriptions: $subscriptions) {
             uuid
           }
         }
@@ -96,8 +96,8 @@ const channelRemoteFunc = grahqlUrl => {
     grahqlUrl,
     {
       query: `
-        mutation($orgId: String!, $channelUuid: String!, $name: String!, $type: String!, $description: String, $remote: VersionRemoteInput) {
-          addChannelVersion(orgId: $orgId, channelUuid: $channelUuid, name: $name, type: $type, description: $description, remote: $remote) {
+        mutation($orgId: String!, $channelUuid: String!, $name: String!, $type: String!, $description: String, $remote: VersionRemoteInput, $subscriptions: [SubscriptionInput!]) {
+          addChannelVersion(orgId: $orgId, channelUuid: $channelUuid, name: $name, type: $type, description: $description, remote: $remote, subscriptions: $subscriptions) {
             versionUuid
             success
           }
