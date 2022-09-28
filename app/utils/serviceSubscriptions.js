@@ -2,7 +2,7 @@ const { models } = require('../apollo/models');
 
 const _ = require('lodash');
 
-const getServiceSubscriptionUrls = async(cluster) => {
+const getServiceSubscriptionDetails = async(cluster) => {
   const serviceSubscriptions = await models.ServiceSubscription.find({ clusterId: cluster.cluster_id }).lean();
   let urls = _.map(serviceSubscriptions, (subscription)=>{
     let url = `api/v1/channels/${subscription.channelName}/${subscription.version_uuid}`;
@@ -20,5 +20,5 @@ const getServiceSubscriptionUrls = async(cluster) => {
 };
 
 module.exports = {
-  getServiceSubscriptionUrls
+  getServiceSubscriptionDetails
 };

@@ -81,12 +81,21 @@ const subscriptionSchema = gql`
   type AddChannelSubscriptionReply {
     uuid: String!
   }
+  type ParameterTuple {
+    key: String!
+    value: String!
+  }
+  type RemoteSource {
+    remoteType: String!
+    parameters: [ParameterTuple]
+  }
   type UpdatedSubscription {
     subscriptionName: String!,
     subscriptionChannel: String!,
     subscriptionVersion: String!,
     subscriptionUuid: String!,
-    url: String!
+    url: String,
+    remote: RemoteSource,
     kubeOwnerName: String
   }
   type SubscriptionUpdated {

@@ -2,10 +2,11 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-RAZEE_ORG_KEY=${1:-${RAZEE_ORG_KEY:-pOrgKey}}
+SYSTEMSUBSCRIPTION=${$1:-primaryOrgKey}
+RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
 RAZEE_HOSTPORT=${RAZEE_HOSTPORT:-localhost:3333}
-RAZEE_API_URL="https://${RAZEE_HOSTPORT}/api/v1/channels/${RAZEE_CONFIG_NAME:-pConfigName}/${RAZEE_VER_UUID:-dummyversionuuid}"
+RAZEE_API_URL="https://${RAZEE_HOSTPORT}/api/v1/systemSubscriptions/${SYSTEMSUBSCRIPTION}"
 
 echo "GET to ${RAZEE_API_URL}"
 curl \

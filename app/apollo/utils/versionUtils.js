@@ -16,8 +16,10 @@
 
 const storageFactory = require('../../storage/storageFactory');
 const { getOrgKeyByUuid, bestOrgKey } = require('../../utils/orgs');
-const { whoIs } = require ('../resolvers/common');
+const { whoIs, RazeeValidationError } = require ('../resolvers/common');
 const conf = require('../../conf.js').conf;
+const { CHANNEL_VERSION_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
+const { validateString } = require('./directives');
 
 const getDecryptedContent = async ( context, org, version ) => {
   const { me, req_id, logger } = context;
@@ -286,8 +288,71 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   }
 };
 
+const validateNewVersions = async ( org_id, { channel, newVersions }, context ) => {
+  // If no new versions to validate, just return
+  if( !newVersions || newVersions.length == 0 ) return;
+
+  const { models } = context;
+  const total = await models.DeployableVersion.count( { org_id, channel_id: channel.uuid } );
+  if( total+newVersions.length > CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
+    throw new RazeeValidationError( context.req.t( 'Too many configuration channel versions are registered under {{channel_uuid}}.', { 'channel_uuid': channel.uuid } ), context );
+  }
+
+  // Get existing and new version names to use later when checking for duplicates
+  const existingVersionNames = channel.versions.map( cv => cv.name );
+  const newVersionNames = newVersions.map( nv => nv.name );
+
+  for( const v of newVersions ) {
+    validateString( 'name', v.name );
+    validateString( 'type', v.type );
+    if( v.content ) validateString( 'content', v.content );
+
+    if( !v.name ) throw new RazeeValidationError( context.req.t( 'Versions must specify a "name".' ), context);
+
+    // Prevent duplicate names
+    if( existingVersionNames.indexOf( v.name ) >= 0 || newVersionNames.filter( n => n === v.name ).length > 1 ) {
+      throw new RazeeValidationError( context.req.t( 'The version name "{{name}}" cannot be used more than once.', { 'name': v.name } ), context );
+    }
+
+    // Validate type is yaml
+    if( !v.type || v.type !== 'yaml' && v.type !== 'application/yaml' ) {
+      throw new RazeeValidationError( context.req.t( 'Versions must specify a "type" of "application/yaml".' ), context );
+    }
+
+    // Validate UPLOADED-specific values
+    if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+      // Normalize
+      delete v.remote;
+
+      if(!v.file && !v.content){
+        throw new RazeeValidationError( context.req.t( 'Uploaded versions must specify a "file" or "content".' ), context );
+      }
+    } // end UPLOADED validation
+    // Validate REMOTE-specific values
+    else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
+      // Normalize
+      delete v.content;
+      delete v.file;
+
+      // Validate remote
+      if( !v.remote ) {
+        throw new RazeeValidationError( context.req.t( 'Remote version source details must be provided.' ), context );
+      }
+
+      // Normalize (ensure no extra attributes)
+      v.remote = { parameters: v.remote.parameters };
+
+      // Validate remote.parameters (length)
+      if( v.remote.parameters && JSON.stringify(v.remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
+        throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+      }
+    } // end REMOTE validation
+  }
+};
+
 module.exports = {
   getDecryptedContent,
   encryptAndStore,
   updateAllVersionEncryption,
+  validateNewVersions,
 };

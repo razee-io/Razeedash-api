@@ -23,6 +23,35 @@ Note: `scalar Upload` implementation is provided by GraphQLUpload in app/apollo/
 const channelSchema = gql`
   scalar Upload
 
+  input ParameterInput {
+    key: String!
+    value: String!
+  }
+  input ChannelRemoteInput {
+    remoteType: String
+    parameters: [ParameterInput]
+  }
+  input VersionRemoteInput {
+    parameters: [ParameterInput]
+  }
+  input VersionInput {
+    name: String!
+    description: String
+    type: String!
+    content: String
+    file: Upload
+    remote: VersionRemoteInput
+  }
+  input SubscriptionInput {
+    name: String!
+    versionName: String!
+    groups: [String!]
+    custom: JSON
+  }
+  type ParameterTuple {
+    key: String!
+    value: String!
+  }
   type ChannelVersion {
     uuid: String!
     name: String!
@@ -30,12 +59,22 @@ const channelSchema = gql`
     created: Date
     location: String
   }
+  type ChannelRemoteSource {
+    remoteType: String!
+    parameters: [ParameterTuple]
+  }
+  type VersionRemoteSource {
+    parameters: [ParameterTuple]
+  }
   type Channel {
     uuid: String!
     orgId: String!
     name: String!
+    contentType: String
+    remote: ChannelRemoteSource
     data_location: String
     created: Date!
+    updated: Date!
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
@@ -56,6 +95,10 @@ const channelSchema = gql`
     versionUuid: String!
     success: Boolean!
   }
+  type EditChannelVersionReply {
+    uuid: String!
+    success: Boolean
+  }
   type RemoveChannelReply {
     uuid: String!
     success: Boolean
@@ -73,9 +116,11 @@ const channelSchema = gql`
     type: String!
     description: String
     content: String
+    remote: VersionRemoteSource
     owner: BasicUser
     kubeOwnerName: String
     created: Date!
+    updated: Date!
   }
 
   extend type Query {
@@ -114,18 +159,24 @@ const channelSchema = gql`
      """
      Adds a channel
      """
-     addChannel(orgId: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): AddChannelReply!
+     addChannel(orgId: String! @sv, name: String! @sv, contentType: String, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON, versions: [VersionInput!], subscriptions: [SubscriptionInput!]): AddChannelReply!
 
      """
      Edits a channel
      """
-     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
+     editChannel(orgId: String! @sv, uuid: String! @sv, name: String! @sv, remote: ChannelRemoteInput, data_location: String, tags: [String!], custom: JSON): EditChannelReply!
 
      """
-     Adds a yaml version to this channel
+     Adds a version to this channel
      Requires either content:String or file:Upload
      """
-     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, type: String! @sv, content: String @sv, file: Upload, description: String @sv): AddChannelVersionReply!
+     addChannelVersion(orgId: String! @sv, channelUuid: String! @sv, name: String! @sv, description: String @sv, type: String! @sv, content: String @sv, file: Upload, remote: VersionRemoteInput, subscriptions: [SubscriptionInput!]): AddChannelVersionReply!
+
+     """
+     Edits a version
+     """
+     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, description: String @sv, remote: VersionRemoteInput ): EditChannelVersionReply!
+
      """
      Removes a channel
      """
@@ -134,7 +185,7 @@ const channelSchema = gql`
      """
      Removes a channel version
      """
-     removeChannelVersion(orgId: String! @sv, uuid: String! @sv): RemoveChannelVersionReply!
+     removeChannelVersion(orgId: String! @sv, uuid: String! @sv, deleteSubscriptions: Boolean): RemoveChannelVersionReply!
   }
 `;
 
