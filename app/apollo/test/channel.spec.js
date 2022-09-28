@@ -80,6 +80,8 @@ const channel_04_custom = {
   'keyE': 'valE',
 };
 
+const channel_05_tags = ['fake_channel_tags_05', 'fake_channel_tags_06', 'fake_channel_tags_07'];
+
 const channelVersion_01_name = 'fake_channelVersion_01';
 const channelVersion_01_uuid = 'fake_cv_01_uuid';
 
@@ -197,6 +199,14 @@ const createChannels = async () => {
         location: 's3', /*location is no longer used, but may still be present in existing data such as this*/
       },
     ]
+  });
+  await models.Channel.create({
+    _id: 'fake_id_5',
+    org_id: org01._id,
+    // uuid: channel_05_uuid,
+    tags: channel_05_tags,
+    versions: [],
+    // custom: channel_05_custom
   });
 };
 
@@ -325,6 +335,31 @@ describe('channel graphql test suite', () => {
 
       expect(channelByName.uuid).to.equal(channel_01_uuid);
       expect(channelByName.custom).to.be.deep.equal(channel_01_custom);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get channel by channel tags', async () => {
+    try {
+      const {
+        data: {
+          data: { channelsByTags },
+        },
+      } = await channelApi.channelsByTags(token, {
+        orgId: org05._id,
+        tags: channel_05_tags,
+      });
+
+      // expect(channelsByTags.uuid).to.equal(channel_05_uuid);
+      // expect tags to be an array. check if array equals tags
+      expect(channelsByTags.tags).to.equal(channel_05_tags);
+      // expect(channelsByTags.custom).to.be.deep.equal(channel_05_custom);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

@@ -107,6 +107,32 @@ const channelFunc = grahqlUrl => {
       },
     );
 
+  const channelsByTags = async (token, variables) =>
+  axios.post(
+    grahqlUrl,
+    {
+      query: `
+        query($orgId: String! $tags: [String!]!) {
+          channelsByTags(orgId: $orgID tags: $tags) {
+            uuid
+            orgId
+            name
+            data_location
+            created
+            tags
+            custom
+        }
+      }
+  `,
+      variables,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
   const channelVersion = async (token, variables) =>
     axios.post(
       grahqlUrl,
@@ -272,6 +298,7 @@ const channelFunc = grahqlUrl => {
     channels,
     channel,
     channelByName,
+    channelsByTags,
     channelVersion,
     channelVersionByName,
     addChannelVersion,
