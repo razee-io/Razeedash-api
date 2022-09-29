@@ -175,7 +175,7 @@ const channelSchema = gql`
      """
      Edits a version
      """
-     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, description: String @sv, remote: VersionRemoteInput ): EditChannelVersionReply!
+     editChannelVersion(orgId: String! @sv, uuid: String! @sv, description: String @sv, remote: VersionRemoteInput ): EditChannelVersionReply!
 
      """
      Removes a channel

@@ -676,20 +676,91 @@ const channelResolvers = {
       };
     },
     editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
-      const { /*models,*/ me, req_id, logger } = context;
+      const { models, me, req_id, logger } = context;
       const queryName = 'editChannelVersion';
+
+      logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
+      console.log( `PLC ${queryName} Entry,` );
+      console.log( `PLC ${queryName} description: ${description}` );
+      console.log( `PLC ${queryName} remote: ${JSON.stringify( remote )}` );
 
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
 
-      logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
-
       /*
-      Edit Channel Version not yet implemented.
       - Allow changing description
       - Allow altering `remote.parameters`
       */
-      throw new RazeeValidationError( context.req.t( 'Unsupported query: {{api}}', { api: queryName } ), context );
+      if( !description && !remote ){
+        throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
+      }
+
+      try{
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS ) {
+          // Block experimental features
+          if( remote ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
+          }
+        }
+
+        const version = await models.DeployableVersion.findOne( { uuid, org_id } );
+        if( !version ){
+          throw new NotFoundError( context.req.t( 'Version uuid "{{version_uuid}}" not found.', { 'version_uuid': uuid } ), context );
+        }
+        console.log( `PLC ${queryName} version: ${JSON.stringify( version, null, 2 )}` );
+
+        const channel = await models.Channel.findOne( { uuid: version.channel_id, org_id } );
+        if( !channel ){
+          throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
+        }
+        console.log( `PLC ${queryName} channel: ${JSON.stringify( channel, null, 2 )}` );
+
+        // Verify authorization on the Channel
+        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+
+        console.log( `PLC ${queryName} version and channel validated` );
+
+        const set = {};
+
+        // Validate REMOTE-specific values
+        if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
+          if( remote ) {
+            // Validate remote.parameters (length)
+            if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
+              throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
+            }
+
+            set.content = {
+              metadata: {
+                type: 'remote',
+              },
+              remote: { parameters: remote.parameters },
+            };
+          }
+        }
+
+        if( description ) set.description = description;
+
+        // Save the change
+        console.log( `PLC editChannelVersion saving: ${JSON.stringify( set, null, 2 )}` );
+        await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: set }, {});
+
+        return {
+          success: true,
+        };
+      }
+      catch( err ){
+        if( err instanceof BasicRazeeError ) {
+          throw err;
+        }
+        logger.error( err, `${queryName} encountered an error when serving ${req_id}.` );
+        throw new RazeeQueryError( context.req.t( 'Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id } ), context );
+      }
+
+
+
+      //PLC
     },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
