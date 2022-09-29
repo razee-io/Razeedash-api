@@ -127,6 +127,7 @@ const channelRemoteFunc = grahqlUrl => {
           description
           remote { parameters { key, value } }
           created
+          updated
         }
       }
       `,

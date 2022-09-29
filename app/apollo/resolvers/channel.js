@@ -482,7 +482,7 @@ const channelResolvers = {
         }
 
         // Save the change
-        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote } }, {});
+        await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
         try {
@@ -680,9 +680,6 @@ const channelResolvers = {
       const queryName = 'editChannelVersion';
 
       logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
-      console.log( `PLC ${queryName} Entry,` );
-      console.log( `PLC ${queryName} description: ${description}` );
-      console.log( `PLC ${queryName} remote: ${JSON.stringify( remote )}` );
 
       validateString( 'org_id', org_id );
       validateString( 'uuid', uuid );
@@ -708,20 +705,18 @@ const channelResolvers = {
         if( !version ){
           throw new NotFoundError( context.req.t( 'Version uuid "{{version_uuid}}" not found.', { 'version_uuid': uuid } ), context );
         }
-        console.log( `PLC ${queryName} version: ${JSON.stringify( version, null, 2 )}` );
 
         const channel = await models.Channel.findOne( { uuid: version.channel_id, org_id } );
         if( !channel ){
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
         }
-        console.log( `PLC ${queryName} channel: ${JSON.stringify( channel, null, 2 )}` );
 
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
-        console.log( `PLC ${queryName} version and channel validated` );
-
-        const set = {};
+        const set = {
+          updated: Date.now(),
+        };
 
         // Validate REMOTE-specific values
         if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
@@ -743,7 +738,6 @@ const channelResolvers = {
         if( description ) set.description = description;
 
         // Save the change
-        console.log( `PLC editChannelVersion saving: ${JSON.stringify( set, null, 2 )}` );
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: set }, {});
 
         return {
@@ -757,10 +751,6 @@ const channelResolvers = {
         logger.error( err, `${queryName} encountered an error when serving ${req_id}.` );
         throw new RazeeQueryError( context.req.t( 'Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id } ), context );
       }
-
-
-
-      //PLC
     },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
