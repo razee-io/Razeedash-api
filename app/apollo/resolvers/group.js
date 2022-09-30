@@ -388,6 +388,7 @@ const groupResolvers = {
         });
         const sets = {
           groups: groupObjsToAdd,
+          updated: Date.now(),
         };
         const res = await models.Cluster.updateOne({ org_id: orgId, cluster_id: clusterId }, { $set: sets });
 

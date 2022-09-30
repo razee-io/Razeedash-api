@@ -74,7 +74,7 @@ const channelSchema = gql`
     remote: ChannelRemoteSource
     data_location: String
     created: Date!
-    updated: Date!
+    updated: Date
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
     tags: [String!]!
@@ -120,7 +120,7 @@ const channelSchema = gql`
     owner: BasicUser
     kubeOwnerName: String
     created: Date!
-    updated: Date!
+    updated: Date
   }
 
   extend type Query {
@@ -175,7 +175,7 @@ const channelSchema = gql`
      """
      Edits a version
      """
-     editChannelVersion(orgId: String! @sv, uuid: String! @sv, name: String! @sv, description: String @sv, remote: VersionRemoteInput ): EditChannelVersionReply!
+     editChannelVersion(orgId: String! @sv, uuid: String! @sv, description: String @sv, remote: VersionRemoteInput ): EditChannelVersionReply!
 
      """
      Removes a channel

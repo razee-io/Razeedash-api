@@ -395,9 +395,15 @@ const subscriptionResolvers = {
         }
 
         let sets = {
-          name, groups,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
-          clusterId, custom,
+          name,
+          groups,
+          channelName: channel.name,
+          channel_uuid,
+          version: version.name,
+          version_uuid,
+          clusterId,
+          custom,
+          updated: Date.now(),
         };
 
         // RBAC Sync
@@ -513,7 +519,9 @@ const subscriptionResolvers = {
         }
 
         var sets = {
-          version: version.name, version_uuid,
+          version: version.name,
+          version_uuid,
+          updated: Date.now(),
         };
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 
