@@ -213,7 +213,7 @@ const serviceResolvers = {
         throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
       }
 
-      const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid };
+      const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid, updated: Date.now() };
       await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
 
       pubSub.channelSubChangedFunc({ org_id: serviceSubscription.clusterOrgId }, context); // notify cluster should re-fetch its subscriptions

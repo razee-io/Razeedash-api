@@ -353,8 +353,7 @@ describe('channel remote graphql test suite', () => {
     try {
       const result = await channelRemoteApi.editRemoteChannelVersion(userRootToken, {
         orgId: org01._id,
-        uuid: channel01Uuid,
-        name: 'newvername',
+        uuid: ver01Uuid,
         description: 'newverdesc',
         remote: {
           parameters: [
@@ -367,15 +366,9 @@ describe('channel remote graphql test suite', () => {
       });
       console.log( `editRemoteChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
 
-      /*
       const editChannelVersion = result.data.data.editChannelVersion;
 
-      expect(editChannel.success).to.equal(true);
-      */
-
-      const errors = result.data.errors;
-
-      expect(errors[0].message).to.equal('Unsupported query: editChannelVersion');
+      expect(editChannelVersion.success).to.equal(true);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -396,11 +389,11 @@ describe('channel remote graphql test suite', () => {
       console.log( `getRemoteChannelVersionByUuid result: ${JSON.stringify( result.data, null, 2 )}` );
       const retrievedVersion = result.data.data.channelVersion;
 
-      // Expect orig values currently as editChannelVersion is not yet implemented
+      // Expect orig name but changed description and remote parameters
       expect(retrievedVersion.name).to.equal('origvername');
-      expect(retrievedVersion.description).to.equal('origverdesc');
-      expect(retrievedVersion.remote.parameters[0].key).to.equal('origverkey1');
-      expect(retrievedVersion.remote.parameters[0].value).to.equal('origverval1');
+      expect(retrievedVersion.description).to.equal('newverdesc');
+      expect(retrievedVersion.remote.parameters[0].key).to.equal('newverkey1');
+      expect(retrievedVersion.remote.parameters[0].value).to.equal('newverval1');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

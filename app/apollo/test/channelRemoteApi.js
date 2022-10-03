@@ -127,6 +127,7 @@ const channelRemoteFunc = grahqlUrl => {
           description
           remote { parameters { key, value } }
           created
+          updated
         }
       }
       `,
@@ -143,8 +144,8 @@ const channelRemoteFunc = grahqlUrl => {
     grahqlUrl,
     {
       query: `
-        mutation( $orgId: String!, $uuid: String!, $name: String!, $description: String!, $remote: VersionRemoteInput ) {
-          editChannelVersion(orgId: $orgId, uuid: $uuid, name: $name, description: $description, remote: $remote) {
+        mutation( $orgId: String!, $uuid: String!, $description: String!, $remote: VersionRemoteInput ) {
+          editChannelVersion(orgId: $orgId, uuid: $uuid, description: $description, remote: $remote) {
             success
           }
         }

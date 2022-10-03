@@ -35,6 +35,10 @@ const GroupSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updated: {
+    type: Date,
+    default: Date.now,
+  },
   owner: {
     type: String,
   },

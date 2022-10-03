@@ -68,6 +68,10 @@ const DeployableVersionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updated: {
+    type: Date,
+    default: Date.now,
+  },
 }, {
   collection: 'deployableVersions',
   strict: 'throw',
