@@ -16,10 +16,12 @@
 
 const storageFactory = require('../../storage/storageFactory');
 const { getOrgKeyByUuid, bestOrgKey } = require('../../utils/orgs');
-const { whoIs, RazeeValidationError } = require ('../resolvers/common');
+const { whoIs, RazeeValidationError, BasicRazeeError } = require ('../resolvers/common');
 const conf = require('../../conf.js').conf;
-const { CHANNEL_VERSION_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
+const { CHANNEL_VERSION_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB } = require('../models/const');
 const { validateString } = require('./directives');
+const yaml = require('js-yaml');
+const streamToString = require('stream-to-string');
 
 const getDecryptedContent = async ( context, org, version ) => {
   const { me, req_id, logger } = context;
@@ -350,9 +352,53 @@ const validateNewVersions = async ( org_id, { channel, newVersions }, context ) 
   }
 };
 
+// Load the content from file, content string, or remote and update the version object.
+const ingestVersionContent = async ( org_id, { org, channel, version, file, content, remote }, context ) => {
+  // If content is UPLOADED, get the content, encrypt and store, and add the results to the Version object
+  if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+    try {
+      if( file ){
+        const tempFileStream = ( await file ).createReadStream();
+        content = await streamToString( tempFileStream );
+      }
+      let yamlSize = Buffer.byteLength( content );
+      if( yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024 ){
+        throw new RazeeValidationError( context.req.t( 'YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb', { 'CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB': CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB } ), context );
+      }
+
+      yaml.safeLoadAll( content );
+    } catch (error) {
+      if (error instanceof BasicRazeeError) {
+        throw error;
+      }
+      throw new RazeeValidationError( context.req.t( 'Provided YAML content is not valid: {{error}}', { 'error': error } ), context );
+    }
+
+    const orgKey = bestOrgKey( org );
+    const { data } = await encryptAndStore( context, org, channel, version, orgKey, content );
+
+    // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+
+    version.content = data;
+    delete version.file;
+    version.verifiedOrgKeyUuid = orgKey.orgKeyUuid;
+    version.desiredOrgKeyUuid = orgKey.orgKeyUuid;
+  }
+  else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
+    version.content = {
+      metadata: {
+        type: 'remote',
+      },
+      remote: remote,
+    };
+    delete version.remote;
+  }
+};
+
 module.exports = {
   getDecryptedContent,
   encryptAndStore,
   updateAllVersionEncryption,
   validateNewVersions,
+  ingestVersionContent,
 };

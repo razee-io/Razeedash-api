@@ -414,11 +414,7 @@ describe('channel graphql test suite', () => {
   it('add and get channel version ', async () => {
     try {
       // step 1: add a channel version by admin token
-      const {
-        data: {
-          data: { addChannelVersion },
-        },
-      } = await channelApi.addChannelVersion(adminToken, {
+      const result = await channelApi.addChannelVersion(adminToken, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.1`,
@@ -426,6 +422,8 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.1`
       });
+      console.log( `addChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannelVersion = result.data.data.addChannelVersion;
 
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
@@ -499,11 +497,7 @@ describe('channel graphql test suite', () => {
   it('add and remove channel version from a channel with another version ', async () => {
     try {
       // step 1: add a channel version by admin token
-      const {
-        data: {
-          data: { addChannelVersion },
-        },
-      } = await channelApi.addChannelVersion(adminToken, {
+      const result = await channelApi.addChannelVersion(adminToken, {
         orgId: org01._id,
         channelUuid: channel_04_uuid,
         name: `${channel_04_name}:v.0.1`,
@@ -511,6 +505,9 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 123.45}',
         description: `${channel_04_name}:v.0.1`
       });
+      console.log( `addChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannelVersion = result.data.data.addChannelVersion;
+
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
 
@@ -569,16 +566,14 @@ describe('channel graphql test suite', () => {
       };
 
       //step 1: edit channel 02's name and custom properties
-      const {
-        data: {
-          data: { editChannel },
-        },
-      } = await channelApi.editChannel(adminToken, {
+      const result = await channelApi.editChannel(adminToken, {
         orgId: org01._id,
         uuid: channel_02_uuid,
         name: `${channel_02_name}_new`,
         custom: channel_02_custom_new
       });
+      console.log( `editChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const editChannel = result.data.data.editChannel;
 
       expect(editChannel.success).to.equal(true);
       expect(editChannel.name).to.equal(`${channel_02_name}_new`);
@@ -600,14 +595,12 @@ describe('channel graphql test suite', () => {
 
       expect(data).to.equal(null);
       // step 2 remove the channel
-      const {
-        data: {
-          data: { removeChannel },
-        },
-      } = await channelApi.removeChannel(adminToken, {
+      const result2 = await channelApi.removeChannel(adminToken, {
         orgId: org01._id,
         uuid: channel_02_uuid,
       });
+      console.log( `removeChannel result: ${JSON.stringify( result2.data, null, 2 )}` );
+      const removeChannel = result2.data.data.removeChannel;
 
       expect(removeChannel.success).to.equal(true);
       expect(removeChannel.uuid).to.equal(channel_02_uuid);
@@ -635,20 +628,18 @@ describe('channel graphql test suite', () => {
   it('edit channel and update subscription channel name', async () => {
     try {
 
-      const {
-        data: {
-          data: { editChannel },
-        },
-      } = await channelApi.editChannel(adminToken, {
+      const result = await channelApi.editChannel(adminToken, {
         orgId: org01._id,
         uuid: channel_04_uuid,
         name: `${channel_04_name}_new`
       });
+      console.log( `editChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const editChannel = result.data.data.editChannel;
 
       expect(editChannel.success).to.equal(true);
       expect(editChannel.name).to.equal(`${channel_04_name}_new`);
-      const result = await models.Subscription.findOne({ org_id: org01._id, channel_uuid: channel_04_uuid, });
-      expect(result.channelName).to.equal(`${channel_04_name}_new`);
+      const subResult = await models.Subscription.findOne({ org_id: org01._id, channel_uuid: channel_04_uuid, });
+      expect(subResult.channelName).to.equal(`${channel_04_name}_new`);
 
     } catch(error) {
       if (error.response) {
@@ -664,11 +655,7 @@ describe('channel graphql test suite', () => {
   it('remove configuration version, channel has multiple versions ', async () => {
     try {
       // step 1: add a channel version by admin token
-      const {
-        data: {
-          data: { addChannelVersion },
-        },
-      } = await channelApi.addChannelVersion(adminToken, {
+      const result = await channelApi.addChannelVersion(adminToken, {
         orgId: org01._id,
         channelUuid: channel_01_uuid,
         name: `${channel_01_name}:v.0.4`,
@@ -676,6 +663,9 @@ describe('channel graphql test suite', () => {
         content: '{"n0": 123.45}',
         description: `${channel_01_name}:v.0.4`
       });
+      console.log( `addChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannelVersion = result.data.data.addChannelVersion;
+
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
 

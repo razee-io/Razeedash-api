@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 
 const { withFilter } = require('graphql-subscriptions');
 
-const { ACTIONS, TYPES } = require('../models/const');
+const { ACTIONS, TYPES, CHANNEL_CONSTANTS } = require('../models/const');
 const {
   whoIs, validAuth, validClusterAuth,
   getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
@@ -40,7 +40,8 @@ const pubSub = GraphqlPubSub.getInstance();
 const { validateString } = require('../utils/directives');
 
 const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils.js');
-
+const { validateNewVersions, ingestVersionContent } = require('../utils/versionUtils');
+const storageFactory = require('./../../storage/storageFactory');
 
 const subscriptionResolvers = {
   Query: {
@@ -316,7 +317,7 @@ const subscriptionResolvers = {
           return (version.uuid == version_uuid);
         });
         if(!version){
-          throw  new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
+          throw new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
         }
 
         const uuid = UUID();
@@ -353,7 +354,7 @@ const subscriptionResolvers = {
       }
     },
 
-    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, updateClusterIdentity, custom: custom }, context)=>{
+    editSubscription: async (parent, { orgId, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, updateClusterIdentity, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
       logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
@@ -363,35 +364,91 @@ const subscriptionResolvers = {
       validateString( 'name', name );
       groups.forEach( value => { validateString( 'groups', value ); } );
       validateString( 'channel_uuid', channel_uuid );
-      validateString( 'version_uuid', version_uuid );
+      if( version_uuid ) validateString( 'version_uuid', version_uuid );
       if( clusterId ) validateString( 'clusterId', clusterId );
 
       try{
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
+
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS ) {
+          // Block experimental features
+          if( version ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'version' } ), context );
+          }
+        }
+
         const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), orgId, conditions }, `${queryName} group conditions are...`);
-        const subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
 
+        const subscription = await models.Subscription.findOne({ org_id: orgId, uuid, ...conditions }, {}).lean({ virtuals: true });
         if(!subscription){
-          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':orgId}), context);
+          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':orgId}), context);
         }
+
+        const oldVersionUuid = subscription.version_uuid;
 
         await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
 
-        // loads the channel
+        // get org
+        const org = await models.Organization.findOne({ _id: orgId });
+        if (!org) {
+          throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':orgId}), context);
+        }
+
+        // get channel
         const channel = await models.Channel.findOne({ org_id: orgId, uuid: channel_uuid });
         if(!channel){
-          throw  new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
         // validate groups all exist
         await validateGroups(orgId, groups, context);
 
-        // loads the version
-        const version = channel.versions.find((version)=>{
-          return (version.uuid == version_uuid);
-        });
-        if(!version){
-          throw  new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
+        // Get or create the version
+        let version;
+        // Load the existing version if version_uuid specified
+        if( version_uuid ) {
+          version = channel.versions.find((version)=>{
+            return (version.uuid == version_uuid);
+          });
+          if(!version){
+            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
+          }
+        }
+        // Validate newVersion if specified
+        else if( newVersion ) {
+          // create newVersionObj
+          const newVersionObj = {
+            _id: UUID(),
+            org_id: orgId,
+            uuid: UUID(),
+            channel_id: channel.uuid,
+            channelName: channel.name,
+            name: newVersion.name,
+            description: newVersion.description,
+            type: newVersion.type,
+            ownerId: me._id,
+            kubeOwnerId,
+          };
+          if( newVersion.remote ) newVersionObj.remote = newVersion.remote;
+          if( newVersion.content ) newVersionObj.content = newVersion.content;
+          if( newVersion.file ) newVersionObj.file = newVersion.file;
+
+          // Validate new version
+          await validateNewVersions( orgId, { channel: channel, newVersions: [newVersion] }, context );
+
+          // Load/save the version content
+          await ingestVersionContent( orgId, { org, channel, version: newVersionObj, file: newVersion.file, content: newVersion.content, remote: newVersion.remote }, context );
+          // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+
+          // Save Version
+          const dObj = await models.DeployableVersion.create( newVersionObj );
+          version = dObj;
+        }
+        // If neither version_uuid nor newVersion specified, fail validation
+        else {
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
         let sets = {
@@ -400,7 +457,7 @@ const subscriptionResolvers = {
           channelName: channel.name,
           channel_uuid,
           version: version.name,
-          version_uuid,
+          version_uuid: version.uuid,
           clusterId,
           custom,
           updated: Date.now(),
@@ -408,7 +465,6 @@ const subscriptionResolvers = {
 
         // RBAC Sync
         if( updateClusterIdentity ) {
-          const kubeOwnerId = await models.User.getKubeOwnerId(context);
           sets['owner'] = me._id;
           sets['kubeOwnerId'] = kubeOwnerId;
         }
@@ -453,6 +509,47 @@ const subscriptionResolvers = {
           subscriptionsRbacSync( [subscription], { resync: resyncNeeded }, context ).catch(function(){/*ignore*/});
         }
 
+        // If newVersion is specified try to remove the old version
+        if( newVersion ) {
+          try {
+            const subCount = await models.Subscription.count({ org_id: orgId, version_uuid: oldVersionUuid });
+            if( subCount > 0 ) {
+              logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} old version ${oldVersionUuid} is still in use by ${subCount} subscriptions, skipping deletion` );
+            }
+            else {
+              logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} old version ${oldVersionUuid} is replaced by ${version.uuid}, attempting deletion` );
+
+              // Get the old Version
+              const deployableVersionObj = await models.DeployableVersion.findOne( { org_id: orgId, uuid: oldVersionUuid } );
+
+              // If the Version is found...
+              if( deployableVersionObj ){
+                if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+                  // Delete Version data
+                  const handler = storageFactory(logger).deserialize( deployableVersionObj.content );
+                  await handler.deleteData();
+                  logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} old version ${oldVersionUuid} data removed`);
+                }
+
+                // Delete the Version
+                await models.DeployableVersion.deleteOne( { org_id: orgId, uuid: oldVersionUuid } );
+                logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} old version ${oldVersionUuid} deleted` );
+              }
+            }
+
+            // Attempt to update Version references in the channel (the duplication is unfortunate and should be eliminated in the future)
+            await models.Channel.updateOne(
+              { org_id: orgId, uuid: channel.uuid },
+              { $pull: { versions: { uuid: uuid } } }
+            );
+            logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} channel reference to old version ${oldVersionUuid} removed` );
+          }
+          catch(err) {
+            logger.error(err, `${queryName} failed to update the channel to remove the version reference '${name}' / '${uuid}' when serving ${req_id}.`);
+            // Cannot fail here, the Version has already been removed.  Continue.
+          }
+        }
+
         return {
           uuid,
           success: true,
@@ -490,7 +587,7 @@ const subscriptionResolvers = {
         var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
 
         if(!subscription){
-          throw  new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
+          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
 
         // this may be overkill, but will check for strings first, then groups below
@@ -558,7 +655,7 @@ const subscriptionResolvers = {
         var subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {});
 
         if(!subscription){
-          throw  new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
         }
 
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);

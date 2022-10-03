@@ -18,16 +18,13 @@ const _ = require('lodash');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const conf = require('../../conf.js').conf;
-const streamToString = require('stream-to-string');
 const pLimit = require('p-limit');
 const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = require('../utils/applyQueryFields');
 const storageFactory = require('./../../storage/storageFactory');
-const yaml = require('js-yaml');
-const { bestOrgKey } = require('../../utils/orgs');
-const { getDecryptedContent, encryptAndStore, validateNewVersions } = require('../utils/versionUtils');
+const { getDecryptedContent, validateNewVersions, ingestVersionContent } = require('../utils/versionUtils');
 const { validateNewSubscriptions } = require('../utils/subscriptionUtils');
 
-const { ACTIONS, TYPES, CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
+const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { validateString } = require('../utils/directives');
@@ -249,6 +246,12 @@ const channelResolvers = {
           }
         }
 
+        // get org
+        const org = await models.Organization.findOne({ _id: org_id });
+        if (!org) {
+          throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+        }
+
         // Validate UPLOADED-specific values
         if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           // Normalize
@@ -321,46 +324,11 @@ const channelResolvers = {
             kubeOwnerId,
           };
 
-          // If content is UPLOADED, get the content, encrypt and store, and add the results to the Version object
-          if( !contentType || contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-            try {
-              if(v.file){
-                const tempFileStream = (await v.file).createReadStream();
-                v.content = await streamToString(tempFileStream);
-              }
-              let yamlSize = Buffer.byteLength(v.content);
-              if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
-                throw new RazeeValidationError(context.req.t('YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb', {'CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB':CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}), context);
-              }
-
-              yaml.safeLoadAll(v.content);
-            } catch (error) {
-              if (error instanceof BasicRazeeError) {
-                throw error;
-              }
-              throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
-            }
-
-            const org = await models.Organization.findOne({ _id: org_id });
-            const orgKey = bestOrgKey( org );
-            const { data } = await encryptAndStore( context, org, newChannelObj, versionObj, orgKey, v.content);
-
-            // Note: if failure occurs after this point, the data has already been stored by storageFactory even if the Version document doesnt get saved.
-
-            versionObj.content = data;
-            versionObj.verifiedOrgKeyUuid = orgKey.orgKeyUuid;
-            versionObj.desiredOrgKeyUuid = orgKey.orgKeyUuid;
-          }
-          else if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-            versionObj.content = {
-              metadata: {
-                type: 'remote',
-              },
-              remote: v.remote,
-            };
-          }
-
           try {
+            // Load/save the version content
+            await ingestVersionContent( org_id, { org, channel: newChannelObj, version: versionObj, file: v.file, content: v.content, remote: v.remote }, context );
+            // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+
             // Save Version
             const dObj = await models.DeployableVersion.create( versionObj );
 
@@ -575,48 +543,12 @@ const channelResolvers = {
       // Validate new subscription(s)
       await validateNewSubscriptions( org_id, { versions: [newVersionObj], newSubscriptions: subscriptions }, context );
 
-      // If content is UPLOADED, get the content, encrypt and store, and add the results to the Version object
-      if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-        try {
-          if(file){
-            const tempFileStream = (await file).createReadStream();
-            content = await streamToString(tempFileStream);
-          }
-          let yamlSize = Buffer.byteLength(content);
-          if(yamlSize > CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB * 1024 * 1024){
-            throw new RazeeValidationError(context.req.t('YAML file size should not be more than {{CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}}mb', {'CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB':CHANNEL_VERSION_YAML_MAX_SIZE_LIMIT_MB}), context);
-          }
-
-          yaml.safeLoadAll(content);
-        } catch (error) {
-          if (error instanceof BasicRazeeError) {
-            throw error;
-          }
-          throw new RazeeValidationError(context.req.t('Provided YAML content is not valid: {{error}}', {'error':error}), context);
-        }
-
-        const orgKey = bestOrgKey( org );
-        const { data } = await encryptAndStore( context, org, channel, newVersionObj, orgKey, content);
-
-        // Note: if failure occurs after this point, the data has already been stored by storageFactory even if the Version document doesnt get saved.
-
-        newVersionObj.content = data;
-        delete newVersionObj.file;
-        newVersionObj.verifiedOrgKeyUuid = orgKey.orgKeyUuid;
-        newVersionObj.desiredOrgKeyUuid = orgKey.orgKeyUuid;
-      }
-      else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
-        newVersionObj.content = {
-          metadata: {
-            type: 'remote',
-          },
-          remote: remote,
-        };
-        delete newVersionObj.remote;
-      }
+      // Load/save the version content
+      await ingestVersionContent( org_id, { org, channel, version: newVersionObj, file: file, content: content, remote: remote }, context );
+      // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
 
       // Save Version
-      const dObj = await models.DeployableVersion.create(newVersionObj);
+      const dObj = await models.DeployableVersion.create( newVersionObj );
 
       // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
       try {
@@ -675,7 +607,7 @@ const channelResolvers = {
         versionUuid: newVersionObj.uuid,
       };
     },
-    editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote }, context)=>{
+    editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote /*, subscriptions*/ }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannelVersion';
 
@@ -737,8 +669,89 @@ const channelResolvers = {
 
         if( description ) set.description = description;
 
-        // Save the change
+        // Save the Version
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: set }, {});
+
+        /*
+        This commented out code provided for illustrative purposes only, and is untested.
+
+        // Attempt to update subscription(s)
+        // Get all current subscriptions for this version
+        const currentSubscriptions = await model.Subscription.find( { org_id, channel_uuid: channel.uuid, version_uuid: version.uuid } );
+        const subUuidsToDelete = currentSubscriptions.map( cs => cs.uuid );
+        const subsToUpdate = [];
+        const subsToCreate = [];
+        for( const ns of subscriptions ) {
+          const cs = currentSubscriptions.find( sub => sub.name === ns.name );
+          if( cs ) {
+            if( ns.groups.sort().join(',') === cs.groups.sort().join(',') ){
+              // Same groups, no need to change the subscription.
+            }
+            else {
+              // Groups changed, need to update the subscription
+              cs.groups = ns.groups;
+              subsToUpdate.push( cs );
+            }
+
+            // Whether changed or unchanged, this subscription should not be deleted
+            for( let i = 0; i < subUuidsToDelete.length; i++){
+              if ( subUuidsToDelete[i] === cs.uuid) subUuidsToDelete.splice(i, 1);
+            }
+          }
+          else {
+            // Subscription needs to be created
+            subsToCreate.push( ns );
+          }
+        }
+
+        // delete all current subscriptions not in new subscriptions.
+        await models.Subscriptions.deleteMany( { org_id, uuid: { $in: subUuidsToDelete } } );
+        // create all new subscriptions not in current subscriptions.
+        await Promise.all( subsToCreate.map( async (ns) => {
+          const subObj = {
+            _id: UUID(),
+            uuid: UUID(),
+            org_id: org_id,
+            name: ns.name,
+            groups: ns.groups,
+            owner: me._id,
+            channelName: channel.name,
+            channel_uuid: channel.uuid,
+            version: version.name,
+            version_uuid: version.uuid,
+            clusterId: null,
+            kubeOwnerId: kubeOwnerId,
+            custom: ns.custom
+          };
+          await models.Subscription.create( subObj );
+
+          pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+          / *
+          Trigger RBAC Sync after successful Subscription creation and pubSub.
+          RBAC Sync completes asynchronously, so no `await`.
+          Even if RBAC Sync errors, subscription creation is successful.
+          * /
+          subscriptionsRbacSync( [ns], { resync: false }, context ).catch(function(){/ * ignore * /});
+        } );
+        //update all current subscriptions also in new subscriptions that are different.
+        await Promise.all( subsToUpdate.map( async (cs) => {
+          const set = {
+            groups: cs.groups,
+            updated: Date.now(),
+          };
+          await models.Subscription.updateOne( { org_id, uuid: cs.uuid }, { $set: set }, {} );
+
+          pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+          / *
+          Trigger RBAC Sync after successful Subscription creation and pubSub.
+          RBAC Sync completes asynchronously, so no `await`.
+          Even if RBAC Sync errors, subscription update is successful.
+          * /
+          subscriptionsRbacSync( [cs], { resync: false }, context ).catch(function(){/ * ignore * /});
+        } );
+        */
 
         return {
           success: true,

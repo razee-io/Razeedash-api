@@ -17,6 +17,17 @@
 const { gql } = require('apollo-server-express');
 
 const subscriptionSchema = gql`
+  input VersionRemoteInput {
+    parameters: [ParameterInput]
+  }
+  input VersionInput {
+    name: String!
+    description: String
+    type: String!
+    content: String
+    file: Upload
+    remote: VersionRemoteInput
+  },
   type BasicUser {
     id: String!
     name: String!
@@ -138,7 +149,7 @@ const subscriptionSchema = gql`
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, updateClusterIdentity: Boolean, custom: JSON): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String, version: VersionInput, clusterId: String @sv, updateClusterIdentity: Boolean, custom: JSON): EditChannelSubscriptionReply!
 
      """
      Set a configurationVersion
