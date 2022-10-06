@@ -616,6 +616,10 @@ describe('channel remote graphql test suite', () => {
       // Save uuid for later use in tests
       channel01Uuid = addChannel.uuid;
       console.log( `channel created: ${channel01Uuid}` );
+
+      // Get and save uuid for later use in tests
+      const sub01 = await models.Subscription.findOne( {org_id: org01._id, name: 'cwvs-subscription'} );
+      sub01Uuid = sub01.uuid;
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -648,4 +652,48 @@ describe('channel remote graphql test suite', () => {
       throw error;
     }
   });
+
+  it('edit subscription to create a new version', async () => {
+    try {
+      const result = await subscriptionApi.editSubscription(userRootToken, {
+        orgId: org01._id,
+        uuid: sub01Uuid,
+        name: 'cwvs-subscription',
+        groups:['group01Name'],
+        channelUuid: channel01Uuid,
+        version: {
+          name: 'cwvs-version2',
+          description: 'version created when editing subscription',
+          type: 'yaml',
+          remote: {
+            parameters: [
+              {
+                key: 'orig-cwvs-ver2-key1',
+                value: 'orig-cwvs-ver2-val1',
+              },
+            ],
+          }
+        },
+      }, org01Key);
+      console.log( `editSubscription result: ${JSON.stringify( result.data, null, 2 )}` );
+      const editSubscription = result.data.data.editSubscription;
+
+      expect(editSubscription.success).to.equal(true);
+
+      // Get all versions
+      const versions = await models.DeployableVersion.find( { org_id: org01._id } );
+      // Verify just one version exists (old one was deleted)
+      expect( versions.length ).to.equal(1);
+      // Verify the one version is the new one
+      expect( versions[0].name ).to.equal('cwvs-version2');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
 });
