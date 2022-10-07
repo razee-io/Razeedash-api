@@ -764,7 +764,7 @@ const subscriptionResolvers = {
             if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
               const handler = storageFactory(logger).deserialize( deployableVersionObj.content );
               await handler.deleteData();
-              logger.info( {ver_uuid: uuid, ver_name: name}, `${queryName} data removed` );
+              logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} data removed` );
             }
 
             // Delete Version references
@@ -772,11 +772,11 @@ const subscriptionResolvers = {
               { org_id, uuid: channel.uuid },
               { $pull: { versions: { uuid: uuid } } }
             );
-            logger.info( { ver_uuid: uuid, ver_name: name }, `${queryName} version reference removed` );
+            logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} version reference removed` );
 
             // Delete the Version record
             await models.DeployableVersion.deleteOne( { org_id, uuid } );
-            logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version deleted`);
+            logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} version deleted` );
           }
           catch(err) {
             logger.error( err, `${queryName} failed to completely delete the version '${deployableVersionObj.name}' / '${deployableVersionObj.uuid}' when serving ${req_id}.` );
