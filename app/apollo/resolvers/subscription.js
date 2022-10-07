@@ -286,7 +286,7 @@ const subscriptionResolvers = {
   },
 
   Mutation: {
-    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, clusterId=null, custom: custom }, context)=>{
+    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, custom: custom }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -296,10 +296,20 @@ const subscriptionResolvers = {
       validateString( 'name', name );
       groups.forEach( value => { validateString( 'groups', value ); } );
       validateString( 'channel_uuid', channel_uuid );
-      validateString( 'version_uuid', version_uuid );
+      if( version_uuid ) validateString( 'version_uuid', version_uuid );
       if( clusterId ) validateString( 'clusterId', clusterId );
 
       try{
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
+
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS ) {
+          // Block experimental features
+          if( newVersion ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'version' } ), context );
+          }
+        }
+
         // validate the number of total subscriptions are under the limit
         await validateSubscriptionLimit( org_id, 1, context );
 
@@ -309,23 +319,83 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
+        // get org
+        const org = await models.Organization.findOne({ _id: org_id });
+        if (!org) {
+          throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+        }
+
         // validate groups all exist
         await validateGroups(org_id, groups, context);
 
-        // loads the version
-        const version = channel.versions.find((version)=>{
-          return (version.uuid == version_uuid);
-        });
-        if(!version){
-          throw new NotFoundError(context.req.t('version uuid "{{version_uuid}}" not found', {'version_uuid':version_uuid}), context);
+        // Get or create the version
+        let version;
+        // Load the existing version if version_uuid specified
+        if( version_uuid ) {
+          version = channel.versions.find((version)=>{
+            return (version.uuid == version_uuid);
+          });
+          if(!version){
+            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
+          }
+        }
+        // Validate newVersion if specified
+        else if( newVersion ) {
+          // create newVersionObj
+          const newVersionObj = {
+            _id: UUID(),
+            org_id: org_id,
+            uuid: UUID(),
+            channel_id: channel.uuid,
+            channelName: channel.name,
+            name: newVersion.name,
+            description: newVersion.description,
+            type: newVersion.type,
+            ownerId: me._id,
+            kubeOwnerId,
+          };
+          if( newVersion.remote ) newVersionObj.remote = newVersion.remote;
+          if( newVersion.content ) newVersionObj.content = newVersion.content;
+          if( newVersion.file ) newVersionObj.file = newVersion.file;
+
+          // Validate new version
+          await validateNewVersions( org_id, { channel: channel, newVersions: [newVersion] }, context );
+
+          // Load/save the version content
+          await ingestVersionContent( org_id, { org, channel, version: newVersionObj, file: newVersion.file, content: newVersion.content, remote: newVersion.remote }, context );
+          // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+
+          // Save Version
+          const dObj = await models.DeployableVersion.create( newVersionObj );
+          version = dObj;
+
+          // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
+          try {
+            const channelVersionObj = {
+              uuid: newVersionObj.uuid,
+              name: newVersionObj.name,
+              description: newVersionObj.description,
+              created: dObj.created
+            };
+            await models.Channel.updateOne(
+              { org_id, uuid: channel.uuid },
+              { $push: { versions: channelVersionObj } }
+            );
+          } catch(err) {
+            logger.error(err, `${queryName} failed to update the channel to reference the new Version '${newVersionObj.name}' / '${newVersionObj.uuid}' when serving ${req_id}.`);
+            // Cannot fail here, the Version has already been created.  Continue.
+          }
+        }
+        // If neither version_uuid nor newVersion specified, fail validation
+        else {
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
         const uuid = UUID();
-        const kubeOwnerId = await models.User.getKubeOwnerId(context);
         const subscription = {
           _id: UUID(),
           uuid, org_id, name, groups, owner: me._id,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid,
+          channelName: channel.name, channel_uuid, version: version.name, version_uuid: version.uuid,
           clusterId,
           kubeOwnerId,
           custom
@@ -373,7 +443,7 @@ const subscriptionResolvers = {
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS ) {
           // Block experimental features
-          if( version ) {
+          if( newVersion ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'version' } ), context );
           }
         }
@@ -638,7 +708,7 @@ const subscriptionResolvers = {
       }
     },
 
-    removeSubscription: async (parent, { orgId: org_id, uuid }, context)=>{
+    removeSubscription: async (parent, { orgId: org_id, uuid, deleteVersion }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeSubscription';
       logger.debug({req_id, user: whoIs(me), org_id }, `${queryName} enter`);
@@ -648,7 +718,15 @@ const subscriptionResolvers = {
       validateString( 'uuid', uuid );
 
       var success = false;
-      try{
+      try {
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS ) {
+          // Block experimental features
+          if( deleteVersion ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'deleteVersion' } ), context );
+          }
+        }
+
         //var subscription = await models.Subscription.findOne({ org_id, uuid });
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);
@@ -660,12 +738,57 @@ const subscriptionResolvers = {
 
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
 
+        // loads the channel
+        var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
+        if(!channel){
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
+        }
+
+        let deployableVersionObj;
+        if( deleteVersion ) {
+          const subCount = await models.Subscription.count( { org_id, version_uuid: subscription.version_uuid } );
+          if( subCount != 1 ) {
+            throw new RazeeValidationError( context.req.t( '{{subCount}} other subscription(s) depend on this subscription\'s version. Please update/remove them before removing this subscription and version.', { 'subCount': subCount } ), context );
+          }
+
+          // Get the Version
+          deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid: subscription.version_uuid });
+        }
+
         await subscription.deleteOne();
+
+        if( deleteVersion ) {
+          // Attempt to delete version data, version references, and version record
+          try {
+            // Delete Version data
+            if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+              const handler = storageFactory(logger).deserialize( deployableVersionObj.content );
+              await handler.deleteData();
+              logger.info( {ver_uuid: uuid, ver_name: name}, `${queryName} data removed` );
+            }
+
+            // Delete Version references
+            await models.Channel.updateOne(
+              { org_id, uuid: channel.uuid },
+              { $pull: { versions: { uuid: uuid } } }
+            );
+            logger.info( { ver_uuid: uuid, ver_name: name }, `${queryName} version reference removed` );
+
+            // Delete the Version record
+            await models.DeployableVersion.deleteOne( { org_id, uuid } );
+            logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version deleted`);
+          }
+          catch(err) {
+            logger.error( err, `${queryName} failed to completely delete the version '${deployableVersionObj.name}' / '${deployableVersionObj.uuid}' when serving ${req_id}.` );
+            // Cannot fail here, the Subscription has already been removed.  Continue.
+          }
+        }
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         success = true;
-      }catch(err){
+      }
+      catch(err){
         if ( err instanceof BasicRazeeError) {
           throw err;
         }

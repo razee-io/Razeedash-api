@@ -224,8 +224,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String!, $custom: JSON) {
-            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, custom: $custom){
+          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON) {
+            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom){
 			        uuid
             }
           }
@@ -282,13 +282,13 @@ const subscriptionsFunc = grahqlUrl => {
     );
 
 
-  const removeSubscriptions = async (token, variables) =>
+  const removeSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!) {
-            removeSubscription(orgId: $orgId, uuid: $uuid) {
+          mutation($orgId: String!, $uuid: String!, $deleteVersion: Boolean) {
+            removeSubscription(orgId: $orgId, uuid: $uuid, deleteVersion: $deleteVersion) {
               uuid
               success
           }
@@ -313,7 +313,7 @@ const subscriptionsFunc = grahqlUrl => {
     addSubscription,
     editSubscription,
     setSubscription,
-    removeSubscriptions
+    removeSubscription
   };
 };
 

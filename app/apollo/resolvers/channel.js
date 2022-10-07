@@ -532,9 +532,19 @@ const channelResolvers = {
       // Experimental
       if( !process.env.EXPERIMENTAL_GITOPS ) {
         // Block experimental features
-        if( remote || subscriptions.length > 0 ) {
-          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote subscriptions' } ), context );
+        if( remote ) {
+          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
         }
+      }
+      // Experimental
+      if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
+        // Block experimental features
+        if( subscriptions.length > 0 ) {
+          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
+        }
+
+        // Note this feature is not full implemented, see commented out code later in this function.
+        throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
       }
 
       // Validate new version
@@ -607,7 +617,7 @@ const channelResolvers = {
         versionUuid: newVersionObj.uuid,
       };
     },
-    editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote /*, subscriptions*/ }, context)=>{
+    editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote, subscriptions }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannelVersion';
 
@@ -630,6 +640,13 @@ const channelResolvers = {
           // Block experimental features
           if( remote ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
+          }
+        }
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
+          // Block experimental features
+          if( subscriptions ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
           }
         }
 

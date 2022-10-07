@@ -144,7 +144,7 @@ const subscriptionSchema = gql`
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String! @sv, clusterId: String @sv, custom: JSON): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String @sv, version: VersionInput, clusterId: String @sv, custom: JSON): AddChannelSubscriptionReply!
 
      """
      Edits a subscription
@@ -159,7 +159,7 @@ const subscriptionSchema = gql`
      """
      Removes a subscription
      """
-     removeSubscription(orgId: String! @sv, uuid: String! @sv): RemoveChannelSubscriptionReply
+     removeSubscription(orgId: String! @sv, uuid: String! @sv, deleteVersion: Boolean ): RemoveChannelSubscriptionReply
   }
   extend type Subscription {
     subscriptionUpdated: SubscriptionUpdated!
