@@ -736,7 +736,7 @@ describe('subscription graphql test suite', () => {
         data: {
           data: { removeSubscription },
         },
-      } = await subscriptionApi.removeSubscriptions(adminToken, {
+      } = await subscriptionApi.removeSubscription(adminToken, {
         orgId: org01._id,
         uuid: subscription_01_uuid,
       });
