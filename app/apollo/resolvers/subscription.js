@@ -457,8 +457,8 @@ const subscriptionResolvers = {
         }
 
         const oldVersionUuid = subscription.version_uuid;
-        // If neither version_uuid or version specified, keep the prior version (i.e. set version_uuid)
-        if( !version && !version_uuid ) version_uuid = oldVersionUuid;
+        // If neither new version or version_uuid specified, keep the prior version (i.e. set version_uuid)
+        if( !newVersion && !version_uuid ) version_uuid = oldVersionUuid;
 
         await validAuth(me, orgId, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
 
