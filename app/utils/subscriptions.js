@@ -47,6 +47,10 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
       };
       if(versionRefs.length > 0) {
         const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: versionRefs[0].uuid } );
+        // Combine channel and version remoteType
+        if( version && version.content.remote.remoteType ) {
+          sub.remote.remoteType = version.content.remote.remoteType;
+        }
         // Combine channel and version remote params
         if( version && version.content.remote.parameters ) {
           version.content.remote.parameters.forEach( vp => {

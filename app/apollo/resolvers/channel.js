@@ -276,7 +276,7 @@ const channelResolvers = {
           }
 
           // Validate remote.remoteType
-          if( !remote.remoteType || !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( remote.remoteType ) ) {
+          if( remote.remoteType && !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( remote.remoteType ) ) {
             throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: remote.remoteType, 'remoteTypes': Array.from( Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES) ).join(' ') } ), context );
           }
 
@@ -335,7 +335,7 @@ const channelResolvers = {
             // Keep version uuid for later use when creating subscriptions
             v.uuid = versionObj.uuid;
 
-            // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
+            // Attempt to update Version references in the channel (the duplication is unfortunate and should be eliminated in the future)
             try {
               const channelVersionObj = {
                 uuid: versionObj.uuid,
@@ -672,6 +672,11 @@ const channelResolvers = {
         // Validate REMOTE-specific values
         if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
           if( remote ) {
+            // Validate remote.remoteType
+            if( remote.remoteType && !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( remote.remoteType ) ) {
+              throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: remote.remoteType, 'remoteTypes': Array.from( Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES) ).join(' ') } ), context );
+            }
+
             // Validate remote.parameters (length)
             if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
               throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
@@ -681,7 +686,7 @@ const channelResolvers = {
               metadata: {
                 type: 'remote',
               },
-              remote: { parameters: remote.parameters },
+              remote: { remoteType: remote.remoteType, parameters: remote.parameters },
             };
           }
         }

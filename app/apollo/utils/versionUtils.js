@@ -342,7 +342,12 @@ const validateNewVersions = async ( org_id, { channel, newVersions }, context ) 
       }
 
       // Normalize (ensure no extra attributes)
-      v.remote = { parameters: v.remote.parameters };
+      v.remote = { remoteType: v.remote.remoteType, parameters: v.remote.parameters };
+
+      // Validate remote.remoteType
+      if( v.remote.remoteType && !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( v.remote.remoteType ) ) {
+        throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: v.remote.remoteType, 'remoteTypes': Array.from( Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES) ).join(' ') } ), context );
+      }
 
       // Validate remote.parameters (length)
       if( v.remote.parameters && JSON.stringify(v.remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
