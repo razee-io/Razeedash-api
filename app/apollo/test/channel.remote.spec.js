@@ -101,8 +101,10 @@ const createClusters = async () => {
 
 describe('channel remote graphql test suite', () => {
   before(async () => {
+    console.log( 'Setting EXPERIMENTAL env vars' ); // IMPORTANT: Must be deleted in 'after()' to avoid impacting other tests that do not expect these vars to be set.
     process.env.EXPERIMENTAL_GITOPS = 'true';
     process.env.EXPERIMENTAL_GITOPS_ALT = 'true';
+
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
@@ -124,6 +126,10 @@ describe('channel remote graphql test suite', () => {
   after(async () => {
     await myApollo.stop(myApollo);
     await mongoServer.stop();
+
+    console.log( 'Deleting EXPERIMENTAL env vars' );
+    delete process.env.EXPERIMENTAL_GITOPS;
+    delete process.env.EXPERIMENTAL_GITOPS_ALT;
   }); // after
 
   it('block remote Channels if EXPERIMENTAL_GITOPS not set', async () => {
@@ -696,8 +702,6 @@ describe('channel remote graphql test suite', () => {
       throw error;
     }
   });
-
-
 
   it('add a subscription and version under the remote channel', async () => {
     try {
