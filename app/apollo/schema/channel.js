@@ -65,6 +65,7 @@ const channelSchema = gql`
     parameters: [ParameterTuple]
   }
   type VersionRemoteSource {
+    remoteType: String
     parameters: [ParameterTuple]
   }
   type Channel {
