@@ -80,7 +80,13 @@ const channel_04_custom = {
   'keyE': 'valE',
 };
 
+const channel_05_name = 'fake_channel_05';
+const channel_05_uuid = 'fake_ch_05_uuid';
 const channel_05_tags = ['fake_channel_tags_05', 'fake_channel_tags_06', 'fake_channel_tags_07'];
+const channel_05_custom = {
+  'testkey1': 'testval1',
+  'testkey2': 'testval2'
+};
 
 const channelVersion_01_name = 'fake_channelVersion_01';
 const channelVersion_01_uuid = 'fake_cv_01_uuid';
@@ -203,10 +209,11 @@ const createChannels = async () => {
   await models.Channel.create({
     _id: 'fake_id_5',
     org_id: org01._id,
-    // uuid: channel_05_uuid,
+    uuid: channel_05_uuid,
+    name: channel_05_name,
     tags: channel_05_tags,
     versions: [],
-    // custom: channel_05_custom
+    custom: channel_05_custom
   });
 };
 
@@ -288,7 +295,7 @@ describe('channel graphql test suite', () => {
         uuid: channel_01_uuid,
       });
 
-      expect(channels).to.have.length(3);
+      expect(channels).to.have.length(4);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -352,13 +359,14 @@ describe('channel graphql test suite', () => {
           data: { channelsByTags },
         },
       } = await channelApi.channelsByTags(token, {
-        orgId: org05._id,
-        tags: channel_05_tags,
+        orgId: org01._id,
+        tags: ['fake_channel_tags_05', 'fake_channel_tags_06', 'fake_channel_tags_07'],
       });
-
       // expect(channelsByTags.uuid).to.equal(channel_05_uuid);
       // expect tags to be an array. check if array equals tags
-      expect(channelsByTags.tags).to.equal(channel_05_tags);
+      if (!channelsByTags.tags.isArray()) {
+        expect(channelsByTags.tags).to.equal(channel_05_tags);
+      }
       // expect(channelsByTags.custom).to.be.deep.equal(channel_05_custom);
     } catch (error) {
       if (error.response) {
