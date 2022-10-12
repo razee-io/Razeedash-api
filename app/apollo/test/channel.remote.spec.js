@@ -703,7 +703,7 @@ describe('channel remote graphql test suite', () => {
     }
   });
 
-  it('add a subscription and version under the remote channel', async () => {
+  it('add a subscription and version under the remote channel, with a different remoteType', async () => {
     try {
       const result = await subscriptionApi.addSubscription(userRootToken, {
         orgId: org01._id,
@@ -715,6 +715,7 @@ describe('channel remote graphql test suite', () => {
           description: 'version created with a subscription at the same time (swv means subscription with version)',
           type: 'yaml',
           remote: {
+            remoteType: 'gitlab',
             parameters: [
               {
                 key: 'orig-swv-key1',
@@ -753,7 +754,7 @@ describe('channel remote graphql test suite', () => {
       const sub01 = subscriptions.find( s => s.subscriptionName == 'swv-sub-name' );
       expect(sub01).to.be.an('object');
       expect(sub01.remote).to.be.an('object');
-      expect(sub01.remote.remoteType).to.equal('github');
+      expect(sub01.remote.remoteType).to.equal('gitlab');
       expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
     } catch (error) {
       if (error.response) {

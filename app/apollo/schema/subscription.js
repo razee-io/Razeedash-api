@@ -18,6 +18,7 @@ const { gql } = require('apollo-server-express');
 
 const subscriptionSchema = gql`
   input VersionRemoteInput {
+    remoteType: String
     parameters: [ParameterInput]
   }
   input VersionInput {
