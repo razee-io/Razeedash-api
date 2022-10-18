@@ -234,6 +234,13 @@ const applyQueryFieldsToResources = async(resources, queryFields={}, args, conte
 const applyQueryFieldsToDeployableVersions = async(versions, queryFields={}, args, context)=> { // eslint-disable-line
   const { models } = context;
 
+  _.each(versions, (version)=>{
+    // Ensure old data without `remote` attribute does not cause problems if `remote` is queried.
+    if(queryFields.remote && !version.remote){
+      version.remote = {};
+    }
+  });
+
   if(queryFields.owner){
     const owners = await models.User.getBasicUsersByIds(_.filter(_.uniq(_.map(versions, 'ownerId'))));
     _.each(versions, (version)=>{
@@ -256,6 +263,10 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
   _.each(channels, (channel)=>{
     if(!channel.tags){
       channel.tags = [];
+    }
+    // Ensure old data without `remote` attribute does not cause problems if `remote` is queried.
+    if(queryFields.remote && !channel.remote){
+      channel.remote = {};
     }
   });
 
