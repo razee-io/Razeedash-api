@@ -259,6 +259,7 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
     }
 
     // Ensure old data without `remoteType` attribute does not cause errors if `remoteType` is queried.
+    // Without this GQL will still return data, but will also return an error which can confuse clients.
     if( queryFields.remote && queryFields.remote.remoteType && (!channel.remote || !channel.remote.remoteType) ){
       channel.remote = channel.remote || {};
       channel.remote.remoteType = '';
