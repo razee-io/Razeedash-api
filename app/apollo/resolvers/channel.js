@@ -542,9 +542,6 @@ const channelResolvers = {
         if( subscriptions.length > 0 ) {
           throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
         }
-
-        // Note this feature is not full implemented, see commented out code later in this function.
-        throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
       }
 
       // Validate new version
@@ -648,6 +645,11 @@ const channelResolvers = {
           if( subscriptions ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
           }
+        }
+        // Block experimental feature even if enabled as it's not fully implemented
+        if( subscriptions ) {
+          // Note this feature is not full implemented, see commented out code later in this function.  Block even if experimental flag is enabled.
+          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
         }
 
         const version = await models.DeployableVersion.findOne( { uuid, org_id } );
@@ -850,7 +852,7 @@ const channelResolvers = {
 
       try{
         // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
+        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
           // Block experimental features
           if( deleteSubscriptions ) {
             throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'deleteSubscriptions' } ), context );
