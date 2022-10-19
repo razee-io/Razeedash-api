@@ -18,6 +18,8 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const { getOrg, bestOrgKey } = require('../../utils/orgs');
+const request = require('request-promise-native');
+const { RDD_STATIC_ARGS } = require('../../apollo/models/const');
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
@@ -39,8 +41,77 @@ type: Opaque
   res.status( 200 ).send( razeeIdentitySecretYaml );
 };
 
+const getClusterSubscriptionSubscription = async(req, res) => {
+  let version;
+  let url;
+  if (RDD_STATIC_ARGS.length > 0) {
+    RDD_STATIC_ARGS.forEach(arg => {
+      if (arg.includes('clustersubscription')) {
+        version = arg.slice(arg.lastIndexOf('=') + 1);
+      }
+    });
+  }
+
+  if (version) {
+    url = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/ClusterSubscription/${version}/us/resource.yaml`;
+  } else {
+    url = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/ClusterSubscription/latest/template/resource.yaml';
+  }
+
+  const clusterSubscriptionYaml = await request(url);
+
+  res.status( 200 ).send( clusterSubscriptionYaml );
+};
+
+const getRemoteResourceSubscription = async(req, res) => {
+  let version;
+  let url;
+  if (RDD_STATIC_ARGS.length > 0) {
+    RDD_STATIC_ARGS.forEach(arg => {
+      if (arg.includes('remoteresource')) {
+        version = arg.slice(arg.lastIndexOf('=') + 1);
+      }
+    });
+  }
+
+  if (version) {
+    url = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/RemoteResource/${version}/us/resource.yaml`;
+  } else {
+    url = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/RemoteResource/latest/template/resource.yaml';
+  }
+
+  const remoteResourceYaml = await request(url);
+
+  res.status( 200 ).send( remoteResourceYaml );
+};
+
+const getWatchKeeperSubscription = async(req, res) => {
+  let version;
+  let url;
+  if (RDD_STATIC_ARGS.length > 0) {
+    RDD_STATIC_ARGS.forEach(arg => {
+      if (arg.includes('watch-keeper')) {
+        version = arg.slice(arg.lastIndexOf('=') + 1);
+      }
+    });
+  }
+
+  if (version) {
+    url = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/WatchKeeper/${version}/us/resource.yaml`;
+  } else {
+    url = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/WatchKeeper/latest/template/resource.yaml';
+  }
+
+  const watchKeeperYaml = await request(url);
+
+  res.status( 200 ).send( watchKeeperYaml );
+};
+
 // /api/v2/systemSubscriptions/primaryOrgKey
 router.get('/primaryOrgKey', getOrg, asyncHandler(getPrimaryOrgKeySubscription));
+router.get('/clusterSubscription', asyncHandler(getClusterSubscriptionSubscription));
+router.get('/remoteResource', asyncHandler(getRemoteResourceSubscription));
+router.get('/watchKeeper', asyncHandler(getWatchKeeperSubscription));
 
 
 module.exports = router;

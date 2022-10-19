@@ -77,6 +77,33 @@ const subscriptionResolvers = {
           kubeOwnerName: null,
         });
 
+        subs.push({
+          subscriptionUuid: 'system-clustersubscription',
+          subscriptionName: 'system-clustersubscription',
+          subscriptionChannel: 'system-clustersubscription',
+          subscriptionVersion: 'system-clustersubscription',
+          url: 'api/v1/systemSubscriptions/clusterSubscription',
+          kubeOwnerName: null,
+        });
+
+        subs.push({
+          subscriptionUuid: 'system-remoteresource',
+          subscriptionName: 'system-remoteresource',
+          subscriptionChannel: 'system-remoteresource',
+          subscriptionVersion: 'system-remoteresource',
+          url: 'api/v1/systemSubscriptions/remoteResource',
+          kubeOwnerName: null,
+        });
+
+        subs.push({
+          subscriptionUuid: 'system-watchkeeper',
+          subscriptionName: 'system-watchkeeper',
+          subscriptionChannel: 'system-watchkeeper',
+          subscriptionVersion: 'system-watchkeeper',
+          url: 'api/v1/systemSubscriptions/watchKeeper',
+          kubeOwnerName: null,
+        });
+
         // Add in any normal Subscriptions for the cluster's groups or cluster id
         // examples:
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
