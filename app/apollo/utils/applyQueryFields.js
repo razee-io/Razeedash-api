@@ -442,6 +442,18 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
       }
     }
   }
+
+  if(queryFields.versionObj){
+    const versionUuids = _.uniq(_.map(subs, 'versionUuid'));
+    const deployableVersionObjs = await models.DeployableVersion.find({org_id: orgId, uuid: { $in: versionUuids } }).lean({ virtuals: true });
+
+    await applyQueryFieldsToDeployableVersions(deployableVersionObjs, queryFields.versionObj, args, context);
+
+    const versionsByUuid = _.keyBy(deployableVersionObjs, 'uuid');
+    _.each( subs, (sub) => {
+      sub.versionObj = versionsByUuid[ sub.versionUuid ];
+    } );
+  }
 };
 
 module.exports = {

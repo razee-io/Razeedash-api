@@ -235,6 +235,15 @@ const createSubscriptions = async () => {
   });
 };
 
+const createGroups = async () => {
+  await models.Group.create({
+    _id: 'dummyuuid',
+    org_id: org01._id,
+    uuid: 'group_dev_uuid',
+    name: 'dev',
+  });
+};
+
 describe('channel graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
@@ -252,6 +261,7 @@ describe('channel graphql test suite', () => {
     await createChannels();
     await createVersions();
     await createSubscriptions();
+    await createGroups();
 
     // Can be uncommented if you want to see the test data that was added to the DB
     //await getPresetOrgs();
@@ -325,6 +335,29 @@ describe('channel graphql test suite', () => {
 
       expect(channelByName.uuid).to.equal(channel_01_uuid);
       expect(channelByName.custom).to.be.deep.equal(channel_01_custom);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get channel by channel name with subscriptions and versions', async () => {
+    try {
+      const {
+        data: {
+          data: { channelByName },
+        },
+      } = await channelApi.channelByName(token, {
+        orgId: org01._id,
+        name: channel_04_name,
+      });
+
+      expect(channelByName.subscriptions.length).to.equal(1);
+      expect(channelByName.subscriptions[0].versionUuid).to.equal(channelByName.subscriptions[0].versionObj.uuid);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -625,7 +658,7 @@ describe('channel graphql test suite', () => {
     }
   });
 
-  it('edit channel and update subscription channel name', async () => {
+  it('edit channel and update channel name', async () => {
     try {
 
       const result = await channelApi.editChannel(adminToken, {
@@ -640,7 +673,6 @@ describe('channel graphql test suite', () => {
       expect(editChannel.name).to.equal(`${channel_04_name}_new`);
       const subResult = await models.Subscription.findOne({ org_id: org01._id, channel_uuid: channel_04_uuid, });
       expect(subResult.channelName).to.equal(`${channel_04_name}_new`);
-
     } catch(error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
