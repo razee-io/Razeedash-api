@@ -233,7 +233,7 @@ describe('subscriptions graphql test suite', () => {
         clusterId: cluster_id
       }, orgKey);
 
-      expect(subscriptionsByClusterId).to.have.length(3); // four SystemSubscriptions, one test subscription
+      expect(subscriptionsByClusterId).to.have.length(3); // two SystemSubscriptions, one test subscription
       expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
       expect(subscriptionsByClusterId[1].subscriptionName).to.equal('system-operators');
       expect(subscriptionsByClusterId[2].subscriptionName).to.equal('fake_sub_01'); // Test subscription
@@ -256,7 +256,7 @@ describe('subscriptions graphql test suite', () => {
       } = await subscriptionsApi.subscriptionsByClusterId(token, {
         clusterId: cluster_id_2
       }, orgKey);
-      expect(subscriptionsByClusterId).to.have.length(2); // four SystemSubscriptions, zero test subscriptions
+      expect(subscriptionsByClusterId).to.have.length(2); // two SystemSubscriptions, zero test subscriptions
       expect(subscriptionsByClusterId[0].subscriptionName).to.equal('system-primaryorgkey');  // PrimaryOrgKey SystemSubscription is expected to be first
       expect(subscriptionsByClusterId[1].subscriptionName).to.equal('system-operators');
     } catch (error) {

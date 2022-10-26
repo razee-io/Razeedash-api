@@ -45,15 +45,19 @@ type: Opaque
 Serves a System Subscription that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
 */
 const getOperatorsSubscription = async(req, res) => {
+  let operatorsYaml = '';
   let csVer;
   let rrVer;
   let wkVer;
   let csurl;
   let rrurl;
   let wkurl;
+  let filesrc;
   if (RDD_STATIC_ARGS.length > 0) {
     RDD_STATIC_ARGS.forEach(arg => {
-      if (arg.includes('clustersubscription')) {
+      if (arg.includes('file-source')) {
+        filesrc = arg.slice(arg.lastIndexOf('=') + 1);
+      } else if (arg.includes('clustersubscription')) {
         csVer = arg.slice(arg.lastIndexOf('=') + 1);
       } else if (arg.includes('remoteresource')) {
         rrVer = arg.slice(arg.lastIndexOf('=') + 1);
@@ -63,29 +67,31 @@ const getOperatorsSubscription = async(req, res) => {
     });
   }
 
-  if (csVer) {
-    csurl = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/ClusterSubscription/${csVer}/us/resource.yaml`;
-  } else {
-    csurl = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/ClusterSubscription/latest/template/resource.yaml';
+  if (filesrc) {
+    if (csVer) {
+      csurl = `${filesrc}/ClusterSubscription/${csVer}/us/resource.yaml`;
+    } else {
+      csurl = `${filesrc}/ClusterSubscription/latest/template/resource.yaml`;
+    }
+
+    if (rrVer) {
+      rrurl = `${filesrc}/RemoteResource/${rrVer}/us/resource.yaml`;
+    } else {
+      rrurl = `${filesrc}/RemoteResource/latest/template/resource.yaml`;
+    }
+
+    if (wkVer) {
+      wkurl = `${filesrc}/WatchKeeper/${wkVer}/us/resource.yaml`;
+    } else {
+      wkurl = `${filesrc}/razee-io/WatchKeeper/latest/template/resource.yaml`;
+    }
+
+    const csYaml = await axios.get(csurl);
+    const rrYaml = await axios.get(rrurl);
+    const wkYaml = await axios.get(wkurl);
+
+    operatorsYaml = csYaml.data + '---\n' + rrYaml.data + '---\n' + wkYaml.data;
   }
-
-  if (rrVer) {
-    rrurl = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/RemoteResource/${rrVer}/us/resource.yaml`;
-  } else {
-    rrurl = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/RemoteResource/latest/template/resource.yaml';
-  }
-
-  if (wkVer) {
-    wkurl = `https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/WatchKeeper/${wkVer}/us/resource.yaml`;
-  } else {
-    wkurl = 'https://s3.us.cloud-object-storage.appdomain.cloud/razee-io/WatchKeeper/latest/template/resource.yaml';
-  }
-
-  const csYaml = await axios.get(csurl);
-  const rrYaml = await axios.get(rrurl);
-  const wkYaml = await axios.get(wkurl);
-
-  const operatorsYaml = csYaml.data + '---\n' + rrYaml.data + '---\n' + wkYaml.data;
 
   res.status( 200 ).send( operatorsYaml );
 };
