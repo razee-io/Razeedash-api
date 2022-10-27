@@ -34,7 +34,7 @@ const channelFunc = grahqlUrl => {
                 name
                 description
               }
-              custom 
+              custom
           }
         }
     `,
@@ -64,7 +64,7 @@ const channelFunc = grahqlUrl => {
                 name
                 description
               }
-              custom 
+              custom
           }
         }
     `,
@@ -93,6 +93,16 @@ const channelFunc = grahqlUrl => {
                 uuid
                 name
                 description
+              }
+              subscriptions {
+                uuid
+                name
+                versionUuid
+                version
+                versionObj {
+                  uuid
+                  name
+                }
               }
               custom
           }
