@@ -452,6 +452,15 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
     const versionsByUuid = _.keyBy(deployableVersionObjs, 'uuid');
     _.each( subs, (sub) => {
       sub.versionObj = versionsByUuid[ sub.versionUuid ];
+
+      // Subscriptions can retrieve version details including remote params, but cannot retrieve version content
+      // This is similar to the code in the channelVersion resolver, but without the logic to retrieve and decode the content
+      if( sub.versionObj ) {
+        if( sub.versionObj.content ) {
+          sub.versionObj.remote = sub.versionObj.content.remote;
+          delete sub.versionObj.content;
+        }
+      }
     } );
   }
 };
