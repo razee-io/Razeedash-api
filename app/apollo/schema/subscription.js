@@ -66,7 +66,7 @@ const subscriptionSchema = gql`
     channel: Channel
     version: String!
     versionUuid: String!
-    versionObj: DeployableVersion!
+    versionObj: DeployableVersion
     owner: BasicUser!
     kubeOwnerName: String
     resources: [Resource!]
