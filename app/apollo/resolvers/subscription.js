@@ -126,9 +126,9 @@ const subscriptionResolvers = {
       let subs = [];
       try{
         subs = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
-        logger.info({req_id, user: whoIs(me), org_id, subs}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
+        logger.debug({req_id, user: whoIs(me), org_id}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
         subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
-        logger.info({req_id, user: whoIs(me), org_id, subs}, `${queryName} filtered to ${subs?subs.length:'ERR'} subscriptions`);
+        logger.debug({req_id, user: whoIs(me), org_id}, `${queryName} filtered to ${subs?subs.length:'ERR'} subscriptions`);
       }catch(err){
         logger.error(err);
         throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
