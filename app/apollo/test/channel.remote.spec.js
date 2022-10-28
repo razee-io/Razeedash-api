@@ -693,6 +693,12 @@ describe('channel remote graphql test suite', () => {
       expect( versions.length ).to.equal(1);
       // Verify the one version is the new one
       expect( versions[0].name ).to.equal('cwvs-version2');
+      // Verify config updated with version reference (there's only one config)
+      const channels = await models.Channel.find( { org_id: org01._id } );
+      // Verify just one version referenced (old one was deleted)
+      expect( channels[0].versions.length ).to.equal(1);
+      // Verify the one referenced version is the new one
+      expect( channels[0].versions[0].name ).to.equal('cwvs-version2');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -754,7 +760,7 @@ describe('channel remote graphql test suite', () => {
       expect(sub01).to.be.an('object');
       expect(sub01.remote).to.be.an('object');
       expect(sub01.remote.remoteType).to.equal('github');
-      expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
+      expect(sub01.remote.parameters.length).to.equal(3); // One from the Config, one from the Version created with the channel, one from the new subscription
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

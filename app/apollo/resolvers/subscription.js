@@ -517,6 +517,23 @@ const subscriptionResolvers = {
           // Save Version
           const dObj = await models.DeployableVersion.create( newVersionObj );
           version = dObj;
+
+          // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
+          try {
+            const channelVersionObj = {
+              uuid: version.uuid,
+              name: version.name,
+              description: version.description,
+              created: version.created
+            };
+            await models.Channel.updateOne(
+              { org_id: orgId, uuid: channel_uuid },
+              { $push: { versions: channelVersionObj } }
+            );
+          } catch(err) {
+            logger.error(err, `${queryName} failed to update the channel to reference the new Version '${version.name}' / '${channel_uuid}' when serving ${req_id}.`);
+            // Cannot fail here, the Version has already been created.  Continue.
+          }
         }
         // If neither version_uuid nor newVersion specified, fail validation
         else {
@@ -612,7 +629,7 @@ const subscriptionResolvers = {
             // Attempt to update Version references in the channel (the duplication is unfortunate and should be eliminated in the future)
             await models.Channel.updateOne(
               { org_id: orgId, uuid: channel.uuid },
-              { $pull: { versions: { uuid: uuid } } }
+              { $pull: { versions: { uuid: oldVersionUuid } } }
             );
             logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} channel reference to old version ${oldVersionUuid} removed` );
           }
@@ -772,12 +789,12 @@ const subscriptionResolvers = {
             // Delete Version references
             await models.Channel.updateOne(
               { org_id, uuid: channel.uuid },
-              { $pull: { versions: { uuid: uuid } } }
+              { $pull: { versions: { uuid: deployableVersionObj.uuid } } }
             );
             logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} version reference removed` );
 
             // Delete the Version record
-            await models.DeployableVersion.deleteOne( { org_id, uuid } );
+            await models.DeployableVersion.deleteOne( { org_id, uuid: deployableVersionObj.uuid } );
             logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} version deleted` );
           }
           catch(err) {
