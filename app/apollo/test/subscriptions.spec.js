@@ -619,7 +619,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  it('add a subscription', async () => {
+  it('add subscriptions with versionUuid references', async () => {
     try {
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
@@ -662,7 +662,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  it('edit a subscription', async () => {
+  it('edit subscriptions with versionUuid references', async () => {
     try {
       //step1, edit the subscription
       const result = await subscriptionApi.editSubscription(adminToken, {
@@ -793,4 +793,8 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
+
+  /*
+  Note: additional subscription tests (creating/deleting versions at the same time as the subscriptions) are located in channel.remote.spec.js
+  */
 });
