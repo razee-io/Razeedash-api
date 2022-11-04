@@ -13,7 +13,7 @@ RAZEE_CONFIG_UUID=${4:-${RAZEE_CONFIG_UUID:-pConfigUuid}}
 RAZEE_VER_UUID=${5:-${RAZEE_VER_UUID:-pVerUuid}}
 
 RAZEE_QUERY='mutation( $orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $version: VersionInput ) { addSubscription( orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, version: $version ) { uuid } }'
-RAZEE_VARIABLES='{"name":"'"${RAZEE_SUB_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","groups":["'"${RAZEE_GROUP_NAME}"'"],"channelUuid":"'"${RAZEE_CONFIG_UUID}"'","version":{ "name":"'"${RAZEE_SUB_NAME}"'","type":"application/yaml","remote":{"parameters":[{"key":"'"k1"'", "value":"'"ver1"'"}]},"description":"'"${RAZEE_VER_DESCR}"'" } }'
+RAZEE_VARIABLES='{"name":"'"${RAZEE_SUB_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","groups":["'"${RAZEE_GROUP_NAME}"'"],"channelUuid":"'"${RAZEE_CONFIG_UUID}"'","version":{ "name":"'"version-${RAZEE_SUB_NAME}"'","type":"application/yaml","remote":{"parameters":[{"key":"'"k1"'", "value":"'"ver1"'"}]},"description":"'"Version for ${RAZEE_SUB_NAME}"'" } }'
 
 echo "" && echo "******************************************************************"
 echo "" && echo "NOTE: addSubscription GraphQL API requires group NAMES, not UUIDs!"

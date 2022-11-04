@@ -230,6 +230,28 @@ const createChannels = async () => {
   });
 };
 
+const createVersions = async () => {
+  await models.DeployableVersion.create({
+    _id: 'fake_ver_id_1',
+    org_id: org01._id,
+    uuid: channelVersion_01_uuid,
+    name: channelVersion_01_name,
+    content: {
+      metadata: {
+        type: 'remote'
+      },
+      remote: {
+        parameters: [{
+          key: 'key1',
+          value: 'val1',
+        }]
+      }
+    }
+  });
+
+  // only version 01 needed for testing, skipping creating the rest
+};
+
 const createGroups = async () => {
   await models.Group.create({
     _id: UUID(),
@@ -409,6 +431,7 @@ describe('subscription graphql test suite', () => {
     await createUsers();
     await createGroups();
     await createChannels();
+    await createVersions();
     await createSubscriptions();
     await createClusters();
 
@@ -493,6 +516,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: subscription_01_uuid,
       });
+      console.log( `subscription result.data: ${JSON.stringify(result.data,null,2)}` );
       expect(result.data.errors).to.be.undefined;
       const subscription = result.data.data.subscription;
       expect(subscription.name).to.equal(subscription_01_name);
@@ -506,6 +530,14 @@ describe('subscription graphql test suite', () => {
       expect(subscription.groupObjs[0].clusters[0].syncedIdentities).to.exist;
       expect(subscription.groupObjs[0].clusters[0].syncedIdentities[0].id).to.equal( userRoot._id );
       expect(subscription.groupObjs[0].clusters[0].syncedIdentities[0].syncStatus).to.equal( 'failed' );
+
+      expect(subscription.versionObj).to.exist;
+      expect(subscription.versionObj.name).to.equal( channelVersion_01_name );
+      expect(subscription.versionObj.remote).to.exist;
+      expect(subscription.versionObj.remote.parameters).to.exist;
+      expect(subscription.versionObj.remote.parameters.length).to.equal(1);
+      expect(subscription.versionObj.remote.parameters[0].key).to.equal( 'key1' );
+      expect(subscription.versionObj.remote.parameters[0].value).to.equal( 'val1' );
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -587,7 +619,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  it('add a subscription', async () => {
+  it('add subscriptions with versionUuid references', async () => {
     try {
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
@@ -630,7 +662,7 @@ describe('subscription graphql test suite', () => {
     }
   });
 
-  it('edit a subscription', async () => {
+  it('edit subscriptions with versionUuid references', async () => {
     try {
       //step1, edit the subscription
       const result = await subscriptionApi.editSubscription(adminToken, {
@@ -761,4 +793,8 @@ describe('subscription graphql test suite', () => {
       throw error;
     }
   });
+
+  /*
+  Note: additional subscription tests (creating/deleting versions at the same time as the subscriptions) are located in channel.remote.spec.js
+  */
 });

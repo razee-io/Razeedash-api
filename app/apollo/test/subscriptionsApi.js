@@ -57,6 +57,16 @@ const subscriptionsFunc = grahqlUrl => {
               channelName
               version
               versionUuid
+              versionObj {
+                uuid
+                name
+                remote {
+                  parameters {
+                    key
+                    value
+                  }
+                }
+              }
               created
               updated
               owner {
@@ -97,6 +107,16 @@ const subscriptionsFunc = grahqlUrl => {
               channelName
               version
               versionUuid
+              versionObj {
+                uuid
+                name
+                remote {
+                  parameters {
+                    key
+                    value
+                  }
+                }
+              }
               created
               updated
               owner {
