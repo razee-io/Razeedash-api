@@ -18,6 +18,9 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const { getOrg, bestOrgKey } = require('../../utils/orgs');
+const axios = require('axios');
+const yaml = require('js-yaml');
+const { RDD_STATIC_ARGS } = require('../../apollo/models/const');
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
@@ -39,8 +42,66 @@ type: Opaque
   res.status( 200 ).send( razeeIdentitySecretYaml );
 };
 
+/*
+Serves a System Subscription that returns a CronJob that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
+*/
+const getOperatorsSubscription = async(req, res) => {
+  const protocol = req.protocol || 'http';
+  let host = req.header('host') || 'localhost:3333';
+  if (process.env.EXTERNAL_HOST) {
+    host = process.env.EXTERNAL_HOST;
+  }
+  let url = `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(req.org).key}`;
+  let image = await axios.get(url);
+  image = yaml.loadAll(image.data);
+  image = image[4].spec.template.spec.containers[0].image;
+
+  let args = '';
+  if (RDD_STATIC_ARGS.length > 0) {
+    RDD_STATIC_ARGS.forEach(arg => {
+      args += `"${arg}", `;
+    });
+  }
+
+  const razeeupdateYaml = `apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: razeeupdate
+  namespace: razeedeploy
+spec:
+  schedule: "@midnight"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 60
+      backoffLimit: 1
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: razeedeploy-sa
+          containers:
+          - name: razeeupdate
+            image: "${ image }"
+            imagePullPolicy: Always
+            command: 
+              [
+                "./bin/razeedeploy-delta",
+                "update",
+                "--namespace=razeedeploy"
+              ]
+            args:
+              [
+                ${ args }
+              ]
+          restartPolicy: Never   
+`;
+
+  res.status( 200 ).send( razeeupdateYaml );
+};
+
 // /api/v2/systemSubscriptions/primaryOrgKey
 router.get('/primaryOrgKey', getOrg, asyncHandler(getPrimaryOrgKeySubscription));
+router.get('/operators', asyncHandler(getOperatorsSubscription));
 
 
 module.exports = router;
