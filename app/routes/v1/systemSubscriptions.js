@@ -19,6 +19,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const { getOrg, bestOrgKey } = require('../../utils/orgs');
 const axios = require('axios');
+const yaml = require('js-yaml');
 const { RDD_STATIC_ARGS } = require('../../apollo/models/const');
 
 /*
@@ -42,58 +43,60 @@ type: Opaque
 };
 
 /*
-Serves a System Subscription that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
+Serves a System Subscription that returns a CronJob that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
 */
 const getOperatorsSubscription = async(req, res) => {
-  let operatorsYaml = '';
-  let csVer;
-  let rrVer;
-  let wkVer;
-  let csurl;
-  let rrurl;
-  let wkurl;
-  let filesrc;
+  const protocol = req.protocol || 'http';
+  let host = req.header('host') || 'localhost:3333';
+  if (process.env.EXTERNAL_HOST) {
+    host = process.env.EXTERNAL_HOST;
+  }
+  let url = `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(req.org).key}`;
+  let image = await axios.get(url);
+  image = yaml.loadAll(image.data);
+  image = image[4].spec.template.spec.containers[0].image;
+
+  let args = '';
   if (RDD_STATIC_ARGS.length > 0) {
     RDD_STATIC_ARGS.forEach(arg => {
-      if (arg.includes('file-source')) {
-        filesrc = arg.slice(arg.lastIndexOf('=') + 1);
-      } else if (arg.includes('clustersubscription')) {
-        csVer = arg.slice(arg.lastIndexOf('=') + 1);
-      } else if (arg.includes('remoteresource')) {
-        rrVer = arg.slice(arg.lastIndexOf('=') + 1);
-      } else if (arg.includes('watch-keeper')) {
-        wkVer = arg.slice(arg.lastIndexOf('=') + 1);
-      }
+      args += `"${arg}", `;
     });
   }
 
-  if (filesrc) {
-    if (csVer) {
-      csurl = `${filesrc}/ClusterSubscription/${csVer}/us/resource.yaml`;
-    } else {
-      csurl = `${filesrc}/ClusterSubscription/latest/template/resource.yaml`;
-    }
+  const razeeupdateYaml = `apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: razeeupdate
+  namespace: razeedeploy
+spec:
+  schedule: "@midnight"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 60
+      backoffLimit: 1
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: razeedeploy-sa
+          containers:
+          - name: razeeupdate
+            image: "${ image }"
+            imagePullPolicy: Always
+            command: 
+              [
+                "./bin/razeedeploy-delta",
+                "update",
+                "--namespace=razeedeploy"
+              ]
+            args:
+              [
+                ${ args }
+              ]
+          restartPolicy: Never   
+`;
 
-    if (rrVer) {
-      rrurl = `${filesrc}/RemoteResource/${rrVer}/us/resource.yaml`;
-    } else {
-      rrurl = `${filesrc}/RemoteResource/latest/template/resource.yaml`;
-    }
-
-    if (wkVer) {
-      wkurl = `${filesrc}/WatchKeeper/${wkVer}/us/resource.yaml`;
-    } else {
-      wkurl = `${filesrc}/razee-io/WatchKeeper/latest/template/resource.yaml`;
-    }
-
-    const csYaml = await axios.get(csurl);
-    const rrYaml = await axios.get(rrurl);
-    const wkYaml = await axios.get(wkurl);
-
-    operatorsYaml = csYaml.data + '---\n' + rrYaml.data + '---\n' + wkYaml.data;
-  }
-
-  res.status( 200 ).send( operatorsYaml );
+  res.status( 200 ).send( razeeupdateYaml );
 };
 
 // /api/v2/systemSubscriptions/primaryOrgKey
