@@ -77,6 +77,15 @@ const subscriptionResolvers = {
           kubeOwnerName: null,
         });
 
+        subs.push({
+          subscriptionUuid: 'system-operators',
+          subscriptionName: 'system-operators',
+          subscriptionChannel: 'system-operators',
+          subscriptionVersion: 'system-operators',
+          url: 'api/v1/systemSubscriptions/operators',
+          kubeOwnerName: null,
+        });
+
         // Add in any normal Subscriptions for the cluster's groups or cluster id
         // examples:
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
