@@ -51,10 +51,11 @@ const getOperatorsSubscription = async(req, res) => {
   if (process.env.EXTERNAL_HOST) {
     host = process.env.EXTERNAL_HOST;
   }
-  let url = `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(req.org).key}`;
-  let image = await axios.get(url);
-  image = yaml.loadAll(image.data);
-  image = image[4].spec.template.spec.containers[0].image;
+  const url = `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(req.org).key}`;
+  let job = await axios.get(url);
+  job = yaml.loadAll(job.data);
+  const image = job[4].spec.template.spec.containers[0].image;
+  const command = job[4].spec.template.spec.containers[0].command[0];
 
   let args = '';
   if (RDD_STATIC_ARGS.length > 0) {
@@ -85,7 +86,7 @@ spec:
             imagePullPolicy: Always
             command: 
               [
-                "./bin/razeedeploy-delta",
+                "${ command }",
                 "update",
                 "--namespace=razeedeploy"
               ]
