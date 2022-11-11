@@ -63,6 +63,7 @@ const channel_01_custom = {
 
 const channel_02_name = 'fake_channel_02';
 const channel_02_uuid = 'fake_ch_02_uuid';
+const channel_02_tags = ['tag_01', 'tag_02'];
 const channel_02_custom = { 'keyA': 'valA' };
 
 const channel_03_name = 'fake_channel_03';
@@ -172,6 +173,7 @@ const createChannels = async () => {
     uuid: channel_02_uuid,
     name: channel_02_name,
     versions: [],
+    tags: channel_02_tags,
     custom: channel_02_custom
   });
 
@@ -335,6 +337,54 @@ describe('channel graphql test suite', () => {
 
       expect(channelByName.uuid).to.equal(channel_01_uuid);
       expect(channelByName.custom).to.be.deep.equal(channel_01_custom);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get channel by channel tags', async () => {
+    try {
+      const {
+        data: {
+          data: { channelsByTags },
+        },
+      } = await channelApi.channelsByTags(token, {
+        orgId: org01._id,
+        tags: channel_02_tags,
+      });
+      console.log(`channelsByTags:${JSON.stringify( channelsByTags, null, 2 )}`);
+
+      expect(channelsByTags.length).to.equal(1);
+      expect(channelsByTags[0].uuid).to.equal(channel_02_uuid);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('get channel by one channel tag', async () => {
+    try {
+      const {
+        data: {
+          data: { channelsByTags },
+        },
+      } = await channelApi.channelsByTags(token, {
+        orgId: org01._id,
+        tags: [channel_02_tags[0]],
+      });
+      console.log(`channelsByTags:${JSON.stringify( channelsByTags, null, 2 )}`);
+
+      expect(channelsByTags.length).to.equal(1);
+      expect(channelsByTags[0].uuid).to.equal(channel_02_uuid);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

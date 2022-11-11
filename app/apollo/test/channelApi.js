@@ -35,9 +35,9 @@ const channelFunc = grahqlUrl => {
                 description
               }
               custom
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -65,9 +65,9 @@ const channelFunc = grahqlUrl => {
                 description
               }
               custom
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -105,9 +105,35 @@ const channelFunc = grahqlUrl => {
                 }
               }
               custom
+            }
           }
-        }
-    `,
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+  const channelsByTags = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          query($orgId: String! $tags: [String!]!) {
+            channelsByTags(orgId: $orgId tags: $tags) {
+              uuid
+              orgId
+              name
+              data_location
+              created
+              tags
+              custom
+            }
+          }
+        `,
         variables,
       },
       {
@@ -133,9 +159,9 @@ const channelFunc = grahqlUrl => {
               description
               content
               created
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -161,9 +187,9 @@ const channelFunc = grahqlUrl => {
               description
               content
               created
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -182,9 +208,9 @@ const channelFunc = grahqlUrl => {
             addChannelVersion(orgId: $orgId channelUuid: $channelUuid name: $name type: $type content: $content description: $description) {
               versionUuid
               success
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -203,9 +229,9 @@ const channelFunc = grahqlUrl => {
             removeChannelVersion(orgId: $orgId uuid: $uuid) {
               uuid
               success
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -223,9 +249,9 @@ const channelFunc = grahqlUrl => {
           mutation($orgId: String!,$name: String!, $data_location: String, $custom: JSON) {
             addChannel(orgId: $orgId name: $name, data_location: $data_location, custom: $custom) {
               uuid
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -245,9 +271,9 @@ const channelFunc = grahqlUrl => {
               uuid
               success
               name
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -266,9 +292,9 @@ const channelFunc = grahqlUrl => {
             removeChannel(orgId: $orgId uuid: $uuid) {
               uuid
               success
+            }
           }
-        }
-    `,
+        `,
         variables,
       },
       {
@@ -282,6 +308,7 @@ const channelFunc = grahqlUrl => {
     channels,
     channel,
     channelByName,
+    channelsByTags,
     channelVersion,
     channelVersionByName,
     addChannelVersion,
