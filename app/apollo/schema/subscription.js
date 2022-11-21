@@ -61,6 +61,7 @@ const subscriptionSchema = gql`
     name: String!
     groups: [String!]
     clusterId: String
+    cluster: BasicCluster
     channelUuid: String!
     channelName: String!
     channel: Channel
