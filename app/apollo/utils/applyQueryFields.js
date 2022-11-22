@@ -281,6 +281,22 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
       channel.subscriptions = subscriptionsByChannelUuid[channel.uuid] || [];
     });
   }
+
+  if(queryFields.serviceSubscriptions){
+    const conditions = await getGroupConditions(me, orgId, ACTIONS.READ, 'name', 'applyQueryFieldsToChannels queryFields.serviceSubscriptions', context);
+    const channelUuids = _.uniq(_.map(channels, 'uuid'));
+    let serviceSubs = await models.ServiceSubscription.find({ org_id: orgId, channel_uuid: { $in: channelUuids }, ...conditions }, {}).lean({ virtuals: true });
+    serviceSubs = await filterSubscriptionsToAllowed(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, serviceSubs, context);
+
+    serviceSubs.forEach(i => i.ssid = i.uuid);
+
+    await applyQueryFieldsToSubscriptions(serviceSubs, queryFields.serviceSubscriptions, {orgId, servSub: true}, context);
+
+    const servSubsByChannelUuid = _.groupBy(serviceSubs, 'channel_uuid');
+    _.each(channels, (channel)=>{
+      channel.serviceSubscriptions = servSubsByChannelUuid[channel.uuid] || [];
+    });
+  }
 };
 
 const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, context)=>{ // eslint-disable-line

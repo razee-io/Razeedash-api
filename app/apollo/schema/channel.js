@@ -77,6 +77,7 @@ const channelSchema = gql`
     updated: Date
     versions: [ChannelVersion]
     subscriptions: [ChannelSubscription]
+    serviceSubscriptions: [ServiceSubscription]
     tags: [String!]!
     custom: JSON
     owner: BasicUser
