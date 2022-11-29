@@ -87,6 +87,9 @@ const channelVersion_01_uuid = 'fake_cv_01_uuid';
 const subscription_01_name = 'fake_subscription_01';
 const subscription_01_uuid = 'fake_sub_01_uuid';
 
+const serviceSubscription_01_name = 'fake_serviceSubscription_01';
+const serviceSubscription_01_uuid = 'fake_servsub_01_uuid';
+
 const createOrganizations = async () => {
   org01Data = JSON.parse(
     fs.readFileSync(
@@ -237,6 +240,21 @@ const createSubscriptions = async () => {
   });
 };
 
+const createServiceSubscriptions = async () => {
+  await models.ServiceSubscription.create({
+    _id: 'fake_ss_id_1',
+    org_id: org01._id,
+    uuid: serviceSubscription_01_uuid,
+    name: serviceSubscription_01_name,
+    owner: 'abc',
+    groups: ['dev'],
+    channel_uuid: channel_04_uuid,
+    channelName: channel_04_name,
+    version: channelVersion_01_name,
+    version_uuid: channelVersion_01_uuid,
+  });
+};
+
 const createGroups = async () => {
   await models.Group.create({
     _id: 'dummyuuid',
@@ -263,6 +281,7 @@ describe('channel graphql test suite', () => {
     await createChannels();
     await createVersions();
     await createSubscriptions();
+    await createServiceSubscriptions();
     await createGroups();
 
     // Can be uncommented if you want to see the test data that was added to the DB
@@ -405,9 +424,11 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: channel_04_name,
       });
-
+      console.log(channelByName);
       expect(channelByName.subscriptions.length).to.equal(1);
       expect(channelByName.subscriptions[0].versionUuid).to.equal(channelByName.subscriptions[0].versionObj.uuid);
+
+      expect(channelByName.serviceSubscriptions.length).to.equal(1);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
