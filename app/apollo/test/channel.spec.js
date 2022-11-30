@@ -424,7 +424,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         name: channel_04_name,
       });
-      console.log(channelByName);
+
       expect(channelByName.subscriptions.length).to.equal(1);
       expect(channelByName.subscriptions[0].versionUuid).to.equal(channelByName.subscriptions[0].versionObj.uuid);
 
