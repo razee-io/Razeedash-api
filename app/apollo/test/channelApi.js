@@ -104,6 +104,9 @@ const channelFunc = grahqlUrl => {
                   name
                 }
               }
+              serviceSubscriptions {
+                name
+              }
               custom
             }
           }

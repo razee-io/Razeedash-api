@@ -79,6 +79,11 @@ const subscriptionsFunc = grahqlUrl => {
                 pendingCount
                 failedCount
               }
+              cluster { 
+                clusterId 
+                orgId 
+                registration 
+              }
               custom
             }
           }

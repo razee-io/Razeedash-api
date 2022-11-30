@@ -341,6 +341,7 @@ const createSubscriptions = async () => {
     name: subscription_04_name,
     owner: user77._id,
     groups: ['dev'],
+    clusterId: 'cluster_03',
     channel_uuid: channel_04_uuid,
     channel: channel_04_name,
     version: channelVersion_04_name,
@@ -385,6 +386,24 @@ const createClusters = async () => {
       },
     },
     registration: { name: 'my-cluster2' }
+  });
+  await models.Cluster.create({
+    org_id: org77._id,
+    cluster_id: 'cluster_03',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+    registration: { name: 'my-cluster3' }
   });
 };
 
@@ -500,6 +519,10 @@ describe('subscription graphql test suite', () => {
       });
       expect(result3.data.data.subscriptions).to.have.length(2);
       expect(Object.keys(result3.data.data.subscriptions[1].custom)).to.have.length(2);
+
+      // subscription 2 should have cluster details
+      expect( result3.data.data.subscriptions[1].cluster ).to.exist;
+
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
