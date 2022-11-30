@@ -280,7 +280,7 @@ describe('clusters', () => {
       // Test
       let nextCalled = false;
       let next = (err) => {
-        assert.equal(err.message, 'Cannot read properties of undefined (reading \'selfLink\')');
+        assert.equal(err.message, 'Cannot read property \'selfLink\' of undefined');
         nextCalled = true;
       };
 
