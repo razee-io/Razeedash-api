@@ -94,7 +94,13 @@ spec:
               [
                 ${ args }
               ]
-          restartPolicy: Never   
+          restartPolicy: Never
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: razeedeploy-sa
+  namespace: razeedeploy
 `;
 
   res.status( 200 ).send( razeeupdateYaml );
