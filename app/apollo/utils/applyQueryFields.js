@@ -146,6 +146,7 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
       group.owner = owners[group.owner] || owners.undefined;
     });
   }
+
   if(queryFields.subscriptions || queryFields.subscriptionCount){
     const groupNames = _.uniq(_.map(groups, 'name'));
     let subscriptions = await models.Subscription.find({ org_id: orgId, groups: { $in: groupNames } }).lean({ virtuals: true });
@@ -158,7 +159,13 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
       if(_.isUndefined(sub.channelName)){
         sub.channelName = sub.channel;
       }
-      delete sub.channel; // can not render channel, too deep
+
+      // Allow querying channel details, but not sub-objects, too deep.  Ideally should throw errors BEFORE querying.
+      // delete sub.channel; // can not render channel, too deep
+      if( sub.channel && sub.channel.subscriptions ) delete sub.channel.subscriptions;
+      if( sub.channel && sub.channel.serviceSubscriptions ) delete sub.channel.serviceSubscriptions;
+      if( sub.channel && sub.channel.versions ) delete sub.channel.versions;
+
       _.each(sub.groups, (groupName)=>{
         subscriptionsByGroupName[groupName] = subscriptionsByGroupName[groupName] || [];
         subscriptionsByGroupName[groupName].push(sub);
@@ -169,6 +176,7 @@ const applyQueryFieldsToGroups = async(groups, queryFields={}, args, context)=>{
       group.subscriptionCount = group.subscriptions.length;
     });
   }
+
   if(queryFields.clusters || queryFields.clusterCount){
     const groupUuids = _.uniq(_.map(groups, 'uuid'));
     const clusters = await models.Cluster.find({ org_id: orgId, 'groups.uuid': { $in: groupUuids } }).lean({ virtuals: true });
