@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2019, 2022 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ const objectHash = require('object-hash');
 const _ = require('lodash');
 const moment = require('moment');
 const axios = require('axios');
-var glob = require('glob-promise');
-var fs = require('fs');
+const glob = require('glob-promise');
+const fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
 const pLimit = require('p-limit');
 
@@ -47,7 +47,7 @@ const addUpdateCluster = async (req, res, next) => {
     const Stats = req.db.collection('resourceStats');
     const cluster = await Clusters.findOne({ org_id: req.org._id, cluster_id: req.params.cluster_id});
     const metadata = req.body;
-    var reg_state = CLUSTER_REG_STATES.REGISTERED;
+    const reg_state = CLUSTER_REG_STATES.REGISTERED;
     if (!cluster) {
       // new cluster flow requires a cluster to be registered first.
       if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
@@ -83,23 +83,23 @@ const addUpdateCluster = async (req, res, next) => {
 
 };
 
-var getAddClusterWebhookHeaders = async()=>{
+const getAddClusterWebhookHeaders = async()=>{
   // loads the headers specified in the 'razeedash-add-cluster-webhook-headers-secret' secret
   // returns the key-value pairs of the secret as a js obj
-  var filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
-  var fileNames = await glob('**', {
+  const filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
+  const fileNames = await glob('**', {
     cwd: filesDir,
     nodir: true,
   });
-  var headers = {};
+  const headers = {};
   _.each(fileNames, (name)=>{
-    var val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
+    const val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
     headers[encodeURIComponent(name)] = val;
   });
   return headers;
 };
 
-var runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
+const runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   var postData = {
     org_id: orgId,
     cluster_id: clusterId,
@@ -134,7 +134,7 @@ function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
   return result;
 }
 
-var deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
+const deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
   const Resources = req.db.collection('resources');
   selfLinks = _.filter(selfLinks); // in such a case that a null is passed to us. if you do $in:[null], it returns all items missing the attr, which is not what we want
   if(selfLinks.length < 1){
@@ -198,13 +198,16 @@ const updateClusterResources = async (req, res, next) => {
     }
 
     /*
-    If multiple 'MODIFIED' updates to the same resource are received in the same
-    payload, keep only the the last 'MODIFIED' update from the payload.
-    This is intended to limit noise from a resource that is experiencing many
-    rapid updates.
-    Ref: satellite-config/issues/1440
+    If multiple 'ADDED' or 'MODIFIED' updates to the same resource are received in
+    the same payload, keep only the latest update from the payload.
+    This limits noise from a resource that is experiencing rapid updates.
+    It may also prevent duplicate resource creation, e.g. if a resource includes
+    both ADDED and MODIFIED events, they may be executed in parallel by the
+    Promise.all() below and result in double insertion.  Duplicate insertion has
+    been seen, but not conclusively proven that this is the cause (presence of
+    the 'truncated' warning in logs with update_type ADDED would confirm).
     */
-    const dedupUpdates = ['MODIFIED'];
+    const dedupUpdates = ['ADDED','MODIFIED'];
     const dedupedResources = [];
     for( let i = 0; i < resources.length; i++) {
       const resource = resources[i];
@@ -218,8 +221,8 @@ const updateClusterResources = async (req, res, next) => {
           const checkResource = resources[j];
           const checkResourceType = checkResource['type'] || 'other';
           const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : (checkResource.object.metadata ? checkResource.object.metadata.selfLink : null);
-          // If the checked resource update is same type for the same resource, it shouldn't be kept.
-          if( selfLink == checkResourceSelfLink && type == checkResourceType ) {
+          // If the checked resource update is dedupable and for the same resource, it shouldn't be kept.
+          if( selfLink == checkResourceSelfLink && dedupUpdates.includes(checkResourceType) ) {
             req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update in same payload, truncated' );
             isLastUpdate = false;
             break; // No need to check for further resources.
@@ -446,7 +449,7 @@ const updateClusterResources = async (req, res, next) => {
   }
 };
 
-var addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
+const addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
   var ResourceYamlHist = req.db.collection('resourceYamlHist');
   var id = uuid();
   var obj = {
