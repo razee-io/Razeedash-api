@@ -21,9 +21,6 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
 
   let subs = await Promise.all( matchingSubscriptions.map(async (subscription) => {
     const channel = matchingChannelsByName[subscription.channelName];
-    const versionRefs = channel.versions.filter( (ver) => {
-      return (ver.name === subscription.version);
-    });
 
     const sub = {
       subscriptionName: subscription.name,
@@ -34,31 +31,25 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
 
     // Handle url (UPLOADED channels) or remote settings (REMOTE channels)
     if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-      let url;
-      if(versionRefs.length > 0) {
-        url = `api/v1/channels/${subscription.channelName}/${versionRefs[0].uuid}`;
-      }
-      sub.url = url;
+      sub.url = `api/v1/channels/${subscription.channelName}/${subscription.version_uuid}`;
     }
     else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
       sub.remote = {
         remoteType: channel.remote.remoteType,
         parameters: channel.remote.parameters || [],
       };
-      if(versionRefs.length > 0) {
-        const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: versionRefs[0].uuid } );
-        // Combine channel and version remote params
-        if( version && version.content.remote.parameters ) {
-          version.content.remote.parameters.forEach( vp => {
-            const sp = sub.remote.parameters.find( p => p.key == vp.key );
-            if( sp ) {
-              sp.value = vp.value;  // Override the channel param with the value from the version param
-            }
-            else {
-              sub.remote.parameters.push( vp ); // Add the version param
-            }
-          } );
-        }
+      const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: subscription.version_uuid } );
+      // Combine channel and version remote params
+      if( version && version.content.remote.parameters ) {
+        version.content.remote.parameters.forEach( vp => {
+          const sp = sub.remote.parameters.find( p => p.key == vp.key );
+          if( sp ) {
+            sp.value = vp.value;  // Override the channel param with the value from the version param
+          }
+          else {
+            sub.remote.parameters.push( vp ); // Add the version param
+          }
+        } );
       }
     }
 

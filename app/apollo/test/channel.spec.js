@@ -834,7 +834,7 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         uuid: channel_01_uuid,
       });
-      console.log(`channel read = ${JSON.stringify(channel.versions)}`);
+      console.log(`channel read = ${JSON.stringify(channel, null, 2)}`);
       expect(channel.versions.length).to.equal(3);
     } catch (error) {
       if (error.response) {
