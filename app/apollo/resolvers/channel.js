@@ -182,7 +182,7 @@ const channelResolvers = {
             deployableVersionObj.content = decryptedContentResult.content;
           }
           catch( e ) {
-            logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${versionObj.uuid}' for request ${req_id}: ${e.message}`);
+            logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${deployableVersionObj.uuid}' for request ${req_id}: ${e.message}`);
             throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
           }
         }
@@ -340,10 +340,10 @@ const channelResolvers = {
         await Promise.all( subscriptions.map( async (s) => {
           const version = versions.find( v => v.name === s.versionName );
           if( !version ) {
-            logger.error(e, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' was not created.`);
+            logger.error({ req_id, user: whoIs(me), org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' was not created.`);
           }
           else if( !version.uuid ) {
-            logger.error(e, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' failed creation.`);
+            logger.error({ req_id, user: whoIs(me), org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' failed creation.`);
           }
 
           const subscriptionObj = {
@@ -540,7 +540,7 @@ const channelResolvers = {
       // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
 
       // Save Version
-      const dObj = await models.DeployableVersion.create( newVersionObj );
+      await models.DeployableVersion.create( newVersionObj );
 
       // Attempt to create subscription(s)
       await Promise.all( subscriptions.map( async (s) => {

@@ -339,7 +339,7 @@ const subscriptionResolvers = {
         let version;
         // Load the existing version if version_uuid specified (without using deprecated versions attribute on the channel)
         if( version_uuid ) {
-          version = models.DeployableVersion.findOne({org_id: orgId, channel_uuid: channel.uuid, uuid: version_uuid});
+          version = models.DeployableVersion.findOne({org_id, channel_uuid: channel.uuid, uuid: version_uuid});
           if (!version) {
             throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': version_uuid }), context);
           }
