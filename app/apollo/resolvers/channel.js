@@ -156,27 +156,23 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        const channel_uuid = channel.uuid; // in case query by channelName, populate channel_uuid
 
-        // search version by version uuid or version name
-        const versionObjs = channel.versions.filter( v => (v.uuid === versionUuid || v.name === versionName) );
+        // search version by uuid or name (avoid using deprecated `versions` attribute of the Channel)
+        const deployableVersionFilter = versionName ? { org_id, channel_id: channel.uuid, name: versionName } : { org_id, channel_id: channel.uuid, uuid: versionUuid } ;
+        const deployableVersionObjs = await models.DeployableVersion.(deployableVersionFilter).limit(2);
+        const deployableVersionObjs = deployableVersionObjs[0] || null;
 
         // If more than one matching version found, throw an error
-        if( versionObjs.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${versionObjs.length} matching versions` );
-          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'version', 'name':versionName}), context);
+        if( deployableVersionObjs.length > 1 ) {
+          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${deployableVersionObjs.length} matching versions` );
+          throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'DeployableVersion', 'name':versionName||versionUuid}), context);
         }
 
-        const versionObj = versionObjs[0] || null;
-        if (!versionObj) {
-          throw new NotFoundError(context.req.t('versionObj "{{versionUuid}}" is not found for {{channel.name}}:{{channel.uuid}}', {'versionUuid':versionUuid, 'channel.name':channel.name, 'channel.uuid':channel.uuid}), context);
-        }
-
-        const version_uuid = versionObj.uuid; // in case query by versionName, populate version_uuid
-        const deployableVersionObj = await models.DeployableVersion.findOne({org_id, channel_id: channel_uuid, uuid: version_uuid });
+        // If no matching version found, throw an error
         if (!deployableVersionObj) {
-          throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.', {'channel.name':channel.name, 'channel.uuid':channel.uuid, 'versionObj.name':versionObj.name, 'versionObj.uuid':versionObj.uuid}), context);
+          throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.', {'channel.name':channel.name, 'channel.uuid':channel.uuid, 'versionName':versionName, 'versionObj.uuid':versionUuid}), context);
         }
+
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
 
         // If channel is Uploaded type, replace the `content` attribute with the actual content data string
@@ -211,15 +207,14 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
       // Create the channel object to be saved.
-      const uuid = UUID();
       const kubeOwnerId = await models.User.getKubeOwnerId(context);
       const newChannelObj = {
         _id: UUID(),
-        uuid,
+        uuid: UUID(),
         org_id,
         contentType,
         name,
-        versions: [],
+        versions: [], /* deprecated, do not use */
         tags,
         ownerId: me._id,
         kubeOwnerId,
@@ -330,30 +325,13 @@ const channelResolvers = {
             // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
 
             // Save Version
-            const dObj = await models.DeployableVersion.create( versionObj );
+            await models.DeployableVersion.create( versionObj );
 
             // Keep version uuid for later use when creating subscriptions
             v.uuid = versionObj.uuid;
-
-            // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
-            try {
-              const channelVersionObj = {
-                uuid: versionObj.uuid,
-                name: versionObj.name,
-                description: versionObj.description,
-                created: dObj.created
-              };
-              await models.Channel.updateOne(
-                { org_id, uuid: newChannelObj.uuid },
-                { $push: { versions: channelVersionObj } }
-              );
-            } catch(err) {
-              logger.error(err, `${queryName} failed to update the channel to reference the new Version '${versionObj.name}' / '${newChannelObj.uuid}' when serving ${req_id}.`);
-              // Cannot fail here, the Version has already been created.  Continue.
-            }
           }
           catch( e ) {
-            logger.error(e, `${queryName} failed to create version '${versionObj.name}' when serving ${req_id}.`);
+            logger.error(e, `${queryName} error creating version '${versionObj.name}' when serving ${req_id}.`);
             // Cannot fail here, the Channel has already been created.  Continue.
           }
         } ) );
@@ -361,6 +339,13 @@ const channelResolvers = {
         // Attempt to create subscription(s)
         await Promise.all( subscriptions.map( async (s) => {
           const version = versions.find( v => v.name === s.versionName );
+          if( !version ) {
+            logger.error(e, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' was not created.`);
+          }
+          else if( !version.uuid ) {
+            logger.error(e, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' failed creation.`);
+          }
+
           const subscriptionObj = {
             _id: UUID(),
             uuid: UUID(),
@@ -390,13 +375,13 @@ const channelResolvers = {
             subscriptionsRbacSync( [subscriptionObj], { resync: false }, context ).catch(function(){/*ignore*/});
           }
           catch( e ) {
-            logger.error(e, `${queryName} failed to create subscription '${subscriptionObj.name}' when serving ${req_id}.`);
-            // Cannot fail here, the Version has already been created.  Continue.
+            logger.error(e, `${queryName} error creating subscription '${subscriptionObj.name}' when serving ${req_id}.`);
+            // Cannot fail here, the Channel has already been created.  Continue.
           }
         } ) );
 
         return {
-          uuid,
+          newChannelObj.uuid,
         };
       } catch(err){
         if (err instanceof BasicRazeeError) {
@@ -557,22 +542,6 @@ const channelResolvers = {
       // Save Version
       const dObj = await models.DeployableVersion.create( newVersionObj );
 
-      // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
-      try {
-        const versionObj = {
-          uuid: newVersionObj.uuid,
-          name, description,
-          created: dObj.created
-        };
-        await models.Channel.updateOne(
-          { org_id, uuid: channel.uuid },
-          { $push: { versions: versionObj } }
-        );
-      } catch(err) {
-        logger.error(err, `${queryName} failed to update the channel to reference the new Version '${name}' / '${newVersionObj.uuid}' when serving ${req_id}.`);
-        // Cannot fail here, the Version has already been created.  Continue.
-      }
-
       // Attempt to create subscription(s)
       await Promise.all( subscriptions.map( async (s) => {
         const subscription = {
@@ -604,7 +573,7 @@ const channelResolvers = {
           subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
         }
         catch( e ) {
-          logger.error(e, `${queryName} failed to create subscription '${subscription.name}' when serving ${req_id}.`);
+          logger.error(e, `${queryName} error creating subscription '${subscription.name}' when serving ${req_id}.`);
           // Cannot fail here, the Version has already been created.  Continue.
         }
       } ) );
@@ -861,24 +830,20 @@ const channelResolvers = {
 
         // Get the Version
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+        if(!deployableVersionObj){
+          // If unable to find the Version, so throw an error
+          throw new NotFoundError(context.req.t('Version "{{uuid}}" could not be found', {'uuid':uuid}), context);
+        }
 
         // Get the Channel for the Version
-        let channel;
-        if( deployableVersionObj ) {
-          channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
-        }
-        else {
-          channel = await models.Channel.findOne({ versions: { $elemMatch: { uuid: uuid } }, org_id });
-        }
+        const channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
         if(!channel){
           // If unable to find the Channel then cannot verify authorization, so throw an error
-          throw new NotFoundError(context.req.t('version uuid "{{uuid}}" not found and no references found', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('Channel "{{channelUuid}}" for version uuid "{{uuid}}" could not be found', {'channelUuid':deployableVersionObj.channel_id, 'uuid':uuid}), context);
         }
 
         // Verify authorization on the Channel
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-
-        const name = deployableVersionObj ? deployableVersionObj.name : channel.versions.find( x => x.uuid == uuid ).name;
 
         if( !deleteSubscriptions ) {
           const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
@@ -893,34 +858,19 @@ const channelResolvers = {
         else {
           await models.Subscription.deleteMany({ org_id, version_uuid: uuid });
           await models.ServiceSubscription.deleteMany({ org_id, version_uuid: uuid });
-          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} subscriptions removed`);
+          logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} subscriptions removed`);
         }
 
-        // If the Version is found...
-        if(deployableVersionObj){
-          if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
-            // Delete Version data
-            const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
-            await handler.deleteData();
-            logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} data removed`);
-          }
-
-          // Delete the Version
-          await models.DeployableVersion.deleteOne({ org_id, uuid });
-          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version deleted`);
+        // Delete uploaded Version data
+        if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+          const handler = storageFactory(logger).deserialize(deployableVersionObj.content);
+          await handler.deleteData();
+          logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} data removed`);
         }
 
-        // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
-        try {
-          await models.Channel.updateOne(
-            { org_id, uuid: channel.uuid },
-            { $pull: { versions: { uuid: uuid } } }
-          );
-          logger.info({ver_uuid: uuid, ver_name: name}, `${queryName} version reference removed`);
-        } catch(err) {
-          logger.error(err, `${queryName} failed to update the channel to remove the version reference '${name}' / '${uuid}' when serving ${req_id}.`);
-          // Cannot fail here, the Version has already been removed.  Continue.
-        }
+        // Delete the Version
+        await models.DeployableVersion.deleteOne({ org_id, uuid });
+        logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
 
         // Return success if Version was deleted
         return {

@@ -295,13 +295,14 @@ const validateNewVersions = async ( org_id, { channel, newVersions }, context ) 
   if( !newVersions || newVersions.length == 0 ) return;
 
   const { models } = context;
-  const total = await models.DeployableVersion.count( { org_id, channel_id: channel.uuid } );
+  const deployableVersionObjs = modes.DeployableVersion.find( { org_id, channel_id: channel.uuid } );
+  const total = deployableVersionObjs.length;
   if( total+newVersions.length > CHANNEL_VERSION_LIMITS.MAX_TOTAL ) {
     throw new RazeeValidationError( context.req.t( 'Too many configuration channel versions are registered under {{channel_uuid}}.', { 'channel_uuid': channel.uuid } ), context );
   }
 
   // Get existing and new version names to use later when checking for duplicates
-  const existingVersionNames = channel.versions.map( cv => cv.name );
+  const existingVersionNames = deployableVersionObjs.map( v => v.name );
   const newVersionNames = newVersions.map( nv => nv.name );
 
   for( const v of newVersions ) {

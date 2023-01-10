@@ -71,6 +71,7 @@ const ChannelSchema = new mongoose.Schema({
   custom: {
     type: Map,
   },
+  /* The 'versions' attribute is deprecated/unused */
   versions: [
     {
       uuid: {
