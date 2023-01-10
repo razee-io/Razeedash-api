@@ -339,7 +339,7 @@ const subscriptionResolvers = {
         let version;
         // Load the existing version if version_uuid specified (without using deprecated versions attribute on the channel)
         if( version_uuid ) {
-          version = models.DeployableVersion.findOne({org_id, channel_uuid: channel.uuid, uuid: version_uuid});
+          version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
           if (!version) {
             throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': version_uuid }), context);
           }
@@ -382,8 +382,15 @@ const subscriptionResolvers = {
         const uuid = UUID();
         const subscription = {
           _id: UUID(),
-          uuid, org_id, name, groups, owner: me._id,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid: version.uuid,
+          uuid,
+          org_id,
+          name,
+          groups,
+          owner: me._id,
+          channelName: channel.name,
+          channel_uuid,
+          version: version.name,
+          version_uuid: version.uuid,
           clusterId,
           kubeOwnerId,
           custom
@@ -469,7 +476,7 @@ const subscriptionResolvers = {
         let version;
         // Load the existing version if version_uuid specified (without using deprecated versions attribute on the channel)
         if( version_uuid ) {
-          version = models.DeployableVersion.findOne({org_id: orgId, channel_uuid: channel.uuid, uuid: version_uuid});
+          version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channel.uuid, uuid: version_uuid});
           if (!version) {
             throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': version_uuid }), context);
           }
@@ -659,7 +666,7 @@ const subscriptionResolvers = {
         }
 
         // Find the version (without using deprecated versions attribute on the channel)
-        const version = models.DeployableVersion.findOne({org_id, channel_uuid: channel.uuid, uuid: version_uuid});
+        const version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
         if(!version){
           throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
