@@ -159,8 +159,8 @@ const channelResolvers = {
 
         // search version by uuid or name (avoid using deprecated `versions` attribute of the Channel)
         const deployableVersionFilter = versionName ? { org_id, channel_id: channel.uuid, name: versionName } : { org_id, channel_id: channel.uuid, uuid: versionUuid } ;
-        const deployableVersionObjs = await models.DeployableVersion.(deployableVersionFilter).limit(2);
-        const deployableVersionObjs = deployableVersionObjs[0] || null;
+        const deployableVersionObjs = await models.DeployableVersion.find(deployableVersionFilter).limit(2);
+        const deployableVersionObj = deployableVersionObjs[0] || null;
 
         // If more than one matching version found, throw an error
         if( deployableVersionObjs.length > 1 ) {
@@ -381,7 +381,7 @@ const channelResolvers = {
         } ) );
 
         return {
-          newChannelObj.uuid,
+          uuid: newChannelObj.uuid,
         };
       } catch(err){
         if (err instanceof BasicRazeeError) {
