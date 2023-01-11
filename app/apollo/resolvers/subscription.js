@@ -337,7 +337,7 @@ const subscriptionResolvers = {
 
         // Get or create the version
         let version;
-        // Load the existing version if version_uuid specified (without using deprecated versions attribute on the channel)
+        // Load the existing version if version_uuid specified (without using deprecated/ignored `versions` attribute on the channel)
         if( version_uuid ) {
           version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
           if (!version) {
@@ -474,7 +474,7 @@ const subscriptionResolvers = {
 
         // Get or create the version
         let version;
-        // Load the existing version if version_uuid specified (without using deprecated versions attribute on the channel)
+        // Load the existing version if version_uuid specified (without using deprecated/ignored `versions` attribute on the channel)
         if( version_uuid ) {
           version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channel.uuid, uuid: version_uuid});
           if (!version) {
@@ -665,7 +665,7 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }
 
-        // Find the version (without using deprecated versions attribute on the channel)
+        // Find the version (without using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
         if(!version){
           throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);

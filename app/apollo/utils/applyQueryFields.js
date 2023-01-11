@@ -275,6 +275,7 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
     }
   });
 
+  // Apply version info if requested (replaces deprecated/ignored `versions` attribute on the channel db record)
   if(queryFields.versions){
     const channelUuids = _.uniq(_.map(channels, 'uuid'));
     let versions = await models.DeployableVersion.find({ org_id: orgId, channel_id: { $in: channelUuids } }, {}).lean({ virtuals: true });

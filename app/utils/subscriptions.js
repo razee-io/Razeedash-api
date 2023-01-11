@@ -31,6 +31,7 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
 
     // Handle url (UPLOADED channels) or remote settings (REMOTE channels)
     if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
+      // URL built from channel name and version uuid (avoid using deprecated/ignored `versions` attribute on the channel)
       sub.url = `api/v1/channels/${subscription.channelName}/${subscription.version_uuid}`;
     }
     else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
@@ -38,6 +39,7 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
         remoteType: channel.remote.remoteType,
         parameters: channel.remote.parameters || [],
       };
+      // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
       const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: subscription.version_uuid } );
       // Combine channel and version remote params
       if( version && version.content.remote.parameters ) {

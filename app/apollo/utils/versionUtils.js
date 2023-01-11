@@ -301,7 +301,7 @@ const validateNewVersions = async ( org_id, { channel, newVersions }, context ) 
     throw new RazeeValidationError( context.req.t( 'Too many configuration channel versions are registered under {{channel_uuid}}.', { 'channel_uuid': channel.uuid } ), context );
   }
 
-  // Get existing and new version names to use later when checking for duplicates
+  // Get existing and new version names to use later when checking for duplicates (avoid using deprecated/ignored `versions` attribute on the channel)
   const existingVersionNames = deployableVersionObjs.map( v => v.name );
   const newVersionNames = newVersions.map( nv => nv.name );
 

@@ -157,7 +157,7 @@ const channelResolvers = {
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
-        // search version by uuid or name (avoid using deprecated `versions` attribute of the Channel)
+        // search version by uuid or name (avoid using deprecated/ignored `versions` attribute of the Channel)
         const deployableVersionFilter = versionName ? { org_id, channel_id: channel.uuid, name: versionName } : { org_id, channel_id: channel.uuid, uuid: versionUuid } ;
         const deployableVersionObjs = await models.DeployableVersion.find(deployableVersionFilter).limit(2);
         const deployableVersionObj = deployableVersionObjs[0] || null;
@@ -214,7 +214,7 @@ const channelResolvers = {
         org_id,
         contentType,
         name,
-        versions: [], /* deprecated, do not use */
+        versions: [], /* deprecated/ignored, do not use */
         tags,
         ownerId: me._id,
         kubeOwnerId,
@@ -621,6 +621,7 @@ const channelResolvers = {
           throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
         }
 
+        // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne( { uuid, org_id } );
         if( !version ){
           throw new NotFoundError( context.req.t( 'Version uuid "{{version_uuid}}" not found.', { 'version_uuid': uuid } ), context );
@@ -828,22 +829,23 @@ const channelResolvers = {
           }
         }
 
-        // Get the Version
+        // Get the Version (avoid using the deprecated/ignored `versions` attribute on the channel)
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
         if(!deployableVersionObj){
-          // If unable to find the Version, so throw an error
-          throw new NotFoundError(context.req.t('Version "{{uuid}}" could not be found', {'uuid':uuid}), context);
+          // If unable to find the Version, throw an error
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':uuid}), context);
         }
 
         // Get the Channel for the Version
         const channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
         if(!channel){
-          // If unable to find the Channel then cannot verify authorization, so throw an error
-          throw new NotFoundError(context.req.t('Channel "{{channelUuid}}" for version uuid "{{uuid}}" could not be found', {'channelUuid':deployableVersionObj.channel_id, 'uuid':uuid}), context);
+          // If unable to find the Channel then cannot verify authorization.  Assume deletion allowed rather than throwing an error (else version would be permanently undeletable).
+          logger.warn({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} channel for version ${uuid} not found, authorization assumed.`);
         }
-
-        // Verify authorization on the Channel
-        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        else {
+          // Channel is found, verify authorization on the Channel
+          await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        }
 
         if( !deleteSubscriptions ) {
           const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });

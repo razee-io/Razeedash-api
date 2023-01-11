@@ -132,7 +132,6 @@ const serviceResolvers = {
 
       // Note that at this time, service subscriptions can only be created for clusters, not groups
 
-      // Verify the cluster
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
       if(!cluster){
         throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
@@ -151,6 +150,7 @@ const serviceResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
         }
 
+        // Find the version (avoid using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channelUuid, uuid: versionUuid});
         if (!version) {
           throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': versionUuid }), context);

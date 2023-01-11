@@ -226,7 +226,7 @@ const organizationResolvers = {
             }
           }).catch( (e) => {
             // The only error that should be thrown is 'already in progress', which is unexpected here as a NEW OrgKey is being created, but can be ignored.
-            logger.warning({ req_id, user: whoIs(me), orgId, name, primary, res, error: e.message }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' is already in progress`);
+            logger.warn({ req_id, user: whoIs(me), orgId, name, primary, res, error: e.message }, `${queryName} version re-encryption to use '${newOrgKey.orgKeyUuid}' is already in progress`);
           });
         }
 
