@@ -151,7 +151,7 @@ const serviceResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
         }
 
-        const version = models.DeployableVersion.findOne({org_id: orgId, channel_uuid: channelUuid, uuid: versionUuid});
+        const version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channelUuid, uuid: versionUuid});
         if (!version) {
           throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': versionUuid }), context);
         }

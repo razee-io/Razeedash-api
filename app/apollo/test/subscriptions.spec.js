@@ -183,16 +183,7 @@ const createChannels = async () => {
     org_id: org01._id,
     uuid: channel_01_uuid,
     name: channel_01_name,
-    versions: [
-      {
-        uuid: channelVersion_01_uuid,
-        name: channelVersion_01_name
-      },
-      {
-        uuid: channelVersion_02_uuid,
-        name: channelVersion_02_name
-      }
-    ]
+    versions: []  /* channel versions is deprecated and no longer used */
   });
 
   await models.Channel.create({
@@ -200,12 +191,7 @@ const createChannels = async () => {
     org_id: org01._id,
     uuid: channel_02_uuid,
     name: channel_02_name,
-    versions: [
-      {
-        uuid: channelVersion_03_uuid,
-        name: channelVersion_03_name
-      }
-    ]
+    versions: []  /* channel versions is deprecated and no longer used */
   });
 
   await models.Channel.create({
@@ -213,7 +199,7 @@ const createChannels = async () => {
     org_id: org77._id,
     uuid: channel_03_uuid,
     name: channel_03_name,
-    versions: []
+    versions: []  /* channel versions is deprecated and no longer used */
   });
 
   await models.Channel.create({
@@ -221,21 +207,24 @@ const createChannels = async () => {
     org_id: org77._id,
     uuid: channel_04_uuid,
     name: channel_04_name,
-    versions: [
-      {
-        uuid: channelVersion_04_uuid,
-        name: channelVersion_04_name
-      }
-    ]
+    versions: []  /* channel versions is deprecated and no longer used */
   });
 };
 
 const createVersions = async () => {
+  /*
+  channel 01: version 01 and version 02
+  channel 02: version 03
+  channel 03: no versions
+  channel 04: version 04 (org77)
+  */
   await models.DeployableVersion.create({
     _id: 'fake_ver_id_1',
     org_id: org01._id,
     uuid: channelVersion_01_uuid,
     name: channelVersion_01_name,
+    channel_id: channel_01_uuid,
+    channel_name: channel_01_name,
     content: {
       metadata: {
         type: 'remote'
@@ -248,8 +237,63 @@ const createVersions = async () => {
       }
     }
   });
-
-  // only version 01 needed for testing, skipping creating the rest
+  await models.DeployableVersion.create({
+    _id: 'fake_ver_id_2',
+    org_id: org01._id,
+    uuid: channelVersion_02_uuid,
+    name: channelVersion_02_name,
+    channel_id: channel_01_uuid,
+    channel_name: channel_01_name,
+    content: {
+      metadata: {
+        type: 'remote'
+      },
+      remote: {
+        parameters: [{
+          key: 'key1',
+          value: 'val1',
+        }]
+      }
+    }
+  });
+  await models.DeployableVersion.create({
+    _id: 'fake_ver_id_3',
+    org_id: org01._id,
+    uuid: channelVersion_03_uuid,
+    name: channelVersion_03_name,
+    channel_id: channel_02_uuid,
+    channel_name: channel_02_name,
+    content: {
+      metadata: {
+        type: 'remote'
+      },
+      remote: {
+        parameters: [{
+          key: 'key1',
+          value: 'val1',
+        }]
+      }
+    }
+  });
+  await models.DeployableVersion.create({
+    _id: 'fake_ver_id_4',
+    org_id: org77._id,
+    uuid: channelVersion_04_uuid,
+    name: channelVersion_04_name,
+    channel_id: channel_04_uuid,
+    channel_name: channel_04_name,
+    content: {
+      metadata: {
+        type: 'remote'
+      },
+      remote: {
+        parameters: [{
+          key: 'key1',
+          value: 'val1',
+        }]
+      }
+    }
+  });
 };
 
 const createGroups = async () => {
