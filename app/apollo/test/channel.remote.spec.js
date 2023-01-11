@@ -693,12 +693,6 @@ describe('channel remote graphql test suite', () => {
       expect( versions.length ).to.equal(1);
       // Verify the one version is the new one
       expect( versions[0].name ).to.equal('cwvs-version2');
-      // Verify config updated with version reference (there's only one config)
-      const channels = await models.Channel.find( { org_id: org01._id } );
-      // Verify just one version referenced (old one was deleted)
-      expect( channels[0].versions.length ).to.equal(1);
-      // Verify the one referenced version is the new one
-      expect( channels[0].versions[0].name ).to.equal('cwvs-version2');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

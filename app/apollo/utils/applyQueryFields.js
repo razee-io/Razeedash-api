@@ -275,6 +275,19 @@ const applyQueryFieldsToChannels = async(channels, queryFields={}, args, context
     }
   });
 
+  // Apply version info if requested (replaces deprecated/ignored `versions` attribute on the channel db record)
+  if(queryFields.versions){
+    const channelUuids = _.uniq(_.map(channels, 'uuid'));
+    let versions = await models.DeployableVersion.find({ org_id: orgId, channel_id: { $in: channelUuids } }, {}).lean({ virtuals: true });
+
+    const versionsByChannelUuid = _.groupBy(versions, 'channel_id');
+    _.each(channels, (channel)=>{
+      channel.versions = (versionsByChannelUuid[channel.uuid] || []).map( v => {
+        return({ uuid: v.uuid, name: v.name, description: v.description, created: v.created, location: '' });
+      });
+    });
+  }
+
   if(queryFields.subscriptions){
     //piggyback basic-info of subscriptions associated with this channel that user allowed to see
     const conditions = await getGroupConditions(me, orgId, ACTIONS.READ, 'name', 'applyQueryFieldsToChannels queryFields.subscriptions', context);

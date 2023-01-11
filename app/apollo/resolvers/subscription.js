@@ -67,7 +67,7 @@ const subscriptionResolvers = {
       logger.debug({user: 'graphql api user', org_id, clusterGroupNames }, `${queryName} enter`);
       const subs = [];
       try {
-        // Add in OrgKey rollout System Subscription first, so it is most likely to be rolled out
+        // Add in OrgKey rollout and operator update System Subscriptions first, so they are most likely to be rolled out
         subs.push({
           subscriptionUuid: 'system-primaryorgkey',
           subscriptionName: 'system-primaryorgkey',  //Unused, but needs to be included for graphql response
@@ -76,7 +76,6 @@ const subscriptionResolvers = {
           url: 'api/v1/systemSubscriptions/primaryOrgKey',
           kubeOwnerName: null,
         });
-
         subs.push({
           subscriptionUuid: 'system-operators',
           subscriptionName: 'system-operators',
@@ -234,7 +233,6 @@ const subscriptionResolvers = {
     },
 
     subscriptionsForClusterByName: async(parent, {  orgId: org_id, clusterName  }, context, fullQuery) => {
-
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForClusterByName';
@@ -339,13 +337,11 @@ const subscriptionResolvers = {
 
         // Get or create the version
         let version;
-        // Load the existing version if version_uuid specified
+        // Load the existing version if version_uuid specified (without using deprecated/ignored `versions` attribute on the channel)
         if( version_uuid ) {
-          version = channel.versions.find((version)=>{
-            return (version.uuid == version_uuid);
-          });
-          if(!version){
-            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
+          version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
+          if (!version) {
+            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': version_uuid }), context);
           }
         }
         // Validate newVersion if specified
@@ -377,23 +373,6 @@ const subscriptionResolvers = {
           // Save Version
           const dObj = await models.DeployableVersion.create( newVersionObj );
           version = dObj;
-
-          // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
-          try {
-            const channelVersionObj = {
-              uuid: newVersionObj.uuid,
-              name: newVersionObj.name,
-              description: newVersionObj.description,
-              created: dObj.created
-            };
-            await models.Channel.updateOne(
-              { org_id, uuid: channel.uuid },
-              { $push: { versions: channelVersionObj } }
-            );
-          } catch(err) {
-            logger.error(err, `${queryName} failed to update the channel to reference the new Version '${newVersionObj.name}' / '${newVersionObj.uuid}' when serving ${req_id}.`);
-            // Cannot fail here, the Version has already been created.  Continue.
-          }
         }
         // If neither version_uuid nor newVersion specified, fail validation
         else {
@@ -403,8 +382,15 @@ const subscriptionResolvers = {
         const uuid = UUID();
         const subscription = {
           _id: UUID(),
-          uuid, org_id, name, groups, owner: me._id,
-          channelName: channel.name, channel_uuid, version: version.name, version_uuid: version.uuid,
+          uuid,
+          org_id,
+          name,
+          groups,
+          owner: me._id,
+          channelName: channel.name,
+          channel_uuid,
+          version: version.name,
+          version_uuid: version.uuid,
           clusterId,
           kubeOwnerId,
           custom
@@ -488,13 +474,11 @@ const subscriptionResolvers = {
 
         // Get or create the version
         let version;
-        // Load the existing version if version_uuid specified
+        // Load the existing version if version_uuid specified (without using deprecated/ignored `versions` attribute on the channel)
         if( version_uuid ) {
-          version = channel.versions.find((version)=>{
-            return (version.uuid == version_uuid);
-          });
-          if(!version){
-            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
+          version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channel.uuid, uuid: version_uuid});
+          if (!version) {
+            throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': version_uuid }), context);
           }
         }
         // Validate newVersion if specified
@@ -526,23 +510,6 @@ const subscriptionResolvers = {
           // Save Version
           const dObj = await models.DeployableVersion.create( newVersionObj );
           version = dObj;
-
-          // Attempt to update Version references the channel (the duplication is unfortunate and should be eliminated in the future)
-          try {
-            const channelVersionObj = {
-              uuid: version.uuid,
-              name: version.name,
-              description: version.description,
-              created: version.created
-            };
-            await models.Channel.updateOne(
-              { org_id: orgId, uuid: channel_uuid },
-              { $push: { versions: channelVersionObj } }
-            );
-          } catch(err) {
-            logger.error(err, `${queryName} failed to update the channel to reference the new Version '${version.name}' / '${channel_uuid}' when serving ${req_id}.`);
-            // Cannot fail here, the Version has already been created.  Continue.
-          }
         }
         // If neither version_uuid nor newVersion specified, fail validation
         else {
@@ -634,13 +601,6 @@ const subscriptionResolvers = {
                 logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} old version ${oldVersionUuid} deleted` );
               }
             }
-
-            // Attempt to update Version references in the channel (the duplication is unfortunate and should be eliminated in the future)
-            await models.Channel.updateOne(
-              { org_id: orgId, uuid: channel.uuid },
-              { $pull: { versions: { uuid: oldVersionUuid } } }
-            );
-            logger.info( { org_id: orgId, req_id, user: whoIs(me), subscription: subscription.uuid, ver_uuid: oldVersionUuid }, `${queryName} channel reference to old version ${oldVersionUuid} removed` );
           }
           catch(err) {
             logger.error(err, `${queryName} failed to update the channel to remove the version reference '${name}' / '${uuid}' when serving ${req_id}.`);
@@ -699,20 +659,19 @@ const subscriptionResolvers = {
           throw new RazeeForbiddenError(context.req.t('You are not allowed to set subscription for all of {{subscription.groups}} groups.', {'subscription.groups':subscription.groups}), context);
         }
 
-        // loads the channel
+        // Find the channel
         var channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }
 
-        // loads the version
-        var version = channel.versions.find((version)=>{
-          return (version.uuid == version_uuid);
-        });
+        // Find the version (without using deprecated/ignored `versions` attribute on the channel)
+        const version = await models.DeployableVersion.findOne({org_id, channel_id: channel.uuid, uuid: version_uuid});
         if(!version){
           throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':version_uuid}), context);
         }
 
+        // Update the subscription
         var sets = {
           version: version.name,
           version_uuid,
@@ -794,13 +753,6 @@ const subscriptionResolvers = {
               await handler.deleteData();
               logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} data removed` );
             }
-
-            // Delete Version references
-            await models.Channel.updateOne(
-              { org_id, uuid: channel.uuid },
-              { $pull: { versions: { uuid: deployableVersionObj.uuid } } }
-            );
-            logger.info( {req_id, user: whoIs(me), org_id, ver_uuid: deployableVersionObj.uuid, ver_name: deployableVersionObj.name }, `${queryName} version reference removed` );
 
             // Delete the Version record
             await models.DeployableVersion.deleteOne( { org_id, uuid: deployableVersionObj.uuid } );

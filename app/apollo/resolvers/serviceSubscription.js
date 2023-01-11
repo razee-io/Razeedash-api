@@ -44,7 +44,6 @@ const serviceResolvers = {
   },
 
   Query: {
-
     subscriptionType: async (parent, { orgId, id }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionType';
@@ -131,6 +130,8 @@ const serviceResolvers = {
       validateString( 'channelUuid', channelUuid );
       validateString( 'versionUuid', versionUuid );
 
+      // Note that at this time, service subscriptions can only be created for clusters, not groups
+
       const cluster = await models.Cluster.findOne({cluster_id: clusterId});
       if(!cluster){
         throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
@@ -139,7 +140,6 @@ const serviceResolvers = {
       await validAuth(me, cluster.org_id, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
       try {
-
         const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
           throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', { 'org_id': orgId }), context);
@@ -150,11 +150,10 @@ const serviceResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
         }
 
-        const version = channel.versions.find((version) => {
-          return (version.uuid == versionUuid);
-        });
+        // Find the version (avoid using deprecated/ignored `versions` attribute on the channel)
+        const version = await models.DeployableVersion.findOne({org_id: orgId, channel_id: channelUuid, uuid: versionUuid});
         if (!version) {
-          throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': versionUuid }), context);
         }
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
@@ -163,9 +162,18 @@ const serviceResolvers = {
 
         await models.ServiceSubscription.create({
           _id: ssid,
-          uuid: ssid, org_id: orgId, name, groups: [], owner: me._id,
-          channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid,
-          clusterId, kubeOwnerId, clusterOrgId: cluster.org_id
+          uuid: ssid,
+          org_id: orgId,
+          name,
+          groups: [],
+          owner: me._id,
+          channelName: channel.name,
+          channel_uuid: channel.uuid,
+          version: version.name,
+          version_uuid: version.uuid,
+          clusterId,
+          kubeOwnerId,
+          clusterOrgId: cluster.org_id
         });
 
         pubSub.channelSubChangedFunc({org_id: cluster.org_id}, context); // notify cluster should re-fetch its subscriptions
@@ -206,11 +214,9 @@ const serviceResolvers = {
         throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': channelUuid }), context);
       }
 
-      const version = channel.versions.find((version) => {
-        return (version.uuid == versionUuid);
-      });
+      const version = await models.DeployableVersion.findOne({ org_id: orgId, uuid: versionUuid });
       if (!version) {
-        throw new NotFoundError(context.req.t('Version with uuid "{{versionUuid}}" not found', { 'versionUuid': versionUuid }), context);
+        throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid': versionUuid }), context);
       }
 
       const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid, updated: Date.now() };
