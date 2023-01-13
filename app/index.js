@@ -43,6 +43,15 @@ const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
 const i18nextBackend = require('i18next-fs-backend');
 
+/*
+Temporary protection against ReDoS in `useragent` library version 2.3.0.
+See https://github.com/3rd-Eden/useragent/issues/147 for details.
+*/
+app.use((req, res, next) => {
+  req.headers['user-agent'] = `${req.headers['user-agent']}`.substr(0, 150);
+  next();
+});
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.set('trust proxy', true);
