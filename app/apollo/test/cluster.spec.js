@@ -376,15 +376,15 @@ describe('cluster graphql test suite', () => {
       expect(clusterByClusterId.lastOrgKey.uuid).to.equal(org_01_orgkey);
 
 
-      //with group limit
+      //with group limit (groupLimit is no longer used, will always return all groups)
       const result2 = await clusterApi.byClusterID(token, {
         orgId: org01._id,
         clusterId: clusterId1,
         groupLimit: 2,
       });
       const clusterByClusterId2 = result2.data.data.clusterByClusterId;
-      expect(clusterByClusterId2.groups).to.have.length(2);
-      expect(clusterByClusterId2.groupObjs).to.have.length(2);
+      expect(clusterByClusterId2.groups).to.have.length(3);
+      expect(clusterByClusterId2.groupObjs).to.have.length(3);
       expect(clusterByClusterId2.clusterId).to.equal(clusterId1);
 
     } catch (error) {
@@ -459,7 +459,7 @@ describe('cluster graphql test suite', () => {
       const skipLimitedClustersByOrgId2 = skipResponse2.data.data.clustersByOrgId;
       expect(skipLimitedClustersByOrgId2).to.have.length(0);
 
-      // with group limit
+      // with group limit (groupLimit is no longer used, will always return all groups)
       const {
         data: {
           data: { clustersByOrgId: clustersByOrgId2 },
@@ -469,8 +469,8 @@ describe('cluster graphql test suite', () => {
         groupLimit: 2,
       });
 
-      expect(clustersByOrgId2[3].groupObjs).to.have.length(2);
-      expect(clustersByOrgId2[3].groups).to.have.length(2);
+      expect(clustersByOrgId2[3].groupObjs).to.have.length(3);
+      expect(clustersByOrgId2[3].groups).to.have.length(3);
       expect(clustersByOrgId2).to.be.an('array');
       expect(clustersByOrgId2).to.have.length(4);
       expect(clustersByOrgId2[0].resources).to.be.an('array');
@@ -601,7 +601,7 @@ describe('cluster graphql test suite', () => {
       expect(clusterSearch).to.be.an('array');
       expect(clusterSearch).to.have.length(4);
 
-      // with group limit
+      // with group limit (groupLimit is no longer used, will always return all groups)
       const {
         data: {
           data: { clusterSearch:  clusterSearch2},
@@ -611,8 +611,8 @@ describe('cluster graphql test suite', () => {
         groupLimit: 2,
       });
 
-      expect(clusterSearch2[3].groupObjs).to.have.length(2);
-      expect(clusterSearch2[3].groups).to.have.length(2);
+      expect(clusterSearch2[3].groupObjs).to.have.length(3);
+      expect(clusterSearch2[3].groups).to.have.length(3);
       expect(clusterSearch2).to.be.an('array');
       expect(clusterSearch2).to.have.length(4);
 
@@ -684,7 +684,7 @@ describe('cluster graphql test suite', () => {
       expect(inactiveClusters[0].clusterId).to.equal('cluster_04');
       expect(inactiveClusters[0].groups).to.have.length(3);
 
-      // with group filter
+      // with group filter (groupLimit is no longer used, will always return all groups)
       const {
         data: {
           data: { inactiveClusters: inactiveClusters2 },

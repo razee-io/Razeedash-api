@@ -35,7 +35,7 @@ const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
 
 const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context)=>{
   const { models } = context;
-  const { orgId, groupLimit } = args;
+  const { orgId } = args;
 
   const clusterIds = _.map(clusters, 'cluster_id');
   const now = new Date();
@@ -87,7 +87,16 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       //   {groups: [{name: 'tag2'}]},
       // ]
       const groupNames = _.filter(_.uniq(_.map(_.flatten(_.map(clusters, 'groups')), 'name')));
-      const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).limit(groupLimit).lean({ virtuals: true });
+      /*
+      groupLimit is no longer used, will always return all groups
+      Prior to removing `limit(groupLimit)`, if more than groupLimit groups were present
+      in all the clusters being processed, some groups would be omitted and cut from the
+      respective cluster(s) without warning.  E.g. when querying clusterByOrgId (all
+      clusters) some clusters could return with fewer groups than they really have,
+      yet when querying each cluster individually (clusterByClusterId) their full
+      set of groups (up to groupLimit) would be included.
+      */
+      const groups = await models.Group.find({ org_id: orgId, name: { $in: groupNames } }).lean({ virtuals: true });
 
       await applyQueryFieldsToGroups(groups, queryFields.groupObjs, args, context);
 
