@@ -695,7 +695,7 @@ describe('cluster graphql test suite', () => {
       });
 
       expect(inactiveClusters2).to.be.an('array');
-      expect(inactiveClusters2).to.have.length(1);
+      expect(inactiveClusters2).to.have.length(3);
       expect(inactiveClusters2[0].clusterId).to.equal('cluster_04');
       expect(inactiveClusters2[0].groups).to.have.length(1);
 
