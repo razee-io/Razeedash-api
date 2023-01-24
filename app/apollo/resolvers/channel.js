@@ -262,6 +262,7 @@ const channelResolvers = {
           }
 
           // Validate remote.remoteType
+          if( process.env.EXPERIMENTAL_REMOTE_S3 ) CHANNEL_CONSTANTS.REMOTE.TYPES.S3 = 's3';
           if( !remote.remoteType || !Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES).includes( remote.remoteType ) ) {
             throw new RazeeValidationError( context.req.t( 'The remote type {{remoteType}} is not valid.  Allowed values: [{{remoteTypes}}]', { remoteType: remote.remoteType, 'remoteTypes': Array.from( Object.values(CHANNEL_CONSTANTS.REMOTE.TYPES) ).join(' ') } ), context );
           }
