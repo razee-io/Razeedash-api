@@ -227,18 +227,9 @@ const channelResolvers = {
       validateString( 'name', name );
 
       try {
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( contentType !== CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED || remote || versions.length > 0 || subscriptions.length > 0 ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'contentType remote versions subscriptions' } ), context );
-          }
-        }
-        else {
-          // Validate contentType
-          if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
-            throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( Object.values(CHANNEL_CONSTANTS.CONTENTTYPES) ).join(' ') } ), context );
-          }
+        // Validate contentType
+        if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
+          throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( Object.values(CHANNEL_CONSTANTS.CONTENTTYPES) ).join(' ') } ), context );
         }
 
         // get org
@@ -401,14 +392,6 @@ const channelResolvers = {
       validateString( 'name', name );
 
       try{
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( remote ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
-          }
-        }
-
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
@@ -515,13 +498,6 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
       // Experimental
-      if( !process.env.EXPERIMENTAL_GITOPS ) {
-        // Block experimental features
-        if( remote ) {
-          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
-        }
-      }
-      // Experimental
       if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
         // Block experimental features
         if( subscriptions.length > 0 ) {
@@ -601,13 +577,6 @@ const channelResolvers = {
       }
 
       try{
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( remote ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'remote' } ), context );
-          }
-        }
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
           // Block experimental features

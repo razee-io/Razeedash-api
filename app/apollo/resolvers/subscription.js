@@ -309,14 +309,6 @@ const subscriptionResolvers = {
       try{
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( newVersion ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'version' } ), context );
-          }
-        }
-
         // validate the number of total subscriptions are under the limit
         await validateSubscriptionLimit( org_id, 1, context );
 
@@ -434,14 +426,6 @@ const subscriptionResolvers = {
 
       try{
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
-
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( newVersion ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'version' } ), context );
-          }
-        }
 
         const conditions = await getGroupConditionsIncludingEmpty(me, orgId, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), orgId, conditions }, `${queryName} group conditions are...`);
@@ -706,14 +690,6 @@ const subscriptionResolvers = {
 
       var success = false;
       try {
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS ) {
-          // Block experimental features
-          if( deleteVersion ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'deleteVersion' } ), context );
-          }
-        }
-
         //var subscription = await models.Subscription.findOne({ org_id, uuid });
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user: whoIs(me), org_id, conditions }, `${queryName} group conditions are...`);

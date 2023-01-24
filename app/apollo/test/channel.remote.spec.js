@@ -102,7 +102,6 @@ const createClusters = async () => {
 describe('channel remote graphql test suite', () => {
   before(async () => {
     console.log( 'Setting EXPERIMENTAL env vars' ); // IMPORTANT: Must be deleted in 'after()' to avoid impacting other tests that do not expect these vars to be set.
-    process.env.EXPERIMENTAL_GITOPS = 'true';
     process.env.EXPERIMENTAL_GITOPS_ALT = 'true';
 
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
@@ -128,38 +127,8 @@ describe('channel remote graphql test suite', () => {
     await mongoServer.stop();
 
     console.log( 'Deleting EXPERIMENTAL env vars' );
-    delete process.env.EXPERIMENTAL_GITOPS;
     delete process.env.EXPERIMENTAL_GITOPS_ALT;
   }); // after
-
-  it('block remote Channels if EXPERIMENTAL_GITOPS not set', async () => {
-    delete process.env.EXPERIMENTAL_GITOPS;
-    console.log( 'Disabled EXPERIMENTAL_GITOPS for this testcase only' );
-    try {
-      const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
-        orgId: org01._id,
-        name: 'anyname',
-        contentType: 'remote',
-        remote: {
-          remoteType: 'github',
-          parameters: [],
-        },
-      });
-      console.log( `addRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
-      const errors = result.data.errors;
-
-      expect(errors[0].message).to.contain('Unsupported arguments');
-    } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    } finally {
-      process.env.EXPERIMENTAL_GITOPS = 'true';
-    }
-  });
 
   it('add a remote channel of remoteType github with a remote parameter', async () => {
     try {

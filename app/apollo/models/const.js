@@ -109,6 +109,7 @@ const CHANNEL_CONSTANTS = {
     TYPES: {
       GITHUB: 'github',
       GITLAB: 'gitlab',
+      /*S3: 's3',*/ // Not yet supported
     },
   },
 };
