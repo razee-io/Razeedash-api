@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, RazeeValidationError } = require ('./common');
+const { whoIs, validAuth, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -33,58 +33,66 @@ const { validateString } = require('../utils/directives');
 
 const groupResolvers = {
   Query: {
-    groups: async(parent, { orgId }, context, fullQuery) => {
+    groups: async(parent, { orgId: org_id }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'groups';
-      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
-      let groups;
-      try{
-        groups = await models.Group.find({ org_id: orgId }).lean({ virtuals: true });
 
-        await applyQueryFieldsToGroups(groups, queryFields, { orgId }, context);
+      const user = whoIs(me);
+
+      try{
+        logger.debug({req_id, user, org_id }, `${queryName} enter`);
+
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+        const groups = await models.Group.find({ org_id }).lean({ virtuals: true });
+
+        await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
 
         return groups;
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
+        throw error;
       }
     },
-    group: async(parent, { orgId, uuid }, context, fullQuery) => {
+    group: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'group';
-      logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
-      // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
 
-      try{
-        let group = await models.Group.findOne({ org_id: orgId, uuid }).lean({ virtuals: true });
+      const user = whoIs(me);
+
+      try {
+        logger.debug({req_id, user, org_id, uuid}, `${queryName} enter`);
+
+        const group = await models.Group.findOne({ org_id, uuid }).lean({ virtuals: true });
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
-        await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
+
+        await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
 
         return group;
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({req_id, user, org_id, uuid, error } , `${queryName} error encountered: ${error.message}`);
+        throw error;
       }
     },
-    groupByName: async(parent, { orgId, name }, context, fullQuery) => {
+    groupByName: async(parent, { orgId: org_id, name }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'groupByName';
-      logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
-      // await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context);
+
+      const user = whoIs(me);
 
       try{
-        const groups = await models.Group.find({ org_id: orgId, name }).limit(2).lean({ virtuals: true });
+        logger.debug({req_id, user, org_id, name}, `${queryName} enter`);
+
+        const groups = await models.Group.find({ org_id, name }).limit(2).lean({ virtuals: true });
 
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id: orgId, name }, `${queryName} found ${groups.length} matching groups` );
+          logger.info({req_id, user, org_id, name }, `${queryName} found ${groups.length} matching groups` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
         const group = groups[0] || null;
@@ -92,14 +100,14 @@ const groupResolvers = {
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
-        await validAuth(me, orgId, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
-        await applyQueryFieldsToGroups([group], queryFields, { orgId }, context);
+        await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
 
         return group;
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({req_id, user, org_id, name } , `${queryName} error encountered: ${error.message}`);
+        throw error;
       }
     },
   },
@@ -107,18 +115,25 @@ const groupResolvers = {
     addGroup: async (parent, { orgId: org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addGroup';
-      logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      validateString( 'org_id', org_id );
-      validateString( 'name', name );
+      const user = whoIs(me);
 
       try {
+        logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+        validateString( 'org_id', org_id );
+        validateString( 'name', name );
+
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
         if(group){
           throw new ValidationError(context.req.t('The group name {{name}} already exists.', {'name':name}));
         }
+
+        logger.info({ req_id, user, org_id, name }, `${queryName} saving`);
+
         const uuid = UUID();
         await models.Group.create({
           _id: UUID(),
@@ -127,38 +142,47 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid,
         };
-      } catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, name, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     removeGroup: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroup';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
-      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
+      const user = whoIs(me);
 
-      try{
+      try {
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
         if(!group){
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
 
+        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
 
         const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
+
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
+
         if(clusterIds && clusterIds.length > 0) {
           await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
         }
@@ -167,31 +191,39 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
           uuid: group.uuid,
           success: true,
         };
-      } catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     removeGroupByName: async (parent, { orgId: org_id, name }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeGroupByName';
-      logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      validateString( 'org_id', org_id );
-      validateString( 'name', name );
+      const user = whoIs(me);
 
-      try{
+      try {
+        logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
+
+        // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+        validateString( 'org_id', org_id );
+        validateString( 'name', name );
+
         const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
 
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id, name }, `${queryName} found ${groups.length} matching groups` );
+          logger.info({req_id, user, org_id, name }, `${queryName} found ${groups.length} matching groups` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
         const group = groups[0] || null;
@@ -207,49 +239,56 @@ const groupResolvers = {
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
 
-        const uuid = group.uuid;
         const clusterIds = await models.Cluster.distinct('cluster_id', { org_id: org_id, 'groups.uuid': group.uuid });
+        if(clusterIds.length > 0){
+          throw new ValidationError(context.req.t('{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.', {'clusterCount':clusterIds.length}));
+        }
+
+        logger.info({ req_id, user, org_id, name }, `${queryName} saving`);
+
         if(clusterIds && clusterIds.length > 0) {
-          await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid, clusters: clusterIds}, context);
+          await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid: group.uuid, clusters: clusterIds}, context);
         }
 
-        const clusterCount = await models.Cluster.count({ org_id: org_id, 'groups.uuid': group.uuid });
-        if(clusterCount > 0){
-          throw new ValidationError(context.req.t('{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.', {'clusterCount':clusterCount}));
-        }
-
-        await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
+        await models.Group.deleteOne({ org_id: org_id, uuid: group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid: group.uuid,
           success: true,
         };
-      } catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, name, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     assignClusterGroups: async(
       parent,
-      { orgId, groupUuids, clusterIds },
+      { orgId: org_id, groupUuids, clusterIds },
       context,
       fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'assignClusterGroups';
-      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-
-      validateString( 'orgId', orgId );
-      groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
-      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+      const user = whoIs(me);
 
       try {
-        const groups = await models.Group.find({org_id: orgId, uuid: {$in: groupUuids}});
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+        validateString( 'org_id', org_id );
+        groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+        clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+
+        const groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
@@ -263,6 +302,8 @@ const groupResolvers = {
           };
         });
 
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
+
         // because we cant do $addToSet with objs as inputs, we'll need to split into two queries
         // first we pull out all groups with matching uuids
         // then we insert the group objs
@@ -273,7 +314,7 @@ const groupResolvers = {
           {
             updateMany: {
               filter: {
-                org_id: orgId,
+                org_id,
                 cluster_id: { $in: clusterIds },
               },
               update: {
@@ -284,7 +325,7 @@ const groupResolvers = {
           {
             updateMany: {
               filter: {
-                org_id: orgId,
+                org_id,
                 cluster_id: { $in: clusterIds },
               },
               update: {
@@ -295,7 +336,7 @@ const groupResolvers = {
         ];
         const res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
 
-        pubSub.channelSubChangedFunc({org_id: orgId}, context);
+        pubSub.channelSubChangedFunc({org_id}, context);
 
         /*
         Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
@@ -304,38 +345,45 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
-        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
-      }
-      catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, groupUuids, clusterIds, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     unassignClusterGroups: async(
       parent,
-      { orgId, groupUuids, clusterIds },
+      { orgId: org_id, groupUuids, clusterIds },
       context,
       fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'unassignClusterGroups';
-      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-
-      validateString( 'orgId', orgId );
-      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
-      clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+      const user = whoIs(me);
 
       try {
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+        validateString( 'org_id', org_id );
+        groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+        clusterIds.forEach( value => validateString( 'clusterIds', value ) );
+
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
+
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
         const res = await models.Cluster.updateMany(
           {
-            org_id: orgId,
+            org_id,
             cluster_id: { $in: clusterIds },
           },
           {
@@ -343,37 +391,42 @@ const groupResolvers = {
           }
         );
 
-        pubSub.channelSubChangedFunc({org_id: orgId}, context);
+        pubSub.channelSubChangedFunc({org_id}, context);
 
-        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterIds, res }, `${queryName} exit`);
+        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
-      }
-      catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, groupUuids, clusterIds, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     editClusterGroups: async(
       parent,
-      { orgId, clusterId, groupUuids },
+      { orgId: org_id, clusterId, groupUuids },
       context,
       fullQuery // eslint-disable-line no-unused-vars
     )=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editClusterGroups';
-      logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-
-      validateString( 'orgId', orgId );
-      validateString( 'clusterId', clusterId );
-      groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+      const user = whoIs(me);
 
       try {
-        const groups = await models.Group.find({ org_id: orgId, uuid: { $in: groupUuids } });
+        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+
+        validateString( 'org_id', org_id );
+        validateString( 'clusterId', clusterId );
+        groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+
+        const groups = await models.Group.find({ org_id, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
@@ -390,9 +443,12 @@ const groupResolvers = {
           groups: groupObjsToAdd,
           updated: Date.now(),
         };
-        const res = await models.Cluster.updateOne({ org_id: orgId, cluster_id: clusterId }, { $set: sets });
 
-        pubSub.channelSubChangedFunc({org_id: orgId}, context);
+        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} saving`);
+
+        const res = await models.Cluster.updateOne({ org_id, cluster_id: clusterId }, { $set: sets });
+
+        pubSub.channelSubChangedFunc({org_id}, context);
 
         /*
         Trigger RBAC Sync after successful Group (Cluster) update and pubSub.
@@ -403,28 +459,32 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
-        logger.debug({ req_id, user: whoIs(me), groupUuids, clusterId, res }, `${queryName} exit`);
+        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
-      }
-      catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, groupUuids, clusterId, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     groupClusters: async (parent, { orgId: org_id, uuid, clusters }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'groupClusters';
-      logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
-      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
-      clusters.forEach( value => validateString( 'clusters', value ) );
+      const user = whoIs(me);
 
-      try{
+      try {
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+        clusters.forEach( value => validateString( 'clusters', value ) );
+
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
@@ -433,12 +493,13 @@ const groupResolvers = {
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} saving`);
+
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
           {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$nin: [uuid]}},
           {$push: {groups: {uuid: group.uuid, name: group.name}}});
 
-        logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         /*
@@ -450,24 +511,29 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
-      } catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, clusters, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
 
     unGroupClusters: async (parent, { orgId: org_id, uuid, clusters }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'unGroupClusters';
-      logger.debug({ req_id, user: whoIs(me), uuid, clusters }, `${queryName} enter`);
-      // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
-      clusters.forEach( value => validateString( 'clusters', value ) );
+      const user = whoIs(me);
 
-      try{
+      try {
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+        clusters.forEach( value => validateString( 'clusters', value ) );
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
@@ -477,18 +543,23 @@ const groupResolvers = {
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} saving`);
+
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
           {org_id: org_id, cluster_id: {$in: clusters}, 'groups.uuid': {$in: [uuid]}},
           {$pull: {groups: {uuid}}});
 
-        logger.debug({ req_id, user: whoIs(me), uuid, clusters, res }, `${queryName} exit`);
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-        return {modified: res.modifiedCount };
 
-      } catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
-        throw err;
+        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
+        return {modified: res.modifiedCount };
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, clusters, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
   },

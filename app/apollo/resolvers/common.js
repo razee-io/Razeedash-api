@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,13 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 };
 
-var getAllowedChannels = async(me, orgId, action, field, context)=>{
+var getAllowedChannels = async(me, org_id, action, field, context)=>{
   const { models } = context;
-  var channels = await models.Channel.find({ org_id: orgId });
-  return await filterChannelsToAllowed(me, orgId, action, field, channels, context);
+  var channels = await models.Channel.find({ org_id });
+  return await filterChannelsToAllowed(me, org_id, action, field, channels, context);
 };
 
-var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)=>{
+var filterChannelsToAllowed = async(me, org_id, action, field, channels, context)=>{
   const { models } = context;
   var decisionInputs = _.map(channels, (channel)=>{
     return {
@@ -55,20 +55,20 @@ var filterChannelsToAllowed = async(me, orgId, action, field, channels, context)
       name: channel.name,
     };
   });
-  var decisions = await models.User.isAuthorizedBatch(me, orgId, decisionInputs, context);
+  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
   channels = _.filter(channels, (val, idx)=>{
     return decisions[idx];
   });
   return channels;
 };
 
-var getAllowedSubscriptions = async(me, orgId, action, field, context)=>{
+var getAllowedSubscriptions = async(me, org_id, action, field, context)=>{
   const { models } = context;
-  var subscriptions = await models.Subscription.find({ org_id: orgId });
-  return await filterSubscriptionsToAllowed(me, orgId, action, field, subscriptions, context);
+  var subscriptions = await models.Subscription.find({ org_id });
+  return await filterSubscriptionsToAllowed(me, org_id, action, field, subscriptions, context);
 };
 
-var filterSubscriptionsToAllowed = async(me, orgId, action, field, subscriptions, context)=>{
+var filterSubscriptionsToAllowed = async(me, org_id, action, field, subscriptions, context)=>{
   const { models } = context;
   var decisionInputs = _.map(subscriptions, (subscription)=>{
     return {
@@ -78,7 +78,7 @@ var filterSubscriptionsToAllowed = async(me, orgId, action, field, subscriptions
       name: subscription.name,
     };
   });
-  var decisions = await models.User.isAuthorizedBatch(me, orgId, decisionInputs, context);
+  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
   subscriptions = _.filter(subscriptions, (val, idx)=>{
     return decisions[idx];
   });
@@ -90,7 +90,7 @@ const getAllowedGroups = async (me, org_id, action, field, queryName, context) =
   const {req_id, models, logger} = context;
 
   logger.debug({req_id, user: whoIs(me), org_id, field, action }, `getAllowedGroups enter for ${queryName}`);
-  const groups = await models.Group.find({org_id: org_id}).lean();
+  const groups = await models.Group.find({org_id}).lean();
   const objectArray = groups.map(group => {
     return {type: TYPES.GROUP, action, uuid: group.uuid, name: group.name};
   });
