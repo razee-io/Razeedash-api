@@ -28,6 +28,28 @@ const Group = require('./group');
 const fs = require('fs');
 const mongoConf = require('../../conf.js').conf;
 
+
+const indexUpdateHandler = (error) => {
+  if( error ) {
+    console.log( `indexUpdateHandler: Index update failed: ${error.message}` );
+  }
+  else {
+    console.log( `indexUpdateHandler: Index update successful` );
+  }
+};
+User.on( 'index', indexUpdateHandler );
+Resource.on( 'index', indexUpdateHandler );
+Cluster.on( 'index', indexUpdateHandler );
+Organization.on( 'index', indexUpdateHandler );
+Channel.on( 'index', indexUpdateHandler );
+Subscription.on( 'index', indexUpdateHandler );
+ServiceSubscription.on( 'index', indexUpdateHandler );
+DeployableVersion.on( 'index', indexUpdateHandler );
+ResourceYamlHist.on( 'index', indexUpdateHandler );
+Group.on( 'index', indexUpdateHandler );
+
+
+
 mongoose.Promise = global.Promise; // use global es6 promises
 
 

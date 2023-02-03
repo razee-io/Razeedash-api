@@ -480,7 +480,18 @@ const clusterResolvers = {
       }
     }, // end delete cluster by org_id
 
-    registerCluster: async (parent, { orgId: org_id, registration }, context) => {
+    // Register a cluster without idempotency (repeated calls will fail due to 'already exists' behavior)
+    registerCluster: async (parent, { orgId: org_id, registration, idempotent=false }, context) => {
+      /*
+      Idempotent operation
+        - Register must either *create* a new cluster record or *do nothing* (return successfully but with existing record unchanged).
+          - "do nothing": If an existing record gets modified, it may change the cluster_id and break things.
+      Non-idempotent operation
+        - Register must create record or *throw an error*.
+
+      In both cases, a check for existing record is attempted first.
+      A unique composite index on org_id and registration.name will also enforce uniqueness on the database side (see models/cluster.schema.js).
+      */
       const queryName = 'registerCluster';
       const { models, me, req_id, logger } = context;
 
@@ -498,35 +509,42 @@ const clusterResolvers = {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
 
-        // validate the number of total clusters are under the limit
-        const total = await models.Cluster.count({org_id});
-        if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {  // *** shoud be just >
-          throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
+        let cluster_id = UUID();
+        let reg_state = CLUSTER_REG_STATES.REGISTERING;
+
+        const existingClusterRecord = await models.Cluster.findOne( { $and: [ { org_id: org_id }, {'registration.name': registration.name } ] } ).lean();
+        if( existingClusterRecord ) {
+          if( idempotent ) {
+            // When idempotent, existing cluster record is not an error condition
+          }
+          else {
+            throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
+          }
         }
+        else {
+          // validate the number of total clusters are under the limit
+          const total = await models.Cluster.count({org_id});
+          if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
+            throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
+          }
 
-        // validate the number of pending clusters are under the limit
-        const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
-        if (total_pending > CLUSTER_LIMITS.MAX_PENDING ) {
-          throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
-        }
-
-        // we do not handle cluster groups here, it is handled by groupCluster Api
-
-        if (
-          await models.Cluster.findOne(
-            { $and: [
-              { org_id: org_id },
-              {'registration.name': registration.name },
-            ]}
-          ).lean()) {
-          throw new RazeeValidationError(context.req.t('Another cluster already exists with the same registration name {{registration.name}}', {'registration.name':registration.name}), context);
+          // validate the number of pending clusters are under the limit
+          const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
+          if (total_pending >= CLUSTER_LIMITS.MAX_PENDING ) {
+            throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
+          }
         }
 
         logger.info({req_id, user, org_id, registration}, `${queryName} saving`);
 
-        const cluster_id = UUID();
-        const reg_state = CLUSTER_REG_STATES.REGISTERING;
-        await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
+        if( idempotent && existingClusterRecord ) {
+          // Nothing to do, cluster is already registered. Use existing cluster_id and regstate in return values, continue.
+          cluster_id = existingClusterRecord.cluster_id;
+          reg_state = existingClusterRecord.reg_state;
+        }
+        else {
+          await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
+        }
 
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -545,7 +563,8 @@ const clusterResolvers = {
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+        // Note: mongo/mongoose errors will not have a 'message' attribute, look like: { index: 0, code: 11000, keyPattern: ....}
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message || `code ${error.code}`}), context);
       }
     }, // end registerCluster
 

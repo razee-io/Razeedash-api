@@ -20,5 +20,4 @@ const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
 ClusterSchema.plugin(mongooseLeanVirtuals);
 const Cluster = mongoose.model('clusters', ClusterSchema);
-
 module.exports = Cluster;
