@@ -34,7 +34,7 @@ const indexUpdateHandler = (error) => {
     console.log( `indexUpdateHandler: Index update failed: ${error.message}` );
   }
   else {
-    console.log( `indexUpdateHandler: Index update successful` );
+    console.log( 'indexUpdateHandler: Index update successful' );
   }
 };
 User.on( 'index', indexUpdateHandler );
