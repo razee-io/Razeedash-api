@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ const { applyQueryFieldsToChannels, applyQueryFieldsToDeployableVersions } = req
 const storageFactory = require('./../../storage/storageFactory');
 const { getDecryptedContent, validateNewVersions, ingestVersionContent } = require('../utils/versionUtils');
 const { validateNewSubscriptions } = require('../utils/subscriptionUtils');
+const { ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
 const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
@@ -37,55 +38,64 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const channelResolvers = {
   Query: {
-    channels: async(parent, { orgId }, context, fullQuery) => {
+    channels: async(parent, { orgId: org_id }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { me, req_id, logger } = context;
       const queryName = 'channels';
-      logger.debug({req_id, user: whoIs(me), orgId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id }, `${queryName} enter`);
+
+      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
-        var channels = await getAllowedChannels(me, orgId, ACTIONS.READ, TYPES.CHANNEL, context);
-        await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        var channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
+        await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
+      }catch(error){
+        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
         throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
 
       return channels;
     },
-    channel: async(parent, { orgId, uuid }, context, fullQuery) => {
+    channel: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channel';
-      logger.debug({req_id, user: whoIs(me), orgId, uuid}, `${queryName} enter`);
+
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id, uuid}, `${queryName} enter`);
 
       try{
-        var channel = await models.Channel.findOne({org_id: orgId, uuid });
+        var channel = await models.Channel.findOne({org_id, uuid });
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
-        await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        await applyQueryFieldsToChannels([channel], queryFields, { orgId: org_id }, context);
+      }catch(error){
+        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channel;
     },
-    channelByName: async(parent, { orgId, name }, context, fullQuery) => {
+    channelByName: async(parent, { orgId: org_id, name }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelByName';
-      logger.debug({req_id, user: whoIs(me), orgId, name}, `${queryName} enter`);
+
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id, name}, `${queryName} enter`);
 
       try{
-        const channels = await models.Channel.find({ org_id: orgId, name }).limit(2);
+        const channels = await models.Channel.find({ org_id, name }).limit(2);
 
         // If more than one matching config found, throw an error
         if( channels.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id: orgId, name }, `${queryName} found ${channels.length} matching configurations` );
+          logger.info({req_id, user, org_id, name }, `${queryName} found ${channels.length} matching configurations` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'configuration', 'name':name}), context);
         }
         const channel = channels[0] || null;
@@ -93,31 +103,34 @@ const channelResolvers = {
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with name {{name}}.', {'name':name}), context);
         }
-        await validAuth(me, orgId, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-        await applyQueryFieldsToChannels([channel], queryFields, { orgId }, context);
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
+        await applyQueryFieldsToChannels([channel], queryFields, { orgId: org_id }, context);
 
         return channel;
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+      }catch(error){
+        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
-    channelsByTags: async(parent, { orgId, tags }, context, fullQuery)=>{
+    channelsByTags: async(parent, { orgId: org_id, tags }, context, fullQuery)=>{
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'channelsByTags';
-      logger.debug({req_id, user: whoIs(me), orgId, tags}, `${queryName} enter`);
+
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id, tags}, `${queryName} enter`);
 
       try{
         if(tags.length < 1){
           throw new RazeeValidationError('Please supply one or more tags', context);
         }
-        var channels = await models.Channel.find({ org_id: orgId, tags: { $all: tags } });
-        channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
-        await applyQueryFieldsToChannels(channels, queryFields, { orgId }, context);
+        var channels = await models.Channel.find({ org_id, tags: { $all: tags } });
+        channels = await filterChannelsToAllowed(me, org_id, ACTIONS.READ, TYPES.CHANNEL, channels, context);
+        await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+      }catch(error){
+        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
       return channels;
@@ -125,15 +138,20 @@ const channelResolvers = {
     channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context, fullQuery) => {
       const { me, req_id, logger } = context;
       const queryName = 'channelVersionByName';
-      logger.debug({req_id, user: whoIs(me), org_id, channelName, versionName }, `${queryName} enter`);
+
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id, channelName, versionName }, `${queryName} enter`);
       return await channelResolvers.Query.channelVersion(parent,  {orgId: org_id, channelName, versionName, _queryName: queryName }, context, fullQuery);
     },
-
     channelVersion: async(parent, { orgId: org_id, channelUuid, versionUuid, channelName, versionName, _queryName }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = _queryName ? `${_queryName}/channelVersion` : 'channelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
+
+      const user = whoIs(me);
+
+      logger.debug({req_id, user, org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
 
       try{
         const org = await models.Organization.findOne({ _id: org_id });
@@ -147,13 +165,13 @@ const channelResolvers = {
 
         // If more than one matching channels found, throw an error
         if( channels.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${channels.length} matching configurations` );
+          logger.info({req_id, user, org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${channels.length} matching configurations` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'configuration', 'name':channelName}), context);
         }
         const channel = channels[0] || null;
 
         if(!channel){
-          throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {'channelUuid':channelUuid}), context);
+          throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {channelUuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
@@ -164,7 +182,7 @@ const channelResolvers = {
 
         // If more than one matching version found, throw an error
         if( deployableVersionObjs.length > 1 ) {
-          logger.info({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${deployableVersionObjs.length} matching versions` );
+          logger.info({req_id, user, org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} found ${deployableVersionObjs.length} matching versions` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'DeployableVersion', 'name':versionName||versionUuid}), context);
         }
 
@@ -182,7 +200,7 @@ const channelResolvers = {
             deployableVersionObj.content = decryptedContentResult.content;
           }
           catch( e ) {
-            logger.error({req_id, user: whoIs(me), org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${deployableVersionObj.uuid}' for request ${req_id}: ${e.message}`);
+            logger.error({req_id, user, org_id, channelUuid, versionUuid, channelName, versionName }, `${queryName} encountered an error when decrypting version '${deployableVersionObj.uuid}' for request ${req_id}: ${e.message}`);
             throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
           }
         }
@@ -193,8 +211,8 @@ const channelResolvers = {
         }
 
         return deployableVersionObj;
-      }catch(err){
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
+      }catch(error){
+        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }
@@ -203,30 +221,34 @@ const channelResolvers = {
     addChannel: async (parent, { orgId: org_id, name, contentType=CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED, data_location, remote, tags=[], custom, versions=[], subscriptions=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, name }, `${queryName} enter`);
-      await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
 
-      // Create the channel object to be saved.
-      const kubeOwnerId = await models.User.getKubeOwnerId(context);
-      const newChannelObj = {
-        _id: UUID(),
-        uuid: UUID(),
-        org_id,
-        contentType,
-        name,
-        versions: [], /* deprecated/ignored, do not use */
-        tags,
-        ownerId: me._id,
-        kubeOwnerId,
-        custom,
-      };
-      if( data_location ) newChannelObj.data_location = data_location;
-      if( remote ) newChannelObj.remote = remote;
-
-      validateString( 'org_id', org_id );
-      validateString( 'name', name );
+      const user = whoIs(me);
 
       try {
+        logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
+
+        // Create the channel object to be saved.
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
+        const newChannelObj = {
+          _id: UUID(),
+          uuid: UUID(),
+          org_id,
+          contentType,
+          name,
+          versions: [], /* deprecated/ignored, do not use */
+          tags,
+          ownerId: me._id,
+          kubeOwnerId,
+          custom,
+        };
+        if( data_location ) newChannelObj.data_location = data_location;
+        if( remote ) newChannelObj.remote = remote;
+
+        validateString( 'org_id', org_id );
+        validateString( 'name', name );
+
         // Validate contentType
         if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
           throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( Object.values(CHANNEL_CONSTANTS.CONTENTTYPES) ).join(' ') } ), context );
@@ -293,6 +315,8 @@ const channelResolvers = {
           await validateNewSubscriptions( org_id, { versions: versions, newSubscriptions: subscriptions }, context );
         }
 
+        logger.info({ req_id, user, org_id, name }, `${queryName} saving`);
+
         // Save Channel
         await models.Channel.create( newChannelObj );
 
@@ -332,10 +356,10 @@ const channelResolvers = {
         await Promise.all( subscriptions.map( async (s) => {
           const version = versions.find( v => v.name === s.versionName );
           if( !version ) {
-            logger.error({ req_id, user: whoIs(me), org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' was not created.`);
+            logger.error({ req_id, user, org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' was not created.`);
           }
           else if( !version.uuid ) {
-            logger.error({ req_id, user: whoIs(me), org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' failed creation.`);
+            logger.error({ req_id, user, org_id, name }, `${queryName} unable to create subscription '${s.name}' when serving ${req_id}, version '${s.versionName}' failed creation.`);
           }
 
           const subscriptionObj = {
@@ -372,27 +396,31 @@ const channelResolvers = {
           }
         } ) );
 
+        logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid: newChannelObj.uuid,
         };
-      } catch(err){
-        if (err instanceof BasicRazeeError) {
-          throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, name, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     editChannel: async (parent, { orgId: org_id, uuid, name, tags=[], custom, remote }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid, name }, `${queryName} enter`);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
-      validateString( 'name', name );
+      const user = whoIs(me);
 
       try{
+        logger.info({ req_id, user, org_id, uuid, name }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+        validateString( 'name', name );
+
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
@@ -418,6 +446,8 @@ const channelResolvers = {
           }
         }
 
+        logger.info({ req_id, user, org_id, uuid, name }, `${queryName} saving`);
+
         // Save the change
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
@@ -427,8 +457,8 @@ const channelResolvers = {
             { org_id: org_id, channel_uuid: uuid },
             { $set: { channelName: name } }
           );
-        } catch(err) {
-          logger.error(err, `${queryName} failed to update the channel name in subscriptions when serving ${req_id}.`);
+        } catch(error) {
+          logger.error({ req_id, user, org_id, uuid, name, error }, `${queryName} failed to update the channel name in subscriptions, continuing`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
         try {
@@ -436,8 +466,8 @@ const channelResolvers = {
             { org_id: org_id, channel_id: uuid },
             { $set: { channel_name: name } }
           );
-        } catch(err) {
-          logger.error(err, `${queryName} failed to update the channel name in versions when serving ${req_id}.`);
+        } catch(error) {
+          logger.error({ req_id, user, org_id, uuid, name, error }, `${queryName} failed to update the channel name in versions, continuing`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
 
@@ -447,137 +477,151 @@ const channelResolvers = {
           name,
           tags,
         };
-      } catch(err){
-        if (err instanceof BasicRazeeError) {
-          throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, name, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     addChannelVersion: async(parent, { orgId: org_id, channelUuid: channel_uuid, name, type, content, file, description, remote, subscriptions=[] }, context)=>{
       const { models, me, req_id, logger } = context;
-
-      // validate org_id, channel_uuid
-      validateString( 'org_id', org_id );
-      validateString( 'channel_uuid', channel_uuid );
-
       const queryName = 'addChannelVersion';
-      logger.debug({req_id, user: whoIs(me), org_id, channel_uuid, name, type, description, file }, `${queryName} enter`);
 
-      // get org
-      const org = await models.Organization.findOne({ _id: org_id });
-      if (!org) {
-        throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
-      }
+      const user = whoIs(me);
 
-      // get channel
-      const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
-      if(!channel){
-        throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
-      }
+      try {
+        logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} validating`);
 
-      // create newVersionObj
-      const kubeOwnerId = await models.User.getKubeOwnerId(context);
-      const newVersionObj = {
-        _id: UUID(),
-        org_id,
-        uuid: UUID(),
-        channel_id: channel.uuid,
-        channelName: channel.name,
-        name,
-        description,
-        type,
-        ownerId: me._id,
-        kubeOwnerId,
-      };
-      if( remote ) newVersionObj.remote = remote;
-      if( content ) newVersionObj.content = content;
-      if( file ) newVersionObj.file = file;
+        // validate org_id, channel_uuid
+        validateString( 'org_id', org_id );
+        validateString( 'channel_uuid', channel_uuid );
 
-      // validate authorization on the channel
-      await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
-
-      // Experimental
-      if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
-        // Block experimental features
-        if( subscriptions.length > 0 ) {
-          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
+          // Block experimental features
+          if( subscriptions.length > 0 ) {
+            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
+          }
         }
-      }
 
-      // Validate new version
-      await validateNewVersions( org_id, { channel: channel, newVersions: [newVersionObj] }, context );
+        // get org
+        const org = await models.Organization.findOne({ _id: org_id });
+        if (!org) {
+          throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+        }
 
-      // Validate new subscription(s)
-      await validateNewSubscriptions( org_id, { versions: [newVersionObj], newSubscriptions: subscriptions }, context );
+        // get channel
+        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        if(!channel){
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
+        }
 
-      // Load/save the version content
-      await ingestVersionContent( org_id, { org, channel, version: newVersionObj, file: file, content: content, remote: remote }, context );
-      // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+        // validate authorization on the channel
+        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
 
-      // Save Version
-      await models.DeployableVersion.create( newVersionObj );
-
-      // Attempt to create subscription(s)
-      await Promise.all( subscriptions.map( async (s) => {
-        const subscription = {
+        // create newVersionObj
+        const kubeOwnerId = await models.User.getKubeOwnerId(context);
+        const newVersionObj = {
           _id: UUID(),
+          org_id,
           uuid: UUID(),
-          org_id: org_id,
-          name: s.name,
-          groups: s.groups,
-          owner: me._id,
+          channel_id: channel.uuid,
           channelName: channel.name,
-          channel_uuid: channel.uuid,
-          version: newVersionObj.name,
-          version_uuid: newVersionObj.uuid,
-          clusterId: null,
-          kubeOwnerId: kubeOwnerId,
-          custom: s.custom
+          name,
+          description,
+          type,
+          ownerId: me._id,
+          kubeOwnerId,
         };
-        try {
-          // Save subscription
-          await models.Subscription.create( subscription );
+        if( remote ) newVersionObj.remote = remote;
+        if( content ) newVersionObj.content = content;
+        if( file ) newVersionObj.file = file;
 
-          pubSub.channelSubChangedFunc({org_id: org_id}, context);
+        // Validate newVersionObj
+        await validateNewVersions( org_id, { channel: channel, newVersions: [newVersionObj] }, context );
+        // Validate new subscription(s)
+        await validateNewSubscriptions( org_id, { versions: [newVersionObj], newSubscriptions: subscriptions }, context );
 
-          /*
-          Trigger RBAC Sync after successful Subscription creation and pubSub.
-          RBAC Sync completes asynchronously, so no `await`.
-          Even if RBAC Sync errors, subscription creation is successful.
-          */
-          subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
+        logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} saving`);
+
+        // Load/save the version content
+        await ingestVersionContent( org_id, { org, channel, version: newVersionObj, file: file, content: content, remote: remote }, context );
+        // Note: if failure occurs after this point, the data may already have been stored by storageFactory even if the Version document doesnt get saved
+
+        // Save Version
+        await models.DeployableVersion.create( newVersionObj );
+
+        // Attempt to create subscription(s)
+        await Promise.all( subscriptions.map( async (s) => {
+          const subscription = {
+            _id: UUID(),
+            uuid: UUID(),
+            org_id: org_id,
+            name: s.name,
+            groups: s.groups,
+            owner: me._id,
+            channelName: channel.name,
+            channel_uuid: channel.uuid,
+            version: newVersionObj.name,
+            version_uuid: newVersionObj.uuid,
+            clusterId: null,
+            kubeOwnerId: kubeOwnerId,
+            custom: s.custom
+          };
+          try {
+            // Save subscription
+            await models.Subscription.create( subscription );
+
+            pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+            /*
+            Trigger RBAC Sync after successful Subscription creation and pubSub.
+            RBAC Sync completes asynchronously, so no `await`.
+            Even if RBAC Sync errors, subscription creation is successful.
+            */
+            subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
+          }
+          catch( error ) {
+            logger.error({ req_id, user, org_id, channel_uuid, name, type, error }, `${queryName} error creating subscription '${subscription.name}'`);
+            // Cannot fail here, the Version has already been created.  Continue.
+          }
+        } ) );
+
+        logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
+        return {
+          success: true,
+          versionUuid: newVersionObj.uuid,
+        };
+      } catch (error) {
+        logger.error({ req_id, user, org_id, channel_uuid, name, type, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        catch( e ) {
-          logger.error(e, `${queryName} error creating subscription '${subscription.name}' when serving ${req_id}.`);
-          // Cannot fail here, the Version has already been created.  Continue.
-        }
-      } ) );
-
-      return {
-        success: true,
-        versionUuid: newVersionObj.uuid,
-      };
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+      }
     },
     editChannelVersion: async(parent, { orgId: org_id, uuid, description, remote, subscriptions }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editChannelVersion';
 
-      logger.debug({req_id, user: whoIs(me), org_id, uuid, description, remote }, `${queryName} enter`);
-
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
-
-      /*
-      - Allow changing description
-      - Allow altering `remote.parameters`
-      */
-      if( !description && !remote ){
-        throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
-      }
+      const user = whoIs(me);
 
       try{
+        logger.info({req_id, user, org_id, uuid }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+
+        /*
+        - Allow changing description
+        - Allow altering `remote.parameters`
+        */
+        if( !description && !remote ){
+          throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
+        }
+
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
           // Block experimental features
@@ -627,6 +671,8 @@ const channelResolvers = {
         }
 
         if( description ) set.description = description;
+
+        logger.info({req_id, user, org_id, uuid }, `${queryName} saving`);
 
         // Save the Version
         await models.DeployableVersion.updateOne({ org_id, uuid }, { $set: set }, {});
@@ -712,27 +758,30 @@ const channelResolvers = {
         } );
         */
 
+        logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
           success: true,
         };
-      }
-      catch( err ){
-        if( err instanceof BasicRazeeError ) {
-          throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        logger.error( err, `${queryName} encountered an error when serving ${req_id}.` );
-        throw new RazeeQueryError( context.req.t( 'Query {{queryName}} error. MessageID: {{req_id}}.', { 'queryName': queryName, 'req_id': req_id } ), context );
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     removeChannel: async (parent, { orgId: org_id, uuid }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannel';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
+      const user = whoIs(me);
 
       try{
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
@@ -749,6 +798,8 @@ const channelResolvers = {
         if(serSubCount > 0){
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please update/remove them before removing this channel.', {'serSubCount':serSubCount}), context);
         }
+
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
 
         if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           // deletes the linked deployableVersions data
@@ -770,27 +821,31 @@ const channelResolvers = {
         // Deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
 
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
           uuid,
           success: true,
         };
-      } catch(err){
-        if (err instanceof BasicRazeeError) {
-          throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     removeChannelVersion: async (parent, { orgId: org_id, uuid, deleteSubscriptions }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'removeChannelVersion';
-      logger.debug({ req_id, user: whoIs(me), org_id, uuid }, `${queryName} enter`);
 
-      validateString( 'org_id', org_id );
-      validateString( 'uuid', uuid );
+      const user = whoIs(me);
 
       try{
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'uuid', uuid );
+
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
           // Block experimental features
@@ -827,11 +882,12 @@ const channelResolvers = {
             throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
           }
         }
-        else {
-          await models.Subscription.deleteMany({ org_id, version_uuid: uuid });
-          await models.ServiceSubscription.deleteMany({ org_id, version_uuid: uuid });
-          logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} subscriptions removed`);
-        }
+
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
+
+        await models.Subscription.deleteMany({ org_id, version_uuid: uuid });
+        await models.ServiceSubscription.deleteMany({ org_id, version_uuid: uuid });
+        logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} subscriptions removed`);
 
         // Delete uploaded Version data
         if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
@@ -844,16 +900,17 @@ const channelResolvers = {
         await models.DeployableVersion.deleteOne({ org_id, uuid });
         logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
 
+        logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         // Return success if Version was deleted
         return {
           uuid,
           success: true,
         };
-      } catch(err){
-        if (err instanceof BasicRazeeError) {
-          throw err;
+      } catch (error) {
+        logger.error({ req_id, user, org_id, uuid, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
         }
-        logger.error(err, `${queryName} encountered an error when serving ${req_id}.`);
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
