@@ -197,6 +197,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-1' },
   });
 
   await models.Cluster.create({
@@ -215,6 +216,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-2' },
   });
 
   await models.Cluster.create({
@@ -233,6 +235,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-3' },
   });
 
   await models.Cluster.create({
@@ -253,6 +256,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-4' },
   });
 
   // updated: new Moment().subtract(2, 'day').toDate(),
@@ -273,6 +277,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-A' },
   });
 }; // create clusters
 

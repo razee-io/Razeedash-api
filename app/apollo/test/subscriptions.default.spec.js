@@ -99,6 +99,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-1' },
   });
   await models.Cluster.create({
     org_id: org01._id,
@@ -122,6 +123,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-2' },
   });
 };
 

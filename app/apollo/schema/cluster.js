@@ -184,6 +184,7 @@ const clusterSchema = gql`
     registerCluster (
       orgId: String! @sv
       registration: JSON! @jv
+      idempotent: Boolean = false
     ): RegisterClusterResponse!
 
     """

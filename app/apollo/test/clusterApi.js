@@ -375,8 +375,8 @@ const clusterFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!,$registration: JSON!) {
-            registerCluster(orgId: $orgId registration: $registration) {
+          mutation($orgId: String!, $registration: JSON!, $idempotent: Boolean) {
+            registerCluster(orgId: $orgId, registration: $registration, idempotent: $idempotent) {
               url
           }
         }

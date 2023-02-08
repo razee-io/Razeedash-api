@@ -102,6 +102,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'any-cluster-1' },
   });
   await models.Cluster.create({
     org_id:  org_01._id,
@@ -119,6 +120,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-1' },
   });
   await models.Cluster.create({
     org_id:  org_01._id,
@@ -136,6 +138,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-3' },
   });
   await models.Cluster.create({
     org_id:  org_02._id,
@@ -153,6 +156,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'mycluster-4' },
   });
 };
 const createSubscriptions = async () => {
@@ -364,7 +368,7 @@ describe('resource graphql test suite', () => {
           '/mybla/selfLink',
         );
         expect(result1.data.data.resources.resources[0].cluster.clusterId).to.equal('cluster_01');
-        expect(result1.data.data.resources.resources[0].cluster.name).to.equal('cluster_01');
+        expect(result1.data.data.resources.resources[0].cluster.name).to.equal('mycluster-1');
 
         const { id } = result1.data.data.resources.resources[0];
         const result2 = await api.resource(token, { orgId: meResult.data.data.me.orgId, id: id.toString() });

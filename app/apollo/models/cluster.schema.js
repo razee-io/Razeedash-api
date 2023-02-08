@@ -125,6 +125,7 @@ const ClusterSchema = new mongoose.Schema({
 });
 
 ClusterSchema.index({ org_id: 1, cluster_id: 1 }, { unique: true });
+ClusterSchema.index({ org_id: 1, 'registration.name': 1 }, { unique: true });
 
 // Used to get cluster details for ServiceSubscriptions
 ClusterSchema.statics.getClustersByIds = async function(ids){

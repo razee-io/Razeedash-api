@@ -203,6 +203,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'my-cluster3' },
   });
 
   await models.Cluster.create({
@@ -223,6 +224,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'my-cluster4' },
   });
 
   // updated: new Moment().subtract(2, 'day').toDate(),
@@ -243,6 +245,7 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
+    registration: { name: 'my-clusterA' },
   });
 }; // create clusters
 
@@ -728,6 +731,7 @@ describe('cluster graphql test suite', () => {
             platform: 'linux/amd64',
           },
         },
+        registration: { name: 'testcluster-tobedeletedbyuser01' },
       });
 
       const data = await clusterApi.deleteClusterByClusterId(token, {
@@ -766,6 +770,7 @@ describe('cluster graphql test suite', () => {
             platform: 'linux/amd64',
           },
         },
+        registration: { name: 'testcluster-tobedeletedbyadmin' },
       });
 
       await models.Resource.create({
@@ -823,6 +828,7 @@ describe('cluster graphql test suite', () => {
             platform: 'linux/amd64',
           },
         },
+        registration: { name: 'testcluster-tobedeletedbyadmin' },
       });
 
       await models.Resource.create({
@@ -865,6 +871,7 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         registration: { name: 'my-cluster123' },
       });
+      console.log( `response: ${JSON.stringify( registerCluster.data, null, 2 )}` );
       expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
 
       const result = await clusterApi.byClusterName(token, {
@@ -901,7 +908,25 @@ describe('cluster graphql test suite', () => {
     }
   });
 
-
+  it('try to ensure the registration of cluster with the same name', async () => {
+    try {
+      const result = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster123' },
+        idempotent: true,
+      });
+      console.log( `result: ${JSON.stringify( result.data, null, 2 )}` );
+      expect(result.data.data.registerCluster.url).to.be.an('string');
+      //expect(registerCluster.data.errors[0].message).to.contain('Another cluster already exists with the same registration name');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 
   it('try to register a cluster when max # of clusters per account is reached', async () => {
     try {
@@ -1011,6 +1036,7 @@ describe('cluster graphql test suite', () => {
             platform: 'linux/amd64',
           },
         },
+        registration: { name: 'testcluster-enableregurl' },
       });
 
       const {
