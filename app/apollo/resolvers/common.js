@@ -32,10 +32,8 @@ const checkComplexity = ( obj, parentNames=[] ) => {
   const depth = parentNames.length;
   const duplication = parentNames.length - (new Set(parentNames)).size;
 
-  console.log( `PLC checkComplexity entry, depth: ${depth}, duplication: ${duplication}`);
-
   if( depth > MAX_QUERY_DEPTH ) throw new Error( `Query depth exceeds maximum (${MAX_QUERY_DEPTH}): ${parentNames.join('.')}` );
-  if( depth > MAX_QUERY_DUPLICATION ) throw new Error( `Query recursion exceeds maximum (${MAX_QUERY_DUPLICATION}): ${parentNames.join('.')}` );
+  if( duplication > MAX_QUERY_DUPLICATION ) throw new Error( `Query recursion exceeds maximum (${MAX_QUERY_DUPLICATION}): ${parentNames.join('.')}` );
 
   const ownPropertyNames = Object.getOwnPropertyNames( obj );
   for( const propertyName of ownPropertyNames ) {
