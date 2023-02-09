@@ -26,7 +26,7 @@ const { validateNewSubscriptions } = require('../utils/subscriptionUtils');
 const { ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
-const { whoIs, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
+const { whoIs, checkComplexity, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
 const { validateString } = require('../utils/directives');
 
@@ -50,6 +50,8 @@ const channelResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
       try{
+        checkComplexity( queryFields );
+
         var channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
       }catch(error){
@@ -69,6 +71,8 @@ const channelResolvers = {
       logger.debug({req_id, user, org_id, uuid}, `${queryName} enter`);
 
       try{
+        checkComplexity( queryFields );
+
         var channel = await models.Channel.findOne({org_id, uuid });
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
@@ -91,6 +95,8 @@ const channelResolvers = {
       logger.debug({req_id, user, org_id, name}, `${queryName} enter`);
 
       try{
+        checkComplexity( queryFields );
+
         const channels = await models.Channel.find({ org_id, name }).limit(2);
 
         // If more than one matching config found, throw an error
@@ -122,6 +128,8 @@ const channelResolvers = {
       logger.debug({req_id, user, org_id, tags}, `${queryName} enter`);
 
       try{
+        checkComplexity( queryFields );
+
         if(tags.length < 1){
           throw new RazeeValidationError('Please supply one or more tags', context);
         }
@@ -154,6 +162,8 @@ const channelResolvers = {
       logger.debug({req_id, user, org_id, channelUuid, versionUuid, channelName, versionName}, `${queryName} enter`);
 
       try{
+        checkComplexity( queryFields );
+
         const org = await models.Organization.findOne({ _id: org_id });
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);

@@ -20,12 +20,8 @@ const { v4: UUID } = require('uuid');
 const { withFilter } = require('graphql-subscriptions');
 
 const { ACTIONS, TYPES, CHANNEL_CONSTANTS } = require('../models/const');
-const {
-  whoIs, validAuth, validClusterAuth,
-  getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed,
-  getGroupConditionsIncludingEmpty,
-  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError
-} = require ('./common');
+const { whoIs, checkComplexity, validAuth, validClusterAuth, getGroupConditions, getAllowedGroups, filterSubscriptionsToAllowed, getGroupConditionsIncludingEmpty,
+  NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError } = require ('./common');
 const getSubscriptionDetails = require('../../utils/subscriptions.js').getSubscriptionDetails;
 const getServiceSubscriptionDetails = require('../../utils/serviceSubscriptions.js').getServiceSubscriptionDetails;
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
@@ -140,6 +136,8 @@ const subscriptionResolvers = {
       logger.debug({req_id, user, org_id, conditions }, `${queryName} group conditions are...`);
       let subs = [];
       try{
+        checkComplexity( queryFields );
+
         subs = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
         logger.debug({req_id, user, org_id}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
         subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
@@ -195,6 +193,8 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
+
+      checkComplexity( queryFields );
 
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
@@ -256,6 +256,8 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
+
+      checkComplexity( queryFields );
 
       //find groups in cluster
       const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });

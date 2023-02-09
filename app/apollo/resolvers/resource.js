@@ -23,7 +23,7 @@ const GraphqlFields = require('graphql-fields');
 const { buildSearchForResources, convertStrToTextPropsObj } = require('../utils');
 const { ACTIONS, TYPES } = require('../models/const');
 const { EVENTS, GraphqlPubSub, getStreamingTopic } = require('../subscription');
-const { whoIs, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, getAllowedGroups, getGroupConditionsIncludingEmpty, NotFoundError, BasicRazeeError, RazeeForbiddenError, RazeeQueryError } = require ('./common');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { applyQueryFieldsToResources } = require('../utils/applyQueryFields');
 
@@ -39,6 +39,9 @@ const commonResourcesSearch = async ({ me, queryName, orgId, context, searchFilt
     impossible to use pagination (limit+skip).  A client receiving a partial response
     would be unable to tell whether there are more results, or how many to skip.
     */
+
+    checkComplexity( queryFields );
+
     // To exclude resources based on Namespaces access, first build a list of all allowed Namespaces
     const nsField = 'searchableData.namespace';
     const allResourceNamespaces = await models.Resource.distinct( nsField, searchFilter );
@@ -85,6 +88,8 @@ const commonResourcesSearch = async ({ me, queryName, orgId, context, searchFilt
 const commonResourceSearch = async ({ context, org_id, searchFilter, queryFields }) => {
   const { models, me, req_id, logger } = context;
   try {
+    checkComplexity( queryFields );
+
     const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', 'resource.commonResourceSearch', context);
 
     // Always exclude deleted records
@@ -163,6 +168,8 @@ const resourceResolvers = {
       limit = _.clamp(limit, 1, 10000);
       skip = _.clamp(skip, 0, Number.MAX_SAFE_INTEGER);
 
+      checkComplexity( queryFields );
+
       // use service level read
       await validAuth(me, orgId, ACTIONS.SERVICELEVELREAD, TYPES.RESOURCE, queryName, context);
 
@@ -205,6 +212,8 @@ const resourceResolvers = {
       limit = _.clamp(limit, 1, 10000);
       skip = _.clamp(skip, 0, Number.MAX_SAFE_INTEGER);
 
+      checkComplexity( queryFields );
+
       const cluster = await models.Cluster.findOne({cluster_id}).lean({ virtuals: true });
       if (!cluster) {
         // if some tag of the sub does not in user's tag list, throws an error
@@ -241,6 +250,8 @@ const resourceResolvers = {
       const { models, me, req_id, logger } = context;
 
       logger.debug( {req_id, user: whoIs(me), _id, queryFields}, `${queryName} enter`);
+
+      checkComplexity( queryFields );
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
@@ -283,6 +294,8 @@ const resourceResolvers = {
 
       logger.debug( {req_id, user: whoIs(me), org_id, cluster_id, selfLink, queryFields}, `${queryName} enter`);
 
+      checkComplexity( queryFields );
+
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       const searchFilter = { org_id, cluster_id, selfLink };
@@ -304,6 +317,8 @@ const resourceResolvers = {
       const {  me, models, req_id, logger } = context;
 
       logger.debug( {req_id, user: whoIs(me), orgId, subscription_id, queryFields}, `${queryName} enter`);
+
+      checkComplexity( queryFields );
 
       const subscription = await models.Subscription.findOne({uuid: subscription_id}).lean({ virtuals: true });
       if (!subscription) {

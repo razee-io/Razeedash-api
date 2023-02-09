@@ -25,6 +25,22 @@ const whoIs = me => {
   return me._id;
 };
 
+const MAX_QUERY_DEPTH = 6;
+const MAX_QUERY_DUPLICATION = 0;
+
+const checkComplexity = ( obj, parentNames=[] ) => {
+  const depth = parentNames.length;
+  const duplication = parentNames.length - (new Set(parentNames)).size;
+
+  if( depth > MAX_QUERY_DEPTH ) throw new Error( `Query depth exceeds maximum (${MAX_QUERY_DEPTH}): ${parentNames.join('.')}` );
+  if( duplication > MAX_QUERY_DUPLICATION ) throw new Error( `Query recursion exceeds maximum (${MAX_QUERY_DUPLICATION}): ${parentNames.join('.')}` );
+
+  const ownPropertyNames = Object.getOwnPropertyNames( obj );
+  for( const propertyName of ownPropertyNames ) {
+    checkComplexity( obj[propertyName], [ ...parentNames, propertyName ] );
+  }
+};
+
 const validClusterAuth = async (me, queryName, context) => {
   const { models } = context;
   // Users that pass in razee-org-key.  ex: ClusterSubscription or curl requests
@@ -237,7 +253,7 @@ class RazeeMaintenanceMode extends BasicRazeeError {
 }
 
 module.exports =  {
-  whoIs, validAuth,
+  whoIs, checkComplexity, validAuth,
   getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
   validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,

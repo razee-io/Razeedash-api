@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, validAuth, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -43,6 +43,8 @@ const groupResolvers = {
       try{
         logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
+        checkComplexity( queryFields );
+
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
         const groups = await models.Group.find({ org_id }).lean({ virtuals: true });
 
@@ -63,6 +65,8 @@ const groupResolvers = {
 
       try {
         logger.debug({req_id, user, org_id, uuid}, `${queryName} enter`);
+
+        checkComplexity( queryFields );
 
         const group = await models.Group.findOne({ org_id, uuid }).lean({ virtuals: true });
         if (!group) {
@@ -87,6 +91,8 @@ const groupResolvers = {
 
       try{
         logger.debug({req_id, user, org_id, name}, `${queryName} enter`);
+
+        checkComplexity( queryFields );
 
         const groups = await models.Group.find({ org_id, name }).limit(2).lean({ virtuals: true });
 
