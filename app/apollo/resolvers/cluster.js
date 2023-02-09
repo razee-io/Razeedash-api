@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, validAuth, getGroupConditionsIncludingEmpty, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -87,6 +87,8 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, clusterId }, `${queryName} enter`);
 
+        checkComplexity( queryFields );
+
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
         const cluster = await models.Cluster.findOne({
@@ -139,6 +141,8 @@ const clusterResolvers = {
 
       try {
         logger.debug({req_id, user, org_id, clusterName}, `${queryName} enter`);
+
+        checkComplexity( queryFields );
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
@@ -204,6 +208,8 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, limit, startingAfter}, `${queryName} enter`);
 
+        checkComplexity( queryFields );
+
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         var searchFilter={};
@@ -248,6 +254,8 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, limit}, `${queryName} enter`);
 
+        checkComplexity( queryFields );
+
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const searchFilter = {
@@ -282,6 +290,8 @@ const clusterResolvers = {
 
       try {
         logger.debug({req_id, user, org_id, filter, limit}, `${queryName} enter`);
+
+        checkComplexity( queryFields );
 
         // first get all users permitted cluster groups,
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
