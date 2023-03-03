@@ -148,6 +148,9 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name, uuid};
+
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid,
@@ -196,6 +199,9 @@ const groupResolvers = {
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: group.name, uuid: group.uuid};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -259,6 +265,9 @@ const groupResolvers = {
         await models.Group.deleteOne({ org_id: org_id, uuid: group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: group.name, uuid: group.uuid};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -351,6 +360,10 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // !Which of these is correct?
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: groups.name, uuid: groupUuids};
+
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
@@ -398,6 +411,10 @@ const groupResolvers = {
         );
 
         pubSub.channelSubChangedFunc({org_id}, context);
+
+        // Same as assign clusterGroups, no name. groups.name would be every name not the unassigned ones.
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {uuid: groupUuids};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -465,6 +482,9 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: groups.name, uuid: groups.uuid};
+
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
@@ -517,6 +537,9 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: group.name, uuid: group.uuid};
+
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
       } catch (error) {
@@ -557,6 +580,9 @@ const groupResolvers = {
           {$pull: {groups: {uuid}}});
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: group.name, uuid: group.uuid};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };

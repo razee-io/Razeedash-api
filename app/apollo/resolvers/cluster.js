@@ -423,6 +423,9 @@ const clusterResolvers = {
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: deletedCluster.registration, uuid: deletedCluster.cluster_id};
+
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
@@ -476,6 +479,9 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, deletedResources}, 'Resources soft-deletion complete');
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: deletedClusters.registration, uuid: deletedClusters.cluster_id};
 
         logger.info({req_id, user, org_id}, `${queryName} returning`);
         return {
@@ -565,6 +571,9 @@ const clusterResolvers = {
           });
         }
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: registration, uuid: cluster_id};
+
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
       } catch (error) {
@@ -597,6 +606,9 @@ const clusterResolvers = {
         const updatedCluster = await models.Cluster.findOneAndUpdate(
           {org_id: org_id, cluster_id: cluster_id},
           {$set: {reg_state: CLUSTER_REG_STATES.REGISTERING}});
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {uuid: cluster_id};
 
         if (updatedCluster) {
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);

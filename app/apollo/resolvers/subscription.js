@@ -427,6 +427,9 @@ const subscriptionResolvers = {
         */
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name, uuid};
+
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
           uuid,
@@ -628,6 +631,9 @@ const subscriptionResolvers = {
           }
         }
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name, oldName: subscription.name, uuid: subscription.uuid};
+
         logger.info( {req_id, user, org_id, uuid, name }, `${queryName} returning` );
         return {
           uuid,
@@ -703,6 +709,9 @@ const subscriptionResolvers = {
         await models.Subscription.updateOne({ uuid, org_id }, { $set: sets });
 
         pubSub.channelSubChangedFunc({org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: subscription.name, uuid: subscription.uuid};
 
         logger.info( {req_id, user, org_id, uuid, version_uuid }, `${queryName} returning` );
         return {
@@ -783,6 +792,9 @@ const subscriptionResolvers = {
         }
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: subscription.name, uuid: subscription.uuid};
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
         return {

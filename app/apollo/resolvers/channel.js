@@ -405,6 +405,9 @@ const channelResolvers = {
           }
         } ) );
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid};
+
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid: newChannelObj.uuid,
@@ -479,6 +482,9 @@ const channelResolvers = {
           logger.error({ req_id, user, org_id, uuid, name, error }, `${queryName} failed to update the channel name in versions, continuing`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name, oldName: channel.name, uuid: channel.uuid};
 
         return {
           uuid,
@@ -597,6 +603,9 @@ const channelResolvers = {
             // Cannot fail here, the Version has already been created.  Continue.
           }
         } ) );
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid};
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -767,6 +776,9 @@ const channelResolvers = {
         } );
         */
 
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: channel.name, uuid: channel.uuid};
+
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
           success: true,
@@ -829,6 +841,9 @@ const channelResolvers = {
 
         // Deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: channel.name, uuid: channel.uuid};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -908,6 +923,9 @@ const channelResolvers = {
         // Delete the Version
         await models.DeployableVersion.deleteOne({ org_id, uuid });
         logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
+
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name: channel.name, uuid: channel.uuid};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         // Return success if Version was deleted
