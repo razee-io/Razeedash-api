@@ -406,7 +406,8 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid};
+        // test this and look at versions output. is it the new one only? same for subscriptions
+        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versions: versions, subscriptions: subscriptions};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -605,7 +606,7 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid};
+        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, subscriptions: subscriptions};
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
