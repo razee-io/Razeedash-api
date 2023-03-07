@@ -336,6 +336,7 @@ const clusterFunc = grahqlUrl => {
               deletedResourceCount
               deletedResourceYamlHistCount
               deletedServiceSubscriptionCount
+              url
           }
         }
     `,
@@ -359,6 +360,7 @@ const clusterFunc = grahqlUrl => {
               deletedResourceCount
               deletedResourceYamlHistCount
               deletedServiceSubscriptionCount
+              url
           }
         }
     `,
