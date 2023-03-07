@@ -83,7 +83,8 @@ const clusterSchema = gql`
     deletedClusterCount: Int,
     deletedResourceCount: Int,
     deletedResourceYamlHistCount: Int,
-    deletedServiceSubscriptionCount: Int
+    deletedServiceSubscriptionCount: Int,
+    url: String!
   }
 
   type RegisterClusterResponse {
