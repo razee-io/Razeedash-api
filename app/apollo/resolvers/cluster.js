@@ -445,7 +445,7 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {registration: deletedCluster.registration, uuid: deletedCluster.cluster_id};
+        context.pluginContext = {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id};
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
