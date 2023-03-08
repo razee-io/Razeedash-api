@@ -463,8 +463,8 @@ const channelResolvers = {
         // Save the change
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
-        // Save previous name for qraphQL plugins
-        const previousName = channel.name;
+        // Allow graphQL plugins to retrieve more information
+        context.pluginContext = {name, previousName: channel.name, uuid: uuid};
 
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
         try {
@@ -485,9 +485,6 @@ const channelResolvers = {
           logger.error({ req_id, user, org_id, uuid, name, error }, `${queryName} failed to update the channel name in versions, continuing`);
           // Cannot fail here, the Channel has already been updated.  Continue.
         }
-
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name, previousName: previousName, uuid: uuid};
 
         return {
           uuid,
