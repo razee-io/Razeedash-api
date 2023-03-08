@@ -424,7 +424,7 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: deletedCluster.registration, uuid: deletedCluster.cluster_id};
+        context.pluginContext = {registration: deletedCluster.registration, uuid: deletedCluster.cluster_id};
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
@@ -458,6 +458,14 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} saving`);
 
+        // Allow graphQL plugins to retrieve more information
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        context.pluginContext = {
+          clusters: clusters.map( c => {
+            return( { name: c.registration.name, uuid: c.cluster_id } );
+          })
+        };
+
         // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
         logger.info({req_id, user, org_id, deletedClusters}, 'Clusters deletion complete');
@@ -479,9 +487,6 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, deletedResources}, 'Resources soft-deletion complete');
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
-
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: deletedClusters.registration.name, uuid: deletedClusters.cluster_id, registration: deletedClusters.registration};
 
         logger.info({req_id, user, org_id}, `${queryName} returning`);
         return {
@@ -572,7 +577,7 @@ const clusterResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: registration, uuid: cluster_id};
+        context.pluginContext = {registration: registration, uuid: cluster_id};
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
@@ -607,9 +612,6 @@ const clusterResolvers = {
           {org_id: org_id, cluster_id: cluster_id},
           {$set: {reg_state: CLUSTER_REG_STATES.REGISTERING}});
 
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {uuid: cluster_id};
-
         if (updatedCluster) {
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${cluster_id}`;
@@ -618,10 +620,15 @@ const clusterResolvers = {
               url += `&args=${arg}`;
             });
           }
+          // Allow graphQL plugins to retrieve more information
+          context.pluginContext = {uuid: updatedCluster.cluster_id, url: url, registration: updatedCluster.registration};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
           return { url };
         } else {
+          // Allow graphQL plugins to retrieve more information
+          context.pluginContext = {uuid: updatedCluster.cluster_id, registration: updatedCluster.registration};
+
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;
         }

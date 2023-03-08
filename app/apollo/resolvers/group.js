@@ -360,9 +360,8 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // !Which of these is correct?
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: groups.name, uuid: groupUuids};
+        context.pluginContext = {clusterNames: clusterIds, groupDetails: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -412,9 +411,8 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id}, context);
 
-        // Same as assign clusterGroups, no name. groups.name would be every name not the unassigned ones.
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {uuid: groupUuids};
+        context.pluginContext = {clusterNames: clusterIds, groupUuids: groupUuids};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -483,7 +481,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: groups.name, uuid: groups.uuid};
+        context.pluginContext = {clusterId: clusterId, groupDetails: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
@@ -538,7 +536,7 @@ const groupResolvers = {
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: group.name, uuid: group.uuid};
+        context.pluginContext = {groupName: group.name, groupUuid: group.uuid, clustersNames: clusters};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
@@ -582,7 +580,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: group.name, uuid: group.uuid};
+        context.pluginContext = {groupName: group.name, groupUuid: group.uuid, clustersNames: clusters};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };

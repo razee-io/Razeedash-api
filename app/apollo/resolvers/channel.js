@@ -406,8 +406,7 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        // test this and look at versions output. is it the new one only? same for subscriptions
-        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versions: versions, subscriptions: subscriptions};
+        context.pluginContext = {newChannelObj};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -464,6 +463,9 @@ const channelResolvers = {
         // Save the change
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
+        // Save previous name for qraphQL plugins
+        const previousName = channel.name;
+
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
         try {
           await models.Subscription.updateMany(
@@ -485,7 +487,7 @@ const channelResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name, oldName: channel.name, uuid: channel.uuid};
+        context.pluginContext = {name, previousName: previousName, uuid: uuid};
 
         return {
           uuid,
@@ -606,7 +608,7 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, subscriptions: subscriptions};
+        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channelId: newVersionObj.channel_id, channelName: newVersionObj.channelName};
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
