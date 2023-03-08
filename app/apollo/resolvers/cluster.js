@@ -650,7 +650,7 @@ const clusterResolvers = {
           return { url };
         } else {
           // Allow graphQL plugins to retrieve more information
-          context.pluginContext = {uuid: updatedCluster.cluster_id, registration: updatedCluster.registration};
+          context.pluginContext = {uuid: updatedCluster.cluster_id, name: updatedCluster.registration.name };
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;
