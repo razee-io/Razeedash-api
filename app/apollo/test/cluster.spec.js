@@ -798,6 +798,7 @@ describe('cluster graphql test suite', () => {
       expect(deleteClusterByClusterId.deletedResourceCount).to.equal(1);
       expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
       expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
+      expect(deleteClusterByClusterId.url).to.be.an('string');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -855,6 +856,7 @@ describe('cluster graphql test suite', () => {
       expect(deleteClusters.deletedResourceCount).to.be.above(0);
       expect(deleteClusters.deletedResourceYamlHistCount).to.equal(0);
       expect(deleteClusters.deletedServiceSubscriptionCount).to.equal(0);
+      expect(deleteClusters.url).to.be.an('string');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

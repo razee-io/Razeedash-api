@@ -27,6 +27,27 @@ const { ValidationError } = require('apollo-server');
 
 const { validateString, validateJson } = require('../utils/directives');
 
+// Get the URL that returns yaml for cleaning up agents from a cluster
+const getCleanupUrl = async (org_id, context) => {
+  const { models } = context;
+  /*
+  Note: this code retrieves the _registration_ url and adds `command=remove`, but this results
+  in a URL with unneded params (e.g. orgkey).  It could instead
+  generate the `/api/cleanup/razeedeploy-job` url by:
+  - replacing `/install/` with `/cleanup/` and truncating query params (e.g. orgkey) before adding RDD_STATIC_ARGS.
+  - introducing a new `getCleanupUrl` for Organization models to implement (falling back to a different approach if not implemented).
+  - Somthing else to be determined in the future.
+  */
+  let { url } = await models.Organization.getRegistrationUrl( org_id, context );
+  url += '&command=remove';
+  if (RDD_STATIC_ARGS.length > 0) {
+    RDD_STATIC_ARGS.forEach(arg => {
+      url += `&args=${arg}`;
+    });
+  }
+  return( url );
+};
+
 const buildSearchFilter = (ordId, condition, searchStr) => {
   let ands = [];
   const tokens = searchStr.split(/\s+/);
@@ -432,6 +453,7 @@ const clusterResolvers = {
           deletedResourceCount: deletedResources.modifiedCount,
           deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+          url: await getCleanupUrl( org_id, context ),
         };
       } catch (error) {
         logger.error({req_id, user, org_id, cluster_id, error } , `${queryName} error encountered: ${error.message}`);
@@ -494,6 +516,7 @@ const clusterResolvers = {
           deletedResourceCount: deletedResources.modifiedCount,
           deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
+          url: await getCleanupUrl( org_id, context ),
         };
       } catch (error) {
         logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);

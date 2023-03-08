@@ -32,6 +32,7 @@ const getOrg = require ('../utils/orgs').getOrg;
 
 const Kube = require('./kube/kube.js');
 const Install = require('./install');
+const Cleanup = require('./cleanup');
 const Clusters = require('./v2/clusters.js');
 const Resources = require('./v2/resources.js');
 const Orgs = require('./v2/orgs.js');
@@ -82,6 +83,10 @@ router.use('/v2/orgs', Orgs);
 // all headers to the graphql handler code, which then does it own auth
 router.use('/v3/', V3Gql);
 
+// the cleanup endpoint should be above the razee-org-key checks since
+// it doesn't require any authentication or authorization
+router.use('/cleanup', Cleanup);
+
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
@@ -97,7 +102,6 @@ router.use(async (req, res, next) => {
   if (org) log.fields.org_id = org._id;
   next();
 });
-
 
 router.use(getOrg);
 router.use('/install', Install);
