@@ -406,7 +406,7 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {newChannelObj};
+        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versions: versions, subscriptions: subscriptions};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {

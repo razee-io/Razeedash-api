@@ -149,7 +149,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name, uuid};
+        context.pluginContext = {name: name, uuid: uuid};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
