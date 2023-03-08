@@ -600,7 +600,7 @@ const clusterResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {registration: registration, uuid: cluster_id};
+        context.pluginContext = {name: registration.name, uuid: cluster_id};
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
