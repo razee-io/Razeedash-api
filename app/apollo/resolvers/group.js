@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, commonClusterSearch, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -310,11 +310,19 @@ const groupResolvers = {
 
         groupUuids = _.map(groups, 'uuid');
 
+        // Create output for graphQL plugins
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
-            uuid: group.uuid,
             name: group.name,
+            uuid: group.uuid,
           };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
         });
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
@@ -361,7 +369,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterNames: clusterIds, groupDetails: groupObjsToAdd};
+        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -396,6 +404,25 @@ const groupResolvers = {
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
+        // Create output for graphQL plugins
+        const groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
+        if (groups.length < 1) {
+          throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
+        }
+        const groupObjs = _.map(groups, (group)=>{
+          return {
+            name: group.name,
+            uuid: group.uuid,
+          };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
+
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
 
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
@@ -412,7 +439,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterNames: clusterIds, groupUuids: groupUuids};
+        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjs};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -454,11 +481,19 @@ const groupResolvers = {
 
         groupUuids = _.map(groups, 'uuid');
 
+        // Create output for graphQL plugins
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
             name: group.name,
           };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
         });
         const sets = {
           groups: groupObjsToAdd,
@@ -481,7 +516,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterId: clusterId, groupDetails: groupObjsToAdd};
+        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
@@ -535,8 +570,16 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Create output for graphQL plugins
+        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusterInfo, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {groupName: group.name, groupUuid: group.uuid, clustersNames: clusters};
+        context.pluginContext = {clusterDetails: clusterObjs, groupName: group.name, groupUuid: group.uuid};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
@@ -579,8 +622,16 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        // Create output for graphQL plugins
+        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusterInfo, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {groupName: group.name, groupUuid: group.uuid, clustersNames: clusters};
+        context.pluginContext = {clusterDetails: clusterObjs, groupName: group.name, groupUuid: group.uuid};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };

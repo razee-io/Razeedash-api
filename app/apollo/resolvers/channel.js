@@ -406,7 +406,8 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versions: versions, subscriptions: subscriptions};
+        // add  versions: versions, subscriptions: subscriptions with map
+        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -605,7 +606,8 @@ const channelResolvers = {
         } ) );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channel: { uuid: newVersionObj.channel_id, name: newVersionObj.channelName } };
+        // add subscriptions: subscriptions with map
+        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id } };
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -777,6 +779,7 @@ const channelResolvers = {
         */
 
         // Allow graphQL plugins to retrieve more information
+        // add subscriptions: subscriptions with map
         context.pluginContext = {name: channel.name, uuid: channel.uuid};
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);

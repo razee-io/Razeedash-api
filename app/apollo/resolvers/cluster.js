@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -70,24 +70,6 @@ const buildSearchFilter = (ordId, condition, searchStr) => {
     $and: ands,
   };
   return search;
-};
-
-const commonClusterSearch = async (
-  models,
-  searchFilter,
-  { limit, skip=0, startingAfter }
-) => {
-  // If startingAfter specified, we are doing pagination so add another filter
-  if (startingAfter) {
-    Object.assign(searchFilter, { _id: { $lt: startingAfter } });
-  }
-
-  const results = await models.Cluster.find(searchFilter)
-    .sort({ _id: -1 })
-    .limit(limit)
-    .skip(skip)
-    .lean({ virtuals: true });
-  return results;
 };
 
 const clusterResolvers = {
@@ -644,13 +626,13 @@ const clusterResolvers = {
             });
           }
           // Allow graphQL plugins to retrieve more information
-          context.pluginContext = {uuid: cluster_id, name: updatedCluster.registration.name};
+          context.pluginContext = {name: updatedCluster.registration.name, uuid: cluster_id};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
           return { url };
         } else {
           // Allow graphQL plugins to retrieve more information
-          context.pluginContext = {uuid: updatedCluster.cluster_id, name: updatedCluster.registration.name };
+          context.pluginContext = {name: updatedCluster.registration.name, uuid: updatedCluster.cluster_id};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;

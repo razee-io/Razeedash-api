@@ -428,6 +428,7 @@ const subscriptionResolvers = {
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
+        // add groups using map
         context.pluginContext = {name: name, uuid: uuid, channelName: channel.name, channelUuid: channel.uuid, versionName: version.name, versionUuid: version.uuid};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
@@ -632,7 +633,7 @@ const subscriptionResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name, oldName: subscription.name, uuid: subscription.uuid};
+        context.pluginContext = {name, previousName: subscription.name, uuid: subscription.uuid};
 
         logger.info( {req_id, user, org_id, uuid, name }, `${queryName} returning` );
         return {
@@ -701,7 +702,7 @@ const subscriptionResolvers = {
         logger.info( {req_id, user, org_id, uuid, version_uuid }, `${queryName} saving` );
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {subscriptionName: subscription.name, subscriptionUuid: subscription.uuid, versionName: version.name, versionUuid: version.uuid};
+        context.pluginContext = {name: subscription.name, uuid: subscription.uuid, versionName: version.name, versionUuid: version.uuid};
 
         // Update the subscription
         var sets = {
