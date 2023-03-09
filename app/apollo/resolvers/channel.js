@@ -422,7 +422,7 @@ const channelResolvers = {
         });
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versionDetails: versionObjs, subscriptionDetails: subscriptionObjs};
+        context.pluginContext = {channel: {name: newChannelObj.name, uuid: newChannelObj.uuid}, versions: versionObjs, subscriptions: subscriptionObjs};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -480,7 +480,7 @@ const channelResolvers = {
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name, previousName: channel.name, uuid: uuid};
+        context.pluginContext = {channel: {name, previousName: channel.name, uuid: uuid}};
 
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
         try {
@@ -630,7 +630,7 @@ const channelResolvers = {
         });
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, subscriptionDetails: subscriptionObjs };
+        context.pluginContext = {version: {name: newVersionObj.name, uuid: newVersionObj.uuid}, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, subscriptions: subscriptionObjs };
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -802,6 +802,13 @@ const channelResolvers = {
         */
 
         // Create output for graphQL plugins
+        const versionFind = await models.DeployableVersion.find({org_id});
+        const versionObjs = _.map(versionFind, (version)=>{
+          return {
+            name: version.name,
+            uuid: version.uuid,
+          };
+        });
         const subscriptionFind = await models.Subscription.find({org_id});
         const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
           return {
@@ -811,7 +818,7 @@ const channelResolvers = {
         });
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: channel.name, uuid: channel.uuid, subscriptionDetails: subscriptionObjs};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, versions: versionObjs, subscriptions: subscriptionObjs};
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -877,7 +884,7 @@ const channelResolvers = {
         await models.Channel.deleteOne({ org_id, uuid });
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: channel.name, uuid: channel.uuid};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -958,8 +965,24 @@ const channelResolvers = {
         await models.DeployableVersion.deleteOne({ org_id, uuid });
         logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
 
+        // Create output for graphQL plugins
+        const versionFind = await models.DeployableVersion.find({org_id});
+        const versionObjs = _.map(versionFind, (version)=>{
+          return {
+            name: version.name,
+            uuid: version.uuid,
+          };
+        });
+        const subscriptionFind = await models.Subscription.find({org_id});
+        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+          };
+        });
+
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: channel.name, uuid: channel.uuid};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, versions: versionObjs, subscriptions: subscriptionObjs}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         // Return success if Version was deleted

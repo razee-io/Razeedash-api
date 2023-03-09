@@ -149,7 +149,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: name, uuid: uuid};
+        context.pluginContext = {group: {name: name, uuid: uuid}};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -201,7 +201,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: group.name, uuid: group.uuid};
+        context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -267,7 +267,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: group.name, uuid: group.uuid};
+        context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -369,7 +369,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjsToAdd};
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -439,7 +439,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id}, context);
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjs};
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -516,7 +516,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterDetails: clusterObjs, groupDetails: groupObjsToAdd};
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
@@ -579,7 +579,7 @@ const groupResolvers = {
           } ;
         });
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterDetails: clusterObjs, groupName: group.name, groupUuid: group.uuid};
+        context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
@@ -631,7 +631,7 @@ const groupResolvers = {
           } ;
         });
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {clusterDetails: clusterObjs, groupName: group.name, groupUuid: group.uuid};
+        context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };

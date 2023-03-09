@@ -427,7 +427,7 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id};
+        context.pluginContext = {cluster: {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id}};
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
@@ -582,7 +582,7 @@ const clusterResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {name: registration.name, uuid: cluster_id};
+        context.pluginContext = {cluster: {name: registration.name, uuid: cluster_id}};
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
@@ -625,14 +625,15 @@ const clusterResolvers = {
               url += `&args=${arg}`;
             });
           }
+
           // Allow graphQL plugins to retrieve more information
-          context.pluginContext = {name: updatedCluster.registration.name, uuid: cluster_id};
+          context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: cluster_id}};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
           return { url };
         } else {
           // Allow graphQL plugins to retrieve more information
-          context.pluginContext = {name: updatedCluster.registration.name, uuid: updatedCluster.cluster_id};
+          context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: updatedCluster.cluster_id}};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;
