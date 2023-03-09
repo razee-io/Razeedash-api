@@ -405,9 +405,24 @@ const channelResolvers = {
           }
         } ) );
 
+        // Create output for graphQL plugins
+        const versionFind = await models.Version.find({org_id});
+        const versionObjs = _.map(versionFind, (version)=>{
+          return {
+            name: version.name,
+            uuid: version.uuid,
+          };
+        });
+        const subscriptionFind = await models.Subscription.find({org_id});
+        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+          };
+        });
+
         // Allow graphQL plugins to retrieve more information
-        // add  versions: versions, subscriptions: subscriptions with map
-        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid};
+        context.pluginContext = {name: newChannelObj.name, uuid: newChannelObj.uuid, versionDetails: versionObjs, subscriptionDetails: subscriptionObjs};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -605,9 +620,17 @@ const channelResolvers = {
           }
         } ) );
 
+        // Create output for graphQL plugins
+        const subscriptionFind = await models.Subscription.find({org_id});
+        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+          };
+        });
+
         // Allow graphQL plugins to retrieve more information
-        // add subscriptions: subscriptions with map
-        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id } };
+        context.pluginContext = {name: newVersionObj.name, uuid: newVersionObj.uuid, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, subscriptionDetails: subscriptionObjs };
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -778,9 +801,17 @@ const channelResolvers = {
         } );
         */
 
+        // Create output for graphQL plugins
+        const subscriptionFind = await models.Subscription.find({org_id});
+        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+          };
+        });
+
         // Allow graphQL plugins to retrieve more information
-        // add subscriptions: subscriptions with map
-        context.pluginContext = {name: channel.name, uuid: channel.uuid};
+        context.pluginContext = {name: channel.name, uuid: channel.uuid, subscriptionDetails: subscriptionObjs};
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {

@@ -427,9 +427,17 @@ const subscriptionResolvers = {
         */
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Create output for graphQL plugins
+        const groupFind = await models.Group.find({org_id});
+        const groupObjs = _.map(groupFind, (group)=>{
+          return {
+            name: group.name,
+            uuid: group.uuid,
+          };
+        });
+
         // Allow graphQL plugins to retrieve more information
-        // add groups using map
-        context.pluginContext = {name: name, uuid: uuid, channelName: channel.name, channelUuid: channel.uuid, versionName: version.name, versionUuid: version.uuid};
+        context.pluginContext = {name: name, uuid: uuid, channelName: channel.name, channelUuid: channel.uuid, versionName: version.name, versionUuid: version.uuid, groupDetails: groupObjs};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
