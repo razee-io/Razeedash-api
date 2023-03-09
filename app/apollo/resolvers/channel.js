@@ -406,7 +406,7 @@ const channelResolvers = {
         } ) );
 
         // Create output for graphQL plugins
-        const versionFind = await models.Version.find({org_id});
+        const versionFind = await models.DeployableVersion.find({org_id});
         const versionObjs = _.map(versionFind, (version)=>{
           return {
             name: version.name,
