@@ -16,7 +16,7 @@ curl \
 -X GET \
 -H "${AUTH_HEADER}" \
 -H "Content-Type: application/json" \
--H "xorg-id: ${RAZEE_ORG_ID}" \
+-H "org-id: ${RAZEE_ORG_ID}" \
 -w "HTTP: %{http_code}" \
 ${RAZEE_REST_URL}/${TYPE}s${ID}?orgId=${RAZEE_ORG_ID}
 
