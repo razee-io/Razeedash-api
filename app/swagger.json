@@ -793,9 +793,9 @@
                 "type": {
                   "example": "application/yaml"
                 },
-                "name": {
-                  "content": "sample kube resource yaml"
-                },
+                "content": {
+                  "example": "sample kube resource yaml"
+                }
               }
             }
           }
