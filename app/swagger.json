@@ -628,7 +628,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Create a channel",
         "description": "",
         "consumes": [
           "application/json"
@@ -656,8 +656,8 @@
             "schema": {
               "type": "object",
               "properties": {
-                "orgId": {
-                  "example": "any"
+                "name": {
+                  "example": "sample-channel-name"
                 }
               }
             }
@@ -710,7 +710,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets a channel",
         "description": "",
         "produces": [
           "application/json"
@@ -753,7 +753,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Create a channel version",
         "description": "",
         "consumes": [
           "application/json"
@@ -787,9 +787,15 @@
             "schema": {
               "type": "object",
               "properties": {
-                "orgId": {
-                  "example": "any"
-                }
+                "name": {
+                  "example": "sample-version-name"
+                },
+                "type": {
+                  "example": "application/yaml"
+                },
+                "name": {
+                  "content": "sample kube resource yaml"
+                },
               }
             }
           }
@@ -809,7 +815,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets a channel version",
         "description": "",
         "produces": [
           "application/json"
@@ -892,7 +898,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets a cluster",
         "description": "",
         "produces": [
           "application/json"
@@ -935,7 +941,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Create a group",
         "description": "",
         "consumes": [
           "application/json"
@@ -963,8 +969,8 @@
             "schema": {
               "type": "object",
               "properties": {
-                "orgId": {
-                  "example": "any"
+                "name": {
+                  "example": "sample-group-name"
                 }
               }
             }
@@ -983,7 +989,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets all groups",
         "description": "",
         "produces": [
           "application/json"
@@ -1017,7 +1023,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Set clusters as group members",
         "description": "",
         "consumes": [
           "application/json"
@@ -1051,8 +1057,11 @@
             "schema": {
               "type": "object",
               "properties": {
-                "orgId": {
-                  "example": "any"
+                "clusters": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -1071,7 +1080,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets a group",
         "description": "",
         "produces": [
           "application/json"
@@ -1111,7 +1120,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Create a subscription",
         "description": "",
         "consumes": [
           "application/json"
@@ -1139,8 +1148,18 @@
             "schema": {
               "type": "object",
               "properties": {
-                "orgId": {
-                  "example": "any"
+                "name": {
+                  "example": "sample-subscription-name"
+                },
+                "groups": {
+                  "type": "array",
+                  "items": "string"
+                },
+                "channelUuid": {
+                  "example": "12345678-1234-1234-1234567890ab"
+                },
+                "versionUuid": {
+                  "example": "12345678-1234-1234-1234567890ab"
                 }
               }
             }
@@ -1159,7 +1178,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets all channels",
+        "summary": "Gets all subscriptions",
         "description": "",
         "produces": [
           "application/json"
@@ -1193,7 +1212,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Gets a specified subscription",
+        "summary": "Gets a subscription",
         "description": "",
         "produces": [
           "application/json"
