@@ -947,6 +947,18 @@ const channelResolvers = {
           }
         }
 
+        // Create output for graphQL plugins
+        const subscriptionFind = await models.Subscription.find({org_id, version_uuid: uuid});
+        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+          };
+        });
+
+        // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete versions, and subscriptions. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid}, subscriptions: subscriptionObjs};
+
         logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
 
         await models.Subscription.deleteMany({ org_id, version_uuid: uuid });
@@ -963,10 +975,6 @@ const channelResolvers = {
         // Delete the Version
         await models.DeployableVersion.deleteOne({ org_id, uuid });
         logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
-
-        // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete versions, and subscriptions. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, versions: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid}, subscriptions: {name: deleteSubscriptions.name, uuid: deleteSubscriptions.uuid}};
-
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         // Return success if Version was deleted
         return {

@@ -427,17 +427,8 @@ const subscriptionResolvers = {
         */
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // Create output for graphQL plugins
-        const groupFind = await models.Group.find({org_id});
-        const groupObjs = _.map(groupFind, (group)=>{
-          return {
-            name: group.name,
-            uuid: group.uuid,
-          };
-        });
-
         // Allow graphQL plugins to retrieve more information. addSubscription can create versions, subscriptions, and validates groups. Include details of each created and validated resource in pluginContext.
-        context.pluginContext = {subscription: {name: name, uuid: uuid}, channel: {name: channel.name, uuid: channel.uuid}, version: { name: version.name, uuid: version.uuid }, groups: groupObjs};
+        context.pluginContext = {subscription: {name: name, uuid: uuid, groups: groups}, channel: {name: channel.name, uuid: channel.uuid}, version: { name: version.name, uuid: version.uuid }};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
