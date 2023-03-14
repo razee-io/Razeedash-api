@@ -330,6 +330,7 @@ const channelResolvers = {
         await models.Channel.create( newChannelObj );
 
         // Attempt to create version(s)
+        const createdVersions = [];
         await Promise.all( versions.map( async (v) => {
           const versionObj = {
             _id: UUID(),
@@ -354,6 +355,8 @@ const channelResolvers = {
 
             // Keep version uuid for later use when creating subscriptions
             v.uuid = versionObj.uuid;
+
+            createdVersions.push( versionObj );
           }
           catch( e ) {
             logger.error(e, `${queryName} error creating version '${versionObj.name}' when serving ${req_id}.`);
@@ -362,6 +365,7 @@ const channelResolvers = {
         } ) );
 
         // Attempt to create subscription(s)
+        const createdSubscriptions = [];
         await Promise.all( subscriptions.map( async (s) => {
           const version = versions.find( v => v.name === s.versionName );
           if( !version ) {
@@ -398,6 +402,8 @@ const channelResolvers = {
             Even if RBAC Sync errors, subscription creation is successful.
             */
             subscriptionsRbacSync( [subscriptionObj], { resync: false }, context ).catch(function(){/*ignore*/});
+
+            createdSubscriptions.push( subscriptionObj );
           }
           catch( e ) {
             logger.error(e, `${queryName} error creating subscription '${subscriptionObj.name}' when serving ${req_id}.`);
@@ -406,22 +412,20 @@ const channelResolvers = {
         } ) );
 
         // Create output for graphQL plugins
-        const versionFind = await models.DeployableVersion.find({org_id});
-        const versionObjs = _.map(versionFind, (version)=>{
+        const versionObjs = _.map(createdVersions, (version)=>{
           return {
             name: version.name,
             uuid: version.uuid,
           };
         });
-        const subscriptionFind = await models.Subscription.find({org_id});
-        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+        const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
           return {
             name: subscription.name,
             uuid: subscription.uuid,
           };
         });
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. addChannel can create configs, versions, and subscriptions. Include details of each created resource in pluginContext.
         context.pluginContext = {channel: {name: newChannelObj.name, uuid: newChannelObj.uuid}, versions: versionObjs, subscriptions: subscriptionObjs};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
@@ -479,7 +483,7 @@ const channelResolvers = {
         // Save the change
         await models.Channel.updateOne({ org_id, uuid }, { $set: { name, tags, custom, remote, updated: Date.now() } }, {});
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. editChannel can edit configs. Include details of each edited resource in pluginContext.
         context.pluginContext = {channel: {name, previousName: channel.name, uuid: uuid}};
 
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
@@ -585,6 +589,7 @@ const channelResolvers = {
         await models.DeployableVersion.create( newVersionObj );
 
         // Attempt to create subscription(s)
+        const createdSubscriptions = [];
         await Promise.all( subscriptions.map( async (s) => {
           const subscription = {
             _id: UUID(),
@@ -613,6 +618,8 @@ const channelResolvers = {
             Even if RBAC Sync errors, subscription creation is successful.
             */
             subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
+
+            createdSubscriptions.push( subscription );
           }
           catch( error ) {
             logger.error({ req_id, user, org_id, channel_uuid, name, type, error }, `${queryName} error creating subscription '${subscription.name}'`);
@@ -621,16 +628,15 @@ const channelResolvers = {
         } ) );
 
         // Create output for graphQL plugins
-        const subscriptionFind = await models.Subscription.find({org_id});
-        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
+        const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
           return {
             name: subscription.name,
             uuid: subscription.uuid,
           };
         });
 
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {version: {name: newVersionObj.name, uuid: newVersionObj.uuid}, channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, subscriptions: subscriptionObjs };
+        // Allow graphQL plugins to retrieve more information. addChannelVersion can create versions, and subscriptions. Include details of each created resource in pluginContext.
+        context.pluginContext = {channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, version: {name: newVersionObj.name, uuid: newVersionObj.uuid}, subscriptions: subscriptionObjs };
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -801,24 +807,8 @@ const channelResolvers = {
         } );
         */
 
-        // Create output for graphQL plugins
-        const versionFind = await models.DeployableVersion.find({org_id});
-        const versionObjs = _.map(versionFind, (version)=>{
-          return {
-            name: version.name,
-            uuid: version.uuid,
-          };
-        });
-        const subscriptionFind = await models.Subscription.find({org_id});
-        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
-          return {
-            name: subscription.name,
-            uuid: subscription.uuid,
-          };
-        });
-
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, versions: versionObjs, subscriptions: subscriptionObjs};
+        // Allow graphQL plugins to retrieve more information. editChannelVersion can edit versions. Include details of each edited resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: {name: version.name, uuid: version.uuid}};
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -875,6 +865,15 @@ const channelResolvers = {
           }));
         }
 
+        // Create output for graphQL plugins
+        const versionFind = await models.DeployableVersion.find({org_id, channel_id: channel.uuid});
+        const versionObjs = _.map(versionFind, (version)=>{
+          return {
+            name: version.name,
+            uuid: version.uuid,
+          };
+        });
+
         // Subscriptions are not automatically deleted -- deletion is blocked above if subscriptions or serviceSubscriptions exist
 
         // Delete the channel's Versions
@@ -883,8 +882,8 @@ const channelResolvers = {
         // Deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
 
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}};
+        // Allow graphQL plugins to retrieve more information. removeChannel can delete channels and their associated channel verions. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: versionObjs};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -965,24 +964,8 @@ const channelResolvers = {
         await models.DeployableVersion.deleteOne({ org_id, uuid });
         logger.info({ver_uuid: uuid, ver_name: deployableVersionObj.name}, `${queryName} version deleted`);
 
-        // Create output for graphQL plugins
-        const versionFind = await models.DeployableVersion.find({org_id});
-        const versionObjs = _.map(versionFind, (version)=>{
-          return {
-            name: version.name,
-            uuid: version.uuid,
-          };
-        });
-        const subscriptionFind = await models.Subscription.find({org_id});
-        const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
-          return {
-            name: subscription.name,
-            uuid: subscription.uuid,
-          };
-        });
-
-        // Allow graphQL plugins to retrieve more information
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, versions: versionObjs, subscriptions: subscriptionObjs}};
+        // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete versions, and subscriptions. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, versions: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid}, subscriptions: {name: deleteSubscriptions.name, uuid: deleteSubscriptions.uuid}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         // Return success if Version was deleted

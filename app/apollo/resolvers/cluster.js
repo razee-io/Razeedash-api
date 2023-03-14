@@ -426,7 +426,7 @@ const clusterResolvers = {
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. deleteClusterByClusterId can delete clusters. Include details of each deleted resource in pluginContext.
         context.pluginContext = {cluster: {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id}};
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
@@ -462,7 +462,7 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} saving`);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. deleteClusters can delete clusters. Include details of each deleted resource in pluginContext.
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         context.pluginContext = {
           clusters: clusters.map( c => {
@@ -581,7 +581,7 @@ const clusterResolvers = {
           });
         }
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. registerCluster can create clusters. Include details of each created resource in pluginContext.
         context.pluginContext = {cluster: {name: registration.name, uuid: cluster_id}};
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
@@ -626,7 +626,7 @@ const clusterResolvers = {
             });
           }
 
-          // Allow graphQL plugins to retrieve more information
+          // Allow graphQL plugins to retrieve more information. enableRegistrationUrl can update clusters. Include details of each updated resource in pluginContext.
           context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: cluster_id}};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);

@@ -436,7 +436,7 @@ const subscriptionResolvers = {
           };
         });
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. addSubscription can create versions, subscriptions, and validates groups. Include details of each created and validated resource in pluginContext.
         context.pluginContext = {subscription: {name: name, uuid: uuid}, channel: {name: channel.name, uuid: channel.uuid}, version: { name: version.name, uuid: version.uuid }, groups: groupObjs};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
@@ -640,7 +640,7 @@ const subscriptionResolvers = {
           }
         }
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. editSubscription can create groups, versions, and subscriptions. Include details of each created resource in pluginContext.
         context.pluginContext = {subscription: {name, previousName: subscription.name, uuid: subscription.uuid}};
 
         logger.info( {req_id, user, org_id, uuid, name }, `${queryName} returning` );
@@ -709,7 +709,7 @@ const subscriptionResolvers = {
 
         logger.info( {req_id, user, org_id, uuid, version_uuid }, `${queryName} saving` );
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. setSubscription can validate configs, versions, and subscriptions. Include details of each validated resource in pluginContext.
         context.pluginContext = {subscription: {name: subscription.name, uuid: subscription.uuid}, version: {name: version.name, uuid: version.uuid}};
 
         // Update the subscription
@@ -802,7 +802,7 @@ const subscriptionResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. addSubscription can delete subscriptions. Include details of each deleted resource in pluginContext.
         context.pluginContext = {subscription: {name: subscription.name, uuid: subscription.uuid}};
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );

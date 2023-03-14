@@ -148,7 +148,7 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. addGroup can create groups. Include details of each created resource in pluginContext.
         context.pluginContext = {group: {name: name, uuid: uuid}};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
@@ -200,7 +200,7 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. removeGroup can delete groups. Include details of each deleted resource in pluginContext.
         context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
@@ -266,7 +266,7 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. removeGroupByName can delete a group. Include details of each deleted resource in pluginContext.
         context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
@@ -368,7 +368,7 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. assignClusterGroups can assign groups. Include details of each assigned resource in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
@@ -438,7 +438,7 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. unassignClusterGroups can unassign items in cluster groups. Include details of the unassigned resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
@@ -515,7 +515,7 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
@@ -578,7 +578,7 @@ const groupResolvers = {
             uuid: cluster.cluster_id,
           } ;
         });
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. groupClusters can group items in cluster groups. Include details of the grouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
@@ -630,7 +630,7 @@ const groupResolvers = {
             uuid: cluster.cluster_id,
           } ;
         });
-        // Allow graphQL plugins to retrieve more information
+        // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
