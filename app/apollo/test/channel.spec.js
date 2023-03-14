@@ -616,14 +616,12 @@ describe('channel graphql test suite', () => {
       expect(addChannelVersion.versionUuid).to.be.an('string');
 
       // step 2: delete a channel version by admin token
-      const {
-        data: {
-          data: { removeChannelVersion },
-        },
-      } = await channelApi.removeChannelVersion(adminToken, {
+      const resultRemoveChannelVersion = await channelApi.removeChannelVersion(adminToken, {
         orgId: org01._id,
         uuid: addChannelVersion.versionUuid,
       });
+      const removeChannelVersion = resultRemoveChannelVersion.data.data.removeChannelVersion;
+
       expect(removeChannelVersion.success).to.equal(true);
       expect(removeChannelVersion.uuid).to.equal(addChannelVersion.versionUuid);
 
