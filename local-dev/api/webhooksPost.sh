@@ -2,12 +2,12 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-CHANNEL_NAME=${1:-pChannel}
-RAZEE_ORG_ID=${2:-${RAZEE_ORG_ID}}
+RAZEE_ORG_ID=${1:-${RAZEE_ORG_ID:-pOrgId}}
+RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
-RAZEE_REST_URL=${RAZEE_REST_URL:-http://localhost:3333/api/v3}
+RAZEE_V2_URL=${RAZEE_V2_URL:-http://localhost:3333/api/v2}
 
-echo "Creating CHANNEL ${CHANNEL_NAME} in orgId ${RAZEE_ORG_ID} by POST to ${RAZEE_REST_URL}"
+echo "POST webhook to ${RAZEE_REST_URL}"
 
 [ ! -z "${RAZEE_USER_TOKEN}" ] && AUTH_HEADER="Authorization: Bearer ${RAZEE_USER_TOKEN}" || AUTH_HEADER="no-auth-available: asdf"
 
@@ -15,10 +15,11 @@ curl \
 -X POST \
 -H "${AUTH_HEADER}" \
 -H "Content-Type: application/json" \
+-H "razee-org-key: ${RAZEE_ORG_KEY}" \
 -H "org-id: ${RAZEE_ORG_ID}" \
 -w "HTTP: %{http_code}" \
---data '{ "name": "'"${CHANNEL_NAME}"'" }' \
-${RAZEE_REST_URL}/channels
+--data '{ "dummykey": "dummyvalue" }' \
+${RAZEE_V2_URL}/webhooks
 
 retVal=$?
 

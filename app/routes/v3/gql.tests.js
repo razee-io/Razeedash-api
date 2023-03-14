@@ -45,15 +45,15 @@ describe('gql', () => {
     { name: 'getChannel', method: 'GET', url: '/channels/testUuid', params: { uuid: 'testUuid' } },
     { name: 'postChannelVersion', method: 'POST', url: '/channels/testId/versions', params: { channelUuid: 'testUuid' }, body: { name: 'testName', type: 'application/json', content: 'testContent' } },
     { name: 'getChannelVersion', method: 'GET', url: '/channels/testUuid/versions/testUuid', params: { channelUuid: 'testUuid', versionUuid: 'testUuid' } },
-    { name: 'getClusters', method: 'GET', url: '/channels' },
-    { name: 'getCluster', method: 'GET', url: '/channels/testUuid', params: { clusterId: 'testUuid' } },
+    { name: 'getClusters', method: 'GET', url: '/clusters' },
+    { name: 'getCluster', method: 'GET', url: '/clusters/testUuid', params: { clusterId: 'testUuid' } },
     { name: 'postGroups', method: 'POST', url: '/groups', body: { name: 'testName' } },
     { name: 'putGroup', method: 'PUT', url: '/groups/testUuid', params: { uuid: 'testUuid' }, body: { clusters: [] } },
     { name: 'getGroups', method: 'GET', url: '/groups' },
     { name: 'getGroup', method: 'GET', url: '/groups/testUuid', params: { uuid: 'testUuid' } },
-    { name: 'postSubscriptions', method: 'POST', url: '/channels', body: { name: 'testName', groups: ['testUuid'], channelUuid: 'testUuid', versionUuid: 'testUuid' } },
-    { name: 'getSubscriptions', method: 'GET', url: '/channels' },
-    { name: 'getSubscription', method: 'GET', url: '/channels/testUuid', params: { uuid: 'testUuid' } },
+    { name: 'postSubscriptions', method: 'POST', url: '/subscriptions', body: { name: 'testName', groups: ['testUuid'], channelUuid: 'testUuid', versionUuid: 'testUuid' } },
+    { name: 'getSubscriptions', method: 'GET', url: '/subscriptions' },
+    { name: 'getSubscription', method: 'GET', url: '/subscriptions/testUuid', params: { uuid: 'testUuid' } },
   ];
 
   restFunctions.forEach( f => {

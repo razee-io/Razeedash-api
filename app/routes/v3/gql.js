@@ -171,7 +171,7 @@ const getChannel = async (req, res) => {
   const operationName = 'channel';
   const query = `
     query ${operationName}($orgId: String!, $uuid: String!) {
-      clusterByClusterId(orgId: $orgId, uuid: $uuid) {
+      channel(orgId: $orgId, uuid: $uuid) {
         uuid
         orgId
         name
