@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-RAZEE_ORG_ID=${2:-${RAZEE_ORG_ID:-pOrgId}}
+RAZEE_ORG_ID=${1:-${RAZEE_ORG_ID:-pOrgId}}
 
 RAZEE_QUERY='mutation($orgId: String!) { deleteClusters( orgId: $orgId ) { deletedClusterCount deletedResourceCount deletedResourceYamlHistCount deletedServiceSubscriptionCount } }'
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'"}'
