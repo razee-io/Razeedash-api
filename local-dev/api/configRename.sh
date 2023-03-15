@@ -13,7 +13,7 @@ RAZEE_ORG_ID=${3:-${RAZEE_ORG_ID:-pOrgId}}
 RAZEE_QUERY='mutation ($orgId: String!, $uuid: String!, $name: String!) { editChannel(orgId: $orgId, uuid: $uuid, name: $name) { success } }'
 RAZEE_VARIABLES='{"name":"'"${RAZEE_CONFIG_NAME}"'","uuid":"'"${RAZEE_CONFIG_UUID}"'","orgId":"'"${RAZEE_ORG_ID}"'"}'
 
-echo "" && echo "CREATE config by name"
+echo "" && echo "EDIT config with new name"
 unset RAZEE_CONFIG_UUID
 RESPONSE=$(${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}")
 echo "Result: $?"
