@@ -201,6 +201,24 @@ const applyClusterInfoOnResources = async (org_id, resources, models) => {
   }
 };
 
+const commonClusterSearch = async (
+  models,
+  searchFilter,
+  { limit, skip=0, startingAfter }
+) => {
+  // If startingAfter specified, we are doing pagination so add another filter
+  if (startingAfter) {
+    Object.assign(searchFilter, { _id: { $lt: startingAfter } });
+  }
+
+  const results = await models.Cluster.find(searchFilter)
+    .sort({ _id: -1 })
+    .limit(limit)
+    .skip(skip)
+    .lean({ virtuals: true });
+  return results;
+};
+
 // base error class which include req_id and recovery hint in the error
 class BasicRazeeError extends ApolloError {
   constructor(message, context, name) {
@@ -256,5 +274,5 @@ module.exports =  {
   whoIs, checkComplexity, validAuth,
   getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
-  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources,
+  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
 };

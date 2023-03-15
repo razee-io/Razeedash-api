@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, commonClusterSearch, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -148,6 +148,9 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        // Allow graphQL plugins to retrieve more information. addGroup can create groups. Include details of each created resource in pluginContext.
+        context.pluginContext = {group: {name: name, uuid: uuid}};
+
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid,
@@ -196,6 +199,9 @@ const groupResolvers = {
         await models.Group.deleteOne({ org_id: org_id, uuid:group.uuid });
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information. removeGroup can delete groups. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -260,6 +266,9 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
+        // Allow graphQL plugins to retrieve more information. removeGroupByName can delete a group. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
+
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
           uuid: group.uuid,
@@ -301,11 +310,19 @@ const groupResolvers = {
 
         groupUuids = _.map(groups, 'uuid');
 
+        // Create output for graphQL plugins
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
-            uuid: group.uuid,
             name: group.name,
+            uuid: group.uuid,
           };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
         });
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
@@ -351,6 +368,9 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Allow graphQL plugins to retrieve more information. assignClusterGroups can assign groups. Include details of each assigned resource in pluginContext.
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
+
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
           modified: res.modifiedCount
@@ -384,6 +404,25 @@ const groupResolvers = {
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
+        // Create output for graphQL plugins
+        const groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
+        if (groups.length < 1) {
+          throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
+        }
+        const groupObjs = _.map(groups, (group)=>{
+          return {
+            name: group.name,
+            uuid: group.uuid,
+          };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
+
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
 
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
@@ -398,6 +437,9 @@ const groupResolvers = {
         );
 
         pubSub.channelSubChangedFunc({org_id}, context);
+
+        // Allow graphQL plugins to retrieve more information. unassignClusterGroups can unassign items in cluster groups. Include details of the unassigned resources in pluginContext.
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
         return {
@@ -439,11 +481,19 @@ const groupResolvers = {
 
         groupUuids = _.map(groups, 'uuid');
 
+        // Create output for graphQL plugins
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
             name: group.name,
           };
+        });
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
         });
         const sets = {
           groups: groupObjsToAdd,
@@ -464,6 +514,9 @@ const groupResolvers = {
         Ideally, code should identify which groups are *new* for this cluster and only trigger sync for those.
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
+
+        // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
         return {
@@ -517,6 +570,17 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // Create output for graphQL plugins
+        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusterInfo, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
+        // Allow graphQL plugins to retrieve more information. groupClusters can group items in cluster groups. Include details of the grouped resources in pluginContext.
+        context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
+
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
       } catch (error) {
@@ -557,6 +621,17 @@ const groupResolvers = {
           {$pull: {groups: {uuid}}});
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
+
+        // Create output for graphQL plugins
+        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        const clusterObjs = _.map(clusterInfo, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+          } ;
+        });
+        // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
+        context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
