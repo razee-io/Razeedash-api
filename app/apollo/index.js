@@ -251,7 +251,7 @@ const apollo = async (options = {}) => {
 
   try {
     const db = await connectDb(options.mongo_url);
-    for( const model of [ 'Cluster', `Channel`, `DeployableVersion`, `Group`, `Subscription` ] ) {
+    for( const model of [ 'Cluster', 'Channel', 'DeployableVersion', 'Group', 'Subscription' ] ) {
       try {
         const indices = await models[model].collection.getIndexes({full: true});
         initLogger.info( indices, `db ${model} indices` );
