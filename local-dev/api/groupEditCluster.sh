@@ -9,6 +9,6 @@ RAZEE_ORG_ID=${3:-${RAZEE_ORG_ID:-pOrgId}}
 RAZEE_QUERY='mutation($orgId: String!, $clusterId: String!, $groupUuids: [String!]!){ editClusterGroups( orgId: $orgId, clusterId: $clusterId, groupUuids: $groupUuids ) { modified } }'
 RAZEE_VARIABLES='{"orgId":"'"${RAZEE_ORG_ID}"'","groupUuids":["'"${RAZEE_GROUP_UUID}"'"],"clusterId":"'"${RAZEE_CLUSTER_UUID}"'"}'
 
-echo "" && echo "EDIT Group in Cluster"
+echo "" && echo "EDIT cluster groups"
 ${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}" | jq --color-output
 echo "Result: $?"
