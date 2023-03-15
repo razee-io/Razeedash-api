@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -70,24 +70,6 @@ const buildSearchFilter = (ordId, condition, searchStr) => {
     $and: ands,
   };
   return search;
-};
-
-const commonClusterSearch = async (
-  models,
-  searchFilter,
-  { limit, skip=0, startingAfter }
-) => {
-  // If startingAfter specified, we are doing pagination so add another filter
-  if (startingAfter) {
-    Object.assign(searchFilter, { _id: { $lt: startingAfter } });
-  }
-
-  const results = await models.Cluster.find(searchFilter)
-    .sort({ _id: -1 })
-    .limit(limit)
-    .skip(skip)
-    .lean({ virtuals: true });
-  return results;
 };
 
 const clusterResolvers = {
@@ -444,6 +426,9 @@ const clusterResolvers = {
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id, cluster_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
+        // Allow graphQL plugins to retrieve more information. deleteClusterByClusterId can delete clusters. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {cluster: {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id}};
+
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
@@ -476,6 +461,14 @@ const clusterResolvers = {
         validateString( 'org_id', org_id );
 
         logger.info({req_id, user, org_id}, `${queryName} saving`);
+
+        // Allow graphQL plugins to retrieve more information. deleteClusters can delete clusters. Include details of each deleted resource in pluginContext.
+        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        context.pluginContext = {
+          clusters: clusters.map( c => {
+            return( { name: c.registration.name, uuid: c.cluster_id } );
+          })
+        };
 
         // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
@@ -599,6 +592,9 @@ const clusterResolvers = {
           });
         }
 
+        // Allow graphQL plugins to retrieve more information. registerCluster can create clusters. Include details of each created resource in pluginContext.
+        context.pluginContext = {cluster: {name: registration.name, uuid: cluster_id}};
+
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
       } catch (error) {
@@ -640,6 +636,9 @@ const clusterResolvers = {
               url += `&args=${arg}`;
             });
           }
+
+          // Allow graphQL plugins to retrieve more information. enableRegistrationUrl can update clusters. Include details of each updated resource in pluginContext.
+          context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: cluster_id}};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
           return { url };

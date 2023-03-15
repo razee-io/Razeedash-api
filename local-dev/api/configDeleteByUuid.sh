@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-RAZEE_CONFIG_UUID=${1:-pConfigId}
+RAZEE_CONFIG_UUID=${1:-${RAZEE_CONFIG_UUID:-pConfigId}}
 RAZEE_ORG_ID=${2:-${RAZEE_ORG_ID:-pOrgId}}
 
 RAZEE_QUERY='mutation($orgId: String! $uuid: String!) { removeChannel( orgId: $orgId uuid: $uuid) { uuid success } }'
