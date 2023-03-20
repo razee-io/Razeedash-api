@@ -251,6 +251,16 @@ const apollo = async (options = {}) => {
 
   try {
     const db = await connectDb(options.mongo_url);
+    for( const model of [ 'Cluster', 'Channel', 'DeployableVersion', 'Group', 'Subscription' ] ) {
+      try {
+        const indices = await models[model].collection.getIndexes({full: true});
+        initLogger.info( indices, `db ${model} indices` );
+      }
+      catch(e) {
+        initLogger.error( e, `db ${model} indices retrieval error` );
+      }
+    }
+
     const app = options.app ? options.app : createDefaultApp();
     app.use(createExpressLogger('razeedash-api/apollo'));
     if (initModule.playgroundAuth && process.env.GRAPHQL_ENABLE_PLAYGROUND === 'true') {

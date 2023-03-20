@@ -528,6 +528,8 @@ const clusterResolvers = {
 
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
 
+        logger.info({ req_id, user, org_id, registration }, `${queryName} validating - authorized`);
+
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
 
@@ -548,17 +550,23 @@ const clusterResolvers = {
           }
         }
         else {
+          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - name is unique`);
+
           // validate the number of total clusters are under the limit
           const total = await models.Cluster.count({org_id});
           if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
             throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
           }
 
+          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - cluster count ${total} <= ${CLUSTER_LIMITS.MAX_TOTAL}`);
+
           // validate the number of pending clusters are under the limit
           const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
           if (total_pending >= CLUSTER_LIMITS.MAX_PENDING ) {
             throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
           }
+
+          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - pending cluster count ${total_pending} <= ${CLUSTER_LIMITS.MAX_PENDING}`);
         }
 
         logger.info({req_id, user, org_id, registration}, `${queryName} saving`);
@@ -570,7 +578,10 @@ const clusterResolvers = {
         }
         else {
           await models.Cluster.create({ org_id, cluster_id, reg_state, registration });
+          logger.info({req_id, user, org_id, registration}, `${queryName} save complete`);
         }
+
+        logger.info({req_id, user, org_id, registration}, `${queryName} retrieving registration url`);
 
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
