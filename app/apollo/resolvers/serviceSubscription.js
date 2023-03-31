@@ -25,7 +25,7 @@ const { ValidationError } = require('apollo-server');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-const { validateString } = require('../utils/directives');
+const { validateString, validateName } = require('../utils/directives');
 
 const serviceResolvers = {
 
@@ -137,7 +137,7 @@ const serviceResolvers = {
         await validAuth(me, orgId, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
         validateString( 'orgId', orgId );
-        validateString( 'name', name );
+        validateName( 'name', name );
         validateString( 'clusterId', clusterId );
         validateString( 'channelUuid', channelUuid );
         validateString( 'versionUuid', versionUuid );
@@ -215,7 +215,7 @@ const serviceResolvers = {
 
         validateString( 'orgId', orgId );
         validateString( 'ssid', ssid );
-        validateString( 'name', name );
+        validateName( 'name', name );
         validateString( 'channelUuid', channelUuid );
         validateString( 'versionUuid', versionUuid );
 

@@ -19,7 +19,7 @@ const { whoIs, validAuth, BasicRazeeError, RazeeValidationError, RazeeQueryError
 const { v4: UUID } = require('uuid');
 const { ValidationError } = require('apollo-server');
 
-const { validateString } = require('../utils/directives');
+const { validateString, validateName } = require('../utils/directives');
 
 const { getLegacyOrgKeyObject, bestOrgKey } = require( '../../utils/orgs' );
 const { updateAllVersionEncryption } = require( '../utils/versionUtils' );
@@ -173,7 +173,7 @@ const organizationResolvers = {
         await validAuth(me, orgId, ACTIONS.MANAGE, TYPES.ORGANIZATION, queryName, context);
 
         validateString( 'orgId', orgId );
-        validateString( 'name', name );
+        validateName( 'name', name );
 
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user, orgId, name, primary }, `${queryName} org retrieved`);
@@ -406,7 +406,7 @@ const organizationResolvers = {
 
         validateString( 'orgId', orgId );
         validateString( 'uuid', uuid );
-        if( name ) validateString( 'name', name );
+        if( name ) validateName( 'name', name );
 
         const org = await models.Organization.findById(orgId);
         logger.info({ req_id, user, orgId, uuid, name, primary }, `${queryName} org retrieved`);

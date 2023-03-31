@@ -34,7 +34,7 @@ const { subscriptionsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-const { validateString } = require('../utils/directives');
+const { validateString, validateName } = require('../utils/directives');
 
 const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils.js');
 const { validateNewVersions, ingestVersionContent } = require('../utils/versionUtils');
@@ -326,7 +326,7 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context);
 
         validateString( 'org_id', org_id );
-        validateString( 'name', name );
+        validateName( 'name', name );
         groups.forEach( value => { validateString( 'groups', value ); } );
         validateString( 'channel_uuid', channel_uuid );
         if( version_uuid ) validateString( 'version_uuid', version_uuid );
@@ -454,7 +454,7 @@ const subscriptionResolvers = {
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
-        validateString( 'name', name );
+        validateName( 'name', name );
         groups.forEach( value => { validateString( 'groups', value ); } );
         validateString( 'channel_uuid', channel_uuid );
         if( version_uuid ) validateString( 'version_uuid', version_uuid );

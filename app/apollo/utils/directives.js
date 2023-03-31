@@ -32,9 +32,19 @@ const validateString = function( name, value ) {
 
   if (name !== 'content') {
     if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(value)) {
-      throw new ValidationError(`The ${name}'s value '${value}' should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
+      throw new ValidationError(`The ${name}'s value '${value}' should avoid leading or trailing whitespace and characters such as these: ${DIRECTIVE_LIMITS.INVALID_CHARS.join('')}`);
     }
   }
+};
+
+const INVALID_NAME_PATTERN = /^\s|[^ a-zA-Z0-9\-_.]{1,}|\s$/;
+const ALLOWED_NAME_SPECIALS = ['-', '_', '.'];
+const validateName = function( name, value ) {
+  if (INVALID_NAME_PATTERN.test(value)) {
+    throw new ValidationError(`The ${name}'s value '${value}' should avoid leading or trailing whitespace and only contain alphabets, numbers, and these additional characters: ${ALLOWED_NAME_SPECIALS.join('')}`);
+  }
+  // Also validate string rules (length)
+  validateString( name, value );
 };
 
 const parseTree = function( name, parent, totalAllowed ) {
@@ -66,7 +76,7 @@ const parseTree = function( name, parent, totalAllowed ) {
         throw new ValidationError(`The json object element ${child} exceeded the value length ${DIRECTIVE_LIMITS.MAX_JSON_VALUE_LENGTH}`);
       }
       if (DIRECTIVE_LIMITS.INVALID_PATTERN.test(parent[child])) {
-        throw new ValidationError(`The ${name} value ${parent[child]} should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen`);
+        throw new ValidationError(`The ${name} value ${parent[child]} should avoid leading or trailing whitespace and characters such as these: ${DIRECTIVE_LIMITS.INVALID_CHARS.join('')}`);
       }
     }
   }
@@ -87,4 +97,4 @@ const validateJson = function( name, value ) {
   }
 };
 
-module.exports = { validateString, validateJson };
+module.exports = { validateString, validateJson, validateName };

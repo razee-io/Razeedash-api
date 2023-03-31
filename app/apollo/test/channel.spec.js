@@ -452,7 +452,7 @@ describe('channel graphql test suite', () => {
         },
       } = await channelApi.addChannel(adminToken, {
         orgId: org01._id,
-        name: 'a_random_name',
+        name: 'a_random_name-allowedchars-hypen_underscore.dot',
         data_location: 'dal',
         custom: custom_dat
       });
@@ -486,7 +486,7 @@ describe('channel graphql test suite', () => {
         name: 'a_illegal_char#',
       });
       console.log(`${JSON.stringify(data.data)}`);
-      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen');
+      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, and these additional characters');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -504,7 +504,7 @@ describe('channel graphql test suite', () => {
         name: ' a_illegal_pad ',
       });
       console.log(`${JSON.stringify(data.data)}`);
-      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, underscore and hyphen');
+      expect(data.data.errors[0].message).to.have.string('should avoid leading or trailing whitespace and only contain alphabets, numbers, and these additional characters');
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
