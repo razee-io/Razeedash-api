@@ -29,7 +29,7 @@ const { groupsRbacSync } = require('../utils/rbacSync');
 
 const pubSub = GraphqlPubSub.getInstance();
 
-const { validateString } = require('../utils/directives');
+const { validateString, validateName } = require('../utils/directives');
 
 const groupResolvers = {
   Query: {
@@ -130,7 +130,7 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
         validateString( 'org_id', org_id );
-        validateString( 'name', name );
+        validateName( 'name', name );
 
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
@@ -229,7 +229,7 @@ const groupResolvers = {
         // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
         validateString( 'org_id', org_id );
-        validateString( 'name', name );
+        validateName( 'name', name );
 
         const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
 

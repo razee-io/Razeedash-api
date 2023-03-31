@@ -28,7 +28,7 @@ const { ValidationError } = require('apollo-server');
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
 const { whoIs, checkComplexity, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
 
-const { validateString } = require('../utils/directives');
+const { validateString, validateName } = require('../utils/directives');
 
 // RBAC Sync
 const { subscriptionsRbacSync } = require('../utils/rbacSync');
@@ -257,7 +257,7 @@ const channelResolvers = {
         if( remote ) newChannelObj.remote = remote;
 
         validateString( 'org_id', org_id );
-        validateString( 'name', name );
+        validateName( 'name', name );
 
         // Validate contentType
         if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
@@ -451,7 +451,7 @@ const channelResolvers = {
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
-        validateString( 'name', name );
+        validateName( 'name', name );
 
         const channel = await models.Channel.findOne({ uuid, org_id });
         if(!channel){

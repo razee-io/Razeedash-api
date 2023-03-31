@@ -25,7 +25,7 @@ const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
 const { bestOrgKey } = require('../../utils/orgs');
 const { ValidationError } = require('apollo-server');
 
-const { validateString, validateJson } = require('../utils/directives');
+const { validateString, validateJson, validateName } = require('../utils/directives');
 
 // Get the URL that returns yaml for cleaning up agents from a cluster
 const getCleanupUrl = async (org_id, context) => {
@@ -532,10 +532,10 @@ const clusterResolvers = {
 
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
-
         if (!registration.name) {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
+        validateName( 'registration.name', registration.name );
 
         let cluster_id = UUID();
         let reg_state = CLUSTER_REG_STATES.REGISTERING;
