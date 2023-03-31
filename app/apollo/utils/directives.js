@@ -37,7 +37,7 @@ const validateString = function( name, value ) {
   }
 };
 
-const INVALID_NAME_PATTERN = /^\s|[^ a-zA-Z0-9\-\_\.]{1,}|\s$/;
+const INVALID_NAME_PATTERN = /^\s|[^ a-zA-Z0-9\-_.]{1,}|\s$/;
 const ALLOWED_NAME_SPECIALS = ['-', '_', '.'];
 const validateName = function( name, value ) {
   if (INVALID_NAME_PATTERN.test(value)) {
