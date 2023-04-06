@@ -19,7 +19,7 @@ const RDD_DEFAULT_IMPL = require( RDD_DEFAULT_IMPL_PATH );
 const RDD_IMPL = require( process.env.RDD_PARAMS_IMPL || RDD_DEFAULT_IMPL_PATH );
 
 // If default impl provides an export not implemented by the external impl, use the default impl export
-const defaultExportNames = Object.getOwnPropertyNames( RDD_DEFAULT_IMPL ))
+const defaultExportNames = Object.getOwnPropertyNames( RDD_DEFAULT_IMPL );
 for( const exportName of defaultExportNames ) {
   if( !RDD_IMPL.hasOwnProperty( exportName ) ) RDD_IMPL[exportName] = RDD_DEFAULT_IMPL[exportName];
 }
