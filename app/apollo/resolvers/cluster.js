@@ -15,7 +15,7 @@
  */
 
 const Moment = require('moment');
-const { RDD_STATIC_ARGS, ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
 const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
@@ -24,8 +24,9 @@ const { convertStrToTextPropsObj } = require('../utils');
 const { applyQueryFieldsToClusters } = require('../utils/applyQueryFields');
 const { bestOrgKey } = require('../../utils/orgs');
 const { ValidationError } = require('apollo-server');
-
 const { validateString, validateJson, validateName } = require('../utils/directives');
+const { getRddArgs } = require('../../utils/rdd');
+
 
 // Get the URL that returns yaml for cleaning up agents from a cluster
 const getCleanupUrl = async (org_id, context) => {
@@ -34,14 +35,15 @@ const getCleanupUrl = async (org_id, context) => {
   Note: this code retrieves the _registration_ url and adds `command=remove`, but this results
   in a URL with unneded params (e.g. orgkey).  It could instead
   generate the `/api/cleanup/razeedeploy-job` url by:
-  - replacing `/install/` with `/cleanup/` and truncating query params (e.g. orgkey) before adding RDD_STATIC_ARGS.
+  - replacing `/install/` with `/cleanup/` and truncating query params (e.g. orgkey) before adding RDD Args.
   - introducing a new `getCleanupUrl` for Organization models to implement (falling back to a different approach if not implemented).
   - Somthing else to be determined in the future.
   */
   let { url } = await models.Organization.getRegistrationUrl( org_id, context );
   url += '&command=remove';
-  if (RDD_STATIC_ARGS.length > 0) {
-    RDD_STATIC_ARGS.forEach(arg => {
+  const rddArgs = await getRddArgs();
+  if (rddArgs.length > 0) {
+    rddArgs.forEach(arg => {
       url += `&args=${arg}`;
     });
   }
@@ -111,8 +113,9 @@ const clusterResolvers = {
         if(cluster){
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${clusterId}`;
-          if (RDD_STATIC_ARGS.length > 0) {
-            RDD_STATIC_ARGS.forEach(arg => {
+          const rddArgs = await getRddArgs();
+          if (rddArgs.length > 0) {
+            rddArgs.forEach(arg => {
               url += `&args=${arg}`;
             });
           }
@@ -171,8 +174,9 @@ const clusterResolvers = {
         if(cluster){
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${cluster.id}`;
-          if (RDD_STATIC_ARGS.length > 0) {
-            RDD_STATIC_ARGS.forEach(arg => {
+          const rddArgs = await getRddArgs();
+          if (rddArgs.length > 0) {
+            rddArgs.forEach(arg => {
               url += `&args=${arg}`;
             });
           }
@@ -586,8 +590,9 @@ const clusterResolvers = {
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
-        if (RDD_STATIC_ARGS.length > 0) {
-          RDD_STATIC_ARGS.forEach(arg => {
+        const rddArgs = await getRddArgs();
+        if (rddArgs.length > 0) {
+          rddArgs.forEach(arg => {
             url += `&args=${arg}`;
           });
         }
@@ -631,8 +636,9 @@ const clusterResolvers = {
         if (updatedCluster) {
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${cluster_id}`;
-          if (RDD_STATIC_ARGS.length > 0) {
-            RDD_STATIC_ARGS.forEach(arg => {
+          const rddArgs = await getRddArgs();
+          if (rddArgs.length > 0) {
+            rddArgs.forEach(arg => {
               url += `&args=${arg}`;
             });
           }
