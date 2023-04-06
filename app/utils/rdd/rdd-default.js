@@ -15,11 +15,11 @@
  */
 
 
-const getRddJobUrl = async () => {
+async function getRddJobUrl() {
   return( process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml' );
 };
-const getRddJobArgs = async () => {
+async function getRddArgs() {
   return( process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [] );
 };
 
-module.exports = { getRddJobUrl, getRddJobArgs };
+module.exports = { getRddJobUrl, getRddArgs };
