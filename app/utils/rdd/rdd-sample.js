@@ -23,13 +23,17 @@ rather than using 'latest'.
 To use this sample, `export RDD_DYNAMIC_IMPL=./rdd-sample` before starting the server.
 */
 
-async function getRddJobUrl() {
+async function getRddJobUrl(context) {
+  const { req_id, logger } = context;
+  logger.warn( {req_id}, 'using SAMPLE implementation, should only happen during dev/test' );
   // Instead of returning a string set as an env var, or 'latest', asynchronously find the 'best' version to use and return the url with it.
   const bestVersion = 'SPECIFIC_VERSION';
   return( `https://github.com/razee-io/razeedeploy-delta/releases/${bestVersion}/download/job.yaml` );
 }
 
-async function getRddArgs() {
+async function getRddArgs(context) {
+  const { req_id, logger } = context;
+  logger.warn( {req_id}, 'using SAMPLE implementation, should only happen during dev/test' );
   // Instead of returning an array parsed from an env var, or empty, generate the array of args asynchronously.
   const bestVersion = 'SPECIFIC_VERSION';
   const bucketName = 'my-bucket';

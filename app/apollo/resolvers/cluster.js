@@ -41,7 +41,7 @@ const getCleanupUrl = async (org_id, context) => {
   */
   let { url } = await models.Organization.getRegistrationUrl( org_id, context );
   url += '&command=remove';
-  const rddArgs = await getRddArgs();
+  const rddArgs = await getRddArgs(context);
   if (rddArgs.length > 0) {
     rddArgs.forEach(arg => {
       url += `&args=${arg}`;
@@ -113,7 +113,7 @@ const clusterResolvers = {
         if(cluster){
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${clusterId}`;
-          const rddArgs = await getRddArgs();
+          const rddArgs = await getRddArgs(context);
           if (rddArgs.length > 0) {
             rddArgs.forEach(arg => {
               url += `&args=${arg}`;
@@ -174,7 +174,7 @@ const clusterResolvers = {
         if(cluster){
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${cluster.id}`;
-          const rddArgs = await getRddArgs();
+          const rddArgs = await getRddArgs(context);
           if (rddArgs.length > 0) {
             rddArgs.forEach(arg => {
               url += `&args=${arg}`;
@@ -590,7 +590,7 @@ const clusterResolvers = {
         const org = await models.Organization.findById(org_id);
         var { url } = await models.Organization.getRegistrationUrl(org_id, context);
         url = url + `&clusterId=${cluster_id}`;
-        const rddArgs = await getRddArgs();
+        const rddArgs = await getRddArgs(context);
         if (rddArgs.length > 0) {
           rddArgs.forEach(arg => {
             url += `&args=${arg}`;
@@ -636,7 +636,7 @@ const clusterResolvers = {
         if (updatedCluster) {
           var { url } = await models.Organization.getRegistrationUrl(org_id, context);
           url = url + `&clusterId=${cluster_id}`;
-          const rddArgs = await getRddArgs();
+          const rddArgs = await getRddArgs(context);
           if (rddArgs.length > 0) {
             rddArgs.forEach(arg => {
               url += `&args=${arg}`;

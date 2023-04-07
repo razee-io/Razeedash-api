@@ -29,13 +29,13 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     host = process.env.EXTERNAL_HOST;
   }
   args_array.push(`--razeedash-url=${req.protocol}://${host}/api/v2`);
-  const rddArgs = await getRddArgs();
+  const rddArgs = await getRddArgs({logger: req.log, req_id: req.id});
   args_array.push( ...rddArgs );
   args_array = JSON.stringify(args_array);
 
   try {
     // allow custom job, agents versions and image location to be provided
-    const rddJobUrl = await getRddJobUrl();
+    const rddJobUrl = await getRddJobUrl({logger: req.log, req_id: req.id});
 
     const rdd_job = await axios.get(rddJobUrl);
     const view = {
