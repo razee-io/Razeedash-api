@@ -21,6 +21,7 @@ const Mustache = require('mustache');
 const readFile = require('fs-readfile-promise');
 const axios = require('axios');
 const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
+const { getRddJobUrl } = require('../../utils/rdd');
 
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args = req.query.args ? req.query.args : [];
@@ -61,7 +62,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
 
   try {
     // allow custom job, agents versions and image location to be provided
-    const rddJobUrl = process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml';
+    const rddJobUrl = await getRddJobUrl();
 
     const rdd_job = await axios.get(rddJobUrl);
     const view = {

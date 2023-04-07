@@ -20,7 +20,7 @@ const asyncHandler = require('express-async-handler');
 const { getOrg, bestOrgKey } = require('../../utils/orgs');
 const axios = require('axios');
 const yaml = require('js-yaml');
-const { RDD_STATIC_ARGS } = require('../../apollo/models/const');
+const { getRddArgs } = require('../../utils/rdd');
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
@@ -58,8 +58,9 @@ const getOperatorsSubscription = async(req, res) => {
   const command = job[4].spec.template.spec.containers[0].command[0];
 
   let args = '';
-  if (RDD_STATIC_ARGS.length > 0) {
-    RDD_STATIC_ARGS.forEach(arg => {
+  const rddArgs = await getRddArgs();
+  if (rddArgs.length > 0) {
+    rddArgs.forEach(arg => {
       args += `"${arg}", `;
     });
   }

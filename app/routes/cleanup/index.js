@@ -19,7 +19,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const Mustache = require('mustache');
 const axios = require('axios');
-const { RDD_STATIC_ARGS } = require('../../apollo/models/const');
+const { getRddJobUrl, getRddArgs } = require('../../utils/rdd');
 
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
   let args = req.query.args ? req.query.args : [];
@@ -29,12 +29,13 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     host = process.env.EXTERNAL_HOST;
   }
   args_array.push(`--razeedash-url=${req.protocol}://${host}/api/v2`);
-  args_array.push( ...RDD_STATIC_ARGS );
+  const rddArgs = await getRddArgs({logger: req.log, req_id: req.id});
+  args_array.push( ...rddArgs );
   args_array = JSON.stringify(args_array);
 
   try {
     // allow custom job, agents versions and image location to be provided
-    const rddJobUrl = process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml';
+    const rddJobUrl = await getRddJobUrl({logger: req.log, req_id: req.id});
 
     const rdd_job = await axios.get(rddJobUrl);
     const view = {
