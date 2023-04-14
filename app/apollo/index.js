@@ -142,6 +142,7 @@ const createApolloServer = (schema) => {
     introspection: true, // set to true as long as user has valid token
     plugins: customPlugins,
     schema,
+    allowBatchedHttpRequests: (process.env.GRAPHQL_DISABLE_BATCHING ? false : true),
     formatError: error => {
       // remove the internal sequelize error message
       // leave only the important validation error
