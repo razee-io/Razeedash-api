@@ -148,7 +148,8 @@ const createApolloServer = (schema) => {
       // leave only the important validation error
       const message = error.message
         .replace('SequelizeValidationError: ', '')
-        .replace('Validation error: ', '');
+        .replace('Validation error: ', '')
+        .split(' Did you mean')[0];
       return {
         ...error,
         message,
