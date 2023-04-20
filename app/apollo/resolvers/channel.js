@@ -663,6 +663,12 @@ const channelResolvers = {
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
+          // The ability to edit Versions in-place was explored early in GitOps support, but is not used.  Versions are static -- new versions can be created, but existing ones cannot be modified.
+          throw new RazeeValidationError( context.req.t( 'Unsupported mutation: {{args}}', { args: 'editChannelVersion' } ), context );
+        }
+
         /*
         - Allow changing description
         - Allow altering `remote.parameters`
@@ -671,16 +677,9 @@ const channelResolvers = {
           throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
         }
 
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
-          // Block experimental features
-          if( subscriptions ) {
-            throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
-          }
-        }
         // Block experimental feature even if enabled as it's not fully implemented
         if( subscriptions ) {
-          // Note this feature is not full implemented, see commented out code later in this function.  Block even if experimental flag is enabled.
+          // Note this feature is not fully implemented, see commented out code later in this function.  Block even if experimental flag is enabled.
           throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
         }
 
