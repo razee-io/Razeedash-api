@@ -112,6 +112,25 @@ router.use('/v2/resources', Resources);
 router.use('/v1/channels', Channels);
 router.use('/v1/systemSubscriptions', SystemSubscriptions);
 
+// Ensure sensitive information is removed before default error handler can log request details
+router.use( (err, req, res, next) => {
+  if( err ) {
+    if( req && req.headers && req.headers['razee-org-key']) {
+      req.headers['razee-org-key'] = '[REDACTED]';
+    }
+    if( req && req.query && req.query.orgKey ) {
+      const orgKey = req.query.orgKey;
+      if( req.url && req.url.indexOf( orgKey ) >= 0 ) {
+        const parts = req.url.split(req.query.orgKey);
+        req.url = `${parts[0]}[REDACTED]${parts[1]}`;
+      }
+      req.query.orgKey = '[REDACTED]';
+    }
+    next(err, req, res);
+  }
+  next();
+});
+
 
 async function initialize(){
   const options = {

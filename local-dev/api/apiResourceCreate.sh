@@ -12,11 +12,12 @@ echo
 echo "RAZEE_CLUSTER_UUID: ${RAZEE_CLUSTER_UUID}"
 echo
 
+
 echo "POST to ${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
 curl \
 -X POST \
--H "razee-org-key: ${RAZEE_ORG_KEY}" \
 -H "Content-Type: application/json" \
+-H "razee-org-key: ${RAZEE_ORG_KEY}" \
 -w "HTTP: %{http_code}" \
 --data '
 [{
@@ -24,7 +25,7 @@ curl \
     "object": {
       "apiVersion": "v1",
       "kind": "ConfigMap",
-      "metadata": {
+      "xmetadata": {
           "name": "sample-cm",
           "namespace": "default",
           "resourceVersion": "1000",
@@ -35,7 +36,7 @@ curl \
       }
     }
 }]' \
-${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources
+"${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
 
 retVal=$?
 
