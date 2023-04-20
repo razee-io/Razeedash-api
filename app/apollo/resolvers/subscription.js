@@ -793,7 +793,7 @@ const subscriptionResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information. addSubscription can delete subscriptions. Include details of each deleted resource in pluginContext.
+        // Allow graphQL plugins to retrieve more information. removeSubscription can delete subscriptions. Include details of each deleted resource in pluginContext.
         context.pluginContext = {subscription: {name: subscription.name, uuid: subscription.uuid}};
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
