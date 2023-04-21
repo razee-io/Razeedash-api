@@ -16,8 +16,8 @@ echo
 echo "POST to ${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
 curl \
 -X POST \
--H "Content-Type: application/json" \
 -H "razee-org-key: ${RAZEE_ORG_KEY}" \
+-H "Content-Type: application/json" \
 -w "HTTP: %{http_code}" \
 --data '
 [{
@@ -25,7 +25,7 @@ curl \
     "object": {
       "apiVersion": "v1",
       "kind": "ConfigMap",
-      "xmetadata": {
+      "metadata": {
           "name": "sample-cm",
           "namespace": "default",
           "resourceVersion": "1000",
