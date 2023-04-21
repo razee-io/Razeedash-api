@@ -128,7 +128,9 @@ router.use( (err, req, res, next) => {
     }
     next(err, req, res);
   }
-  next();
+  else {
+    next();
+  }
 });
 
 
