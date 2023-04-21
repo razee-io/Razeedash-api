@@ -239,7 +239,7 @@ describe('clusters', () => {
       });
       var response = httpMocks.createResponse();
       // Test
-      let next = (err) => {
+      let next = () => {
         assert.fail( 'next was called' );
       };
       await updateClusterResources(request, response, next);
