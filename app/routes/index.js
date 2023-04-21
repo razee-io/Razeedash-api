@@ -126,7 +126,7 @@ router.use( (err, req, res, next) => {
       }
       req.query.orgKey = '[REDACTED]';
     }
-    next(err, req, res);
+    next(err);
   }
   else {
     next();
