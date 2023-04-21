@@ -36,7 +36,7 @@ curl \
       }
     }
 }]' \
-"${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
+${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources
 
 retVal=$?
 
