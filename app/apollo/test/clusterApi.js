@@ -62,6 +62,7 @@ const clusterFunc = grahqlUrl => {
             clusterByName(orgId: $orgId clusterName: $clusterName, resourceLimit: $resourceLimit) {
               id
               orgId
+              regState
               status
               clusterId
               lastOrgKey {

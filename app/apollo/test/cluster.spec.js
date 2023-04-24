@@ -161,7 +161,9 @@ const createClusters = async () => {
     },
     lastOrgKeyUuid: org_01_orgkey,
     registration: { name: 'my-cluster1' },
-    reg_state: 'registered',
+    reg_state: 'registering', // registering, has not been updated by watch-keeper after creation (created ~= updated)
+    created: new Moment().subtract(2, 'hour').toDate(),
+    updated: new Moment().subtract(2, 'hour').toDate()+1,
   });
 
   await models.Cluster.create({
@@ -182,7 +184,7 @@ const createClusters = async () => {
     },
     lastOrgKeyUuid: org_01_orgkey2.orgKeyUuid,
     registration: { name: 'my-cluster2' },
-    reg_state: 'registered',
+    reg_state: 'registered', // registered, has been upated by watch-keeper after creation (created << updated)
     created: new Moment().subtract(2, 'day').toDate(),
     updated: new Moment().subtract(2, 'hour').toDate(),
   });
@@ -375,7 +377,8 @@ describe('cluster graphql test suite', () => {
       expect(clusterByClusterId.groups).to.have.length(3);
       expect(clusterByClusterId.groupObjs).to.have.length(3);
       expect(clusterByClusterId.clusterId).to.equal(clusterId1);
-      expect(clusterByClusterId.status).to.equal('active');
+      expect(clusterByClusterId.regState).to.equal('registering');  // record attr
+      expect(clusterByClusterId.status).to.equal('registered'); // created ~= updated
       expect(clusterByClusterId.lastOrgKey.uuid).to.equal(org_01_orgkey);
 
 
@@ -411,7 +414,8 @@ describe('cluster graphql test suite', () => {
       const clusterByClusterName = result.data.data.clusterByName;
 
       expect(clusterByClusterName.clusterId).to.equal(clusterId2);
-      expect(clusterByClusterName.status).to.equal('inactive');
+      expect(clusterByClusterName.regState).to.equal('registered'); // record attr
+      expect(clusterByClusterName.status).to.equal('inactive'); // created << updated
       expect(clusterByClusterName.lastOrgKey.uuid).to.equal(org_01_orgkey2.orgKeyUuid);
 
     } catch (error) {
