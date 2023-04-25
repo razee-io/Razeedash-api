@@ -223,7 +223,6 @@ const updateClusterResources = async (req, res, next) => {
           const checkResourceSelfLink = (checkResource.object.metadata && checkResource.object.metadata.annotations && checkResource.object.metadata.annotations.selfLink) ? checkResource.object.metadata.annotations.selfLink : (checkResource.object.metadata ? checkResource.object.metadata.selfLink : null);
           // If the checked resource update is dedupable and for the same resource, it shouldn't be kept.
           if( selfLink == checkResourceSelfLink && dedupUpdates.includes(checkResourceType) ) {
-            req.log.warn({ org_id: req.org._id, cluster_id: req.params.cluster_id, update_selfLink: selfLink, update_type: type }, 'Duplicate update in same payload, truncated' );
             isLastUpdate = false;
             break; // No need to check for further resources.
           }
@@ -241,6 +240,7 @@ const updateClusterResources = async (req, res, next) => {
     const data_location = cluster.registration.data_location;
 
     const limit = pLimit(10);
+    const unsupportedResourceEvents = [];
     await Promise.all(resources.map(async (resource) => {
       return limit(async () => {
         const type = resource['type'] || 'other';
@@ -436,13 +436,19 @@ const updateClusterResources = async (req, res, next) => {
             break;
           }
           default: {
-            throw new Error(`Unsupported event ${resource.type}`);
+            unsupportedResourceEvents.push(resource);
           }
         }
       });
     }));
-
-    res.status(200).send('Thanks');
+    if( unsupportedResourceEvents.length > 0 ) {
+      // This could occur if agent sends `x is forbidden` objects instead of expected polled/modified/added/deleted events.  It is useful info, but not a server side error.
+      req.log.info( `Unsupported events received: ${JSON.stringify( unsupportedResourceEvents )}` );
+      res.status(400).send('invalid payload');
+    }
+    else {
+      res.status(200).send('Thanks');
+    }
   } catch (err) {
     req.log.error(err.message);
     next(err);

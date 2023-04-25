@@ -17,8 +17,9 @@
 const _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
 // RBAC Sync
-const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { NotFoundError } = require ('../resolvers/common');
+const INACTIVE_THRESHOLD = 60*60*1000;  // If a cluster has not received updates from watch-keeper for this long, consider it inactive
 
 
 const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
@@ -42,11 +43,20 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
 
   _.each(clusters, (cluster)=>{
     cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.clusterId || cluster.id;
-    cluster.status = CLUSTER_STATUS.UNKNOWN;
-    if (cluster.reg_state === CLUSTER_REG_STATES.REGISTERING || cluster.reg_state === CLUSTER_REG_STATES.PENDING) {
+
+    /*
+    Cluster records have their `updated` field set at creation and when the `api/v2/addUpdateCluster` is called by the watch-keeper.
+    As long as record creation time and updated time are within TIME_DIFF_TOLERATION milliseconds, it is considered to be un-updated *since creation*.
+      - At creation time both created and updated are set by `new Date()`, but *separate* calls to `new Date()`, so may differ by a few millis.
+    If cluster has not been updated *since creation*, status is just `REGISTERED` (not active, not inactive)
+    Else if cluster *has* been updated since creation, status is either ACTIVE or INACTIVE based on *when* it was last updated.
+    */
+    const TIME_DIFF_TOLERATION = 1000;  // If updated time and created time are within 1 second, treat them as identical -- the cluster is `REGISTERED`, not inactive or active
+    if( Math.abs( cluster.updated.getTime() - cluster.created.getTime() ) < TIME_DIFF_TOLERATION ) {
       cluster.status = CLUSTER_STATUS.REGISTERED;
-    } else if (cluster.reg_state === CLUSTER_REG_STATES.REGISTERED) {
-      if (cluster.updated.getTime() < now.getTime() - 3600000 ) {
+    }
+    else {
+      if( cluster.updated.getTime() < now.getTime() - INACTIVE_THRESHOLD ) {
         cluster.status = CLUSTER_STATUS.INACTIVE;
       } else {
         cluster.status = CLUSTER_STATUS.ACTIVE;
