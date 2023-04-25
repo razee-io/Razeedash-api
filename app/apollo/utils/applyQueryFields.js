@@ -17,7 +17,7 @@
 const _ = require('lodash');
 const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowed } = require('../resolvers/common');
 // RBAC Sync
-const { ACTIONS, TYPES, CLUSTER_REG_STATES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
+const { ACTIONS, TYPES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { NotFoundError } = require ('../resolvers/common');
 
 
