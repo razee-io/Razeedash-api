@@ -46,13 +46,13 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
 
     /*
     Cluster records have their `updated` field set at creation and when the `api/v2/addUpdateCluster` is called by the watch-keeper.
-    As long as record creation time and updated time are within RECORD_TIME_TOLERATION milliseconds, it is considered to be un-updated *since creation*.
-      - At creation time both created and updated are set by `new Date()`, but *separate& calls to `new Date()`, so may differ by a few millis.
+    As long as record creation time and updated time are within TIME_DIFF_TOLERATION milliseconds, it is considered to be un-updated *since creation*.
+      - At creation time both created and updated are set by `new Date()`, but *separate* calls to `new Date()`, so may differ by a few millis.
     If cluster has not been updated *since creation*, status is just `REGISTERED` (not active, not inactive)
     Else if cluster *has* been updated since creation, status is either ACTIVE or INACTIVE based on *when* it was last updated.
     */
-    const RECORD_TIME_TOLERATION = 1000;
-    if( Math.abs( cluster.updated.getTime() - cluster.created.getTime() ) < RECORD_TIME_TOLERATION ) {
+    const TIME_DIFF_TOLERATION = 1000;  // If updated time and created time are within 1 second, treat them as identical -- the cluster is `REGISTERED`, not inactive or active
+    if( Math.abs( cluster.updated.getTime() - cluster.created.getTime() ) < TIME_DIFF_TOLERATION ) {
       cluster.status = CLUSTER_STATUS.REGISTERED;
     }
     else {
