@@ -163,7 +163,7 @@ const createClusters = async () => {
     registration: { name: 'my-cluster1' },
     reg_state: 'registering', // registering, has not been updated by watch-keeper after creation (created ~= updated)
     created: new Moment().subtract(2, 'hour').toDate(),
-    updated: new Moment().subtract(2, 'hour').toDate()+1,
+    updated: new Moment().subtract(2, 'hour').toDate()+1, // simulate updated date generated *slightly* after created date
   });
 
   await models.Cluster.create({

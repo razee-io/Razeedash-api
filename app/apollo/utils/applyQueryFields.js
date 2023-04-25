@@ -19,6 +19,7 @@ const { getGroupConditions, filterChannelsToAllowed, filterSubscriptionsToAllowe
 // RBAC Sync
 const { ACTIONS, TYPES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { NotFoundError } = require ('../resolvers/common');
+const INACTIVE_THRESHOLD = 60*60*1000;  // If a cluster has not received updates from watch-keeper for this long, consider it inactive
 
 
 const loadResourcesWithSearchAndArgs = async({ search, args, context })=>{
@@ -46,8 +47,8 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
     /*
     Cluster records have their `updated` field set at creation and when the `api/v2/addUpdateCluster` is called by the watch-keeper.
     As long as record creation time and updated time are within RECORD_TIME_TOLERATION milliseconds, it is considered to be un-updated *since creation*.
-      - At creation time both created and updated are set by `new Date()`, but separate calls to `new Date()`, so may differ by a few millis.
-    I.e. if cluster has not been updated *since creation*, status is just `REGISTERED` (not active, not inactive)
+      - At creation time both created and updated are set by `new Date()`, but *separate& calls to `new Date()`, so may differ by a few millis.
+    If cluster has not been updated *since creation*, status is just `REGISTERED` (not active, not inactive)
     Else if cluster *has* been updated since creation, status is either ACTIVE or INACTIVE based on *when* it was last updated.
     */
     const RECORD_TIME_TOLERATION = 1000;
@@ -55,7 +56,7 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
       cluster.status = CLUSTER_STATUS.REGISTERED;
     }
     else {
-      if( cluster.updated.getTime() < now.getTime() - 3600000 ) {
+      if( cluster.updated.getTime() < now.getTime() - INACTIVE_THRESHOLD ) {
         cluster.status = CLUSTER_STATUS.INACTIVE;
       } else {
         cluster.status = CLUSTER_STATUS.ACTIVE;
