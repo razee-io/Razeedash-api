@@ -210,12 +210,12 @@ describe('clusters', () => {
   });
 
   describe('updateClusterResources', () => {
-    it('should return 500 if unsupported event', async () => {
+    it('should return 400 if unsupported event', async () => {
       // Setup
       const org_id = '1';
       const cluster_id = 'testupdateClusterResourcesAdd200';
       await db.collection('clusters').insertOne( { org_id: org_id, cluster_id: cluster_id, registration: {data_location: 'wdc'} });
-      // missing selfLink
+      // missing selfLink (though this doesn't matter for this test, it's checking event type)
       const data = {
         'kind': 'Deployment', 'apiVersion': 'apps/v1',
         'spec': { 'replicas': 1, 'selector': { 'matchLabels': { 'app': 'watch-keeper' } }, 'template': { 'metadata': { 'name': 'watch-keeper', 'creationTimestamp': null, 'labels': { 'app': 'watch-keeper' } }, 'spec': { 'containers': [{ 'name': 'watch-keeper', 'image': 'quay.io/razee/watch-keeper:0.0.3', 'env': [{ 'name': 'START_DELAY_MAX', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'START_DELAY_MAX', 'optional': true } } }, { 'name': 'NAMESPACE', 'valueFrom': { 'fieldRef': { 'apiVersion': 'v1', 'fieldPath': 'metadata.namespace' } } }, { 'name': 'RAZEEDASH_URL', 'valueFrom': { 'configMapKeyRef': { 'name': 'watch-keeper-config', 'key': 'RAZEEDASH_URL' } } }, { 'name': 'RAZEEDASH_ORG_KEY', 'valueFrom': { 'secretKeyRef': { 'name': 'watch-keeper-secret', 'key': 'RAZEEDASH_ORG_KEY' } } }, { 'name': 'NODE_ENV', 'value': 'REDACTED' }], 'resources': { 'limits': { 'cpu': '400m', 'memory': '500Mi' }, 'requests': { 'cpu': '50m', 'memory': '100Mi' } }, 'livenessProbe': { 'exec': { 'command': ['sh/liveness.sh'] }, 'initialDelaySeconds': 600, 'timeoutSeconds': 30, 'periodSeconds': 300, 'successThreshold': 1, 'failureThreshold': 1 }, 'terminationMessagePath': '/dev/termination-log', 'terminationMessagePolicy': 'File', 'imagePullPolicy': 'Always' }], 'restartPolicy': 'Always', 'terminationGracePeriodSeconds': 30, 'dnsPolicy': 'ClusterFirst', 'serviceAccountName': 'watch-keeper-sa', 'serviceAccount': 'watch-keeper-sa', 'securityContext': {}, 'schedulerName': 'default-scheduler' } }, 'strategy': { 'type': 'RollingUpdate', 'rollingUpdate': { 'maxUnavailable': '25%', 'maxSurge': '25%' } }, 'revisionHistoryLimit': 0, 'progressDeadlineSeconds': 600 }, 'status': { 'observedGeneration': 1, 'replicas': 1, 'updatedReplicas': 1, 'readyReplicas': 1, 'availableReplicas': 1, 'conditions': [{ 'type': 'Available', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:32Z', 'reason': 'MinimumReplicasAvailable', 'message': 'Deployment has minimum availability.' }, { 'type': 'Progressing', 'status': 'True', 'lastUpdateTime': '2019-05-22T14:39:32Z', 'lastTransitionTime': '2019-05-22T14:39:28Z', 'reason': 'NewReplicaSetAvailable', 'message': 'ReplicaSet watch-keeper-6678dd4f6f has successfully progressed.' }] }
@@ -239,18 +239,16 @@ describe('clusters', () => {
       });
       var response = httpMocks.createResponse();
       // Test
-      let nextCalled = false;
-      let next = (err) => {
-        assert.equal(err.message, 'Unsupported event FLIPPYCATS');
-        nextCalled = true;
+      let next = () => {
+        assert.fail( 'next was called' );
       };
-
       await updateClusterResources(request, response, next);
 
-      assert.equal(nextCalled, true);
+      assert.equal(response.statusCode, 400);
+      assert.equal(response._getData(), 'invalid payload');
     });
 
-    it('should call next if missing resource malformed', async () => {
+    it('should call next with error if resource malformed', async () => {
       // Setup
       const org_id = '1';
       const cluster_id = 'testupdateClusterResourcesAdd200';
@@ -280,7 +278,7 @@ describe('clusters', () => {
       // Test
       let nextCalled = false;
       let next = (err) => {
-        assert.equal(err.message, 'Cannot read property \'selfLink\' of undefined');
+        assert.match(err.message, /Cannot read prop.*/);  // `Cannot read properties of undefined (reading 'selfLink')` or `Cannot read property 'selfLink' of undefined`
         nextCalled = true;
       };
 
