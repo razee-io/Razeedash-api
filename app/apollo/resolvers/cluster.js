@@ -431,7 +431,7 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, cluster_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
         // Allow graphQL plugins to retrieve more information. deleteClusterByClusterId can delete clusters. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {cluster: {registration_details: deletedCluster.registration, uuid: deletedCluster.cluster_id}};
+        context.pluginContext = {deleted_cluster: {registration_details: deletedCluster.registration, uuid: deletedCluster.cluster_id}};
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
@@ -469,8 +469,8 @@ const clusterResolvers = {
         // Allow graphQL plugins to retrieve more information. deleteClusters can delete clusters. Include details of each deleted resource in pluginContext.
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         context.pluginContext = {
-          clusters: clusters.map( c => {
-            return( {cluster: {registration_details: c.registration, uuid: c.cluster_id }} );
+          deleted_clusters: clusters.map( c => {
+            return( {deleted_cluster: {registration_details: c.registration, uuid: c.cluster_id }} );
           })
         };
 
