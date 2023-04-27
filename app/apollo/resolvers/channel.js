@@ -428,7 +428,7 @@ const channelResolvers = {
           }
         });
         const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
-          if (subscription.groups) {
+          if (subscription.groups.length > 0) {
             return {
               name: subscription.name,
               uuid: subscription.uuid,
@@ -446,7 +446,7 @@ const channelResolvers = {
         // Allow graphQL plugins to retrieve more information. addChannel can create configs, versions, and subscriptions. Include details of each created resource in pluginContext.
         context.pluginContext = {channel: {name: newChannelObj.name, uuid: newChannelObj.uuid}, versions: versionObjs, subscriptions: subscriptionObjs};
         if (newChannelObj.data_location) context.pluginContext.channel.data_location = newChannelObj.data_location;
-        if (newChannelObj.tags == []) context.pluginContext.channel.tags = newChannelObj.tags;
+        if (newChannelObj.tags.length > 0) context.pluginContext.channel.tags = newChannelObj.tags;
 
         logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
         return {
@@ -507,9 +507,9 @@ const channelResolvers = {
         const updated_channel = await models.Channel.findOne({ uuid, org_id });
 
         // Allow graphQL plugins to retrieve more information. editChannel can edit configs. Include details of each edited resource in pluginContext.
-        context.pluginContext = {channel: {name: name, uuid: uuid, previous_name: channel.name}};
+        context.pluginContext = {channel: {name: name, prior_name: channel.name, uuid: uuid}};
         if (updated_channel.data_location) context.pluginContext.channel.data_location = updated_channel.data_location;
-        if (updated_channel.tags == []) context.pluginContext.channel.tags = updated_channel.tags;
+        if (updated_channel.tags.length > 0) context.pluginContext.channel.tags = updated_channel.tags;
 
         // Attempt to update channelName in all versions and subscriptions under this channel (the duplication is unfortunate and should be eliminated in the future)
         try {
@@ -654,7 +654,7 @@ const channelResolvers = {
 
         // Create output for graphQL plugins
         const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
-          if (subscription.groups) {
+          if (subscription.groups.length > 0) {
             return {
               name: subscription.name,
               uuid: subscription.uuid,
@@ -669,11 +669,11 @@ const channelResolvers = {
           }
         });
 
-        // Allow graphQL plugins to retrieve more information. addChannelVersion can create a version, and subscriptions. Include details of each created resource in pluginContext.
+        // Allow graphQL plugins to retrieve more information. addChannelVersion can create versions, and subscriptions. Include details of each created resource in pluginContext.
         context.pluginContext = {channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, version: {name: newVersionObj.name, uuid: newVersionObj.uuid}, subscriptions: subscriptionObjs };
         if (newVersionObj.description) context.pluginContext.version.description = newVersionObj.description;
         if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags == []) context.pluginContext.channel.tags = channel.tags;
+        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
@@ -843,11 +843,11 @@ const channelResolvers = {
         } );
         */
 
-        // Allow graphQL plugins to retrieve more information. editChannelVersion can edit a version. Include details of each edited resource in pluginContext.
+        // Allow graphQL plugins to retrieve more information. editChannelVersion can edit versions. Include details of each edited resource in pluginContext.
         context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: {name: version.name, uuid: version.uuid}};
         if (version.description) context.pluginContext.version.description = version.description;
         if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags == []) context.pluginContext.channel.tags = channel.tags;
+        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -930,10 +930,10 @@ const channelResolvers = {
         // Deletes the configuration channel
         await models.Channel.deleteOne({ org_id, uuid });
 
-        // Allow graphQL plugins to retrieve more information. removeChannel can delete a channel the its verions. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {deleted_channel: {name: channel.name, uuid: channel.uuid}, deleted_versions: versionObjs};
-        if (channel.data_location) context.pluginContext.deleted_channel.data_location = channel.data_location;
-        if (channel.tags == []) context.pluginContext.deleted_channel.tags = channel.tags;
+        // Allow graphQL plugins to retrieve more information. removeChannel can delete channels and their associated channel verions. Include details of each deleted resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: versionObjs};
+        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
+        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
@@ -1000,7 +1000,7 @@ const channelResolvers = {
         // Create output for graphQL plugins
         const subscriptionFind = await models.Subscription.find({org_id, version_uuid: uuid});
         const subscriptionObjs = _.map(subscriptionFind, (subscription)=>{
-          if (subscription.groups) {
+          if (subscription.groups.length > 0) {
             return {
               name: subscription.name,
               uuid: subscription.uuid,
@@ -1015,10 +1015,10 @@ const channelResolvers = {
           }
         });
 
-        // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete a version and subscriptions. Include details of each deleted resource in pluginContext.
+        // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete versions, and subscriptions. Include details of each deleted resource in pluginContext.
         context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, deleted_version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid}, deleted_subscriptions: subscriptionObjs};
         if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags == []) context.pluginContext.channel.tags = channel.tags;
+        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
         if (deployableVersionObj.description) context.pluginContext.deleted_version.description = deployableVersionObj.description;
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
