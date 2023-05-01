@@ -413,19 +413,11 @@ const channelResolvers = {
 
         // Create output for graphQL plugins
         const versionObjs = _.map(createdVersions, (version)=>{
-          if (version.description) {
-            return {
-              name: version.name,
-              uuid: version.uuid,
-              description: version.description,
-            };
-          }
-          else {
-            return {
-              name: version.name,
-              uuid: version.uuid
-            };
-          }
+          return {
+            name: version.name,
+            uuid: version.uuid,
+            description: version.description,
+          };
         });
         const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
           if (subscription.groups.length > 0) {
