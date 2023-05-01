@@ -469,8 +469,8 @@ const clusterResolvers = {
         // Allow graphQL plugins to retrieve more information. deleteClusters can delete clusters. Include details of each deleted resource in pluginContext.
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         context.pluginContext = {
-          deleted_clusters: clusters.map( c => {
-            return( {deleted_cluster: {registration_details: c.registration, uuid: c.cluster_id }} );
+          clusters: clusters.map( c => {
+            return( { name: c.registration.name, uuid: c.cluster_id, registration: c.registration }} );
           })
         };
 
