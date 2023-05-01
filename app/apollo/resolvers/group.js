@@ -320,7 +320,7 @@ const groupResolvers = {
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
-            name: cluster.registration.name,
+            registration_details: cluster.registration,
             uuid: cluster.cluster_id,
           } ;
         });
@@ -418,7 +418,7 @@ const groupResolvers = {
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
-            name: cluster.registration.name,
+            registration_details: cluster.registration,
             uuid: cluster.cluster_id,
           } ;
         });
@@ -491,7 +491,7 @@ const groupResolvers = {
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
-            name: cluster.registration.name,
+            registration_details: cluster.registration,
             uuid: cluster.cluster_id,
           } ;
         });
@@ -574,7 +574,7 @@ const groupResolvers = {
         const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusterInfo, (cluster)=>{
           return {
-            name: cluster.registration.name,
+            registration_details: cluster.registration,
             uuid: cluster.cluster_id,
           } ;
         });
@@ -626,7 +626,7 @@ const groupResolvers = {
         const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusterInfo, (cluster)=>{
           return {
-            name: cluster.registration.name,
+            registration_details: cluster.registration,
             uuid: cluster.cluster_id,
           } ;
         });
