@@ -428,11 +428,7 @@ const subscriptionResolvers = {
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information. addSubscription can get/create a version and create a subscription. Include details of each created and validated resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: { name: version.name, uuid: version.uuid }, subscription: {name: name, uuid: uuid, groups: groups}};
-        if (version.description) context.pluginContext.version.description = version.description;
-        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
-        if (groups.length > 0) context.pluginContext.subscription.groups = subscription.groups;
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: name, uuid: uuid, groups: groups}};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
@@ -639,17 +635,7 @@ const subscriptionResolvers = {
         }
 
         // Allow graphQL plugins to retrieve more information. editSubscription can get or create versions, and edit a subscription. Include details of each created resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel_uuid}, version: {name: version.name, uuid: version.uuid}, subscription: {name, uuid: subscription.uuid, previous_name: subscription.name}};
-        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
-        if (version.description) context.pluginContext.version.description = version.description;
-        // If there is a new version include old version details
-        if (newVersion) {
-          context.pluginContext.version.previous_name = oldVersionObj.name;
-          context.pluginContext.version.previous_uuid = oldVersionObj.uuid;
-          if (oldVersionObj.description) context.pluginContext.version.previous_description = oldVersionObj.description;
-        }
-        if (subscription.groups.length > 0) context.pluginContext.subscription.groups = subscription.groups;
+        context.pluginContext = {channel: {name: channel.name, uuid: channel_uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, previous_version: {name: oldVersionObj.name, uuid: oldVersionObj.uuid, description: oldVersionObj.description}, subscription: {name, uuid: subscription.uuid, previous_name: subscription.name, groups: subscription.groups}};
 
         logger.info( {req_id, user, org_id, uuid, name }, `${queryName} returning` );
         return {
@@ -717,15 +703,8 @@ const subscriptionResolvers = {
 
         logger.info( {req_id, user, org_id, uuid, version_uuid }, `${queryName} saving` );
 
-        // Retreive previous Subscription for graphQL plugins
-        const previous_subscription = await models.Subscription.find({org_id, version_uuid: version.uuid});
-
         // Allow graphQL plugins to retrieve more information. setSubscription can change the subscription version. Include details of each validated resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: {name: version.name, uuid: version.uuid, previous_name: previous_subscription.version, previous_uuid: previous_subscription.version_uuid}, subscription: {name: subscription.name, uuid: subscription.uuid}};
-        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
-        if (version.description) context.pluginContext.version.description = version.description;
-        if (subscription.groups.length > 0) context.pluginContext.subscription.groups = subscription.groups;
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
 
         // Update the subscription
         var sets = {
@@ -818,10 +797,7 @@ const subscriptionResolvers = {
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
         // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, subscription: {name: subscription.name, uuid: subscription.uuid}};
-        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
-        if (subscription.groups.length > 0) context.pluginContext.subscription.groups = subscription.groups;
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
         return {
