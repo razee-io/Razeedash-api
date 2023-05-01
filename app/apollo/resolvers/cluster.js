@@ -470,7 +470,7 @@ const clusterResolvers = {
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         context.pluginContext = {
           clusters: clusters.map( c => {
-            return({ name: c.registration.name, uuid: c.cluster_id, registration: c.registration });
+            return {name: c.registration.name, uuid: c.cluster_id, registration: c.registration};
           })
         };
 
