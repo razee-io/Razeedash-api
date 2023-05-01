@@ -507,7 +507,7 @@ const channelResolvers = {
         const updated_channel = await models.Channel.findOne({ uuid, org_id });
 
         // Allow graphQL plugins to retrieve more information. editChannel can edit configs. Include details of each edited resource in pluginContext.
-        context.pluginContext = {channel: {name: name, prior_name: channel.name, uuid: uuid}};
+        context.pluginContext = {channel: {name: name, previous_name: channel.name, uuid: uuid}};
         if (updated_channel.data_location) context.pluginContext.channel.data_location = updated_channel.data_location;
         if (updated_channel.tags.length > 0) context.pluginContext.channel.tags = updated_channel.tags;
 
@@ -845,9 +845,9 @@ const channelResolvers = {
 
         // Allow graphQL plugins to retrieve more information. editChannelVersion can edit versions. Include details of each edited resource in pluginContext.
         context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, version: {name: version.name, uuid: version.uuid}};
-        if (version.description) context.pluginContext.version.description = version.description;
         if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
         if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
+        if (version.description) context.pluginContext.version.description = version.description;
 
         logger.info({req_id, user, org_id, uuid }, `${queryName} returning`);
         return {

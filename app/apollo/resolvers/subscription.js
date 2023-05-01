@@ -821,10 +821,6 @@ const subscriptionResolvers = {
         context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid}, subscription: {name: subscription.name, uuid: subscription.uuid}};
         if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
         if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
-        if (deleteVersion) {
-          if (deployableVersionObj.description) context.pluginContext.version.description = deployableVersionObj.description;
-          context.pluginContext['version'] = {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid};
-        }
         if (subscription.groups.length > 0) context.pluginContext.subscription.groups = subscription.groups;
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
