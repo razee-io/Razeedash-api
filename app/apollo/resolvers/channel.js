@@ -420,19 +420,11 @@ const channelResolvers = {
           };
         });
         const subscriptionObjs = _.map(createdSubscriptions, (subscription)=>{
-          if (subscription.groups.length > 0) {
-            return {
-              name: subscription.name,
-              uuid: subscription.uuid,
-              groups: subscription.groups
-            };
-          }
-          else {
-            return {
-              name: subscription.name,
-              uuid: subscription.uuid,
-            };
-          }
+          return {
+            name: subscription.name,
+            uuid: subscription.uuid,
+            groups: subscription.groups
+          };
         });
 
         // Allow graphQL plugins to retrieve more information. addChannel can create configs, versions, and subscriptions. Include details of each created resource in pluginContext.
