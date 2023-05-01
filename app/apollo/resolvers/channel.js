@@ -644,10 +644,7 @@ const channelResolvers = {
         });
 
         // Allow graphQL plugins to retrieve more information. addChannelVersion can create versions, and subscriptions. Include details of each created resource in pluginContext.
-        context.pluginContext = {channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id }, version: {name: newVersionObj.name, uuid: newVersionObj.uuid}, subscriptions: subscriptionObjs };
-        if (newVersionObj.description) context.pluginContext.version.description = newVersionObj.description;
-        if (channel.data_location) context.pluginContext.channel.data_location = channel.data_location;
-        if (channel.tags.length > 0) context.pluginContext.channel.tags = channel.tags;
+        context.pluginContext = {channel: { name: newVersionObj.channelName, uuid: newVersionObj.channel_id, tags: tags }, version: {name: newVersionObj.name, uuid: newVersionObj.uuid, description: newVersionObj.description}, subscriptions: subscriptionObjs };
 
         logger.info({req_id, user, org_id, channel_uuid, name, type }, `${queryName} returning`);
         return {
