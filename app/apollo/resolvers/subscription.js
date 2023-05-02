@@ -773,8 +773,8 @@ const subscriptionResolvers = {
           context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}};
         }
         else {
-          // If deleteVersion not specified avoid setting it in pluginContext
-          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
+          // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include null version if non-deleted resource.
+          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: null};
         }
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} saving` );
