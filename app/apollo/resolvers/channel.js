@@ -886,7 +886,7 @@ const channelResolvers = {
         await models.Channel.deleteOne({ org_id, uuid });
 
         // Allow graphQL plugins to retrieve more information. removeChannel can delete channels and their associated channel verions. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: versionObjs};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, versions: versionObjs};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} returning`);
         return {
