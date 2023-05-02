@@ -961,7 +961,7 @@ const channelResolvers = {
         });
 
         // Allow graphQL plugins to retrieve more information. removeChannelVersion can delete versions, and subscriptions. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, deleted_version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}, deleted_subscriptions: subscriptionObjs};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}, subscriptions: subscriptionObjs};
 
         logger.info({ req_id, user, org_id, uuid }, `${queryName} saving`);
 
