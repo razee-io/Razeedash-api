@@ -803,9 +803,6 @@ const subscriptionResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}};
-
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
         return {
           uuid,
