@@ -768,6 +768,13 @@ const subscriptionResolvers = {
 
           // Get the Version
           deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid: subscription.version_uuid });
+
+          // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include details of each deleted resource in pluginContext.
+          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}};
+        }
+        else {
+          // If deleteVersion not specified avoid setting it in pluginContext
+          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
         }
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} saving` );
