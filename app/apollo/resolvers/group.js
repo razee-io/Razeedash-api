@@ -322,7 +322,8 @@ const groupResolvers = {
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
-          } ;
+            registration: cluster.registration
+          };
         });
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
@@ -420,7 +421,8 @@ const groupResolvers = {
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
-          } ;
+            registration: cluster.registration
+          };
         });
 
         logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
@@ -493,7 +495,8 @@ const groupResolvers = {
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
-          } ;
+            registration: cluster.registration
+          };
         });
         const sets = {
           groups: groupObjsToAdd,
@@ -576,7 +579,8 @@ const groupResolvers = {
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
-          } ;
+            registration: cluster.registration
+          };
         });
         // Allow graphQL plugins to retrieve more information. groupClusters can group items in cluster groups. Include details of the grouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
@@ -628,7 +632,8 @@ const groupResolvers = {
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
-          } ;
+            registration: cluster.registration
+          };
         });
         // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};

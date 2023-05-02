@@ -427,8 +427,8 @@ const subscriptionResolvers = {
         */
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // Allow graphQL plugins to retrieve more information. addSubscription can create versions, subscriptions, and validates groups. Include details of each created and validated resource in pluginContext.
-        context.pluginContext = {subscription: {name: name, uuid: uuid, groups: groups}, channel: {name: channel.name, uuid: channel.uuid}, version: { name: version.name, uuid: version.uuid }};
+        // Allow graphQL plugins to retrieve more information. addSubscription can get/create a version and create a subscription. Include details of each created and validated resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: name, uuid: uuid, groups: groups}};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
@@ -490,6 +490,9 @@ const subscriptionResolvers = {
 
         // validate groups all exist
         await validateGroups(org_id, groups, context);
+
+        // Retreive version for graphQL plugins
+        const oldVersionObj = await models.DeployableVersion.findOne( { org_id, uuid: oldVersionUuid } );
 
         // Get or create the version
         let version;
@@ -631,8 +634,8 @@ const subscriptionResolvers = {
           }
         }
 
-        // Allow graphQL plugins to retrieve more information. editSubscription can create groups, versions, and subscriptions. Include details of each created resource in pluginContext.
-        context.pluginContext = {subscription: {name, previousName: subscription.name, uuid: subscription.uuid}};
+        // Allow graphQL plugins to retrieve more information. editSubscription can get or create versions, and edit a subscription. Include details of each created resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel_uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, previous_version: {name: oldVersionObj.name, uuid: oldVersionObj.uuid, description: oldVersionObj.description}, subscription: {name, uuid: subscription.uuid, previous_name: subscription.name, groups: subscription.groups}};
 
         logger.info( {req_id, user, org_id, uuid, name }, `${queryName} returning` );
         return {
@@ -700,8 +703,8 @@ const subscriptionResolvers = {
 
         logger.info( {req_id, user, org_id, uuid, version_uuid }, `${queryName} saving` );
 
-        // Allow graphQL plugins to retrieve more information. setSubscription can validate configs, versions, and subscriptions. Include details of each validated resource in pluginContext.
-        context.pluginContext = {subscription: {name: subscription.name, uuid: subscription.uuid}, version: {name: version.name, uuid: version.uuid}};
+        // Allow graphQL plugins to retrieve more information. setSubscription can change the subscription version. Include details of each validated resource in pluginContext.
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
 
         // Update the subscription
         var sets = {
@@ -765,6 +768,13 @@ const subscriptionResolvers = {
 
           // Get the Version
           deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid: subscription.version_uuid });
+
+          // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include details of each deleted resource in pluginContext.
+          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: {name: deployableVersionObj.name, uuid: deployableVersionObj.uuid, description: deployableVersionObj.description}};
+        }
+        else {
+          // Allow graphQL plugins to retrieve more information. removeSubscription deletes a subscription and can delete associated version if specified. Include null version if non-deleted resource.
+          context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}, version: null};
         }
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} saving` );
@@ -792,9 +802,6 @@ const subscriptionResolvers = {
         }
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
-
-        // Allow graphQL plugins to retrieve more information. removeSubscription can delete subscriptions. Include details of each deleted resource in pluginContext.
-        context.pluginContext = {subscription: {name: subscription.name, uuid: subscription.uuid}};
 
         logger.info( {req_id, user, org_id, uuid }, `${queryName} returning` );
         return {
