@@ -112,7 +112,8 @@ router.use('/v2/resources', Resources);
 router.use('/v1/channels', Channels);
 router.use('/v1/systemSubscriptions', SystemSubscriptions);
 
-// Ensure sensitive information is removed before default error handler can log request details
+// Ensure sensitive information is removed before default handler for errors, 404s, etc can log request details
+// This should be the last router.use -- any later additions will be restricted by the redaction.
 router.use( (err, req, res, next) => {
   if( req && req.headers && req.headers['razee-org-key']) {
     req.headers['razee-org-key'] = '[REDACTED]';
