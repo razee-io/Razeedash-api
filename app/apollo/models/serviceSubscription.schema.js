@@ -72,6 +72,11 @@ const ServiceSubscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  tags: [
+    {
+      type: String,
+    }
+  ],
 }, {
   collection: 'serviceSubscriptions',
   strict:'throw',

@@ -54,6 +54,7 @@ const subscriptionSchema = gql`
     created: Date!
     updated: Date!
     custom: JSON
+    tags: [String!]
   }
   type ChannelSubscription {
     uuid: String!
@@ -78,6 +79,7 @@ const subscriptionSchema = gql`
     identitySyncStatus: IdentitySyncStatus!
     groupObjs: [GroupDetail!]
     custom: JSON
+    tags: [String!]
   }
   type RemoveChannelSubscriptionReply {
     uuid: String!
@@ -117,9 +119,9 @@ const subscriptionSchema = gql`
 
   extend type Query {
      """
-     Gets all subscriptions for orgId
+     Gets all subscriptions for orgId, matching tags if specified
      """
-     subscriptions(orgId: String! @sv): [ChannelSubscription]
+     subscriptions(orgId: String! @sv, tags: [String!]): [ChannelSubscription]
      """
      Get a single subscription
      """
@@ -134,24 +136,24 @@ const subscriptionSchema = gql`
      """
      subscriptionsByClusterId(clusterId: String! @sv): [UpdatedSubscription]
      """
-     Get subscriptions by clusterId
+     Get subscriptions by clusterId, matching tags if specified
      """
-     subscriptionsForCluster(orgId: String! @sv, clusterId: String! @sv): [ChannelSubscription]
+     subscriptionsForCluster(orgId: String! @sv, clusterId: String! @sv, tags: [String!]): [ChannelSubscription]
      """
-     Get subscriptions by clusterName
+     Get subscriptions by clusterName, matching tags if specified
      """
-     subscriptionsForClusterByName(orgId: String! @sv, clusterName: String! @sv): [BasicChannelSubscription]
+     subscriptionsForClusterByName(orgId: String! @sv, clusterName: String! @sv, tags: [String!]): [BasicChannelSubscription]
   }
   extend type Mutation {
      """
      Adds a subscription
      """
-     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String @sv, version: VersionInput, clusterId: String @sv, custom: JSON): AddChannelSubscriptionReply!
+     addSubscription(orgId: String! @sv, name: String! @sv, groups: [String!] @sv, channelUuid: String! @sv, versionUuid: String @sv, version: VersionInput, clusterId: String @sv, custom: JSON, tags: [String!]): AddChannelSubscriptionReply!
 
      """
      Edits a subscription
      """
-     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String, version: VersionInput, clusterId: String @sv, updateClusterIdentity: Boolean, custom: JSON): EditChannelSubscriptionReply!
+     editSubscription(orgId: String! @sv, uuid: String! @sv, name: String! @sv, groups: [String!]! @sv, channelUuid: String! @sv, versionUuid: String, version: VersionInput, clusterId: String @sv, updateClusterIdentity: Boolean, custom: JSON, tags: [String!]): EditChannelSubscriptionReply!
 
      """
      Set a configurationVersion

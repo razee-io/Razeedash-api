@@ -36,6 +36,7 @@ const serviceSchema = gql`
     updated: Date!
     remoteResources: [Resource!]
     rolloutStatus: RolloutStatus
+    tags: [String!]
   }
 
   enum SubscriptionType {
@@ -52,9 +53,9 @@ extend type Query {
     subscriptionType(orgId: String! @sv, id: ID! @sv): SubscriptionType!
 
     """
-    Gets all service subscriptions for user orgId
+    Gets all service subscriptions for user orgId, matching tags if specified
     """
-    serviceSubscriptions(orgId: String! @sv): [ServiceSubscription]
+    serviceSubscriptions(orgId: String! @sv, tags: [String!]): [ServiceSubscription]
 
     """
     Get a single service subscription
@@ -62,9 +63,9 @@ extend type Query {
     serviceSubscription(orgId: String! @sv, ssid: String! @sv): ServiceSubscription
 
     """
-    Get both subscriptions and serviceSubscriptions
+    Get both subscriptions and serviceSubscriptions, matching tags if specified
     """
-    allSubscriptions(orgId: String! @sv): [SubscriptionUnion]
+    allSubscriptions(orgId: String! @sv, tags: [String!]): [SubscriptionUnion]
 }
 
 extend type Mutation {
@@ -72,21 +73,23 @@ extend type Mutation {
     Adds a service subscription and returns new service subscription unique id:
         orgId - user org id
         name - service subscription name
+        tags - service subscription tags
         clusterId - target service cluster_id from different orgId
         channelUuid - user config uuid
         versionUuid - user config version uuid
     """
-    addServiceSubscription(orgId: String! @sv, name: String! @sv, clusterId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
+    addServiceSubscription(orgId: String! @sv, name: String! @sv, tags: [String!], clusterId: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
 
     """
     Edits a service subscription
         orgId - user org id
         ssid - unique service subscription id
         name - service subscription name
+        tags - service subscription tags
         channelUuid - user config uuid
         versionUuid - user config version uuid
     """
-    editServiceSubscription(orgId: String! @sv, ssid: String! @sv, name: String! @sv, channelUuid: String! @sv, versionUuid: String! @sv): ID
+    editServiceSubscription(orgId: String! @sv, ssid: String! @sv, name: String! @sv, tags: [String!], channelUuid: String! @sv, versionUuid: String! @sv): ID
 
     """
     Removes a service subscription

@@ -122,7 +122,7 @@ const subscriptionResolvers = {
       return subs;
     },
 
-    subscriptions: async(parent, { orgId: org_id }, context, fullQuery) => {
+    subscriptions: async(parent, { orgId: org_id, tags=null }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptions';
@@ -138,7 +138,12 @@ const subscriptionResolvers = {
       try{
         checkComplexity( queryFields );
 
-        subs = await models.Subscription.find({ org_id, ...conditions }, {}).lean({ virtuals: true });
+        const query = { org_id, ...conditions };
+        if( tags ) {
+          query.tags = { $all: tags };
+        }
+
+        subs = await models.Subscription.find(query, {}).lean({ virtuals: true });
         logger.debug({req_id, user, org_id}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
         subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
         logger.debug({req_id, user, org_id}, `${queryName} filtered to ${subs?subs.length:'ERR'} subscriptions`);
@@ -185,7 +190,7 @@ const subscriptionResolvers = {
       return await subscriptionResolvers.Query.subscription(parent, { orgId: org_id, name, _queryName: queryName }, context, fullQuery);
     },
 
-    subscriptionsForCluster: async(parent, {  orgId: org_id , clusterId: cluster_id  }, context, fullQuery) => {
+    subscriptionsForCluster: async(parent, { orgId: org_id , clusterId: cluster_id, tags=null }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForCluster';
@@ -222,13 +227,17 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        var subscriptions = await models.Subscription.find({
+        const query = {
           org_id,
           $or: [
             { groups: { $in: clusterGroupNames } },
             { clusterId: cluster_id },
           ],
-        }).lean({ virtuals: true });
+        };
+        if( tags ) {
+          query.tags = { $all: tags };
+        }
+        var subscriptions = await models.Subscription.find(query).lean({ virtuals: true });
         subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
       }catch(error){
         logger.error(error);
@@ -248,7 +257,7 @@ const subscriptionResolvers = {
       return subscriptions;
     },
 
-    subscriptionsForClusterByName: async(parent, {  orgId: org_id, clusterName  }, context, fullQuery) => {
+    subscriptionsForClusterByName: async(parent, { orgId: org_id, clusterName, tags=null }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForClusterByName';
@@ -259,62 +268,19 @@ const subscriptionResolvers = {
 
       checkComplexity( queryFields );
 
-      //find groups in cluster
+      // Find the cluster
       const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });
       if (!cluster) {
         throw new RazeeValidationError(context.req.t('Could not locate the cluster with clusterName {{clusterName}}', {'clusterName':clusterName}), context);
       }
-      var clusterGroupNames = [];
-      if (cluster.groups) {
-        clusterGroupNames = cluster.groups.map(l => l.name);
-      }
-      const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
-      if (clusterGroupNames) {
-        clusterGroupNames.some(group => {
-          if(allowedGroups.indexOf(group) === -1) {
-            // if some group of the sub is not in user's group list, throws an error
-            throw new RazeeForbiddenError(context.req.t('You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.', {'group.name':group.name}), context);
-          }
-          return false;
-        });
-      }
-
-      try{
-        // Return subscriptions that contain any clusterGroupNames passed in from the query
-        // examples:
-        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev'] ==> true
-        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
-        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
-        //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        var subscriptions = await models.Subscription.find({
-          org_id,
-          $or: [
-            { groups: { $in: clusterGroupNames } },
-            { clusterId: cluster.cluster_id },
-          ]
-        }).lean({ virtuals: true });
-        subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
-      }catch(error){
-        logger.error(error);
-        throw new NotFoundError(context.req.t('Could not find subscriptions.'), context);
-      }
-      if(subscriptions) {
-        subscriptions = subscriptions.map((sub)=>{
-          if(_.isUndefined(sub.channelName)){
-            sub.channelName = sub.channel;
-          }
-          return sub;
-        });
-      }
-
-      await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
-
+      // Get and return subscriptions using the cluster uuid
+      const subscriptions = await subscriptionResolvers.Query.subscriptionsForCluster( parent, {orgId: org_id, clusterId: cluster.cluster_id, tags}, context, fullQuery);
       return subscriptions;
     }
   },
 
   Mutation: {
-    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, custom: custom }, context)=>{
+    addSubscription: async (parent, { orgId: org_id, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, custom: custom, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addSubscription';
 
@@ -331,6 +297,7 @@ const subscriptionResolvers = {
         validateString( 'channel_uuid', channel_uuid );
         if( version_uuid ) validateString( 'version_uuid', version_uuid );
         if( clusterId ) validateString( 'clusterId', clusterId );
+        tags.forEach( value => { validateString( 'tags', value ); } );
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
@@ -414,7 +381,8 @@ const subscriptionResolvers = {
           version_uuid: version.uuid,
           clusterId,
           kubeOwnerId,
-          custom
+          custom,
+          tags
         };
         await models.Subscription.create( subscription );
 
@@ -443,7 +411,7 @@ const subscriptionResolvers = {
       }
     },
 
-    editSubscription: async (parent, { orgId: org_id, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, updateClusterIdentity, custom: custom }, context)=>{
+    editSubscription: async (parent, { orgId: org_id, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, updateClusterIdentity, custom: custom, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
 
@@ -459,6 +427,7 @@ const subscriptionResolvers = {
         validateString( 'channel_uuid', channel_uuid );
         if( version_uuid ) validateString( 'version_uuid', version_uuid );
         if( clusterId ) validateString( 'clusterId', clusterId );
+        tags.forEach( value => { validateString( 'tags', value ); } );
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
@@ -551,6 +520,7 @@ const subscriptionResolvers = {
           version_uuid: version.uuid,
           clusterId,
           custom,
+          tags,
           updated: Date.now(),
         };
 
