@@ -530,17 +530,15 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero' ).to.equal(0);
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
-      
-      {
-        // get subscriptions with tags
-        const result = await subscriptionApi.subscriptions(token01, {
-          orgId: org01._id,
-        }, tags=['test-tag']);
-        // subscription 02 has the tag
-        const subscriptionsWithTag = result.data.data.subscriptions;
-        expect(subscriptionsWithTag).to.have.length(1);
-        expect(subscriptionsWithTag[0].name).to.equal(subscription_02_name);
-      }
+
+      // get subscriptions with tags
+      const resultWithTags = await subscriptionApi.subscriptions(token01, {
+        orgId: org01._id,
+      }, ['test-tag']);
+      // subscription 02 has the tag
+      const subscriptionsWithTag = resultWithTags.data.data.subscriptions;
+      expect(subscriptionsWithTag).to.have.length(1);
+      expect(subscriptionsWithTag[0].name).to.equal(subscription_02_name);
 
       // Add cluster to group dev, triggering RBAC Sync as the admin user, who owns subscription 01 (dev group).  Status 'failed' expected as API is 'dummy_url'.
       await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
