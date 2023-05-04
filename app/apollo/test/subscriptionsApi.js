@@ -42,13 +42,13 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-  const subscriptions = async (token, variables) =>
+  const subscriptions = async (token, variables, tags=null) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String!) {
-            subscriptions(orgId: $orgId) {
+          query($orgId: String! ${tags?', $tags: [String!]':''}) {
+            subscriptions(orgId: $orgId ${tags?', tags: $tags':''}) {
               uuid
               orgId
               name
@@ -85,10 +85,11 @@ const subscriptionsFunc = grahqlUrl => {
                 registration 
               }
               custom
+              tags
             }
           }
         `,
-        variables,
+        variables: tags?{...variables, tags}:variables,
       },
       {
         headers: {
@@ -185,13 +186,13 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  const subscriptionsForCluster = async (token, variables) =>
+  const subscriptionsForCluster = async (token, variables, tags=null) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String!, $clusterId: String! ) {
-            subscriptionsForCluster(orgId: $orgId clusterId: $clusterId ) {
+          query($orgId: String!, $clusterId: String! ${tags?', $tags: [String!]':''} ) {
+            subscriptionsForCluster(orgId: $orgId, clusterId: $clusterId ${tags?', tags: $tags':''} ) {
               uuid
               orgId
               name
@@ -203,10 +204,10 @@ const subscriptionsFunc = grahqlUrl => {
               created
               updated
               custom
+            }
           }
-        }
-      `,
-        variables,
+        `,
+        variables: tags?{...variables, tags}:variables,
       },
       {
         headers: {

@@ -335,7 +335,7 @@ const createSubscriptions = async () => {
     version_uuid: channelVersion_01_uuid,
   });
 
-  // Subscription 02 is owned by non-admin user
+  // Subscription 02 is owned by non-admin user and has tags
   await models.Subscription.create({
     _id: 'fake_id_2',
     org_id: org01._id,
@@ -347,6 +347,7 @@ const createSubscriptions = async () => {
     channel: channel_01_name,
     version: channelVersion_02_name,
     version_uuid: channelVersion_02_uuid,
+    tags: ['test-tag']
   });
 
   // Subscription duplicate is owned by non-admin user
@@ -529,6 +530,17 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero' ).to.equal(0);
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
+      
+      {
+        // get subscriptions with tags
+        const result = await subscriptionApi.subscriptions(token01, {
+          orgId: org01._id,
+        }, tags=['test-tag']);
+        // subscription 02 has the tag
+        const subscriptionsWithTag = result.data.data.subscriptions;
+        expect(subscriptionsWithTag).to.have.length(1);
+        expect(subscriptionsWithTag[0].name).to.equal(subscription_02_name);
+      }
 
       // Add cluster to group dev, triggering RBAC Sync as the admin user, who owns subscription 01 (dev group).  Status 'failed' expected as API is 'dummy_url'.
       await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
@@ -561,12 +573,12 @@ describe('subscription graphql test suite', () => {
       const result3 = await subscriptionApi.subscriptions(token77, {
         orgId: org77._id,
       });
-      expect(result3.data.data.subscriptions).to.have.length(2);
-      expect(Object.keys(result3.data.data.subscriptions[1].custom)).to.have.length(2);
+      const subscriptions3 = result3.data.data.subscriptions;
+      expect(subscriptions3).to.have.length(2);
+      expect(Object.keys(subscriptions3[1].custom)).to.have.length(2);
 
       // subscription 2 should have cluster details
       expect( result3.data.data.subscriptions[1].cluster ).to.exist;
-
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -652,12 +664,21 @@ describe('subscription graphql test suite', () => {
 
   it('get subscriptions by clusterId', async () => {
     try {
+      // Cluster 01 should have one subscription
       const result = await subscriptionApi.subscriptionsForCluster(adminToken, {
         orgId: org01._id,
         clusterId: 'cluster_01',
       });
       const subscriptionsForCluster = result.data.data.subscriptionsForCluster;
       expect(subscriptionsForCluster[0].uuid).to.equal(subscription_01_uuid);
+
+      // Same query filtered by tags should have no results
+      const result2 = await subscriptionApi.subscriptionsForCluster(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+      }, ['tag that does not exist']);
+      const subscriptionsForCluster2 = result2.data.data.subscriptionsForCluster;
+      expect(subscriptionsForCluster2).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
