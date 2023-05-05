@@ -411,7 +411,7 @@ const subscriptionResolvers = {
       }
     },
 
-    editSubscription: async (parent, { orgId: org_id, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, updateClusterIdentity, custom: custom, tags=[] }, context)=>{
+    editSubscription: async (parent, { orgId: org_id, uuid, name, groups=[], channelUuid: channel_uuid, versionUuid: version_uuid, version: newVersion, clusterId=null, updateClusterIdentity, custom: custom, tags=null }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'editSubscription';
 
@@ -427,7 +427,7 @@ const subscriptionResolvers = {
         validateString( 'channel_uuid', channel_uuid );
         if( version_uuid ) validateString( 'version_uuid', version_uuid );
         if( clusterId ) validateString( 'clusterId', clusterId );
-        tags.forEach( value => { validateString( 'tags', value ); } );
+        if( tags ) tags.forEach( value => { validateString( 'tags', value ); } );
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
@@ -520,9 +520,9 @@ const subscriptionResolvers = {
           version_uuid: version.uuid,
           clusterId,
           custom,
-          tags,
           updated: Date.now(),
         };
+        if( tags ) sets.tags = tags;  // Update tags if specified, else retain previous value (if any)
 
         // RBAC Sync
         if( updateClusterIdentity ) {

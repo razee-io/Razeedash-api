@@ -209,7 +209,7 @@ const serviceResolvers = {
       }
     },
 
-    editServiceSubscription: async (parent, { orgId, ssid, name, channelUuid, versionUuid, tags=[] }, context) => {
+    editServiceSubscription: async (parent, { orgId, ssid, name, channelUuid, versionUuid, tags=null }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'editServiceSubscription';
 
@@ -246,7 +246,15 @@ const serviceResolvers = {
 
         logger.info( { req_id, user, orgId, ssid }, `${queryName} saving` );
 
-        const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid, tags, updated: Date.now() };
+        const sets = {
+          name, 
+          channelName: channel.name, 
+          channel_uuid: channelUuid, 
+          version: version.name, 
+          version_uuid: versionUuid, 
+          updated: Date.now()
+        }
+        if( tags ) sets.tags = tags;  // Update tags if specified, else retain previous value (if any)
         await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
 
         pubSub.channelSubChangedFunc({ org_id: serviceSubscription.clusterOrgId }, context); // notify cluster should re-fetch its subscriptions
