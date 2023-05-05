@@ -155,15 +155,24 @@ describe('Service subscription graphql test suite', () => {
   });
 
   it('Get all subscriptions should return four items and correct resource data', async () => {
-    const { data: result } =
+    // Get all
+    const { data: result1 } =
       await queries.allSubscriptions(user02superUserToken, {
         orgId: testData.org01._id
       });
-    printResults(result); // one existing subscription, one existing service subscription, two service subscriptions added by one of the previous tests
-    expect(result.data.subscriptions.length).to.equal(4);
-    const ss = result.data.subscriptions.find(i => i.uuid === testData.serSub1.uuid);
+    printResults(result1); // one existing subscription, one existing service subscription, two service subscriptions added by one of the previous tests
+    expect(result1.data.subscriptions.length).to.equal(4);
+    const ss = result1.data.subscriptions.find(i => i.uuid === testData.serSub1.uuid);
     expect(ss.subscriptionType).to.equal('ServiceSubscription');
     expect(ss.remoteResources[0].cluster.clusterId).to.equal(testData.cluster2Data.cluster_id);
+
+    // With tags matching
+    const { data: result2 } =
+      await queries.allSubscriptions(user02superUserToken, {
+        orgId: testData.org01._id
+      }, ['new-test-tag']);
+    printResults(result2); // one added by previous test has tags
+    expect(result2.data.subscriptions.length).to.equal(1);
   });
 
   it('Get service subscription should return correct object', async () => {
