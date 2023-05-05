@@ -53,9 +53,9 @@ extend type Query {
     subscriptionType(orgId: String! @sv, id: ID! @sv): SubscriptionType!
 
     """
-    Gets all service subscriptions for user orgId, matching tags if specified
+    Gets all service subscriptions for user orgId, matching clusterId and tags if specified
     """
-    serviceSubscriptions(orgId: String! @sv, tags: [String!]): [ServiceSubscription]
+    serviceSubscriptions(orgId: String! @sv, clusterId: String, tags: [String!]): [ServiceSubscription]
 
     """
     Get a single service subscription

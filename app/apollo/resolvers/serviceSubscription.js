@@ -65,7 +65,7 @@ const serviceResolvers = {
       throw new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', { 'id': id }), context);
     },
 
-    serviceSubscriptions: async(parent, { orgId, tags=null }, context, fullQuery) => {
+    serviceSubscriptions: async(parent, { orgId, clusterId=null, tags=null }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscriptions';
@@ -81,6 +81,9 @@ const serviceResolvers = {
         checkComplexity( queryFields );
 
         const query = {org_id: orgId};
+        if( clusterId ) {
+          query.clusterId = clusterId;
+        }
         if( tags ) {
           query.tags = { $all: tags };
         }
@@ -90,16 +93,20 @@ const serviceResolvers = {
           const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
           serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
-      }catch(error){
-        logger.error(error);
-        throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
+
+        serviceSubscriptions.forEach(i => i.ssid = i.uuid);
+
+        await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
+
+        return serviceSubscriptions;
       }
-
-      serviceSubscriptions.forEach(i => i.ssid = i.uuid);
-
-      await applyQueryFieldsToSubscriptions(serviceSubscriptions, queryFields, { orgId, servSub: true }, context);
-
-      return serviceSubscriptions;
+      catch (error) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+      }
     },
 
     serviceSubscription: async (parent, { orgId, ssid }, context, fullQuery) => {
