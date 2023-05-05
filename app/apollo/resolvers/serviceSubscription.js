@@ -253,7 +253,7 @@ const serviceResolvers = {
           version: version.name, 
           version_uuid: versionUuid, 
           updated: Date.now()
-        }
+        };
         if( tags ) sets.tags = tags;  // Update tags if specified, else retain previous value (if any)
         await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
 
