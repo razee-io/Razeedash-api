@@ -64,7 +64,7 @@ const queries = grahqlUrl => {
               tags
             }
           } `,
-          variables: tags?{...variables, tags}:variables,
+        variables: tags?{...variables, tags}:variables,
       },
       {
         headers: {
