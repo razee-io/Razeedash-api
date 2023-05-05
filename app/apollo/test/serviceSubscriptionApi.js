@@ -18,15 +18,15 @@ const axios = require('axios');
 
 const queries = grahqlUrl => {
 
-  const addServiceSubscription = async (token, variables, tags=null) =>
+  const addServiceSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $clusterId: String!, $channelUuid: String!, $versionUuid: String! ${tags?', $tags: [String!]':''}) {
-            addServiceSubscription(orgId: $orgId, name: $name, clusterId: $clusterId, channelUuid: $channelUuid, versionUuid: $versionUuid ${tags?', tags: $tags':''})
+          mutation($orgId: String!, $name: String!, $clusterId: String!, $channelUuid: String!, $versionUuid: String! ${variables.tags?', $tags: [String!]':''}) {
+            addServiceSubscription(orgId: $orgId, name: $name, clusterId: $clusterId, channelUuid: $channelUuid, versionUuid: $versionUuid ${variables.tags?', tags: $tags':''})
           }  `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -52,19 +52,20 @@ const queries = grahqlUrl => {
       },
     );
 
-  const serviceSubscriptions = async (token, variables, tags=null) =>
+  const serviceSubscriptions = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String! ${tags?', $tags: [String!]':''}) {
-            serviceSubscriptions(orgId: $orgId ${tags?', tags: $tags':''}) {
+          query($orgId: String! ${variables.clusterId?', $clusterId: String':''} ${variables.tags?', $tags: [String!]':''}) {
+            serviceSubscriptions(orgId: $orgId ${variables.clusterId?', clusterId: $clusterId':''} ${variables.tags?', tags: $tags':''}) {
               ssid
               versionUuid
               tags
+              clusterId
             }
           } `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -73,13 +74,13 @@ const queries = grahqlUrl => {
       },
     );
 
-  const allSubscriptions = async (token, variables, tags=null) =>
+  const allSubscriptions = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-        query ($orgId: String! ${tags?', $tags: [String!]':''}) {
-          subscriptions: allSubscriptions(orgId: $orgId ${tags?', tags: $tags':''}) {
+        query ($orgId: String! ${variables.tags?', $tags: [String!]':''}) {
+          subscriptions: allSubscriptions(orgId: $orgId ${variables.tags?', tags: $tags':''}) {
             ... on ServiceSubscription {
               uuid: ssid
               subscriptionType: __typename
@@ -102,7 +103,7 @@ const queries = grahqlUrl => {
             }
           }
         } `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -143,15 +144,15 @@ const queries = grahqlUrl => {
       },
     );
 
-  const editServiceSubscription = async (token, variables, tags=null) =>
+  const editServiceSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-        mutation ($orgId: String!, $ssid: String!  $name: String!, $channelUuid: String!, $versionUuid: String! ${tags?', $tags: [String!]':''}) {
-          editServiceSubscription(orgId: $orgId, ssid: $ssid, name: $name, channelUuid: $channelUuid, versionUuid: $versionUuid ${tags?', tags: $tags':''})
+        mutation ($orgId: String!, $ssid: String!  $name: String!, $channelUuid: String!, $versionUuid: String! ${variables.tags?', $tags: [String!]':''}) {
+          editServiceSubscription(orgId: $orgId, ssid: $ssid, name: $name, channelUuid: $channelUuid, versionUuid: $versionUuid ${variables.tags?', tags: $tags':''})
         } `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {

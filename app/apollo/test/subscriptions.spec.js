@@ -534,7 +534,8 @@ describe('subscription graphql test suite', () => {
       // get subscriptions with tags
       const resultWithTags = await subscriptionApi.subscriptions(token01, {
         orgId: org01._id,
-      }, ['test-tag']);
+        tags: ['test-tag'],
+      });
       // subscription 02 has the tag
       const subscriptionsWithTag = resultWithTags.data.data.subscriptions;
       expect(subscriptionsWithTag).to.have.length(1);
@@ -674,7 +675,8 @@ describe('subscription graphql test suite', () => {
       const result2 = await subscriptionApi.subscriptionsForCluster(adminToken, {
         orgId: org01._id,
         clusterId: 'cluster_01',
-      }, ['tag that does not exist']);
+        tags: ['tag that does not exist'],
+      });
       const subscriptionsForCluster2 = result2.data.data.subscriptionsForCluster;
       expect(subscriptionsForCluster2).to.have.length(0);
     } catch (error) {
@@ -714,7 +716,8 @@ describe('subscription graphql test suite', () => {
         groups:['dev'],
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_01_uuid,
-      }, ['new-test-tag']);
+        tags: ['new-test-tag'],
+      });
       expect(addSubscription1.data.data.addSubscription.uuid).to.be.an('string');
 
       // add subscription without tags, but exceeding subscription limit
@@ -793,8 +796,9 @@ describe('subscription graphql test suite', () => {
         custom: {
           'forEnv': 'new',
           'forType': 'new'
-        }
-      }, ['new-test-tag']);
+        },
+        tags: ['new-test-tag'],
+      });
       expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
       const result4 = await subscriptionApi.subscription(token77, {

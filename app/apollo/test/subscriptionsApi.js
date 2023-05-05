@@ -42,13 +42,13 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-  const subscriptions = async (token, variables, tags=null) =>
+  const subscriptions = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String! ${tags?', $tags: [String!]':''}) {
-            subscriptions(orgId: $orgId ${tags?', tags: $tags':''}) {
+          query($orgId: String! ${variables.tags?', $tags: [String!]':''}) {
+            subscriptions(orgId: $orgId ${variables.tags?', tags: $tags':''}) {
               uuid
               orgId
               name
@@ -89,7 +89,7 @@ const subscriptionsFunc = grahqlUrl => {
             }
           }
         `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -187,13 +187,13 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  const subscriptionsForCluster = async (token, variables, tags=null) =>
+  const subscriptionsForCluster = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          query($orgId: String!, $clusterId: String! ${tags?', $tags: [String!]':''} ) {
-            subscriptionsForCluster(orgId: $orgId, clusterId: $clusterId ${tags?', tags: $tags':''} ) {
+          query($orgId: String!, $clusterId: String! ${variables.tags?', $tags: [String!]':''} ) {
+            subscriptionsForCluster(orgId: $orgId, clusterId: $clusterId ${variables.tags?', tags: $tags':''} ) {
               uuid
               orgId
               name
@@ -208,7 +208,7 @@ const subscriptionsFunc = grahqlUrl => {
             }
           }
         `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -246,18 +246,18 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-  const addSubscription = async (token, variables, tags=null) =>
+  const addSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${tags?', $tags: [String!]':''}) {
-            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${tags?', tags: $tags':''}){
+          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${variables.tags?', $tags: [String!]':''}) {
+            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${variables.tags?', tags: $tags':''}){
 			        uuid
             }
           }
         `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {
@@ -266,19 +266,19 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  const editSubscription = async (token, variables, tags=null) =>
+  const editSubscription = async (token, variables) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${tags?', $tags: [String!]':''}) {
-            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${tags?', tags: $tags':''}) {
+          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${variables.tags?', $tags: [String!]':''}) {
+            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${variables.tags?', tags: $tags':''}) {
               uuid
               success
             }
           }
         `,
-        variables: tags?{...variables, tags}:variables,
+        variables,
       },
       {
         headers: {

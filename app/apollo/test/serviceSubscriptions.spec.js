@@ -138,20 +138,31 @@ describe('Service subscription graphql test suite', () => {
         clusterId: testData.cluster2Data.cluster_id,
         channelUuid: testData.channelData.uuid,
         versionUuid: testData.channelData.versions[0].uuid,
-      }, 'new-test-tag');
+        tags: [`new-test-tag`],
+      });
     printResults(result2);
     expect(result2.data.addServiceSubscription).to.be.an('string');
   });
 
-  it('Get service subscriptions should return three items', async () => {
-    const { data: result } =
+  it('Get service subscriptions should return all items', async () => {
+    // querying all in the org should return three
+    const { data: result1 } =
       await queries.serviceSubscriptions(user02superUserToken, {
         orgId: testData.org01._id
       });
-    printResults(result); // two items added by one of the previous tests
-    expect(result.data.serviceSubscriptions.length).to.equal(3);
-    expect(result.data.serviceSubscriptions.find(i => i.ssid === testData.serSub1._id)).to.be.an('object');
-    expect(result.data.serviceSubscriptions.find(i => (i.tags && i.tags[0]=='new-test-tag'))).to.be.an('object');
+    printResults(result1); // two items added by one of the previous tests
+    expect(result1.data.serviceSubscriptions.length).to.equal(3);
+    expect(result1.data.serviceSubscriptions.find(i => i.ssid === testData.serSub1._id)).to.be.an('object');
+    expect(result1.data.serviceSubscriptions.find(i => (i.tags && i.tags[0]=='new-test-tag'))).to.be.an('object');
+
+    // querying by cluster2 should return the same three
+    const { data: result2 } =
+      await queries.serviceSubscriptions(user02superUserToken, {
+        orgId: testData.org01._id,
+        clusterId: testData.cluster2Data.cluster_id,
+      });
+    printResults(result2); // two items added by one of the previous tests
+    expect(result2.data.serviceSubscriptions.length).to.equal(3);
   });
 
   it('Get all subscriptions should return four items and correct resource data', async () => {
@@ -169,8 +180,9 @@ describe('Service subscription graphql test suite', () => {
     // With tags matching
     const { data: result2 } =
       await queries.allSubscriptions(user02superUserToken, {
-        orgId: testData.org01._id
-      }, ['new-test-tag']);
+        orgId: testData.org01._id,
+        tags: ['new-test-tag'],
+      });
     printResults(result2); // one added by previous test has tags
     expect(result2.data.subscriptions.length).to.equal(1);
   });
@@ -214,8 +226,9 @@ describe('Service subscription graphql test suite', () => {
         ssid: testData.serSub1._id,
         name: newName,
         channelUuid: testData.serSub1.channelUuid,
-        versionUuid: testData.serSub1.versionUuid
-      },['new-test-tag']);
+        versionUuid: testData.serSub1.versionUuid,
+        tags: ['new-test-tag'],
+      });
     printResults(result);
     expect(result.data.editServiceSubscription).to.equal(testData.serSub1._id);
     const ss = await models.ServiceSubscription.findById(testData.serSub1._id);
