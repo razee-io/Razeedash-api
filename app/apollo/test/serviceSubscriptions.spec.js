@@ -138,7 +138,7 @@ describe('Service subscription graphql test suite', () => {
         clusterId: testData.cluster2Data.cluster_id,
         channelUuid: testData.channelData.uuid,
         versionUuid: testData.channelData.versions[0].uuid,
-        tags: [`new-test-tag`],
+        tags: ['new-test-tag'],
       });
     printResults(result2);
     expect(result2.data.addServiceSubscription).to.be.an('string');
@@ -233,7 +233,6 @@ describe('Service subscription graphql test suite', () => {
     expect(result.data.editServiceSubscription).to.equal(testData.serSub1._id);
     const ss = await models.ServiceSubscription.findById(testData.serSub1._id);
     expect(ss.name).to.equal(newName);
-    console.log( `PLC ss: ${JSON.stringify( ss, null, 2 )}` );
     expect(ss.tags).to.be.an('array');
     expect(ss.tags[0]).to.equal('new-test-tag');
   });
