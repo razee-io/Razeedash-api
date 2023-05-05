@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -707,15 +707,17 @@ describe('subscription graphql test suite', () => {
 
   it('add subscriptions with versionUuid references', async () => {
     try {
+      // add subscription with tags
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
         groups:['dev'],
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_01_uuid,
-      });
+      }, ['new-test-tag']);
       expect(addSubscription1.data.data.addSubscription.uuid).to.be.an('string');
 
+      // add subscription without tags, but exceeding subscription limit
       const addSubscription2 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
         name: 'a_random_name2',
@@ -780,7 +782,7 @@ describe('subscription graphql test suite', () => {
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
 
-      //step1, edit the subscription with custom attribute
+      //step1, edit the subscription with custom attribute and tags
       const result3 = await subscriptionApi.editSubscription(token77, {
         orgId: org77._id,
         uuid: subscription_04_uuid,
@@ -792,7 +794,7 @@ describe('subscription graphql test suite', () => {
           'forEnv': 'new',
           'forType': 'new'
         }
-      });
+      }, ['new-test-tag']);
       expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
       const result4 = await subscriptionApi.subscription(token77, {
@@ -802,6 +804,7 @@ describe('subscription graphql test suite', () => {
       expect(result4.data.data.subscription.name).to.equal('new-name');
       expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
       expect(result4.data.data.subscription.custom.forType).to.equal('new');
+      expect(result4.data.data.subscription.tags[0]).to.equal('new-test-tag');
 
     } catch (error) {
       if (error.response) {

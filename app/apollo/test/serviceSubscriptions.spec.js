@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
 const resourceFunc = require('./api');
-const serviceSubscriptionQueries = require('./serviceSubscriptionQueries');
+const serviceSubscriptionApi = require('./serviceSubscriptionApi');
 
 const apollo = require('../index');
 const { GraphqlPubSub } = require('../subscription');
@@ -47,7 +47,7 @@ const graphqlPort = 18011;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
 
 const resourceApi = resourceFunc(graphqlUrl);
-const queries = serviceSubscriptionQueries(graphqlUrl);
+const queries = serviceSubscriptionApi(graphqlUrl);
 
 const orgAdminKey = 'huge-secret';
 const user01cred = { email: 'user01@us.ibm.com', password: 'password123' };
@@ -118,7 +118,8 @@ describe('Service subscription graphql test suite', () => {
   });
 
   it('Add a service subscription', async () => {
-    const { data: result } =
+    // without tags
+    const { data: result1 } =
       await queries.addServiceSubscription(user02superUserToken, {
         orgId: testData.org01._id,
         name: 'my awesome new service subscription',
@@ -126,28 +127,40 @@ describe('Service subscription graphql test suite', () => {
         channelUuid: testData.channelData.uuid,
         versionUuid: testData.channelData.versions[0].uuid,
       });
-    printResults(result);
-    expect(result.data.addServiceSubscription).to.be.an('string');
+    printResults(result1);
+    expect(result1.data.addServiceSubscription).to.be.an('string');
+
+    // with tags
+    const { data: result2 } =
+      await queries.addServiceSubscription(user02superUserToken, {
+        orgId: testData.org01._id,
+        name: 'my awesome new service subscription with tags',
+        clusterId: testData.cluster2Data.cluster_id,
+        channelUuid: testData.channelData.uuid,
+        versionUuid: testData.channelData.versions[0].uuid,
+      }, 'new-test-tag');
+    printResults(result2);
+    expect(result2.data.addServiceSubscription).to.be.an('string');
   });
 
-  it('Get service subscriptions should return two items', async () => {
+  it('Get service subscriptions should return three items', async () => {
     const { data: result } =
       await queries.serviceSubscriptions(user02superUserToken, {
         orgId: testData.org01._id
       });
-    printResults(result); // second item is added by one of the previous tests
-    expect(result.data.serviceSubscriptions.length).to.equal(2);
-    expect(result.data.serviceSubscriptions
-      .find(i => i.ssid === testData.serSub1._id)).to.be.an('object');
+    printResults(result); // two items added by one of the previous tests
+    expect(result.data.serviceSubscriptions.length).to.equal(3);
+    expect(result.data.serviceSubscriptions.find(i => i.ssid === testData.serSub1._id)).to.be.an('object');
+    expect(result.data.serviceSubscriptions.find(i => (i.tags && i.tags[0]=='new-test-tag'))).to.be.an('object');
   });
 
-  it('Get all subscriptions should return three items and correct resource data', async () => {
+  it('Get all subscriptions should return four items and correct resource data', async () => {
     const { data: result } =
       await queries.allSubscriptions(user02superUserToken, {
         orgId: testData.org01._id
       });
-    printResults(result); // two existing and one added by one of the previous tests
-    expect(result.data.subscriptions.length).to.equal(3);
+    printResults(result); // one existing subscription, one existing service subscription, two service subscriptions added by one of the previous tests
+    expect(result.data.subscriptions.length).to.equal(4);
     const ss = result.data.subscriptions.find(i => i.uuid === testData.serSub1.uuid);
     expect(ss.subscriptionType).to.equal('ServiceSubscription');
     expect(ss.remoteResources[0].cluster.clusterId).to.equal(testData.cluster2Data.cluster_id);
@@ -179,7 +192,7 @@ describe('Service subscription graphql test suite', () => {
         orgId: testData.org01._id
       });
     printResults(result);
-    expect(result.data.serviceSubscriptions.length).to.equal(2);
+    expect(result.data.serviceSubscriptions.length).to.equal(3);
   });
 
   // Pre-defined cluster cluster2Data.cluster_id is now deleted, do not use it in the tests below
@@ -193,11 +206,14 @@ describe('Service subscription graphql test suite', () => {
         name: newName,
         channelUuid: testData.serSub1.channelUuid,
         versionUuid: testData.serSub1.versionUuid
-      });
+      },['new-test-tag']);
     printResults(result);
     expect(result.data.editServiceSubscription).to.equal(testData.serSub1._id);
     const ss = await models.ServiceSubscription.findById(testData.serSub1._id);
     expect(ss.name).to.equal(newName);
+    console.log( `PLC ss: ${JSON.stringify( ss, null, 2 )}` );
+    expect(ss.tags).to.be.an('array');
+    expect(ss.tags[0]).to.equal('new-test-tag');
   });
 
   it('Remove service subscription should remove the object, even if it targets removed cluster', async () => {

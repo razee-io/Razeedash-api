@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,7 @@ const subscriptionsFunc = grahqlUrl => {
                 }
               }
               custom
+              tags
           }
         }
       `,
@@ -245,18 +246,18 @@ const subscriptionsFunc = grahqlUrl => {
         },
       },
     );
-  const addSubscription = async (token, variables) =>
+  const addSubscription = async (token, variables, tags=null) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON) {
-            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom){
+          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${tags?', $tags: [String!]':''}) {
+            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${tags?', tags: $tags':''}){
 			        uuid
             }
           }
         `,
-        variables,
+        variables: tags?{...variables, tags}:variables,
       },
       {
         headers: {
@@ -265,19 +266,19 @@ const subscriptionsFunc = grahqlUrl => {
       },
     );
 
-  const editSubscription = async (token, variables) =>
+  const editSubscription = async (token, variables, tags=null) =>
     axios.post(
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON) {
-            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom) {
+          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${tags?', $tags: [String!]':''}) {
+            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${tags?', tags: $tags':''}) {
               uuid
               success
             }
           }
         `,
-        variables,
+        variables: tags?{...variables, tags}:variables,
       },
       {
         headers: {
