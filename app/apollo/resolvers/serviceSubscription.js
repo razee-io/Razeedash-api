@@ -247,11 +247,11 @@ const serviceResolvers = {
         logger.info( { req_id, user, orgId, ssid }, `${queryName} saving` );
 
         const sets = {
-          name, 
-          channelName: channel.name, 
-          channel_uuid: channelUuid, 
-          version: version.name, 
-          version_uuid: versionUuid, 
+          name,
+          channelName: channel.name,
+          channel_uuid: channelUuid,
+          version: version.name,
+          version_uuid: versionUuid,
           updated: Date.now()
         };
         if( tags ) sets.tags = tags;  // Update tags if specified, else retain previous value (if any)
