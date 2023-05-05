@@ -68,7 +68,7 @@ const organizationResolvers = {
         return foundOrgKey;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -159,7 +159,7 @@ const organizationResolvers = {
       }
       catch( error ) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -258,7 +258,7 @@ const organizationResolvers = {
       }
       catch( error ) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -394,7 +394,7 @@ const organizationResolvers = {
       }
       catch( error ) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -511,7 +511,7 @@ const organizationResolvers = {
       }
       catch( error ) {
         // Note: if using an external auth plugin, it's organization schema must define the OrgKeys2 attribute else query will throw an error.
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
