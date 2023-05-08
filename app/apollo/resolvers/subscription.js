@@ -245,7 +245,7 @@ const subscriptionResolvers = {
             return false;
           });
         }
-        let subscriptions = [];
+        let subs = [];
         try{
           // Return subscriptions that contain any clusterGroupNames passed in from the query
           // examples:
