@@ -50,19 +50,28 @@ const serviceResolvers = {
 
       logger.debug({ req_id, user, orgId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
+      try {
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
-      let subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
-      if (subscription) {
-        return 'SERVICE';
+        let subscription = await models.ServiceSubscription.findOne({ _id: id, org_id: orgId }).lean(); // search only in the user org
+        if (subscription) {
+          return 'SERVICE';
+        }
+
+        subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean(); // search only in the user org
+        if (subscription) {
+          return 'USER';
+        }
+
+        throw new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', { 'id': id }), context);
       }
-
-      subscription = await models.Subscription.findOne({ uuid: id, org_id: orgId }, {}).lean(); // search only in the user org
-      if (subscription) {
-        return 'USER';
+      catch( error ) {
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-
-      throw new NotFoundError(context.req.t('Subscription { id: "{{id}}" } not found.', { 'id': id }), context);
     },
 
     serviceSubscriptions: async(parent, { orgId, clusterId=null, tags=null }, context, fullQuery) => {
@@ -100,7 +109,7 @@ const serviceResolvers = {
 
         return serviceSubscriptions;
       }
-      catch (error) {
+      catch( error ) {
         logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
@@ -117,15 +126,24 @@ const serviceResolvers = {
 
       logger.debug({ req_id, user, orgId, ssid }, `${queryName} enter`);
 
-      const allServiceSubscriptions = await serviceResolvers.Query.serviceSubscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
+      try {
+        const allServiceSubscriptions = await serviceResolvers.Query.serviceSubscriptions(parent, { orgId }, { models, me, req_id, logger }, fullQuery);
 
-      const serviceSubscription = allServiceSubscriptions.find((sub) => {
-        return (sub.ssid == ssid);
-      });
-      if (!serviceSubscription) { // does not exist or user does not have right to see it
-        throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
+        const serviceSubscription = allServiceSubscriptions.find((sub) => {
+          return (sub.ssid == ssid);
+        });
+        if (!serviceSubscription) { // does not exist or user does not have right to see it
+          throw new NotFoundError(context.req.t('Service subscription with ssid "{{ssid}}" not found.', { 'ssid': ssid }), context);
+        }
+        return serviceSubscription;
       }
-      return serviceSubscription;
+      catch( error ) {
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+      }
     },
 
     allSubscriptions: async (parent, { orgId, tags=null }, context, fullQuery) => {
@@ -207,8 +225,9 @@ const serviceResolvers = {
 
         logger.info( {req_id, user, orgId, name, clusterId, channelUuid, versionUuid }, `${queryName} returning` );
         return ssid;
-      } catch (error) {
-        logger.error({ req_id, user, orgId, name, clusterId, channelUuid, versionUuid, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -268,8 +287,9 @@ const serviceResolvers = {
 
         logger.info( { req_id, user, orgId, ssid }, `${queryName} returning` );
         return ssid;
-      } catch (error) {
-        logger.error({ req_id, user, orgId, ssid, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -305,8 +325,9 @@ const serviceResolvers = {
 
         logger.info( {req_id, user, orgId, ssid}, `${queryName} returning` );
         return ssid;
-      } catch (error) {
-        logger.error({ req_id, user, orgId, ssid, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id: orgId, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }

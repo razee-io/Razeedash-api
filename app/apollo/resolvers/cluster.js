@@ -126,9 +126,13 @@ const clusterResolvers = {
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
         return cluster;
-      } catch (error) {
-        logger.error({req_id, user, org_id, clusterId, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end cluster by _id
 
@@ -187,9 +191,13 @@ const clusterResolvers = {
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
         return cluster;
-      } catch (error) {
-        logger.error({req_id, user, org_id, clusterName, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end clusterByClusterName
 
@@ -238,9 +246,13 @@ const clusterResolvers = {
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end clustersByOrgId
 
@@ -276,9 +288,13 @@ const clusterResolvers = {
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end inactiveClusters
 
@@ -334,9 +350,13 @@ const clusterResolvers = {
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end clusterSearch
 
@@ -380,9 +400,13 @@ const clusterResolvers = {
 
         for (const item of results){ item.id = item._id; }
         return results;
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end clusterCountByKubeVersion
   }, // end query
@@ -441,9 +465,13 @@ const clusterResolvers = {
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
           url: await getCleanupUrl( org_id, context ),
         };
-      } catch (error) {
-        logger.error({req_id, user, org_id, cluster_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end delete cluster by org_id and cluster_id
 
@@ -504,9 +532,13 @@ const clusterResolvers = {
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
           url: await getCleanupUrl( org_id, context ),
         };
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end delete cluster by org_id
 
@@ -602,14 +634,13 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
         return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, registration, error }, `${queryName} error encountered: ${error.message}`);
-
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
-        // Note: mongo/mongoose errors will not have a 'message' attribute, look like: { index: 0, code: 11000, keyPattern: ....}
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message || `code ${error.code}`}), context);
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end registerCluster
 
@@ -652,9 +683,13 @@ const clusterResolvers = {
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;
         }
-      } catch (error) {
-        logger.error({ req_id, user, org_id, cluster_id, error }, `${queryName} error encountered: ${error.message}`);
-        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. {{error.message}}', {'queryName':queryName, 'error.message':error.message}), context);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }, // end enableRegistrationUrl
   }
