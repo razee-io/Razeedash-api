@@ -52,14 +52,26 @@ const channelResolvers = {
       try{
         checkComplexity( queryFields );
 
-        var channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
-        await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
-      }catch(error){
-        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
-        throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
-      }
+        let channels;
+        try {
+          channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
+        }
+        catch(error){
+          logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
+          throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+        }
 
-      return channels;
+        await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
+
+        return channels;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
+      }
     },
     channel: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
@@ -73,17 +85,22 @@ const channelResolvers = {
       try{
         checkComplexity( queryFields );
 
-        var channel = await models.Channel.findOne({org_id, uuid });
+        const channel = await models.Channel.findOne({org_id, uuid });
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         await applyQueryFieldsToChannels([channel], queryFields, { orgId: org_id }, context);
-      }catch(error){
-        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
+
+        return channel;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-      return channel;
     },
     channelByName: async(parent, { orgId: org_id, name }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
@@ -113,8 +130,12 @@ const channelResolvers = {
         await applyQueryFieldsToChannels([channel], queryFields, { orgId: org_id }, context);
 
         return channel;
-      }catch(error){
-        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
@@ -137,11 +158,15 @@ const channelResolvers = {
         channels = await filterChannelsToAllowed(me, org_id, ACTIONS.READ, TYPES.CHANNEL, channels, context);
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
-      }catch(error){
-        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
+        return channels;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-      return channels;
     },
     channelVersionByName: async(parent, { orgId: org_id, channelName, versionName }, context, fullQuery) => {
       const { me, req_id, logger } = context;
@@ -221,8 +246,12 @@ const channelResolvers = {
         }
 
         return deployableVersionObj;
-      }catch(error){
-        logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     }

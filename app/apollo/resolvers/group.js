@@ -51,9 +51,13 @@ const groupResolvers = {
         await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
 
         return groups;
-      } catch (error) {
-        logger.error({req_id, user, org_id, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     group: async(parent, { orgId: org_id, uuid }, context, fullQuery) => {
@@ -77,9 +81,13 @@ const groupResolvers = {
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
 
         return group;
-      } catch (error) {
-        logger.error({req_id, user, org_id, uuid, error } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
     groupByName: async(parent, { orgId: org_id, name }, context, fullQuery) => {
@@ -111,9 +119,13 @@ const groupResolvers = {
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
 
         return group;
-      } catch (error) {
-        logger.error({req_id, user, org_id, name } , `${queryName} error encountered: ${error.message}`);
-        throw error;
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        if (error instanceof BasicRazeeError || error instanceof ValidationError) {
+          throw error;
+        }
+        throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
     },
   },
@@ -155,8 +167,9 @@ const groupResolvers = {
         return {
           uuid,
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, name, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -208,8 +221,9 @@ const groupResolvers = {
           uuid: group.uuid,
           success: true,
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, uuid, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -274,8 +288,9 @@ const groupResolvers = {
           uuid: group.uuid,
           success: true,
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, name, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -376,8 +391,9 @@ const groupResolvers = {
         return {
           modified: res.modifiedCount
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, groupUuids, clusterIds, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -447,8 +463,9 @@ const groupResolvers = {
         return {
           modified: res.modifiedCount
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, groupUuids, clusterIds, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -525,8 +542,9 @@ const groupResolvers = {
         return {
           modified: res.modifiedCount
         };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, groupUuids, clusterId, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -587,8 +605,9 @@ const groupResolvers = {
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, uuid, clusters, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -640,8 +659,9 @@ const groupResolvers = {
 
         logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
         return {modified: res.modifiedCount };
-      } catch (error) {
-        logger.error({ req_id, user, org_id, uuid, clusters, error }, `${queryName} error encountered: ${error.message}`);
+      }
+      catch( error ) {
+        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
