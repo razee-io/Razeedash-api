@@ -265,7 +265,7 @@ const subscriptionResolvers = {
             query.tags = { $all: tags };
           }
           subs = await models.Subscription.find(query).lean({ virtuals: true });
-          subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+          subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
         }catch(error){
           logger.error(error);
           throw new NotFoundError(context.req.t('Could not find subscriptions.'), context);
