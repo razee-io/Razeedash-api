@@ -668,6 +668,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         clusterId: 'cluster_01',
       });
+      console.log( `subscriptions by clusterId result.data: ${JSON.stringify(result.data,null,2)}` );
       const subscriptionsForCluster = result.data.data.subscriptionsForCluster;
       expect(subscriptionsForCluster[0].uuid).to.equal(subscription_01_uuid);
 

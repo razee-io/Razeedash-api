@@ -137,7 +137,7 @@ const subscriptionResolvers = {
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
       try {
-        // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context);
+        // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context); // Currently uses `filterSubscriptionsToAllowed` for auth
         const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
         logger.debug({req_id, user, org_id, conditions }, `${queryName} group conditions are...`);
         let subs = [];
@@ -148,9 +148,7 @@ const subscriptionResolvers = {
             query.tags = { $all: tags };
           }
           subs = await models.Subscription.find(query, {}).lean({ virtuals: true });
-          logger.debug({req_id, user, org_id}, `${queryName} found ${subs?subs.length:'ERR'} subscriptions`);
           subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
-          logger.debug({req_id, user, org_id}, `${queryName} filtered to ${subs?subs.length:'ERR'} subscriptions`);
         }catch(error){
           logger.error(error);
           throw new NotFoundError(context.req.t('Could not find the subscription.'), context);
@@ -178,7 +176,9 @@ const subscriptionResolvers = {
       logger.debug({req_id, user, org_id, uuid, name }, `${queryName} enter`);
 
       try {
-        const subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, context, fullQuery);
+        // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context); // Currently uses `filterSubscriptionsToAllowed` for auth
+        let subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, context, fullQuery);
+        subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
 
         const matchingSubs = subs.filter( s => {
           return (s.uuid === uuid || s.name === name);
@@ -224,6 +224,7 @@ const subscriptionResolvers = {
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
       try {
+        // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context); // Currently uses `filterSubscriptionsToAllowed` for auth
         checkComplexity( queryFields );
 
         //find groups in cluster
@@ -245,6 +246,7 @@ const subscriptionResolvers = {
             return false;
           });
         }
+        let subscriptions = [];
         try{
           // Return subscriptions that contain any clusterGroupNames passed in from the query
           // examples:
@@ -262,24 +264,22 @@ const subscriptionResolvers = {
           if( tags ) {
             query.tags = { $all: tags };
           }
-          var subscriptions = await models.Subscription.find(query).lean({ virtuals: true });
-          subscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
+          subs = await models.Subscription.find(query).lean({ virtuals: true });
+          subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subscriptions, context);
         }catch(error){
           logger.error(error);
           throw new NotFoundError(context.req.t('Could not find subscriptions.'), context);
         }
-        if(subscriptions) {
-          subscriptions = subscriptions.map((sub)=>{
-            if(_.isUndefined(sub.channelName)){
-              sub.channelName = sub.channel;
-            }
-            return sub;
-          });
-        }
+        subs = subs.map((sub)=>{
+          if(_.isUndefined(sub.channelName)){
+            sub.channelName = sub.channel;
+          }
+          return sub;
+        });
 
-        await applyQueryFieldsToSubscriptions(subscriptions, queryFields, { orgId: org_id }, context);
+        await applyQueryFieldsToSubscriptions(subs, queryFields, { orgId: org_id }, context);
 
-        return subscriptions;
+        return subs;
       }
       catch( error ) {
         logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
@@ -291,7 +291,6 @@ const subscriptionResolvers = {
     },
 
     subscriptionsForClusterByName: async(parent, { orgId: org_id, clusterName, tags=null }, context, fullQuery) => {
-      const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'subscriptionsForClusterByName';
 
@@ -306,8 +305,7 @@ const subscriptionResolvers = {
       }
 
       // Get and return subscriptions using the cluster uuid
-      const subscriptions = await subscriptionResolvers.Query.subscriptionsForCluster( parent, {orgId: org_id, clusterId: cluster.cluster_id, tags}, context, fullQuery);
-      return subscriptions;
+      return await subscriptionResolvers.Query.subscriptionsForCluster( parent, {orgId: org_id, clusterId: cluster.cluster_id, tags}, context, fullQuery);
     }
   },
 
