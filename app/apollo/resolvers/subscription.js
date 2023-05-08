@@ -178,11 +178,10 @@ const subscriptionResolvers = {
       try {
         // await validAuth(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context); // Currently uses `filterSubscriptionsToAllowed` for auth
         let subs = await subscriptionResolvers.Query.subscriptions(parent, { orgId: org_id }, context, fullQuery);
-        subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
-
         const matchingSubs = subs.filter( s => {
           return (s.uuid === uuid || s.name === name);
         } );
+        subs = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, subs, context);
 
         // If more than one matching subscription found, throw an error
         if( matchingSubs.length > 1 ) {
