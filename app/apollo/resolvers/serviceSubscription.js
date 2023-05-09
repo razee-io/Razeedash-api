@@ -179,6 +179,8 @@ const serviceResolvers = {
           throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
         }
 
+        await validAuth(me, cluster.org_id, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
+
         const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
           throw new RazeeValidationError(context.req.t('Too many subscriptions are registered under {{org_id}}.', { 'org_id': orgId }), context);
