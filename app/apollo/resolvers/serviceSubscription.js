@@ -83,10 +83,9 @@ const serviceResolvers = {
 
       logger.debug({req_id, user, orgId }, `${queryName} enter`);
 
-      await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
-
       let serviceSubscriptions = [];
       try{
+        await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
         checkComplexity( queryFields );
 
         const query = {org_id: orgId};
@@ -179,8 +178,6 @@ const serviceResolvers = {
         if(!cluster){
           throw  new NotFoundError(context.req.t('Cluster with cluster_id "{{clusterId}}" not found', {'clusterId':clusterId}), context);
         }
-
-        await validAuth(me, cluster.org_id, ACTIONS.CREATE, TYPES.SERVICESUBSCRIPTION, queryName, context);
 
         const total = await models.ServiceSubscription.count({ org_id: orgId });
         if (total >= SERVICE_SUBSCRIPTION_LIMITS.MAX_TOTAL) {
