@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ const queries = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $clusterId: String!, $channelUuid: String!, $versionUuid: String!) {
-            addServiceSubscription(orgId: $orgId, name: $name, clusterId: $clusterId, channelUuid: $channelUuid, versionUuid: $versionUuid)
+          mutation($orgId: String!, $name: String!, $clusterId: String!, $channelUuid: String!, $versionUuid: String! ${variables.tags?', $tags: [String!]':''}) {
+            addServiceSubscription(orgId: $orgId, name: $name, clusterId: $clusterId, channelUuid: $channelUuid, versionUuid: $versionUuid ${variables.tags?', tags: $tags':''})
           }  `,
         variables,
       },
@@ -57,10 +57,12 @@ const queries = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query  ($orgId:  String!) {
-            serviceSubscriptions(orgId: $orgId) {
+          query($orgId: String! ${variables.clusterId?', $clusterId: String':''} ${variables.tags?', $tags: [String!]':''}) {
+            serviceSubscriptions(orgId: $orgId ${variables.clusterId?', clusterId: $clusterId':''} ${variables.tags?', tags: $tags':''}) {
               ssid
               versionUuid
+              tags
+              clusterId
             }
           } `,
         variables,
@@ -77,8 +79,8 @@ const queries = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-        query ($orgId: String!) {
-          subscriptions: allSubscriptions(orgId: $orgId) {
+        query ($orgId: String! ${variables.tags?', $tags: [String!]':''}) {
+          subscriptions: allSubscriptions(orgId: $orgId ${variables.tags?', tags: $tags':''}) {
             ... on ServiceSubscription {
               uuid: ssid
               subscriptionType: __typename
@@ -87,6 +89,7 @@ const queries = grahqlUrl => {
                   clusterId
                 }
               }
+              tags
             }
             ... on ChannelSubscription {
               uuid
@@ -96,6 +99,7 @@ const queries = grahqlUrl => {
                   clusterId
                 }
               }
+              tags
             }
           }
         } `,
@@ -128,6 +132,7 @@ const queries = grahqlUrl => {
                   orgId
                   registration
                 }
+                tags
               }
             } `,
         variables,
@@ -144,8 +149,8 @@ const queries = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-        mutation ($orgId: String!, $ssid: String!  $name: String!, $channelUuid: String!, $versionUuid: String!) {
-          editServiceSubscription(orgId: $orgId, ssid: $ssid, name: $name, channelUuid: $channelUuid, versionUuid: $versionUuid)
+        mutation ($orgId: String!, $ssid: String!  $name: String!, $channelUuid: String!, $versionUuid: String! ${variables.tags?', $tags: [String!]':''}) {
+          editServiceSubscription(orgId: $orgId, ssid: $ssid, name: $name, channelUuid: $channelUuid, versionUuid: $versionUuid ${variables.tags?', tags: $tags':''})
         } `,
         variables,
       },

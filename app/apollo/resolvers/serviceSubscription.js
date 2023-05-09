@@ -74,7 +74,7 @@ const serviceResolvers = {
       }
     },
 
-    serviceSubscriptions: async(parent, { orgId }, context, fullQuery) => {
+    serviceSubscriptions: async(parent, { orgId, clusterId=null, tags=null }, context, fullQuery) => {
       const queryFields = GraphqlFields(fullQuery);
       const { models, me, req_id, logger } = context;
       const queryName = 'serviceSubscriptions';
@@ -83,21 +83,23 @@ const serviceResolvers = {
 
       logger.debug({req_id, user, orgId }, `${queryName} enter`);
 
-      try {
+      let serviceSubscriptions = [];
+      try{
         await validAuth(me, orgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, queryName, context);
+        checkComplexity( queryFields );
 
-        let serviceSubscriptions = [];
-        try{
-          checkComplexity( queryFields );
+        const query = {org_id: orgId};
+        if( clusterId ) {
+          query.clusterId = clusterId;
+        }
+        if( tags ) {
+          query.tags = { $all: tags };
+        }
 
-          // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
-          for await (const ss of models.ServiceSubscription.find({org_id: orgId}).lean({ virtuals: true })) {
-            const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
-            serviceSubscriptions = serviceSubscriptions.concat(allowed);
-          }
-        }catch(error){
-          logger.error(error);
-          throw new NotFoundError(context.req.t('Failed to retrieve service subscriptions.'), context);
+        // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
+        for await (const ss of models.ServiceSubscription.find(query).lean({ virtuals: true })) {
+          const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
+          serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
 
         serviceSubscriptions.forEach(i => i.ssid = i.uuid);
@@ -143,16 +145,16 @@ const serviceResolvers = {
       }
     },
 
-    allSubscriptions: async (parent, { orgId }, context, fullQuery) => {
-      const subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId }, context, fullQuery);
-      const serviceSubscriptions = await serviceResolvers.Query.serviceSubscriptions(parent, { orgId }, context, fullQuery);
+    allSubscriptions: async (parent, { orgId, tags=null }, context, fullQuery) => {
+      const subscriptions = await subscriptionResolvers.Query.subscriptions(parent, { orgId, tags }, context, fullQuery);
+      const serviceSubscriptions = await serviceResolvers.Query.serviceSubscriptions(parent, { orgId, tags }, context, fullQuery);
       const union = subscriptions.concat(serviceSubscriptions);
       return union;
     }
   },
 
   Mutation: {
-    addServiceSubscription: async (parent, { orgId, name, clusterId, channelUuid, versionUuid }, context)=>{
+    addServiceSubscription: async (parent, { orgId, name, clusterId, channelUuid, versionUuid, tags=[] }, context)=>{
       const { models, me, req_id, logger } = context;
       const queryName = 'addServiceSubscription';
 
@@ -168,6 +170,7 @@ const serviceResolvers = {
         validateString( 'clusterId', clusterId );
         validateString( 'channelUuid', channelUuid );
         validateString( 'versionUuid', versionUuid );
+        tags.forEach( value => { validateString( 'tags', value ); } );
 
         // Note that at this time, service subscriptions can only be created for clusters, not groups
 
@@ -213,7 +216,8 @@ const serviceResolvers = {
           version_uuid: version.uuid,
           clusterId,
           kubeOwnerId,
-          clusterOrgId: cluster.org_id
+          clusterOrgId: cluster.org_id,
+          tags
         });
 
         pubSub.channelSubChangedFunc({org_id: cluster.org_id}, context); // notify cluster should re-fetch its subscriptions
@@ -230,7 +234,7 @@ const serviceResolvers = {
       }
     },
 
-    editServiceSubscription: async (parent, { orgId, ssid, name, channelUuid, versionUuid }, context) => {
+    editServiceSubscription: async (parent, { orgId, ssid, name, channelUuid, versionUuid, tags=null }, context) => {
       const { models, me, req_id, logger } = context;
       const queryName = 'editServiceSubscription';
 
@@ -246,6 +250,7 @@ const serviceResolvers = {
         validateName( 'name', name );
         validateString( 'channelUuid', channelUuid );
         validateString( 'versionUuid', versionUuid );
+        tags.forEach( value => { validateString( 'tags', value ); } );
 
         const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId }).lean({ virtuals: true });
         if (!serviceSubscription) {
@@ -266,7 +271,15 @@ const serviceResolvers = {
 
         logger.info( { req_id, user, orgId, ssid }, `${queryName} saving` );
 
-        const sets = { name, channelName: channel.name, channel_uuid: channelUuid, version: version.name, version_uuid: versionUuid, updated: Date.now() };
+        const sets = {
+          name,
+          channelName: channel.name,
+          channel_uuid: channelUuid,
+          version: version.name,
+          version_uuid: versionUuid,
+          updated: Date.now()
+        };
+        if( tags ) sets.tags = tags;  // Update tags if specified, else retain previous value (if any)
         await models.ServiceSubscription.updateOne({ _id: ssid }, { $set: sets });
 
         pubSub.channelSubChangedFunc({ org_id: serviceSubscription.clusterOrgId }, context); // notify cluster should re-fetch its subscriptions

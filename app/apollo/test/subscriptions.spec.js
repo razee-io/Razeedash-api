@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,7 +335,7 @@ const createSubscriptions = async () => {
     version_uuid: channelVersion_01_uuid,
   });
 
-  // Subscription 02 is owned by non-admin user
+  // Subscription 02 is owned by non-admin user and has tags
   await models.Subscription.create({
     _id: 'fake_id_2',
     org_id: org01._id,
@@ -347,6 +347,7 @@ const createSubscriptions = async () => {
     channel: channel_01_name,
     version: channelVersion_02_name,
     version_uuid: channelVersion_02_uuid,
+    tags: ['test-tag']
   });
 
   // Subscription duplicate is owned by non-admin user
@@ -530,6 +531,16 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
 
+      // get subscriptions with tags
+      const resultWithTags = await subscriptionApi.subscriptions(token01, {
+        orgId: org01._id,
+        tags: ['test-tag'],
+      });
+      // subscription 02 has the tag
+      const subscriptionsWithTag = resultWithTags.data.data.subscriptions;
+      expect(subscriptionsWithTag).to.have.length(1);
+      expect(subscriptionsWithTag[0].name).to.equal(subscription_02_name);
+
       // Add cluster to group dev, triggering RBAC Sync as the admin user, who owns subscription 01 (dev group).  Status 'failed' expected as API is 'dummy_url'.
       await assignClusterGroups( adminToken, org01._id, [org01_group_dev_uuid], 'cluster_01' );
       // Add cluster to group stage, triggering RBAC Sync as the admin user, who does NOT own subscription 02 (stage group).  Status 'unknown' expected as user is not owner.
@@ -561,12 +572,12 @@ describe('subscription graphql test suite', () => {
       const result3 = await subscriptionApi.subscriptions(token77, {
         orgId: org77._id,
       });
-      expect(result3.data.data.subscriptions).to.have.length(2);
-      expect(Object.keys(result3.data.data.subscriptions[1].custom)).to.have.length(2);
+      const subscriptions3 = result3.data.data.subscriptions;
+      expect(subscriptions3).to.have.length(2);
+      expect(Object.keys(subscriptions3[1].custom)).to.have.length(2);
 
       // subscription 2 should have cluster details
       expect( result3.data.data.subscriptions[1].cluster ).to.exist;
-
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -652,12 +663,23 @@ describe('subscription graphql test suite', () => {
 
   it('get subscriptions by clusterId', async () => {
     try {
+      // Cluster 01 should have one subscription
       const result = await subscriptionApi.subscriptionsForCluster(adminToken, {
         orgId: org01._id,
         clusterId: 'cluster_01',
       });
+      console.log( `subscriptions by clusterId result.data: ${JSON.stringify(result.data,null,2)}` );
       const subscriptionsForCluster = result.data.data.subscriptionsForCluster;
       expect(subscriptionsForCluster[0].uuid).to.equal(subscription_01_uuid);
+
+      // Same query filtered by tags should have no results
+      const result2 = await subscriptionApi.subscriptionsForCluster(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+        tags: ['tag that does not exist'],
+      });
+      const subscriptionsForCluster2 = result2.data.data.subscriptionsForCluster;
+      expect(subscriptionsForCluster2).to.have.length(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -688,15 +710,18 @@ describe('subscription graphql test suite', () => {
 
   it('add subscriptions with versionUuid references', async () => {
     try {
+      // add subscription with tags
       const addSubscription1 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
         name: 'a_random_name',
         groups:['dev'],
         channelUuid: channel_01_uuid,
         versionUuid: channelVersion_01_uuid,
+        tags: ['new-test-tag'],
       });
       expect(addSubscription1.data.data.addSubscription.uuid).to.be.an('string');
 
+      // add subscription without tags, but exceeding subscription limit
       const addSubscription2 = await subscriptionApi.addSubscription(adminToken, {
         orgId: org01._id,
         name: 'a_random_name2',
@@ -761,7 +786,7 @@ describe('subscription graphql test suite', () => {
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
 
-      //step1, edit the subscription with custom attribute
+      //step1, edit the subscription with custom attribute and tags
       const result3 = await subscriptionApi.editSubscription(token77, {
         orgId: org77._id,
         uuid: subscription_04_uuid,
@@ -772,7 +797,8 @@ describe('subscription graphql test suite', () => {
         custom: {
           'forEnv': 'new',
           'forType': 'new'
-        }
+        },
+        tags: ['new-test-tag'],
       });
       expect(result3.data.data.editSubscription.uuid).to.be.an('string');
       //step2, get the updated subscription
@@ -783,6 +809,7 @@ describe('subscription graphql test suite', () => {
       expect(result4.data.data.subscription.name).to.equal('new-name');
       expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
       expect(result4.data.data.subscription.custom.forType).to.equal('new');
+      expect(result4.data.data.subscription.tags[0]).to.equal('new-test-tag');
 
     } catch (error) {
       if (error.response) {

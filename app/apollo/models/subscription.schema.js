@@ -75,6 +75,11 @@ const SubscriptionSchema = new mongoose.Schema({
   custom: {
     type: Map,
   },
+  tags: [
+    {
+      type: String,
+    }
+  ],
 }, {
   strict:'throw',
 });

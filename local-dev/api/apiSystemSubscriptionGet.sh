@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-SYSTEMSUBSCRIPTION=${$1:-primaryOrgKey}
+SYSTEMSUBSCRIPTION=operators
 RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
 RAZEE_HOSTPORT=${RAZEE_HOSTPORT:-localhost:3333}

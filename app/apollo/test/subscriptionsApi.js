@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!) {
-            subscriptions(orgId: $orgId) {
+          query($orgId: String! ${variables.tags?', $tags: [String!]':''}) {
+            subscriptions(orgId: $orgId ${variables.tags?', tags: $tags':''}) {
               uuid
               orgId
               name
@@ -85,6 +85,7 @@ const subscriptionsFunc = grahqlUrl => {
                 registration 
               }
               custom
+              tags
             }
           }
         `,
@@ -139,6 +140,7 @@ const subscriptionsFunc = grahqlUrl => {
                 }
               }
               custom
+              tags
           }
         }
       `,
@@ -190,8 +192,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          query($orgId: String!, $clusterId: String! ) {
-            subscriptionsForCluster(orgId: $orgId clusterId: $clusterId ) {
+          query($orgId: String!, $clusterId: String! ${variables.tags?', $tags: [String!]':''} ) {
+            subscriptionsForCluster(orgId: $orgId, clusterId: $clusterId ${variables.tags?', tags: $tags':''} ) {
               uuid
               orgId
               name
@@ -203,9 +205,9 @@ const subscriptionsFunc = grahqlUrl => {
               created
               updated
               custom
+            }
           }
-        }
-      `,
+        `,
         variables,
       },
       {
@@ -249,8 +251,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON) {
-            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom){
+          mutation($orgId: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${variables.tags?', $tags: [String!]':''}) {
+            addSubscription(orgId: $orgId, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${variables.tags?', tags: $tags':''}){
 			        uuid
             }
           }
@@ -269,8 +271,8 @@ const subscriptionsFunc = grahqlUrl => {
       grahqlUrl,
       {
         query: `
-          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON) {
-            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom) {
+          mutation($orgId: String!, $uuid: String!, $name: String!, $groups: [String!]!, $channelUuid: String!, $versionUuid: String, $version: VersionInput, $custom: JSON ${variables.tags?', $tags: [String!]':''}) {
+            editSubscription(orgId: $orgId, uuid: $uuid, name: $name, groups: $groups, channelUuid: $channelUuid, versionUuid: $versionUuid, version: $version, custom: $custom ${variables.tags?', tags: $tags':''}) {
               uuid
               success
             }
