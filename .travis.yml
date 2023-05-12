@@ -14,6 +14,7 @@ install:
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
   - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --config ./audit-ci.json; else npx audit-ci --config ./audit-ci.json || true; fi
+  - echo shellcheck $(which shellcheck)
   - npm run lint
   - npm test
   - npm run test:apollo:default
