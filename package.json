@@ -24,7 +24,7 @@
     "dockerlint": "npx dockerlint Dockerfile",
     "markdownlint": "npx markdownlint README.md docs/",
     "jsonlint": "npx jsonlint --quiet build/viewTemplate.json",
-    "shellcheck": "shellcheck build/*.sh || npx shellcheck build/*.sh",
+    "shellcheck": "npx shellcheck build/*.sh",
     "i18n": "node gulpfile.js --namespace 'razee' --files './app/*(apollo)/**/*.*'"
   },
   "keywords": [],
