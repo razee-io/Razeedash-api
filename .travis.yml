@@ -7,14 +7,12 @@ services:
 
 before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
-  - echo OLD GITHUB_TOKEN ${GITHUB_TOKEN:0:10}
   - unset GITHUB_TOKEN
   - export GITHUB_TOKEN=${GITHUB_TOKEN_20230511}
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
   - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then npx audit-ci --config ./audit-ci.json; else npx audit-ci --config ./audit-ci.json || true; fi
-  - echo NEW GITHUB_TOKEN ${GITHUB_TOKEN:0:10}
   - npm run lint
   - npm test
   - npm run test:apollo:default

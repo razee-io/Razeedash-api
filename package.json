@@ -18,7 +18,7 @@
     "test:apollo:extauthtest": "export AUTH_MODEL=extauthtest; export EXTERNAL_AUTH_MODELS=\"{ \\\"extauthtest\\\": { \\\"testPath\\\": \\\"$(pwd)/app/apollo/test/testHelper.extauthtest.js\\\", \\\"testDataPath\\\": \\\"$(pwd)/app/apollo/test/data/local\\\", \\\"classPath\\\": \\\"$(pwd)/app/apollo/test/externalAuth/auth_local.js\\\", \\\"schemaPath\\\": \\\"$(pwd)/app/apollo/test/externalAuth/user.local.schema.js\\\", \\\"initPath\\\": \\\"$(pwd)/app/apollo/test/externalAuth/init.local.js\\\", \\\"orgPath\\\": \\\"$(pwd)/app/apollo/test/externalAuth/organization.local.schema.js\\\" } }\"; export NODE_ENV=test; export CHANNEL_MAX_TOTAL_LIMIT=4; export CHANNEL_VERSION_MAX_TOTAL_LIMIT=4; export CLUSTER_MAX_TOTAL_LIMIT=2; export SUBSCRIPTION_MAX_TOTAL_LIMIT=4; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha  --timeout 15000  'app/apollo/test/*.spec.js'",
     "test:apollo:passport.local": "export AUTH_MODEL=passport.local; export NODE_ENV=test; export CHANNEL_MAX_TOTAL_LIMIT=4; export CHANNEL_VERSION_MAX_TOTAL_LIMIT=4; export CLUSTER_MAX_TOTAL_LIMIT=2; export SUBSCRIPTION_MAX_TOTAL_LIMIT=4; nyc --exclude=**/*.spec.js --reporter=html --reporter=text mocha  --timeout 15000 'app/apollo/test/*.spec.js'",
     "wait-mongo": "node app/wait-mongo.js",
-    "lint": "npm-run-all i18n eslint yamllint dockerlint markdownlint jsonlint shellcheck",
+    "lint": "npx npm-run-all i18n eslint yamllint dockerlint markdownlint jsonlint shellcheck",
     "eslint": "npx eslint app/",
     "yamllint": "npx yamllint .travis.yml kubernetes/razeedash-api/resource.yaml",
     "dockerlint": "npx dockerlint Dockerfile",
