@@ -1,15 +1,12 @@
 language: node_js
 node_js:
-  - 16
+  - 14
 
 services:
   - docker
 
 before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
-
-install:
-  - npm ci --legacy-peer-deps
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
