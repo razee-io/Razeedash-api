@@ -2,11 +2,6 @@
   "low": true,
   "_allowlistInfo": "none",
   "allowlist": [
-    // GHSA-9vvw-cc9w-f27h:
-    // A vulnerability classified as problematic has been found in debug-js debug up to 3.0.x.
-    // This affects the function useColors of the file src/node.js. The manipulation of the argument str leads to inefficient regular expression complexity.
-    // Application unaffected as 'debug' is not utilized in normal operation.
-    "GHSA-9vvw-cc9w-f27h"
   ],
   "skip-dev": true
 }

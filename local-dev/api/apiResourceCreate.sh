@@ -5,14 +5,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 RAZEE_CLUSTER_UUID=${1:-${RAZEE_CLUSTER_UUID:-pTestClusterUuid}}
 RAZEE_ORG_KEY=${2:-${RAZEE_ORG_KEY:-pOrgKey}}
 
-RAZEE_URL=${RAZEE_URL:-http://localhost:3333/graphql}
-RAZEE_REST_URL=${RAZEE_URL/graphql/api/v2/clusters}
+RAZEE_V2_URL="${RAZEE_V2_URL:-http://localhost:3333/api/v2}"
 
-echo
-echo "RAZEE_CLUSTER_UUID: ${RAZEE_CLUSTER_UUID}"
-echo
-
-echo "POST to ${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources"
+echo "POST one resource to ${RAZEE_V2_URL}/clusters/${RAZEE_CLUSTER_UUID}/resources"
 curl \
 -X POST \
 -H "razee-org-key: ${RAZEE_ORG_KEY}" \
@@ -35,7 +30,7 @@ curl \
       }
     }
 }]' \
-${RAZEE_REST_URL}/${RAZEE_CLUSTER_UUID}/resources
+${RAZEE_V2_URL}/clusters/${RAZEE_CLUSTER_UUID}/resources
 
 retVal=$?
 
