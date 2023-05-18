@@ -28,6 +28,18 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
+// Redact 'razee-org-key' from req.headers for 404 error logs regarding api/v1/channels/[channelname]/[version-uuid] requests
+const redactRazeeOrgKey = (req) => {
+  if (req && req.headers && req.headers['razee-org-key']) {
+    const orgKey = req.headers['razee-org-key'];
+    if (req.url && req.url.includes(orgKey)) {
+      const parts = req.url.split(orgKey);
+      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
+    }
+    req.headers['razee-org-key'] = '[REDACTED]';
+  }
+};
+
 // Get yaml for a channel. Retrieves this data either from mongo or from COS
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
@@ -44,7 +56,7 @@ const getChannelVersion = async (req, res) => {
 
   let org = req.org;
 
-  var deployable = await Channels.findOne({ org_id: orgId, name: channelName});
+  var deployable = await Channels.findOne({ org_id: orgId, name: channelName });
   if (!deployable) {
     // If there are any service-subscriptions pushing this channel/version into any clusters owned by this org
     // then the request is legitimate even though requester's org does not own the channel/version.
@@ -58,7 +70,7 @@ const getChannelVersion = async (req, res) => {
       req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
       orgId = ourServiceSubscription.org_id;
       org = await Orgs.findOne({ _id: orgId });
-      deployable = await Channels.findOne({ org_id: orgId, name: channelName});
+      deployable = await Channels.findOne({ org_id: orgId, name: channelName });
     } else {
       res.status(404).send({ status: 'error', message: `channel "${channelName}" not found for this org` });
       return;
@@ -66,20 +78,26 @@ const getChannelVersion = async (req, res) => {
   }
 
   var deployableVersion = await DeployableVersions.findOne({ org_id: orgId, channel_id: deployable.uuid, uuid: versionId });
-  if(!deployableVersion){
-    res.status(404).send({status: 'error', message: `versionId "${versionId}" not found`});
+  if (!deployableVersion) {
+    res.status(404).send({ status: 'error', message: `versionId "${versionId}" not found` });
     return;
   }
 
   try {
-    const data = await getDecryptedContent( {logger: req.log, req_id: req.id, me: null}, org, deployableVersion );
+    const data = await getDecryptedContent({ logger: req.log, req_id: req.id, me: null }, org, deployableVersion);
     res.set('Content-Type', deployableVersion.type);
     res.status(200).send(data.content);
   } catch (error) {
     req.log.error(error);
-    return res.status(500).json({ status: 'error', message: error.message});
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+// Middleware to redact 'razee-org-key' from req.headers
+router.use(asyncHandler(async (req, res, next) => {
+  redactRazeeOrgKey(req);
+  next();
+}));
 
 router.get('/:channelName/:versionId', getOrg, asyncHandler(getChannelVersion));
 
