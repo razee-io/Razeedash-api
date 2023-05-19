@@ -40,7 +40,6 @@ const Channels = require('./v1/channels.js');
 const SystemSubscriptions = require('./v1/systemSubscriptions.js');
 const V3Gql = require('./v3/gql');
 
-// Ensure sensitive information is removed before default handler for errors, 404s, etc can log request details
 const redactRazeeOrgKey = (req) => {
   if (req && req.headers && req.headers['razee-org-key']) {
     const orgKey = req.headers['razee-org-key'];
@@ -49,6 +48,14 @@ const redactRazeeOrgKey = (req) => {
       req.url = `${parts[0]}[REDACTED]${parts[1]}`;
     }
     req.headers['razee-org-key'] = '[REDACTED]';
+  }
+  if (req && req.query && req.query.orgKey) {
+    const orgKey = req.query.orgKey;
+    if (req.url && req.url.indexOf( orgKey ) >= 0) {
+      const parts = req.url.split(req.query.orgKey);
+      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
+    }
+    req.query.orgKey = '[REDACTED]';
   }
 };
 
@@ -107,6 +114,11 @@ router.use(async (req, res, next) => {
       return res.status(401).json('{"msg": "razee-org-key required"}');
     }
   }
+
+  // ensure sensitive information is removed before handling possible errors, 404s and other codes can log request details
+  // redact 'razee-org-key' from req.headers and req.query.orgKey
+  redactRazeeOrgKey(req);
+
   req.orgKey = orgKey;
   const log = req.log;
   const orgDb = req.db.collection('orgs');
@@ -114,12 +126,6 @@ router.use(async (req, res, next) => {
   if (org) log.fields.org_id = org._id;
   next();
 });
-
-// Middleware to redact 'razee-org-key' from req.headers
-router.use(asyncHandler(async (req, res, next) => {
-  redactRazeeOrgKey(req);
-  next();
-}));
 
 router.use(getOrg);
 router.use('/install', Install);
