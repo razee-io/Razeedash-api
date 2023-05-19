@@ -28,18 +28,6 @@ router.use(asyncHandler(async (req, res, next) => {
   next();
 }));
 
-// Redact 'razee-org-key' from req.headers for 404 error logs regarding api/v1/channels/[channelname]/[version-uuid] requests
-const redactRazeeOrgKey = (req) => {
-  if (req && req.headers && req.headers['razee-org-key']) {
-    const orgKey = req.headers['razee-org-key'];
-    if (req.url && req.url.includes(orgKey)) {
-      const parts = req.url.split(orgKey);
-      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
-    }
-    req.headers['razee-org-key'] = '[REDACTED]';
-  }
-};
-
 // Get yaml for a channel. Retrieves this data either from mongo or from COS
 //   curl --request GET \
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
@@ -92,12 +80,6 @@ const getChannelVersion = async (req, res) => {
     return res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
-// Middleware to redact 'razee-org-key' from req.headers
-router.use(asyncHandler(async (req, res, next) => {
-  redactRazeeOrgKey(req);
-  next();
-}));
 
 router.get('/:channelName/:versionId', getOrg, asyncHandler(getChannelVersion));
 
