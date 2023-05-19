@@ -96,34 +96,32 @@ router.use(async (req, res, next) => {
     }
   }
 
-  // ensure sensitive information is removed before handling possible errors, 404s and other codes can log request details
-  // redact 'razee-org-key' from req.headers and req.query.orgKey
-  if (req && req.headers && req.headers['razee-org-key']) {
-    const orgKey = req.headers['razee-org-key'];
-    if (req.url && req.url.includes(orgKey)) {
-      const parts = req.url.split(orgKey);
-      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
-    }
+  // Ensure sensitive information is removed before handling possible errors by redacting 'razee-org-key'
+  // All code after redact step should use req.orgKey and not check query params or headers to find orgkey
+  if (req.headers && req.headers['razee-org-key']) {
     req.headers['razee-org-key'] = '[REDACTED]';
   }
-  if (req && req.query && req.query.orgKey) {
+  if(req.query && req.query.orgKey) {
     const orgKey = req.query.orgKey;
-    if (req.url && req.url.indexOf( orgKey ) >= 0) {
-      const parts = req.url.split(req.query.orgKey);
+    if(req.url && req.url.includes(orgKey)) {
+      const parts = req.url.split(orgKey);
       req.url = `${parts[0]}[REDACTED]${parts[1]}`;
     }
     req.query.orgKey = '[REDACTED]';
   }
 
   req.orgKey = orgKey;
-  const log = req.log;
-  const orgDb = req.db.collection('orgs');
-  const org = await orgDb.findOne( { $or: [ { orgKeys: orgKey }, { 'orgKeys2.key': orgKey } ] } );
-  if (org) log.fields.org_id = org._id;
   next();
 });
 
 router.use(getOrg);
+
+router.use( (req, res, next) => {
+  const log = req.log;
+  if (req.org) log.fields.org_id = req.org._id;
+  next();
+});
+
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
 router.use('/v2/resources', Resources);
