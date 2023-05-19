@@ -40,6 +40,18 @@ const Channels = require('./v1/channels.js');
 const SystemSubscriptions = require('./v1/systemSubscriptions.js');
 const V3Gql = require('./v3/gql');
 
+// Ensure sensitive information is removed before default handler for errors, 404s, etc can log request details
+const redactRazeeOrgKey = (req) => {
+  if (req && req.headers && req.headers['razee-org-key']) {
+    const orgKey = req.headers['razee-org-key'];
+    if (req.url && req.url.includes(orgKey)) {
+      const parts = req.url.split(orgKey);
+      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
+    }
+    req.headers['razee-org-key'] = '[REDACTED]';
+  }
+};
+
 router.get('/v1/health', (req, res)=>{
   res.json({
     success: true,
@@ -103,6 +115,12 @@ router.use(async (req, res, next) => {
   next();
 });
 
+// Middleware to redact 'razee-org-key' from req.headers
+router.use(asyncHandler(async (req, res, next) => {
+  redactRazeeOrgKey(req);
+  next();
+}));
+
 router.use(getOrg);
 router.use('/install', Install);
 router.use('/v2/clusters', Clusters);
@@ -111,29 +129,6 @@ router.use('/v2/resources', Resources);
 // Channels handles only GET /:channelName/:versionId, all other /channels requests are handled by V1Gql
 router.use('/v1/channels', Channels);
 router.use('/v1/systemSubscriptions', SystemSubscriptions);
-
-// Ensure sensitive information is removed before default handler for errors, 404s, etc can log request details
-// This should be the last router.use -- any later additions will be restricted by the redaction.
-router.use( (err, req, res, next) => {
-  if( req && req.headers && req.headers['razee-org-key']) {
-    const orgKey = req.headers['razee-org-key'];
-    if( req.url && req.url.indexOf( orgKey ) >= 0 ) {
-      const parts = req.url.split(req.query.orgKey);
-      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
-    }
-    req.headers['razee-org-key'] = '[REDACTED]';
-  }
-  if( req && req.query && req.query.orgKey ) {
-    const orgKey = req.query.orgKey;
-    if( req.url && req.url.indexOf( orgKey ) >= 0 ) {
-      const parts = req.url.split(req.query.orgKey);
-      req.url = `${parts[0]}[REDACTED]${parts[1]}`;
-    }
-    req.query.orgKey = '[REDACTED]';
-  }
-  next();
-});
-
 
 async function initialize(){
   const options = {
@@ -329,4 +324,4 @@ async function initialize(){
   return db;
 }
 
-module.exports = {router, initialize };
+module.exports = {router, initialize};
