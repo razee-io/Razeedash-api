@@ -24,6 +24,7 @@ const { CLUSTER_REG_STATES } = require('../../apollo/models/const');
 const { getRddJobUrl } = require('../../utils/rdd');
 
 router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
+  const orgKey = req.orgKey;
   let args = req.query.args ? req.query.args : [];
   let args_array = Array.isArray(args) ? args : [args];
   let host = req.get('host');
@@ -31,7 +32,7 @@ router.get('/razeedeploy-job', asyncHandler(async (req, res, next) => {
     host = process.env.EXTERNAL_HOST;
   }
   args_array.push(`--razeedash-url=${req.protocol}://${host}/api/v2`);
-  args_array.push(`--razeedash-org-key=${req.query.orgKey}`);
+  args_array.push(`--razeedash-org-key=${orgKey}`);
   if(req.query.clusterId) {
     args_array.push(`--razeedash-cluster-id=${req.query.clusterId}`);
     try {
