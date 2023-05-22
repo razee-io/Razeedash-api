@@ -102,7 +102,6 @@ router.use(async (req, res, next) => {
     req.headers['razee-org-key'] = '[REDACTED]';
   }
   if(req.query && req.query.orgKey) {
-    const orgKey = req.query.orgKey;
     if(req.url && req.url.includes(orgKey)) {
       const parts = req.url.split(orgKey);
       req.url = `${parts[0]}[REDACTED]${parts[1]}`;
