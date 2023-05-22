@@ -44,7 +44,7 @@ const getChannelVersion = async (req, res) => {
 
   let org = req.org;
 
-  var deployable = await Channels.findOne({ org_id: orgId, name: channelName});
+  var deployable = await Channels.findOne({ org_id: orgId, name: channelName });
   if (!deployable) {
     // If there are any service-subscriptions pushing this channel/version into any clusters owned by this org
     // then the request is legitimate even though requester's org does not own the channel/version.
@@ -58,7 +58,7 @@ const getChannelVersion = async (req, res) => {
       req.log.debug(`Target service clusters for version_uuid ${versionId} are ${ourClusterIds}`);
       orgId = ourServiceSubscription.org_id;
       org = await Orgs.findOne({ _id: orgId });
-      deployable = await Channels.findOne({ org_id: orgId, name: channelName});
+      deployable = await Channels.findOne({ org_id: orgId, name: channelName });
     } else {
       res.status(404).send({ status: 'error', message: `channel "${channelName}" not found for this org` });
       return;
@@ -66,18 +66,18 @@ const getChannelVersion = async (req, res) => {
   }
 
   var deployableVersion = await DeployableVersions.findOne({ org_id: orgId, channel_id: deployable.uuid, uuid: versionId });
-  if(!deployableVersion){
-    res.status(404).send({status: 'error', message: `versionId "${versionId}" not found`});
+  if (!deployableVersion) {
+    res.status(404).send({ status: 'error', message: `versionId "${versionId}" not found` });
     return;
   }
 
   try {
-    const data = await getDecryptedContent( {logger: req.log, req_id: req.id, me: null}, org, deployableVersion );
+    const data = await getDecryptedContent({ logger: req.log, req_id: req.id, me: null }, org, deployableVersion);
     res.set('Content-Type', deployableVersion.type);
     res.status(200).send(data.content);
   } catch (error) {
     req.log.error(error);
-    return res.status(500).json({ status: 'error', message: error.message});
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
