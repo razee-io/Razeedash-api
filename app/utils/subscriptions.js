@@ -37,7 +37,7 @@ const getSubscriptionDetails = async(orgId, matchingSubscriptions, cluster) => {
     else if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
       sub.remote = {
         remoteType: channel.remote.remoteType,
-        parameters: channel.remote.parameters || [],
+        parameters: channel.remote.parameters ? _.cloneDeep(channel.remote.parameters) : [],  // cloning channel params prevents incorrect behavior if a cluster is subscribed to multiple versions of the same channel
       };
       // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
       const version = await models.DeployableVersion.findOne( { org_id: orgId, uuid: subscription.version_uuid } );
