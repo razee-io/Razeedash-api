@@ -691,7 +691,7 @@ describe('channel remote graphql test suite', () => {
               },
             ],
           },
-        }
+        },
       });
       console.log( `addSubscription result: ${JSON.stringify( result.data, null, 2 )}` );
       const addSubscription = result.data.data.addSubscription;
@@ -723,7 +723,8 @@ describe('channel remote graphql test suite', () => {
       expect(sub01).to.be.an('object');
       expect(sub01.remote).to.be.an('object');
       expect(sub01.remote.remoteType).to.equal('github');
-      expect(sub01.remote.parameters.length).to.equal(3); // One from the Config, one from the Version created with the channel, one from the new subscription
+      console.log( `PLC sub01.remote.parameters: ${JSON.stringify( sub01.remote.parameters, null, 2 )}` );
+      expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
