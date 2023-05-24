@@ -20,14 +20,6 @@
       }
     },
     {
-      "name": "webhooks",
-      "description": "Webhook interface to add external services",
-      "externalDocs": {
-        "description": "Find out more about webhooks",
-        "url": "http://github.com/razee-io/razeedash-api"
-      }
-    },
-    {
       "name": "orgs",
       "description": "Organizations API for managing orgs"
     },
@@ -1332,46 +1324,6 @@
               }
             }
           }
-        }
-      }
-    },
-    "Webhook": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Generated Webhook ID"
-        },
-        "org_id": {
-          "type": "string",
-          "description": "Organization ID"
-        },
-        "cluster_id": {
-          "type": "string",
-          "description": "Cluster ID"
-        },
-        "service_url": {
-          "type": "string",
-          "description": "External service URL for webhook to call when triggered"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "field": {
-          "type": "string",
-          "description": "Dot notation to the field to run regex filter. Example, 'metadata.name'"
-        },
-        "filter": {
-          "type": "string",
-          "description": "Regex to apply against the 'field'."
-        },
-        "trigger": {
-          "type": "string",
-          "description": "Type of event that triggers webhook.  Currently new image and cluster resource changes are the implimented triggers.",
-          "enum": [
-            "cluster",
-            "image"
-          ]
         }
       }
     }
