@@ -731,11 +731,11 @@ describe('subscription graphql test suite', () => {
       });
       expect(addSubscription2.data.errors[0].message).to.equal(`Too many subscriptions are registered under ${org01._id}.`);  // limit is set in definition of test job in package.json
 
-      // add subscription with custom attribute
+      // add subscription with custom attribute, using group uuid
       const result = await subscriptionApi.addSubscription(token77, {
         orgId: org77._id,
         name: 'a_random_name3',
-        groups:['dev'],
+        groups:[org77_group_dev_uuid],
         channelUuid: channel_04_uuid,
         versionUuid: channelVersion_04_uuid,
         custom: {
@@ -761,7 +761,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: subscription_01_uuid,
         name: 'new-name',
-        groups:['new-tag'],
+        groups:['dev'],
         channelUuid: channel_02_uuid,
         versionUuid: channelVersion_03_uuid,
       });
@@ -791,7 +791,7 @@ describe('subscription graphql test suite', () => {
         orgId: org77._id,
         uuid: subscription_04_uuid,
         name: 'new-name',
-        groups:['new-tag'],
+        groups:['dev'],
         channelUuid: channel_04_uuid,
         versionUuid: channelVersion_04_uuid,
         custom: {

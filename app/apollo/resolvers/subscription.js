@@ -36,7 +36,7 @@ const pubSub = GraphqlPubSub.getInstance();
 
 const { validateString, validateName } = require('../utils/directives');
 
-const { validateGroups, validateSubscriptionLimit } = require('../utils/subscriptionUtils.js');
+const { getGroupNames, validateSubscriptionLimit } = require('../utils/subscriptionUtils.js');
 const { validateNewVersions, ingestVersionContent } = require('../utils/versionUtils');
 const storageFactory = require('./../../storage/storageFactory');
 
@@ -345,8 +345,8 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
         }
 
-        // validate groups all exist
-        await validateGroups(org_id, groups, context);
+        // validate groups all exist and get names (while names or uuids could be passed, only the names are used on the database record at this time, and it is assumed/asserted that they are unique)
+        const groupNames = await getGroupNames( org_id, groups, context );
 
         // Get or create the version
         let version;
@@ -402,7 +402,7 @@ const subscriptionResolvers = {
           uuid,
           org_id,
           name,
-          groups,
+          groups: groupNames,
           owner: me._id,
           channelName: channel.name,
           channel_uuid,
@@ -425,7 +425,7 @@ const subscriptionResolvers = {
         subscriptionsRbacSync( [subscription], { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information. addSubscription can get/create a version and create a subscription. Include details of each created and validated resource in pluginContext.
-        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: name, uuid: uuid, groups: groups}};
+        context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: name, uuid: uuid, groups: groupNames}};
 
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid }, `${queryName} returning` );
         return {
@@ -487,8 +487,8 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
-        // validate groups all exist
-        await validateGroups(org_id, groups, context);
+        // validate groups all exist and get names (while names or uuids could be passed, only the names are used on the database record at this time, and it is assumed/asserted that they are unique)
+        const groupNames = await getGroupNames( org_id, groups, context );
 
         // Retreive version for graphQL plugins
         const oldVersionObj = await models.DeployableVersion.findOne( { org_id, uuid: oldVersionUuid } );
@@ -543,7 +543,7 @@ const subscriptionResolvers = {
 
         let sets = {
           name,
-          groups,
+          groups: groupNames,
           channelName: channel.name,
           channel_uuid,
           version: version.name,
@@ -583,7 +583,7 @@ const subscriptionResolvers = {
           resyncNeeded = false;
         } else {
           // If adding any new group(s), trigger RBAC Sync of any un-synced clusters
-          for( const group of groups ) {
+          for( const group of groupNames ) {
             if( !subscription.groups.includes(group) ) {
               // At least one new group, trigger sync and stop checking for new groups
               syncNeeded = true;
@@ -595,7 +595,7 @@ const subscriptionResolvers = {
         // If sync needed, do it
         if( syncNeeded ) {
           // Set the new owner and groups on the subscription object before using it to do RBAC Sync
-          subscription.groups = groups;
+          subscription.groups = groupNames;
           subscription.owner = me._id;
           subscriptionsRbacSync( [subscription], { resync: resyncNeeded }, context ).catch(function(){/*ignore*/});
         }
