@@ -303,6 +303,7 @@ const channelResolvers = {
         if( contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           // Normalize
           newChannelObj.data_location = newChannelObj.data_location ? newChannelObj.data_location.toLowerCase() : conf.storage.defaultLocation;
+          // Clear out `remote` so that it cannot be stored on a non-remote channel
           delete newChannelObj.remote;
 
           // if there is a list of valid data locations, validate the data_location (if provided) is in the list
@@ -507,6 +508,10 @@ const channelResolvers = {
           if( remote.parameters && JSON.stringify(remote.parameters).length > MAX_REMOTE_PARAMETERS_LENGTH ) {
             throw new RazeeValidationError( context.req.t( 'The remote version parameters are too large.  The string representation must be less than {{MAX_REMOTE_PARAMETERS_LENGTH}} characters long', { MAX_REMOTE_PARAMETERS_LENGTH } ), context );
           }
+        }
+        else {
+          // Clear out `remote` so that it cannot be stored on a non-remote channel
+          remote = null;
         }
 
         logger.info({ req_id, user, org_id, uuid, name }, `${queryName} saving`);
@@ -748,6 +753,10 @@ const channelResolvers = {
               remote: { parameters: remote.parameters },
             };
           }
+        }
+        else {
+          // Clear out `remote` so that it cannot be stored on a non-remote channel
+          remote = null;
         }
 
         if( description ) set.description = description;
