@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-const { whoIs, RazeeValidationError } = require ('../resolvers/common');
+const { RazeeValidationError } = require ('../resolvers/common');
 const { SUBSCRIPTION_LIMITS } = require('../models/const');
 const { validateString } = require('./directives');
 
+// Validate that specified groups (by name or uuid) exist, return array of group names
 const getGroupNames = async ( org_id, groupNamesOrUuids, context ) => {
-  const { req_id, me, models, logger } = context;
+  const { models } = context;
   // Get all groups
   const allGroups = await models.Group.find({ org_id: org_id });
 
