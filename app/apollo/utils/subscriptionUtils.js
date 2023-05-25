@@ -40,7 +40,7 @@ const getGroupNames = async ( org_id, groupNamesOrUuids, context ) => {
   }
 
   return( groupNames );
-}
+};
 
 // validate the number of total subscriptions are under the limit
 const validateSubscriptionLimit = async ( org_id, newCount, context ) => {
