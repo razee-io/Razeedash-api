@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-const { whoIs, RazeeValidationError } = require ('../resolvers/common');
+const { RazeeValidationError } = require ('../resolvers/common');
 const { SUBSCRIPTION_LIMITS } = require('../models/const');
 const { validateString } = require('./directives');
 
-const validateGroups = async ( org_id, groups, context ) => {
-  const { req_id, me, models, logger } = context;
-  // validate cluster groups exists in the groups db
-  let groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
-  if (groupCount < groups.length) {
-    if (process.env.LABEL_VALIDATION_REQUIRED) {
-      throw new RazeeValidationError(context.req.t('Could not find all the cluster groups {{groups}} in the groups database, please create them first.', {'groups':groups}), context);
-    } else {
-      // in migration period, we automatically populate groups into label db
-      logger.info({req_id, user: whoIs(me), org_id}, `could not find all the cluster groups ${groups}, migrate them into label database.`);
-      await models.Group.findOrCreateList(models, org_id, groups, context);
-      groupCount = await models.Group.count({org_id: org_id, name: {$in: groups} });
+// Validate that specified groups (by name or uuid) exist, return array of group names
+const getGroupNames = async ( org_id, groupNamesOrUuids, context ) => {
+  const { models } = context;
+  // Get all groups
+  const allGroups = await models.Group.find({ org_id: org_id });
+
+  const groupNames = [];
+
+  for( const groupNameOrUuid of groupNamesOrUuids ) {
+    const matchingGroup = allGroups.find( g => {
+      return( g.name == groupNameOrUuid || g.uuid == groupNameOrUuid );
+    } );
+
+    if( matchingGroup ) {
+      groupNames.push( matchingGroup.name );
+    }
+    else {
+      throw new RazeeValidationError(context.req.t('Could not find all the cluster groups {{groups}} in the groups database, please create them first.', {'groups':groupNamesOrUuids}), context);
     }
   }
+
+  return( groupNames );
 };
 
 // validate the number of total subscriptions are under the limit
@@ -56,7 +64,7 @@ const validateNewSubscriptions = async ( org_id, { versions, newSubscriptions },
     s.groups.forEach( value => { validateString( 'groups', value ); } );
 
     // validate groups all exist
-    await validateGroups(org_id, s.groups, context);
+    await getGroupNames(org_id, s.groups, context);
 
     // validate the subscription references the version(s)
     const badVersionRef = versions.find( v => v.name === s.versionName ).length == 0;
@@ -68,7 +76,7 @@ const validateNewSubscriptions = async ( org_id, { versions, newSubscriptions },
 
 
 module.exports = {
-  validateGroups,
+  getGroupNames,
   validateSubscriptionLimit,
   validateNewSubscriptions,
 };
