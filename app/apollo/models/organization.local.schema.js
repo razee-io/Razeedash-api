@@ -70,8 +70,13 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
   if (process.env.EXTERNAL_HOST) {
     host = process.env.EXTERNAL_HOST;
   }
+  const orgKey = bestOrgKey(org).key;
+  // Return the orgKey as both url query param and as header.  Once all GUI/CLI/API clients are updated to recognize and use 'headers', the orgKey will be removed as a query parameter in a new major version (as it will be a breaking change).
   return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(org).key}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${orgKey}`,
+    headers: {
+      'razee-org-key': orgKey
+    }
   };
 };
 

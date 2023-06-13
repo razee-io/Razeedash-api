@@ -723,7 +723,6 @@ describe('channel remote graphql test suite', () => {
       expect(sub01).to.be.an('object');
       expect(sub01.remote).to.be.an('object');
       expect(sub01.remote.remoteType).to.equal('github');
-      console.log( `PLC sub01.remote.parameters: ${JSON.stringify( sub01.remote.parameters, null, 2 )}` );
       expect(sub01.remote.parameters.length).to.equal(2); // One from the Config merged with one from the Version
     } catch (error) {
       if (error.response) {

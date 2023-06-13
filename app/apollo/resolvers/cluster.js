@@ -29,25 +29,30 @@ const { getRddArgs } = require('../../utils/rdd');
 
 
 // Get the URL that returns yaml for cleaning up agents from a cluster
-const getCleanupUrl = async (org_id, context) => {
+const getCleanupDetails = async (org_id, context) => {
   const { models } = context;
   /*
   Note: this code retrieves the _registration_ url and adds `command=remove`, but this results
-  in a URL with unneded params (e.g. orgkey).  It could instead
+  in a URL with unneded params (e.g. most if not all of the rddArgs).  It could instead
   generate the `/api/cleanup/razeedeploy-job` url by:
-  - replacing `/install/` with `/cleanup/` and truncating query params (e.g. orgkey) before adding RDD Args.
-  - introducing a new `getCleanupUrl` for Organization models to implement (falling back to a different approach if not implemented).
+  - replacing `/install/` with `/cleanup/` and truncating query params.
+  - introducing a new `getCleanupDetails` for Organization models to implement (falling back to a different approach if not implemented).
   - Somthing else to be determined in the future.
   */
-  let { url } = await models.Organization.getRegistrationUrl( org_id, context );
-  url += '&command=remove';
+  let { url, headers } = await models.Organization.getRegistrationUrl( org_id, context );
+
+  // Headers can hold sensitive information, such as an authorization token.
+  // Cleanup requirees no authorization token, unlike _registering_ a cluster, so explicitly empty and ignore the headers from the getRegistrationUrl.
+  headers = {};
+
+  // Build out the URL, avoiding sensitive data.
+  url = `${url}${url.includes('?')?'&':'?'}command=remove`;
   const rddArgs = await getRddArgs(context);
-  if (rddArgs.length > 0) {
-    rddArgs.forEach(arg => {
-      url += `&args=${arg}`;
-    });
-  }
-  return( url );
+  rddArgs.forEach(arg => {
+    url += `&args=${arg}`;
+  });
+
+  return( { url, headers } );
 };
 
 const buildSearchFilter = (ordId, condition, searchStr) => {
@@ -111,15 +116,18 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, clusterId, cluster }, `${queryName} found matching authorized cluster` );
 
         if(cluster){
-          var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-          url = url + `&clusterId=${clusterId}`;
+          let { url } = await models.Organization.getRegistrationUrl(org_id, context);
+
+          // Build out the URL, avoiding sensitive data.
+          url = `${url}${url.includes('?')?'&':'?'}clusterId=${clusterId}`;
           const rddArgs = await getRddArgs(context);
-          if (rddArgs.length > 0) {
-            rddArgs.forEach(arg => {
-              url += `&args=${arg}`;
-            });
-          }
+          rddArgs.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+
           if (!cluster.registration) cluster.registration = {};
+          // Note: the registration.url should not be used -- the URL will not function without first 'priming' it by calling the `enableRegistrationUrl` API, making the value returned here unusable.
+          // It will be removed in a future update.
           cluster.registration.url = url;
         }
 
@@ -176,15 +184,18 @@ const clusterResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, cluster.name, clusterName]);
 
         if(cluster){
-          var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-          url = url + `&clusterId=${cluster.id}`;
+          let { url } = await models.Organization.getRegistrationUrl(org_id, context);
+
+          // Build out the URL, avoiding sensitive data.
+          url = `${url}${url.includes('?')?'&':'?'}clusterId=${cluster.id}`;
           const rddArgs = await getRddArgs(context);
-          if (rddArgs.length > 0) {
-            rddArgs.forEach(arg => {
-              url += `&args=${arg}`;
-            });
-          }
+          rddArgs.forEach(arg => {
+            url += `&args=${arg}`;
+          });
+
           if (!cluster.registration) cluster.registration = {};
+          // Note: the registration.url should not be used -- the URL will not function without first 'priming' it by calling the `enableRegistrationUrl` API, making the value returned here unusable.
+          // It will be removed in a future update.
           cluster.registration.url = url;
         }
 
@@ -457,13 +468,16 @@ const clusterResolvers = {
         // Allow graphQL plugins to retrieve more information. deleteClusterByClusterId can delete clusters. Include details of each deleted resource in pluginContext.
         context.pluginContext = {cluster: {name: deletedCluster.registration.name, uuid: deletedCluster.cluster_id, registration: deletedCluster.registration}};
 
+        const cleanupDetails = await getCleanupDetails( org_id, context );
+
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
         return {
           deletedClusterCount: deletedCluster ? (deletedCluster.cluster_id === cluster_id ? 1 : 0) : 0,
           deletedResourceCount: deletedResources.modifiedCount,
           deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
-          url: await getCleanupUrl( org_id, context ),
+          url: cleanupDetails.url,
+          headers: cleanupDetails.headers,
         };
       }
       catch( error ) {
@@ -524,13 +538,16 @@ const clusterResolvers = {
         const deletedResourceYamlHist = await models.ResourceYamlHist.updateMany({ org_id }, {$set: { deleted: true }}, { upsert: false });
         logger.info({req_id, user, org_id, deletedResourceYamlHist}, 'ResourceYamlHist soft-deletion complete');
 
+        const cleanupDetails = await getCleanupDetails( org_id, context );
+
         logger.info({req_id, user, org_id}, `${queryName} returning`);
         return {
           deletedClusterCount: deletedClusters.deletedCount,
           deletedResourceCount: deletedResources.modifiedCount,
           deletedResourceYamlHistCount: deletedResourceYamlHist.modifiedCount,
           deletedServiceSubscriptionCount: deletedServiceSubscription.deletedCount,
-          url: await getCleanupUrl( org_id, context ),
+          url: cleanupDetails.url,
+          headers: cleanupDetails.headers,
         };
       }
       catch( error ) {
@@ -620,20 +637,24 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id, registration}, `${queryName} retrieving registration url`);
 
         const org = await models.Organization.findById(org_id);
-        var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-        url = url + `&clusterId=${cluster_id}`;
+
+        let { url, headers } = await models.Organization.getRegistrationUrl(org_id, context);
+
+        // Headers can hold sensitive information.  If no headers specified, use empty object.
+        headers = headers || {};
+
+        // Build out the URL, avoiding sensitive data.
+        url = `${url}${url.includes('?')?'&':'?'}clusterId=${cluster_id}`;
         const rddArgs = await getRddArgs(context);
-        if (rddArgs.length > 0) {
-          rddArgs.forEach(arg => {
-            url += `&args=${arg}`;
-          });
-        }
+        rddArgs.forEach(arg => {
+          url += `&args=${arg}`;
+        });
 
         // Allow graphQL plugins to retrieve more information. registerCluster can create clusters. Include details of each created resource in pluginContext.
         context.pluginContext = {cluster: {name: registration.name, uuid: cluster_id, registration: registration}};
 
         logger.info({req_id, user, org_id, registration, cluster_id}, `${queryName} returning`);
-        return { url, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
+        return { url, headers, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
       }
       catch( error ) {
         logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
@@ -665,20 +686,23 @@ const clusterResolvers = {
           {$set: {reg_state: CLUSTER_REG_STATES.REGISTERING}});
 
         if (updatedCluster) {
-          var { url } = await models.Organization.getRegistrationUrl(org_id, context);
-          url = url + `&clusterId=${cluster_id}`;
+          let { url, headers } = await models.Organization.getRegistrationUrl(org_id, context);
+
+          // Headers can hold sensitive information.  If no headers specified, use empty object.
+          headers = headers || {};
+
+          // Build out the URL, avoiding sensitive data.
+          url = `${url}${url.includes('?')?'&':'?'}clusterId=${cluster_id}`;
           const rddArgs = await getRddArgs(context);
-          if (rddArgs.length > 0) {
-            rddArgs.forEach(arg => {
-              url += `&args=${arg}`;
-            });
-          }
+          rddArgs.forEach(arg => {
+            url += `&args=${arg}`;
+          });
 
           // Allow graphQL plugins to retrieve more information. enableRegistrationUrl can update clusters. Include details of each updated resource in pluginContext.
           context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: cluster_id, registration: updatedCluster.registration}};
 
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
-          return { url };
+          return { url, headers };
         } else {
           logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
           return null;

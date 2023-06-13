@@ -46,13 +46,19 @@ type: Opaque
 Serves a System Subscription that returns a CronJob that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
 */
 const getOperatorsSubscription = async(req, res) => {
+  // Get the image and command for the update cronjob from the current values returned from the razeedeploy-job api
   const protocol = req.protocol || 'http';
   let host = req.header('host') || 'localhost:3333';
   if (process.env.EXTERNAL_HOST) {
     host = process.env.EXTERNAL_HOST;
   }
-  const url = `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKey(req.org).key}`;
-  let job = await axios.get(url);
+  let job = await axios( {
+    method: 'get',
+    url: `${protocol}://${host}/api/install/razeedeploy-job`,
+    headers: {
+      'razee-org-key': bestOrgKey(req.org).key
+    }
+  });
   job = yaml.loadAll(job.data);
   const image = job[4].spec.template.spec.containers[0].image;
   const command = job[4].spec.template.spec.containers[0].command[0];
