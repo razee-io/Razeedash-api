@@ -31,6 +31,7 @@ async function getRddJobUrl(context) {
   return( `https://github.com/razee-io/razeedeploy-delta/releases/${bestVersion}/download/job.yaml` );
 }
 
+// Return additional RDD query parameters, avoiding sensitive information which should be returned in headers instead
 async function getRddArgs(context) {
   const { req_id, logger } = context;
   logger.warn( {req_id}, 'using SAMPLE implementation, should only happen during dev/test' );

@@ -338,6 +338,7 @@ const clusterFunc = grahqlUrl => {
               deletedResourceYamlHistCount
               deletedServiceSubscriptionCount
               url
+              headers
           }
         }
     `,
@@ -362,6 +363,7 @@ const clusterFunc = grahqlUrl => {
               deletedResourceYamlHistCount
               deletedServiceSubscriptionCount
               url
+              headers
           }
         }
     `,
@@ -381,6 +383,7 @@ const clusterFunc = grahqlUrl => {
           mutation($orgId: String!, $registration: JSON!, $idempotent: Boolean) {
             registerCluster(orgId: $orgId, registration: $registration, idempotent: $idempotent) {
               url
+              headers
           }
         }
     `,
@@ -401,6 +404,7 @@ const clusterFunc = grahqlUrl => {
           mutation($orgId: String!,$clusterId: String!) {
             enableRegistrationUrl(orgId: $orgId clusterId: $clusterId) {
               url
+              headers
           }
         }
       `,

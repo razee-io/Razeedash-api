@@ -85,10 +85,12 @@ const clusterSchema = gql`
     deletedResourceYamlHistCount: Int,
     deletedServiceSubscriptionCount: Int,
     url: String!
+    headers: JSON!
   }
 
   type RegisterClusterResponse {
     url: String!
+    headers: JSON!
     orgId: String!
     orgKey: String!
     clusterId: String!
@@ -98,6 +100,7 @@ const clusterSchema = gql`
 
   type EnableRegistrationUrlResponse {
     url: String!
+    headers: JSON!
   }
 
   extend type Query {

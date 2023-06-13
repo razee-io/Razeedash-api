@@ -66,7 +66,8 @@ const org_01_orgkey = 'orgApiKey-0a9f5ee7-c879-4302-907c-238178ec9071';
 const org_01_orgkey2 = {
   orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
   name: 'testOrgKey2',
-  primary: true
+  primary: true,
+  key: 'dummy-key-value'
 };
 
 // If external auth model specified, use it.  Else use built-in auth model.
@@ -803,6 +804,7 @@ describe('cluster graphql test suite', () => {
       expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
       expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
       expect(deleteClusterByClusterId.url).to.be.an('string');
+      expect(Object.getOwnPropertyNames(deleteClusterByClusterId.headers).length).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -861,6 +863,7 @@ describe('cluster graphql test suite', () => {
       expect(deleteClusters.deletedResourceYamlHistCount).to.equal(0);
       expect(deleteClusters.deletedServiceSubscriptionCount).to.equal(0);
       expect(deleteClusters.url).to.be.an('string');
+      expect(Object.getOwnPropertyNames(deleteClusters.headers).length).to.equal(0);
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);
@@ -879,6 +882,7 @@ describe('cluster graphql test suite', () => {
       });
       console.log( `response: ${JSON.stringify( registerCluster.data, null, 2 )}` );
       expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
+      expect(registerCluster.data.data.registerCluster.headers['razee-org-key']).to.be.an('string');
 
       const result = await clusterApi.byClusterName(token, {
         orgId: org01._id,
@@ -1054,13 +1058,15 @@ describe('cluster graphql test suite', () => {
         clusterId: clusterIdEnableRegUrl,
       });
 
+      expect(enableRegistrationUrl.url).to.be.an('string');
+      expect(enableRegistrationUrl.headers['razee-org-key']).to.be.an('string');
+
       const result = await clusterApi.byClusterID(token, {
         orgId: org01._id,
         clusterId: clusterIdEnableRegUrl,
       });
       const clusterByClusterId = result.data.data.clusterByClusterId;
 
-      expect(enableRegistrationUrl.url).to.be.an('string');
       expect(clusterByClusterId.regState).to.equal('registering');
 
     } catch (error) {
