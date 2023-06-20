@@ -61,7 +61,7 @@ const channelResolvers = {
                 uuid: obj.uuid || obj.undefined,
                 name: obj.name || obj.undefined
               };
-            })
+            });
             for (const attrs of channelObjects) {
               await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [attrs.uuid, attrs.name]);
             }
