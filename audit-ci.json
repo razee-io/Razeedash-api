@@ -2,6 +2,8 @@
   "low": true,
   "_allowlistInfo": "none",
   "allowlist": [
+    // Low severity issue in fast-xml-parser, no fix available as of 20230620
+    "GHSA-gpv5-7x3g-ghjv"
   ],
   "skip-dev": true
 }
