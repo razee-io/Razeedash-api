@@ -47,14 +47,29 @@ const channelResolvers = {
 
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
-      await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
-
       try{
         checkComplexity( queryFields );
 
         let channels;
         try {
+          //Get Channels authorized by Access Policy
           channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
+          if (channels.length != 0) {
+            //Check validAuth() for user allowed channels
+            const channelObjects = _.map(channels, (obj)=>{
+              return {
+                uuid: obj.uuid || obj.undefined,
+                name: obj.name || obj.undefined
+              };
+            })
+            for (const attrs of channelObjects) {
+              await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [attrs.uuid, attrs.name]);
+            }
+          }
+          else {
+            //Check validAuth() now to ensure that if the user doesn't have read permissions on any channels they get 'not allowed' error instead of 'valid' empty array
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
+          }
         }
         catch(error){
           logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
@@ -85,7 +100,7 @@ const channelResolvers = {
       try{
         checkComplexity( queryFields );
 
-        const channel = await models.Channel.findOne({org_id, uuid });
+        const channel = await models.Channel.findOne({org_id, uuid});
         if (!channel) {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
@@ -266,7 +281,7 @@ const channelResolvers = {
       try {
         logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
 
-        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context);
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [UUID(), name]);
 
         // Create the channel object to be saved.
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
