@@ -74,7 +74,7 @@ OrganizationLocalSchema.statics.getRegistrationUrl = async function(org_id, cont
     bestOrgKeyValue = ( org.orgKeys2.find( key => { return key.primary; } ) || org.orgKeys2[0] ).key;
   }
   return {
-    url: `${protocol}://${host}/api/install/razeedeploy-job?orgKey=${bestOrgKeyValue}`,
+    url: `${protocol}://${host}/api/install/razeedeploy-job`,
     headers: {
       'razee-org-key': bestOrgKeyValue
     }
