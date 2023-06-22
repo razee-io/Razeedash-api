@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, filterClustersToAllowed, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -111,7 +111,9 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.name]);
+        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name]);
 
         logger.info({req_id, user, org_id, clusterId, cluster }, `${queryName} found matching authorized cluster` );
 
@@ -181,7 +183,11 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, cluster.name, clusterName]);
+        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, clusterName]);
+
+        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -236,7 +242,6 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         var searchFilter={};
         if(clusterId){
@@ -250,11 +255,27 @@ const clusterResolvers = {
         else{
           searchFilter = { org_id, ...conditions };
         }
+        var clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
 
-        const clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
-        logger.info({req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        //Get Clusters authorized by Access Policy
+        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
+        if (clusters.length != 0) {
+          for (const attributes of clusters) {
+            //Validate user
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
+          }
+        }
+        else {
+          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        }
+
+        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
         return clusters;
       }
@@ -286,17 +307,33 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-
         const searchFilter = {
           org_id,
           updated: {
             $lt: new Moment().subtract(1, 'day').toDate(),
           },
         };
-        const clusters = await commonClusterSearch(models, searchFilter, { limit });
+        var clusters = await commonClusterSearch(models, searchFilter, { limit });
+
+        //Get Clusters authorized by Access Policy
+        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
+        if (clusters.length != 0) {
+          for (const attributes of clusters) {
+            //Validate user
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
+          }
+        }
+        else {
+          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        }
+
+        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
         return clusters;
       }
@@ -328,7 +365,6 @@ const clusterResolvers = {
         checkComplexity( queryFields );
 
         // first get all users permitted cluster groups,
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
         var props = convertStrToTextPropsObj(filter);
@@ -354,11 +390,27 @@ const clusterResolvers = {
             ]
           };
         }
+        var clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
-        const clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
-        logger.info({req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        //Get Clusters authorized by Access Policy
+        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
+        if (clusters.length != 0) {
+          for (const attributes of clusters) {
+            //Validate user
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
+          }
+        }
+        else {
+          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        }
+
+        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
 
         return clusters;
       }
@@ -434,9 +486,20 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
+        const cluster = await models.Cluster.findOne({
+          org_id,
+          cluster_id
+        }).lean({ virtuals: true });
 
-        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
+        if(!cluster){
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
+        }
+
+        logger.info({ req_id, user, org_id, cluster_id }, `${queryName} validating`);
+
+        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
+
+        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
 
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
@@ -579,7 +642,7 @@ const clusterResolvers = {
       try {
         logger.info({ req_id, user, org_id, registration }, `${queryName} validating`);
 
-        await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
+        await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [UUID(), registration.name]);
 
         logger.info({ req_id, user, org_id, registration }, `${queryName} validating - authorized`);
 
@@ -672,9 +735,20 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
+        const cluster = await models.Cluster.findOne({
+          org_id,
+          cluster_id
+        }).lean({ virtuals: true });
+
+        if(!cluster){
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
+        }
+
         logger.info({ req_id, user, org_id, cluster_id }, `${queryName} validating`);
 
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context);
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
+
+        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
 
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
