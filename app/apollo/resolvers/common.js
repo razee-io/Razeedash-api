@@ -55,6 +55,23 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 };
 
+var filterClustersToAllowed = async(me, org_id, action, field, clusters, context)=>{
+  const { models } = context;
+  var decisionInputs = _.map(clusters, (cluster)=>{
+    return {
+      type: field,
+      action,
+      uuid: cluster.cluster_id,
+      name: cluster.registration.name,
+    };
+  });
+  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
+  clusters = _.filter(clusters, (val, idx)=>{
+    return decisions[idx];
+  });
+  return clusters;
+};
+
 var getAllowedChannels = async(me, org_id, action, field, context)=>{
   const { models } = context;
   var channels = await models.Channel.find({ org_id });
@@ -272,7 +289,7 @@ class RazeeMaintenanceMode extends BasicRazeeError {
 
 module.exports =  {
   whoIs, checkComplexity, validAuth,
-  getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
+  filterClustersToAllowed, getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
   validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
 };
