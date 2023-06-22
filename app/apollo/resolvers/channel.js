@@ -54,22 +54,22 @@ const channelResolvers = {
         try {
           //Get Channels authorized by Access Policy
           channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
+
+          logger.info({ req_id, user, org_id }, `${queryName} validating`);
+
           if (channels.length != 0) {
-            //Check validAuth() for user allowed channels
-            const channelObjects = _.map(channels, (obj)=>{
-              return {
-                uuid: obj.uuid || obj.undefined,
-                name: obj.name || obj.undefined
-              };
-            });
-            for (const attrs of channelObjects) {
-              await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [attrs.uuid, attrs.name]);
+            for (const attributes of channels) {
+              //Validate user
+              await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [attributes.uuid, attributes.name]);
             }
           }
           else {
-            //Check validAuth() now to ensure that if the user doesn't have read permissions on any channels they get 'not allowed' error instead of 'valid' empty array
+            //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
             await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
           }
+
+          logger.info({ req_id, user, org_id, channels }, `${queryName} found ${channels.length} matching channels` );
+
         }
         catch(error){
           logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
