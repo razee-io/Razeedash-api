@@ -2,8 +2,20 @@
   "low": true,
   "_allowlistInfo": "none",
   "allowlist": [
-    // Low severity issue in fast-xml-parser, no fix available as of 20230620
-    "GHSA-gpv5-7x3g-ghjv"
+    {
+      "GHSA-gpv5-7x3g-ghjv": {
+        "active": true,
+        "notes": "no fix available as of 20230622",
+        "expiry": "2023-06-26"
+      }
+    },
+    {
+      "GHSA-c2qf-rxjj-qqgw": {
+        "active": true,
+        "notes": "no fix available as of 20230622",
+        "expiry": "2023-06-26"
+      }
+    }
   ],
   "skip-dev": true
 }
