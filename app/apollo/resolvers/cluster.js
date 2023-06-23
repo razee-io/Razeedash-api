@@ -95,7 +95,7 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.debug({req_id, user, org_id, clusterId }, `${queryName} enter`);
+        logger.debug({req_id, user, org_id, clusterId}, `${queryName} enter`);
 
         checkComplexity( queryFields );
 
@@ -111,11 +111,13 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+        logger.info({req_id, user, org_id}, `${queryName} found matching cluster`);
+
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name]);
 
-        logger.info({req_id, user, org_id, clusterId, cluster }, `${queryName} found matching authorized cluster` );
+        logger.info({req_id, user, org_id, clusterId, cluster}, `${queryName} validating - authorized`);
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -138,7 +140,7 @@ const clusterResolvers = {
         return cluster;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -174,7 +176,7 @@ const clusterResolvers = {
 
         // If more than one matching cluster found, throw an error
         if( clusters.length > 1 ) {
-          logger.info({req_id, user, org_id, clusterName, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+          logger.info({req_id, user, org_id, clusterName}, `${queryName} found ${clusters.length} matching clusters`);
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'cluster', 'name':clusterName}), context);
         }
         const cluster = clusters[0] || null;
@@ -183,11 +185,13 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
 
-        logger.info({ req_id, user, org_id }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} found matching cluster`);
+
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, clusterName]);
 
-        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
+        logger.info({req_id, user, org_id, clusterName, cluster}, `${queryName} validating - authorized`);
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -210,7 +214,7 @@ const clusterResolvers = {
         return cluster;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -242,6 +246,18 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
+        let allAllowed = false;
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+          allAllowed = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
+
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         var searchFilter={};
         if(clusterId){
@@ -255,32 +271,25 @@ const clusterResolvers = {
         else{
           searchFilter = { org_id, ...conditions };
         }
+
         var clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
 
-        //Get Clusters authorized by Access Policy
-        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
+
+        if (!allAllowed) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({ req_id, user, org_id }, `${queryName} validating`);
-
-        if (clusters.length != 0) {
-          for (const attributes of clusters) {
-            //Validate user
-            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
-          }
-        }
-        else {
-          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        }
-
-        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -307,38 +316,43 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
+        let allAllowed = false;
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+          allAllowed = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
+
         const searchFilter = {
           org_id,
           updated: {
             $lt: new Moment().subtract(1, 'day').toDate(),
           },
         };
+
         var clusters = await commonClusterSearch(models, searchFilter, { limit });
 
-        //Get Clusters authorized by Access Policy
-        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
+
+        if (!allAllowed) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({ req_id, user, org_id }, `${queryName} validating`);
-
-        if (clusters.length != 0) {
-          for (const attributes of clusters) {
-            //Validate user
-            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
-          }
-        }
-        else {
-          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        }
-
-        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -363,6 +377,18 @@ const clusterResolvers = {
         logger.debug({req_id, user, org_id, filter, limit}, `${queryName} enter`);
 
         checkComplexity( queryFields );
+
+        let allAllowed = false;
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+          allAllowed = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
 
         // first get all users permitted cluster groups,
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -390,32 +416,25 @@ const clusterResolvers = {
             ]
           };
         }
+
         var clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
-        //Get Clusters authorized by Access Policy
-        clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
+
+        if (!allAllowed) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({ req_id, user, org_id }, `${queryName} validating`);
-
-        if (clusters.length != 0) {
-          for (const attributes of clusters) {
-            //Validate user
-            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [attributes.cluster_id, attributes.registration.name]);
-          }
-        }
-        else {
-          //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        }
-
-        logger.info({ req_id, user, org_id, clusters }, `${queryName} found ${clusters.length} matching clusters` );
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -435,13 +454,26 @@ const clusterResolvers = {
 
       const user = whoIs(me);
 
+      //DRAFT -- Needs review
+      //Check if user is allowed to view all. query to get all from database. Filter to Allowed. Count all here that remain by major minor version of kube.
       try {
         logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        let allAllowed = false;
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+          allAllowed = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
+
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
-        const results = await models.Cluster.aggregate([
+        var results = await models.Cluster.aggregate([
           {
             $match: {
               org_id,
@@ -461,11 +493,17 @@ const clusterResolvers = {
           { $sort: { _id: 1 } },
         ]);
 
+        if (!allAllowed) {
+          // Get Clusters authorized by Access Policy
+          results = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, results, context);
+          logger.info({req_id, user, org_id, results}, `${queryName} found ${results.length} authorized results`);
+        }
+
         for (const item of results){ item.id = item._id; }
         return results;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -492,17 +530,19 @@ const clusterResolvers = {
         }).lean({ virtuals: true });
 
         if(!cluster){
-          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({ req_id, user, org_id, cluster_id }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
+
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
 
-        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
-
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
+
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} saving`);
 
@@ -544,7 +584,7 @@ const clusterResolvers = {
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -568,6 +608,8 @@ const clusterResolvers = {
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
 
         validateString( 'org_id', org_id );
+
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         logger.info({req_id, user, org_id}, `${queryName} saving`);
 
@@ -614,7 +656,7 @@ const clusterResolvers = {
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -640,11 +682,11 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, registration }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, registration}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [UUID(), registration.name]);
 
-        logger.info({ req_id, user, org_id, registration }, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
 
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
@@ -666,7 +708,7 @@ const clusterResolvers = {
           }
         }
         else {
-          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - name is unique`);
+          logger.info({req_id, user, org_id, registration}, `${queryName} validating - name is unique`);
 
           // validate the number of total clusters are under the limit
           const total = await models.Cluster.count({org_id});
@@ -674,7 +716,7 @@ const clusterResolvers = {
             throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
           }
 
-          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - cluster count ${total} <= ${CLUSTER_LIMITS.MAX_TOTAL}`);
+          logger.info({req_id, user, org_id, registration}, `${queryName} validating - cluster count ${total} <= ${CLUSTER_LIMITS.MAX_TOTAL}`);
 
           // validate the number of pending clusters are under the limit
           const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
@@ -682,7 +724,7 @@ const clusterResolvers = {
             throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
           }
 
-          logger.info({ req_id, user, org_id, registration }, `${queryName} validating - pending cluster count ${total_pending} <= ${CLUSTER_LIMITS.MAX_PENDING}`);
+          logger.info({req_id, user, org_id, registration}, `${queryName} validating - pending cluster count ${total_pending} <= ${CLUSTER_LIMITS.MAX_PENDING}`);
         }
 
         logger.info({req_id, user, org_id, registration}, `${queryName} saving`);
@@ -720,7 +762,7 @@ const clusterResolvers = {
         return { url, headers, orgId: org_id, clusterId: cluster_id, orgKey: bestOrgKey( org ).key, regState: reg_state, registration };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -741,19 +783,21 @@ const clusterResolvers = {
         }).lean({ virtuals: true });
 
         if(!cluster){
-          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({ req_id, user, org_id, cluster_id }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
+
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
 
-        logger.info({ req_id, user, org_id, cluster }, `${queryName} found matching authorized cluster` );
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
 
-        logger.info({ req_id, user, org_id, cluster_id }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} saving`);
 
         const updatedCluster = await models.Cluster.findOneAndUpdate(
           {org_id: org_id, cluster_id: cluster_id},
@@ -775,15 +819,15 @@ const clusterResolvers = {
           // Allow graphQL plugins to retrieve more information. enableRegistrationUrl can update clusters. Include details of each updated resource in pluginContext.
           context.pluginContext = {cluster: {name: updatedCluster.registration.name, uuid: cluster_id, registration: updatedCluster.registration}};
 
-          logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning`);
+          logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning`);
           return { url, headers };
         } else {
-          logger.info({ req_id, user, org_id, cluster_id }, `${queryName} returning (no update)`);
+          logger.info({req_id, user, org_id, cluster_id}, `${queryName} returning (no update)`);
           return null;
         }
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
