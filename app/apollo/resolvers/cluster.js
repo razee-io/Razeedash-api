@@ -111,13 +111,13 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({req_id, user, org_id}, `${queryName} found matching cluster`);
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} found matching cluster`);
 
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating`);
 
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name]);
 
-        logger.info({req_id, user, org_id, clusterId, cluster}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - authorized`);
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -135,9 +135,9 @@ const clusterResolvers = {
           cluster.registration.url = url;
         }
 
-        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
-
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
+
+        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
 
         return cluster;
       }
@@ -193,7 +193,7 @@ const clusterResolvers = {
 
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, clusterName]);
 
-        logger.info({req_id, user, org_id, clusterName, cluster}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -211,9 +211,9 @@ const clusterResolvers = {
           cluster.registration.url = url;
         }
 
-        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
-
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
+
+        logger.info({req_id, user, org_id, clusterName, cluster}, `${queryName} applying query fields`);
 
         return cluster;
       }
@@ -286,9 +286,9 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
-
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -346,12 +346,12 @@ const clusterResolvers = {
         if (!allAllowed) {
           // Get Clusters authorized by Access Policy
           clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
-
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -431,9 +431,9 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
-
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
+
+        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
 
         return clusters;
       }
