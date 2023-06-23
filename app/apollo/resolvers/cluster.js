@@ -530,7 +530,7 @@ const clusterResolvers = {
         }).lean({ virtuals: true });
 
         if(!cluster){
-          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
@@ -783,7 +783,7 @@ const clusterResolvers = {
         }).lean({ virtuals: true });
 
         if(!cluster){
-          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
