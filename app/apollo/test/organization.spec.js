@@ -532,7 +532,7 @@ describe('organization graphql test suite', () => {
       }
     });
 
-    it('registering a Cluster should return URL containing the remaining new OrgKey', async () => {
+    it('registering a Cluster should return URL and headers containing the remaining new OrgKey', async () => {
       token = await signInUser(models, api, rootData);
       try {
         const response = await clusterApi.registerCluster(token, {
@@ -544,7 +544,8 @@ describe('organization graphql test suite', () => {
         const registerCluster = response.data.data.registerCluster;
 
         expect(registerCluster.url).to.be.an('string');
-        expect(registerCluster.url).contains(orgKeyVal1);
+        expect(registerCluster.url).to.not.contain(orgKeyVal1); // orgKey no longer passed as URL query parameter
+        expect(registerCluster.headers['razee-org-key']).to.equal(orgKeyVal1);
       } catch (error) {
         if (error.response) {
           console.error('error encountered:  ', error.response.data);
