@@ -250,7 +250,7 @@ const serviceResolvers = {
         validateName( 'name', name );
         validateString( 'channelUuid', channelUuid );
         validateString( 'versionUuid', versionUuid );
-        tags.forEach( value => { validateString( 'tags', value ); } );
+        if( tags ) tags.forEach( value => { validateString( 'tags', value ); } );
 
         const serviceSubscription = await models.ServiceSubscription.findOne({ _id: ssid, org_id: orgId }).lean({ virtuals: true });
         if (!serviceSubscription) {
