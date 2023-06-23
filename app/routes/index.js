@@ -90,10 +90,7 @@ router.use('/cleanup', Cleanup);
 router.use(async (req, res, next) => {
   let orgKey = req.get('razee-org-key');
   if(!orgKey){
-    orgKey = req.query.orgKey;
-    if(!orgKey){
-      return res.status(401).json('{"msg": "razee-org-key required"}');
-    }
+    return res.status(401).json('{"msg": "razee-org-key required"}');
   }
 
   // Ensure sensitive information is removed before handling possible errors by redacting 'razee-org-key'
