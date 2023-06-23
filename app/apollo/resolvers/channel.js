@@ -52,19 +52,19 @@ const channelResolvers = {
 
         let channels;
         try {
-          //Get Channels authorized by Access Policy
+          // Get Channels authorized by Access Policy
           channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
 
           logger.info({ req_id, user, org_id }, `${queryName} validating`);
 
           if (channels.length != 0) {
             for (const attributes of channels) {
-              //Validate user
+              // Validate user
               await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [attributes.uuid, attributes.name]);
             }
           }
           else {
-            //Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
+            // Validate if user lacks permissions they get 'not allowed' error instead of 'valid' empty array
             await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
           }
 
