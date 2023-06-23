@@ -135,6 +135,8 @@ const clusterResolvers = {
           cluster.registration.url = url;
         }
 
+        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
+
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
         return cluster;
@@ -209,6 +211,8 @@ const clusterResolvers = {
           cluster.registration.url = url;
         }
 
+        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
+
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
 
         return cluster;
@@ -282,9 +286,9 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
         logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+
+        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
       }
@@ -345,9 +349,9 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
         logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+
+        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
       }
@@ -427,9 +431,9 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
-        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
         logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+
+        await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
         return clusters;
       }
