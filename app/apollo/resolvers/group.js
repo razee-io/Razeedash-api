@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, commonClusterSearch, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, commonClusterSearch, filterClustersToAllowed, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, filterGroupsToAllowed } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -41,19 +41,40 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try{
-        logger.debug({req_id, user, org_id }, `${queryName} enter`);
+        logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
         checkComplexity( queryFields );
 
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
-        const groups = await models.Group.find({ org_id }).lean({ virtuals: true });
+        let allAllowed = false;
+        try {
+          // Check if user has read access to all groups
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+          allAllowed = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all groups, check individually later
+        }
+
+        var groups = await models.Group.find({ org_id }).lean({ virtuals: true });
+
+        logger.info({req_id, user, org_id}, `${queryName} found ${groups.length} matching groups`);
+
+        if (!allAllowed) {
+          // Get groups authorized by Access Policy
+          groups = await filterGroupsToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, groups, context);
+          logger.info({req_id, user, org_id, groups}, `${queryName} found ${groups.length} authorized groups`);
+        }
 
         await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
+
+        logger.info({req_id, user, org_id, groups}, `${queryName} applying query fields`);
 
         return groups;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -76,14 +97,23 @@ const groupResolvers = {
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
+
+        logger.info({req_id, user, org_id, uuid}, `${queryName} found matching group`);
+
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
+
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
+
+        logger.info({req_id, user, org_id, group}, `${queryName} applying query fields`);
 
         return group;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -114,14 +144,23 @@ const groupResolvers = {
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
+
+        logger.info({req_id, user, org_id, name}, `${queryName} found matching group`);
+
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
+
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
+        logger.info({req_id, user, org_id, group}, `${queryName} validating - authorized`);
+
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
+
+        logger.info({req_id, user, org_id, group}, `${queryName} applying query fields`);
 
         return group;
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -137,12 +176,14 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
 
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [UUID(), name]);
 
         validateString( 'org_id', org_id );
         validateName( 'name', name );
+
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         // might not necessary with unique index. Worth to check to return error better.
         const group = await models.Group.findOne({ org_id: org_id, name });
@@ -150,7 +191,7 @@ const groupResolvers = {
           throw new ValidationError(context.req.t('The group name {{name}} already exists.', {'name':name}));
         }
 
-        logger.info({ req_id, user, org_id, name }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, name}, `${queryName} saving`);
 
         const uuid = UUID();
         await models.Group.create({
@@ -163,13 +204,13 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. addGroup can create groups. Include details of each created resource in pluginContext.
         context.pluginContext = {group: {name: name, uuid: uuid}};
 
-        logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, name}, `${queryName} returning`);
         return {
           uuid,
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -194,7 +235,13 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
+        logger.info({req_id, user, org_id, uuid}, `${queryName} found matching group`);
+
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
+
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
@@ -238,7 +285,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, name }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
 
         // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
 
@@ -249,7 +296,7 @@ const groupResolvers = {
 
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
-          logger.info({req_id, user, org_id, name }, `${queryName} found ${groups.length} matching groups` );
+          logger.info({req_id, user, org_id, name}, `${queryName} found ${groups.length} matching groups` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
         const group = groups[0] || null;
@@ -258,7 +305,11 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
 
+        logger.info({req_id, user, org_id, name}, `${queryName} found matching group`);
+
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
+
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
@@ -270,7 +321,7 @@ const groupResolvers = {
           throw new ValidationError(context.req.t('{{clusterCount}} clusters depend on this group. Please update/remove the group from the clusters.', {'clusterCount':clusterIds.length}));
         }
 
-        logger.info({ req_id, user, org_id, name }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, name}, `${queryName} saving`);
 
         if(clusterIds && clusterIds.length > 0) {
           await groupResolvers.Mutation.unGroupClusters(parent, {orgId: org_id, uuid: group.uuid, clusters: clusterIds}, context);
@@ -283,14 +334,14 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. removeGroupByName can delete a group. Include details of each deleted resource in pluginContext.
         context.pluginContext = {group: {name: group.name, uuid: group.uuid}};
 
-        logger.info({ req_id, user, org_id, name }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, name}, `${queryName} returning`);
         return {
           uuid: group.uuid,
           success: true,
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -310,17 +361,54 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+        let allAllowedGroups = false;
+        let allAllowedClusters = false;
+        try {
+          // Check if user has read access to all groups
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
+          await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
+          allAllowedGroups = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all groups, check individually later
+        }
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
+          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
+          allAllowedClusters = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
 
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
-        const groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
+        // Find groups
+        var groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
+        }
+
+        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
+
+        if (!allAllowedGroups) {
+          // Get Groups authorized by Access Policy
+          groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
+          logger.info({req_id, user, org_id, groups}, `${queryName} found ${groups.length} authorized groups`);
+        }
+
+        // Find clusters
+        var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
+        if (!allAllowedClusters) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         groupUuids = _.map(groups, 'uuid');
@@ -332,7 +420,7 @@ const groupResolvers = {
             uuid: group.uuid,
           };
         });
-        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
@@ -341,7 +429,7 @@ const groupResolvers = {
           };
         });
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} saving`);
 
         // because we cant do $addToSet with objs as inputs, we'll need to split into two queries
         // first we pull out all groups with matching uuids
@@ -387,13 +475,13 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. assignClusterGroups can assign groups. Include details of each assigned resource in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -413,26 +501,62 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+        let allAllowedGroups = false;
+        let allAllowedClusters = false;
+        try {
+          // Check if user has read access to all groups
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
+          await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
+          allAllowedGroups = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all groups, check individually later
+        }
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
+          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
+          allAllowedClusters = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
 
         validateString( 'org_id', org_id );
-        groupUuids.forEach( value => validateString( 'groupUuids', value ) );
+        groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
         // Create output for graphQL plugins
-        const groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
+        var groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
+
+        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
+
+        if (!allAllowedGroups) {
+          // Get Groups authorized by Access Policy
+          groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
+          logger.info({req_id, user, org_id, groups}, `${queryName} found ${groups.length} authorized groups`);
+        }
+
+        // Find clusters
+        var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
+        if (!allAllowedClusters) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        }
+
         const groupObjs = _.map(groups, (group)=>{
           return {
             name: group.name,
             uuid: group.uuid,
           };
         });
-        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
@@ -441,7 +565,9 @@ const groupResolvers = {
           };
         });
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
+
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} saving`);
 
         // removes items from the cluster.groups field that have a uuid in the passed groupUuids array
         const res = await models.Cluster.updateMany(
@@ -459,13 +585,13 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. unassignClusterGroups can unassign items in cluster groups. Include details of the unassigned resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterIds }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -485,17 +611,53 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+        let allAllowedGroups = false;
+        let allAllowedClusters = false;
+        try {
+          // Check if user has read access to all groups
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
+          await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
+          logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
+          allAllowedGroups = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all groups, check individually later
+        }
+        try {
+          // Check if user has read access to all clusters
+          logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - clusters`);
+          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - clusters authorized`);
+          allAllowedClusters = true;
+        }
+        catch( error ) {
+          // User doesn't have read to all clusters, check individually later
+        }
 
         validateString( 'org_id', org_id );
         validateString( 'clusterId', clusterId );
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
-        const groups = await models.Group.find({ org_id, uuid: { $in: groupUuids } });
+        var groups = await models.Group.find({ org_id, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
+
+        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
+
+        if (!allAllowedGroups) {
+          // Get Groups authorized by Access Policy
+          groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
+          logger.info({req_id, user, org_id, groups}, `${queryName} found ${groups.length} authorized groups`);
+        }
+
+        // Find clusters
+        var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} found ${clusters.length} matching clusters`);
+        if (!allAllowedClusters) {
+          // Get Clusters authorized by Access Policy
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         groupUuids = _.map(groups, 'uuid');
@@ -507,7 +669,6 @@ const groupResolvers = {
             name: group.name,
           };
         });
-        const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
@@ -520,7 +681,7 @@ const groupResolvers = {
           updated: Date.now(),
         };
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} saving`);
 
         const res = await models.Cluster.updateOne({ org_id, cluster_id: clusterId }, { $set: sets });
 
@@ -538,13 +699,13 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, groups: groupObjsToAdd};
 
-        logger.info({ req_id, user, org_id, groupUuids, clusterId }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} returning`);
         return {
           modified: res.modifiedCount
         };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -559,7 +720,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
@@ -571,9 +732,13 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
+        logger.info({req_id, user, org_id, uuid}, `${queryName} found ${group.length} matching group`);
+
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, group}, `${queryName} validating - group authorized`);
+
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} saving`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -603,11 +768,11 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. groupClusters can group items in cluster groups. Include details of the grouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} returning`);
         return {modified: res.modifiedCount };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
@@ -622,7 +787,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
@@ -631,12 +796,16 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
+
+        logger.info({req_id, user, org_id, uuid}, `${queryName} found ${group.length} matching group`);
 
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
 
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} saving`);
+        logger.info({req_id, user, org_id, group}, `${queryName} validating - group authorized`);
+
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} saving`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -657,11 +826,11 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
-        logger.info({ req_id, user, org_id, uuid, clusters }, `${queryName} returning`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} returning`);
         return {modified: res.modifiedCount };
       }
       catch( error ) {
-        logger.error({ req_id, user, org_id, error }, `${queryName} error encountered: ${error.message}`);
+        logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
         }
