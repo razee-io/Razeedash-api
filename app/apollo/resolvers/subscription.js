@@ -67,12 +67,6 @@ const subscriptionResolvers = {
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
 
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
-
         const clusterGroupNames = (cluster.groups) ? cluster.groups.map(l => l.name) : [];
 
         logger.debug({user: 'graphql api user', org_id, clusterGroupNames}, `${queryName} enter`);
@@ -112,12 +106,6 @@ const subscriptionResolvers = {
           ],
         }).lean(/* skip virtuals: true for now since it is class facing api. */);
         logger.info({org_id, req_id, user, cluster_id, clusterGroupNames}, `${queryName} found ${foundSubscriptions?foundSubscriptions.length:'ERR'} subscriptions for ${clusterGroupNames.length} groups`);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - subscriptions`);
-
-        foundSubscriptions = await filterSubscriptionsToAllowed(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, foundSubscriptions, context);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - subscriptions authorized`);
 
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
