@@ -374,7 +374,7 @@ const groupResolvers = {
         try {
           // Check if user has read access to all clusters
           logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
-          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
           allAllowedClusters = true;
         }
@@ -403,7 +403,7 @@ const groupResolvers = {
         logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
         if (!allAllowedClusters) {
           // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
@@ -511,7 +511,7 @@ const groupResolvers = {
         try {
           // Check if user has read access to all clusters
           logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
-          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
           allAllowedClusters = true;
         }
@@ -540,7 +540,7 @@ const groupResolvers = {
         logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
         if (!allAllowedClusters) {
           // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
@@ -618,7 +618,7 @@ const groupResolvers = {
         try {
           // Check if user has read access to all clusters
           logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - clusters`);
-          await validAuth(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, queryName, context);
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - clusters authorized`);
           allAllowedClusters = true;
         }
@@ -647,7 +647,7 @@ const groupResolvers = {
         logger.info({req_id, user, org_id, clusterId}, `${queryName} found ${clusters.length} matching clusters`);
         if (!allAllowedClusters) {
           // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
