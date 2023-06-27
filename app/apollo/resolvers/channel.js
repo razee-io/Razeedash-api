@@ -50,7 +50,7 @@ const channelResolvers = {
       try{
         checkComplexity( queryFields );
 
-        let channels;
+        var channels;
 
         try {
           logger.info({req_id, user, org_id}, `${queryName} validating`);
