@@ -118,7 +118,7 @@ var filterSubscriptionsToAllowed = async(me, org_id, action, field, subscription
   return subscriptions;
 };
 
-// return user permitted cluster groups in an array
+// get and return user permitted cluster groups in an array
 const getAllowedGroups = async (me, org_id, action, field, queryName, context) => {
   const {req_id, models, logger} = context;
 
@@ -137,6 +137,24 @@ const getAllowedGroups = async (me, org_id, action, field, queryName, context) =
   });
   logger.debug({req_id, user: whoIs(me), org_id, action, allowedGroups}, `getAllowedGroups exit for ${queryName}`);
   return allowedGroups;
+};
+
+// return user permitted cluster groups in an array
+const filterGroupsToAllowed = async (me, org_id, action, field, groups, context) => {
+  const {models} = context;
+  var objectArray = groups.map(group => {
+    return {
+      type: TYPES.GROUP,
+      action,
+      uuid: group.uuid,
+      name: group.name
+    };
+  });
+  var decisions = await models.User.isAuthorizedBatch(me, org_id, objectArray, context);
+  groups = _.filter(groups, (val, idx)=>{
+    return decisions[idx];
+  });
+  return groups;
 };
 
 // the condition will be true if all groups are subset of user permitted groups
@@ -291,5 +309,5 @@ module.exports =  {
   whoIs, checkComplexity, validAuth,
   filterClustersToAllowed, getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
-  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
+  validClusterAuth, getAllowedGroups, filterGroupsToAllowed, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
 };
