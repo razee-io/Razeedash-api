@@ -7,12 +7,13 @@ if [ "$0" = "$BASH_SOURCE" ]; then
 fi
 
 export RAZEE_CONFIG_NAME=${1:-pConfigName}
-RAZEE_ORG_ID=${2:-${RAZEE_ORG_ID:-pOrgId}}
+RAZEE_REMOTE_TYPE=${2:-github}
+RAZEE_ORG_ID=${3:-${RAZEE_ORG_ID:-pOrgId}}
 
 RAZEE_QUERY='mutation ($orgId: String!, $name: String!, $contentType: String, $remote: ChannelRemoteInput) { addChannel(orgId: $orgId, name: $name, contentType: $contentType, remote: $remote) { uuid } }'
-RAZEE_VARIABLES='{"name":"'"${RAZEE_CONFIG_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","contentType":"'"remote"'","remote":{"remoteType":"'"github"'","parameters":[{"key":"'"k1"'", "value":"'"v1"'"}]}}'
+RAZEE_VARIABLES='{"name":"'"${RAZEE_CONFIG_NAME}"'","orgId":"'"${RAZEE_ORG_ID}"'","contentType":"'"remote"'","remote":{"remoteType":"'"${RAZEE_REMOTE_TYPE}"'","parameters":[{"key":"'"k1"'", "value":"'"v1"'"}]}}'
 
-echo "" && echo "CREATE config by name (contentType: remote)"
+echo "" && echo "CREATE config by name (contentType: remote, remoteType: ${RAZEE_REMOTE_TYPE})"
 unset RAZEE_CONFIG_UUID
 unset RAZEE_CONFIG_NAME
 RESPONSE=$(${SCRIPT_DIR}/graphqlPost.sh "${RAZEE_QUERY}" "${RAZEE_VARIABLES}")

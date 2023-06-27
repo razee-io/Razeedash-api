@@ -103,6 +103,7 @@ describe('channel remote graphql test suite', () => {
   before(async () => {
     console.log( 'Setting EXPERIMENTAL env vars' ); // IMPORTANT: Must be deleted in 'after()' to avoid impacting other tests that do not expect these vars to be set.
     process.env.EXPERIMENTAL_GITOPS_ALT = 'true';
+    process.env.EXPERIMENTAL_REMOTE_S3 = 'true';
 
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
     await mongoServer.start();
@@ -128,6 +129,7 @@ describe('channel remote graphql test suite', () => {
 
     console.log( 'Deleting EXPERIMENTAL env vars' );
     delete process.env.EXPERIMENTAL_GITOPS_ALT;
+    delete process.env.EXPERIMENTAL_REMOTE_S3;
   }); // after
 
   it('add a remote channel of remoteType github with a remote parameter', async () => {
@@ -755,4 +757,35 @@ describe('channel remote graphql test suite', () => {
     }
   });
 
+  it('add a remote channel of remoteType s3 with a remote parameter', async () => {
+    try {
+      const result = await channelRemoteApi.addRemoteChannel(userRootToken, {
+        orgId: org01._id,
+        name: 's3ChannelName',
+        contentType: 'remote',
+        remote: {
+          remoteType: 's3',
+          parameters: [
+            {
+              key: 'url',
+              value: 'dummy-s3-url',
+            },
+          ],
+        },
+      });
+      console.log( `addRemoteChannel result: ${JSON.stringify( result.data, null, 2 )}` );
+      const addChannel = result.data.data.addChannel;
+
+      expect(addChannel.uuid).to.be.an('string');
+
+      console.log( `channel (remoteType: s3) created: ${channel01Uuid}` );
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });
