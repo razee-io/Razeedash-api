@@ -287,8 +287,6 @@ const groupResolvers = {
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
 
-        // await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context);
-
         validateString( 'org_id', org_id );
         validateName( 'name', name );
 
@@ -393,9 +391,7 @@ const groupResolvers = {
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
-
         logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
-
         if (!allAllowedGroups) {
           // Get Groups authorized by Access Policy
           groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
@@ -420,7 +416,6 @@ const groupResolvers = {
             uuid: group.uuid,
           };
         });
-
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
@@ -528,14 +523,12 @@ const groupResolvers = {
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
-        // Create output for graphQL plugins
+        // Find groups
         var groups = await models.Group.find({org_id, uuid: {$in: groupUuids}});
         if (groups.length < 1) {
           throw new NotFoundError(context.req.t('None of the passed group uuids were found'));
         }
-
         logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
-
         if (!allAllowedGroups) {
           // Get Groups authorized by Access Policy
           groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
@@ -551,6 +544,7 @@ const groupResolvers = {
           logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
+        // Create output for graphQL plugins
         const groupObjs = _.map(groups, (group)=>{
           return {
             name: group.name,
@@ -564,8 +558,6 @@ const groupResolvers = {
             registration: cluster.registration
           };
         });
-
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
 
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} saving`);
 
@@ -638,13 +630,12 @@ const groupResolvers = {
         validateString( 'clusterId', clusterId );
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
+        // Find groups
         var groups = await models.Group.find({ org_id, uuid: { $in: groupUuids } });
         if (groups.length != groupUuids.length) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
-
         logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
-
         if (!allAllowedGroups) {
           // Get Groups authorized by Access Policy
           groups = await filterGroupsToAllowed(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, groups, context);
