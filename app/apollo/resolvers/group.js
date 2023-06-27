@@ -520,7 +520,7 @@ const groupResolvers = {
         }
 
         validateString( 'org_id', org_id );
-        groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+        groupUuids.forEach( value => validateString( 'groupUuids', value ) );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
         // Find groups
@@ -787,7 +787,7 @@ const groupResolvers = {
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
         if(!group){
-          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
+          throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
         logger.info({req_id, user, org_id, uuid}, `${queryName} found ${group.length} matching group`);
