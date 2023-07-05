@@ -26,7 +26,7 @@ const { validateNewSubscriptions } = require('../utils/subscriptionUtils');
 const { ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES, CHANNEL_LIMITS, CHANNEL_CONSTANTS, MAX_REMOTE_PARAMETERS_LENGTH } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, getAllowedChannels, filterChannelsToAllowed, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError} = require ('./common');
+const { whoIs, checkComplexity, validAuth, getAllowedResources, NotFoundError, RazeeValidationError, BasicRazeeError, RazeeQueryError } = require ('./common');
 
 const { validateString, validateName } = require('../utils/directives');
 
@@ -45,32 +45,23 @@ const channelResolvers = {
 
       const user = whoIs(me);
 
-      logger.debug({req_id, user, org_id}, `${queryName} enter`);
-
       try{
+        logger.debug({req_id, user, org_id}, `${queryName} enter`);
+
         checkComplexity( queryFields );
 
-        var channels;
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
 
-        try {
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
+        // Check for cached IAM decision, Get Channels authorized by Access Policy, Update cache for individual resource authentication
+        var channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
 
-          // Get Channels authorized by Access Policy
-          channels = await getAllowedChannels(me, org_id, ACTIONS.READ, TYPES.CHANNEL, context);
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
-          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-
-          logger.info({req_id, user, org_id}, `${queryName} found ${channels.length} matching channels` );
-
-        }
-        catch(error){
-          logger.error(error, `${queryName} encountered an error when serving ${req_id}.`);
-          throw new NotFoundError(context.req.t('Query {{queryName}} find error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
-        }
+        logger.info({req_id, user, org_id}, `${queryName} found ${channels.length} matching channels` );
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
-        logger.info({req_id, user, org_id, channels}, `${queryName} applying query fields`);
+        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return channels;
       }
@@ -170,7 +161,7 @@ const channelResolvers = {
     },
     channelsByTags: async(parent, { orgId: org_id, tags }, context, fullQuery)=>{
       const queryFields = GraphqlFields(fullQuery);
-      const { models, me, req_id, logger } = context;
+      const { me, req_id, logger } = context;
       const queryName = 'channelsByTags';
 
       const user = whoIs(me);
@@ -184,11 +175,10 @@ const channelResolvers = {
           throw new RazeeValidationError('Please supply one or more tags', context);
         }
 
-        var channels = await models.Channel.find({ org_id, tags: { $all: tags } });
-
         logger.info({req_id, user, org_id, tags}, `${queryName} validating`);
 
-        channels = await filterChannelsToAllowed(me, org_id, ACTIONS.READ, TYPES.CHANNEL, channels, context);
+        // Check for cached IAM decision, Get Channels authorized by Access Policy, Update cache for individual resource authentication
+        var channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, tags);
 
         logger.info({req_id, user, org_id, tags}, `${queryName} validating - authorized`);
 
@@ -196,7 +186,7 @@ const channelResolvers = {
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
-        logger.info({req_id, user, org_id, tags, channels}, `${queryName} applying query fields`);
+        logger.info({req_id, user, org_id, tags}, `${queryName} applying query fields`);
 
         return channels;
       }
