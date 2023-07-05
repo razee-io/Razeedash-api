@@ -55,67 +55,76 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 };
 
-var filterClustersToAllowed = async(me, org_id, action, field, clusters, context)=>{
+// Polymorphically check for cached IAM decision, Get resources authorized by Access Policy, Update cache for individual resource authentication
+var getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchByClusterGroups=null, searchQuery=null)=>{
   const { models } = context;
-  var decisionInputs = _.map(clusters, (cluster)=>{
-    return {
-      type: field,
-      action,
-      uuid: cluster.cluster_id,
-      name: cluster.registration.name,
-    };
+
+  var resources;
+
+  // Check for cached IAM decision, returns true if cache is empty or all is authorized
+  const allAllowed = await cacheAllAllowed(me, org_id, action, type, queryName, context);
+
+  // Create to find by resource type
+  const modelType = type.charAt(0).toUpperCase() + type.slice(1);
+
+  // Find by resource type
+  if (searchByTags) {
+    resources = await models[modelType].find({org_id, tags: {$all: searchByTags}});
+  }
+  else if (type === 'group') {
+    if (searchByUuid) {
+      resources = await models[modelType].find({org_id, uuid: {$in: searchByUuid}});
+    }
+    else {
+      resources = await models[modelType].find({org_id}).lean({virtuals: true});
+    }
+  }
+  else if (type === 'subscription') {
+    if (searchByClusterGroups && searchByUuid) {
+      resources = await models[modelType].find({org_id, $or: [{groups: {$in: searchByClusterGroups} }, {clusterId: searchByUuid}]}).lean();
+    }
+    else if (searchQuery) {
+      resources = await models[modelType].find(searchQuery).lean({virtuals: true});
+    }
+  }
+  else {
+    resources = await models[modelType].find({org_id});
+  }
+
+  // If cache exists and all is not authorized filter through fine grained authentication
+  if (!allAllowed) {
+    return await filterResourcesToAllowed(me, org_id, action, type, resources, context);
+  }
+
+  return resources;
+};
+
+// return user permitted resources in an array
+var filterResourcesToAllowed = async(me, org_id, action, field, resources, context)=>{
+  const { models } = context;
+  var decisionInputs = _.map(resources, (resource)=>{
+    if (field === 'cluster'){
+      return {
+        type: field,
+        action,
+        uuid: resource.cluster_id,
+        name: resource.registration.name,
+      };
+    }
+    else {
+      return {
+        type: field,
+        action,
+        uuid: resource.uuid,
+        name: resource.name,
+      };
+    }
   });
   var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
-  clusters = _.filter(clusters, (val, idx)=>{
+  resources = _.filter(resources, (val, idx)=>{
     return decisions[idx];
   });
-  return clusters;
-};
-
-var getAllowedChannels = async(me, org_id, action, field, context)=>{
-  const { models } = context;
-  var channels = await models.Channel.find({ org_id });
-  return await filterChannelsToAllowed(me, org_id, action, field, channels, context);
-};
-
-var filterChannelsToAllowed = async(me, org_id, action, field, channels, context)=>{
-  const { models } = context;
-  var decisionInputs = _.map(channels, (channel)=>{
-    return {
-      type: field,
-      action,
-      uuid: channel.uuid,
-      name: channel.name,
-    };
-  });
-  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
-  channels = _.filter(channels, (val, idx)=>{
-    return decisions[idx];
-  });
-  return channels;
-};
-
-var getAllowedSubscriptions = async(me, org_id, action, field, context)=>{
-  const { models } = context;
-  var subscriptions = await models.Subscription.find({ org_id });
-  return await filterSubscriptionsToAllowed(me, org_id, action, field, subscriptions, context);
-};
-
-var filterSubscriptionsToAllowed = async(me, org_id, action, field, subscriptions, context)=>{
-  const { models } = context;
-  var decisionInputs = _.map(subscriptions, (subscription)=>{
-    return {
-      type: field,
-      action,
-      uuid: subscription.uuid,
-      name: subscription.name,
-    };
-  });
-  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
-  subscriptions = _.filter(subscriptions, (val, idx)=>{
-    return decisions[idx];
-  });
-  return subscriptions;
+  return resources;
 };
 
 // get and return user permitted cluster groups in an array
@@ -170,7 +179,7 @@ const getGroupConditions = async (me, org_id, action, field, queryName, context)
   };
 };
 
-// the condition will be true if all gropus are subset of user permitted groups or not groups at all
+// the condition will be true if all groups are subset of user permitted groups or not groups at all
 const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, queryName, context) => {
   const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, field, queryName, context);
   if (field === 'uuid') {
@@ -189,9 +198,8 @@ const getGroupConditionsIncludingEmpty = async (me, org_id, action, field, query
   };
 };
 
-// Validate is user is authorized for the requested action.
-// Throw exception if not.
-const validAuth = async (me, org_id, action, type, queryName, context, attrs = null) => {
+// Validate if user is authorized for the requested action, throw exception if not.
+const validAuth = async (me, org_id, action, type, queryName, context, attrs=null) => {
   const {req_id, models, logger} = context;
 
   if (context.recoveryHintsMap) {
@@ -205,10 +213,10 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
       throw new RazeeForbiddenError(
         context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}
         ), context);
-
     }
     return;
   }
+
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     if (type === TYPES.RESOURCE){
@@ -218,6 +226,36 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
 
     }
   }
+};
+
+/*
+Check if cache exists and is authorized for each resource of passed 'type'
+Return true if user is authorized for every resource of passed 'type' or if cache doesn't exist
+Return false if user is not authorized for every resource of passed 'type'
+*/
+const cacheAllAllowed = async (me, org_id, action, type, queryName, context) => {
+  const {models} = context;
+
+  if (context.recoveryHintsMap) {
+    context['recoveryHints'] = context.recoveryHintsMap[queryName];
+  }
+
+  // razeedash users (x-api-key)
+  if(me && me.type == 'userToken'){
+    const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
+    if(!result){
+      throw new RazeeForbiddenError(
+        context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}
+        ), context);
+    }
+    return true;
+  }
+
+  //when IAM permissions are given to read Channel and a specific named channel this error should not happen
+  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context, true))) {
+    return false;
+  }
+  return true;
 };
 
 // a helper function to render clusterInfo for a list of resources
@@ -306,8 +344,7 @@ class RazeeMaintenanceMode extends BasicRazeeError {
 }
 
 module.exports =  {
-  whoIs, checkComplexity, validAuth,
-  filterClustersToAllowed, getAllowedChannels, filterChannelsToAllowed, getAllowedSubscriptions, filterSubscriptionsToAllowed,
+  whoIs, checkComplexity, validAuth, cacheAllAllowed, getAllowedResources, filterResourcesToAllowed,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
   validClusterAuth, getAllowedGroups, filterGroupsToAllowed, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
 };
