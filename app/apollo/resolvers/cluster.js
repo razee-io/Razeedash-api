@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, filterClustersToAllowed, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, cacheAllAllowed, filterResourcesToAllowed, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -26,7 +26,6 @@ const { bestOrgKey } = require('../../utils/orgs');
 const { ValidationError } = require('apollo-server');
 const { validateString, validateJson, validateName } = require('../utils/directives');
 const { getRddArgs } = require('../../utils/rdd');
-
 
 // Get the URL that returns yaml for cleaning up agents from a cluster
 const getCleanupDetails = async (org_id, context) => {
@@ -148,7 +147,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end cluster by _id
+    },
 
     clusterByName: async (
       parent,
@@ -224,7 +223,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end clusterByClusterName
+    },
 
     // Return a list of clusters based on org_id.
     // sorted with newest document first
@@ -250,17 +249,10 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        let allAllowed = false;
-        try {
-          // Check if user has read access to all clusters
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-          allAllowed = true;
-        }
-        catch( error ) {
-          // User doesn't have read to all clusters, check individually later
-        }
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
+        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         var searchFilter={};
@@ -280,15 +272,17 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
 
-        if (!allAllowed) {
-          // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        // Get Clusters authorized by access policy and update cache for individual resource authentication
+        if (!allAllowed){
+          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
+
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -299,7 +293,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end clustersByOrgId
+    },
 
     // Find all the clusters that have not been updated in the last day
     inactiveClusters: async (
@@ -320,17 +314,10 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        let allAllowed = false;
-        try {
-          // Check if user has read access to all clusters
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-          allAllowed = true;
-        }
-        catch( error ) {
-          // User doesn't have read to all clusters, check individually later
-        }
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
+        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const searchFilter = {
           org_id,
@@ -343,15 +330,17 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
 
-        if (!allAllowed) {
-          // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+        // Get Clusters authorized by access policy and update cache for individual resource authentication
+        if (!allAllowed){
+          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -362,7 +351,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end inactiveClusters
+    },
 
     clusterSearch: async (
       parent,
@@ -382,17 +371,10 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        let allAllowed = false;
-        try {
-          // Check if user has read access to all clusters
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-          allAllowed = true;
-        }
-        catch( error ) {
-          // User doesn't have read to all clusters, check individually later
-        }
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
+        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         // first get all users permitted cluster groups,
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -425,15 +407,17 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
 
-        if (!allAllowed) {
-          // Get Clusters authorized by Access Policy
-          clusters = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} found ${clusters.length} authorized clusters`);
+        // Get Clusters authorized by access policy and update cache for individual resource authentication
+        if (!allAllowed){
+          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
+
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
 
-        logger.info({req_id, user, org_id, clusters}, `${queryName} applying query fields`);
+        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -444,7 +428,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end clusterSearch
+    },
 
     // Summarize the number clusters by version for active clusters.
     // Active means the cluster information has been updated in the last day
@@ -458,28 +442,41 @@ const clusterResolvers = {
 
       const user = whoIs(me);
 
-      //DRAFT -- Needs review
-      //Check if user is allowed to view all. query to get all from database. Filter to Allowed. Count all here that remain by major minor version of kube.
       try {
         logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
-        let allAllowed = false;
-        try {
-          // Check if user has read access to all clusters
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-          allAllowed = true;
-        }
-        catch( error ) {
-          // User doesn't have read to all clusters, check individually later
-        }
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
+        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
+
+        const searchFilter = {
+          org_id,
+          updated: { $gte: new Moment().subtract(1, 'day').toDate() },
+          ...conditions
+        };
+
+        var clusters = await commonClusterSearch(models, searchFilter, { limit: 0 });
+
+        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
+
+        // Get Clusters authorized by access policy and update cache for individual resource authentication
+        if (!allAllowed){
+          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
+        }
+
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+
+        // Extract the IDs of filtered authorzied clusters
+        const clusterIds = clusters.map(cluster => cluster._id);
 
         var results = await models.Cluster.aggregate([
           {
             $match: {
+              _id: { $in: clusterIds }, // Filter based on the filtered clusters
               org_id,
               updated: { $gte: new Moment().subtract(1, 'day').toDate() },
               ...conditions
@@ -497,12 +494,6 @@ const clusterResolvers = {
           { $sort: { _id: 1 } },
         ]);
 
-        if (!allAllowed) {
-          // Get Clusters authorized by Access Policy
-          results = await filterClustersToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, results, context);
-          logger.info({req_id, user, org_id, results}, `${queryName} found ${results.length} authorized results`);
-        }
-
         for (const item of results){ item.id = item._id; }
         return results;
       }
@@ -513,8 +504,8 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end clusterCountByKubeVersion
-  }, // end query
+    },
+  },
 
   Mutation: {
     deleteClusterByClusterId: async (
@@ -594,7 +585,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end delete cluster by org_id and cluster_id
+    },
 
     deleteClusters: async (
       parent,
@@ -666,7 +657,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end delete cluster by org_id
+    },
 
     // Register a cluster without idempotency (repeated calls will fail due to 'already exists' behavior)
     registerCluster: async (parent, { orgId: org_id, registration, idempotent=false }, context) => {
@@ -772,7 +763,7 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end registerCluster
+    },
 
     enableRegistrationUrl: async (parent, { orgId: org_id, clusterId: cluster_id }, context) => {
       const queryName = 'enableRegistrationUrl';
@@ -837,8 +828,8 @@ const clusterResolvers = {
         }
         throw new RazeeQueryError(context.req.t('Query {{queryName}} error. MessageID: {{req_id}}.', {'queryName':queryName, 'req_id':req_id}), context);
       }
-    }, // end enableRegistrationUrl
+    },
   }
-}; // end clusterResolvers
+};
 
 module.exports = clusterResolvers;
