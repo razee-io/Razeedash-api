@@ -81,7 +81,7 @@ var getAllowedResources = async(me, org_id, action, type, queryName, context, se
   }
   else if (type === 'subscription') {
     if (searchByClusterGroups && searchByUuid) {
-      resources = await models[modelType].find({org_id, $or: [{groups: {$in: searchByClusterGroups} }, {clusterId: searchByUuid}]}).lean();
+      resources = await models[modelType].find({'org_id': org_id, $or: [{groups: {$in: searchByClusterGroups} }, {clusterId: searchByUuid}]}).lean();
     }
     else if (searchQuery) {
       resources = await models[modelType].find(searchQuery).lean({virtuals: true});

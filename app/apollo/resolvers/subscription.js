@@ -107,7 +107,7 @@ const subscriptionResolvers = {
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - subscriptions`);
 
         // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
-        var foundSubscriptions = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, cluster_id, clusterGroupNames);
+        var foundSubscriptions = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, cluster_id, clusterGroupNames, null);
 
         logger.info({org_id, req_id, user, cluster_id, clusterGroupNames}, `${queryName} found ${foundSubscriptions?foundSubscriptions.length:'ERR'} subscriptions for ${clusterGroupNames.length} groups`);
 
