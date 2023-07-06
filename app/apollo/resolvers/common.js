@@ -56,7 +56,7 @@ const validClusterAuth = async (me, queryName, context) => {
 };
 
 // Polymorphically check for cached IAM decision, Get resources authorized by Access Policy, Update cache for individual resource authentication
-var getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchByClusterGroups=null, searchQuery=null)=>{
+var getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
   const { models } = context;
 
   var resources;
@@ -80,10 +80,7 @@ var getAllowedResources = async(me, org_id, action, type, queryName, context, se
     }
   }
   else if (type === 'subscription') {
-    if (searchByClusterGroups && searchByUuid) {
-      resources = await models[modelType].find({'org_id': org_id, $or: [{groups: {$in: searchByClusterGroups} }, {clusterId: searchByUuid}]}).lean();
-    }
-    else if (searchQuery) {
+    if (searchQuery) {
       resources = await models[modelType].find(searchQuery).lean({virtuals: true});
     }
   }

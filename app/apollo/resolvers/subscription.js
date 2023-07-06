@@ -103,15 +103,15 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - subscriptions`);
-
-        // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
-        var foundSubscriptions = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, cluster_id, clusterGroupNames, null);
+        var foundSubscriptions = await models.Subscription.find({
+          'org_id': org_id,
+          $or: [
+            { groups: { $in: clusterGroupNames } },
+            { clusterId: cluster_id },
+          ],
+        }).lean(/* skip virtuals: true for now since it is class facing api. */);
 
         logger.info({org_id, req_id, user, cluster_id, clusterGroupNames}, `${queryName} found ${foundSubscriptions?foundSubscriptions.length:'ERR'} subscriptions for ${clusterGroupNames.length} groups`);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - subscriptions authorized`);
 
         _.each(foundSubscriptions, (sub)=>{
           if(_.isUndefined(sub.channelName)){
@@ -164,7 +164,7 @@ const subscriptionResolvers = {
           logger.info({req_id, user, org_id}, `${queryName} validating`);
 
           // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
-          var subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, null, query);
+          var subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
 
           logger.info({req_id, user, org_id}, `${queryName} found matching subscriptions`);
 
@@ -298,7 +298,7 @@ const subscriptionResolvers = {
           logger.info({req_id, user, org_id}, `${queryName} validating subscriptions`);
 
           // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
-          var subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, null, query);
+          var subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
 
           logger.info({req_id, user, org_id, cluster_id, subs}, `${queryName} validating - subscriptions authorized`);
 
