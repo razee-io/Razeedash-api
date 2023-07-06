@@ -67,12 +67,6 @@ const subscriptionResolvers = {
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
 
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
-
         const clusterGroupNames = (cluster.groups) ? cluster.groups.map(l => l.name) : [];
 
         logger.debug({user: 'graphql api user', org_id, clusterGroupNames}, `${queryName} enter`);
