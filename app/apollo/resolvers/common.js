@@ -207,9 +207,9 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs=nul
 };
 
 /*
-Check if cache exists and is authorized for each resource of passed 'type'
 Return true if user is authorized for every resource of passed 'type'
-Return false if user is not authorized for every resource of passed 'type' or if cache isn't determined
+Return false if user is not authorized for every resource of passed 'type'
+If the User implementation supports caching, only check cache -- in the case of cache miss, also return false.
 */
 const cacheAllAllowed = async (me, org_id, action, type, queryName, context) => {
   const {models} = context;
