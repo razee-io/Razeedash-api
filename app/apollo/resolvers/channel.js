@@ -275,7 +275,7 @@ const channelResolvers = {
 
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [UUID(), name]);
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [name]);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         // Create the channel object to be saved.

@@ -147,7 +147,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [UUID(), name]);
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [name]);
         validateString( 'org_id', org_id );
         validateName( 'name', name );
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);

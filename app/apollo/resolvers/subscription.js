@@ -339,7 +339,7 @@ const subscriptionResolvers = {
 
       try{
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating` );
-        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [UUID(), name]);
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [name]);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - authorized`);
 
         validateString( 'org_id', org_id );
