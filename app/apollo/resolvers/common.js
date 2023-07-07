@@ -87,7 +87,7 @@ var getAllowedResources = async(me, org_id, action, type, queryName, context, se
     resources = await models[modelType].find({org_id});
   }
 
-  // If cache exists and all is not authorized filter through fine grained authentication
+  // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
   if (!allAllowed) {
     return await filterResourcesToAllowed(me, org_id, action, type, resources, context);
   }
