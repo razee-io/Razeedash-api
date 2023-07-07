@@ -4,16 +4,16 @@
   "allowlist": [
     {
       "GHSA-gpv5-7x3g-ghjv": {
-        "active": false,
-        "notes": "no fix available as of 20230622",
-        "expiry": "2023-06-26"
+        "active": true,
+        "notes": "no fix available as of 20230707",
+        "expiry": "2023-07-07"
       }
     },
     {
       "GHSA-c2qf-rxjj-qqgw": {
-        "active": false,
-        "notes": "no fix available as of 20230622",
-        "expiry": "2023-06-26"
+        "active": true,
+        "notes": "fix available as of 20230707",
+        "expiry": "2023-07-07"
       }
     }
   ],

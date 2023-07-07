@@ -46,17 +46,11 @@ const groupResolvers = {
         checkComplexity( queryFields );
 
         logger.info({req_id, user, org_id}, `${queryName} validating`);
-
         // Check for cached IAM decision, Get Groups authorized by Access Policy, Update cache for individual resource authentication
         var groups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
-
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
-        logger.info({req_id, user, org_id}, `${queryName} found ${groups.length} matching groups`);
-
         await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
-
-        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return groups;
       }
@@ -85,17 +79,11 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('could not find group with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} found matching group`);
-
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
-
-        logger.info({req_id, user, org_id, group}, `${queryName} applying query fields`);
 
         return group;
       }
@@ -132,16 +120,11 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
 
-        logger.info({req_id, user, org_id, name}, `${queryName} found matching group`);
-
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
         logger.info({req_id, user, org_id, group}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
-
         logger.info({req_id, user, org_id, group}, `${queryName} applying query fields`);
 
         return group;
@@ -164,12 +147,9 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [UUID(), name]);
-
         validateString( 'org_id', org_id );
         validateName( 'name', name );
-
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         // might not necessary with unique index. Worth to check to return error better.
@@ -212,8 +192,6 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({ req_id, user, org_id, uuid }, `${queryName} validating`);
-
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -222,12 +200,8 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} found matching group`);
-
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
@@ -272,8 +246,6 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-
         validateString( 'org_id', org_id );
         validateName( 'name', name );
 
@@ -290,10 +262,8 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
 
-        logger.info({req_id, user, org_id, name}, `${queryName} found matching group`);
-
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
@@ -350,25 +320,18 @@ const groupResolvers = {
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
-        // Validate and find groups
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
+        // Validate and find groups and clusters
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
 
         // Check for cached IAM decision, Get Groups authorized by Access Policy, Update cache for individual resource authentication
         var groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
-
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
 
-        // Validate and find clusters
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
-
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowedClusters = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating - authorized`);
 
         var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
 
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowedClusters){
@@ -469,25 +432,18 @@ const groupResolvers = {
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
-        // Validate and find groups
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
+        // Validate and find groups and clusters
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
 
         // Check for cached IAM decision, Get Groups authorized by Access Policy, Update cache for individual resource authentication
         var groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
-
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
 
-        // Validate and find clusters
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters`);
-
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowedClusters = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - clusters authorized`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating - authorized`);
 
         var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        logger.info({req_id, user, org_id, clusterIds}, `${queryName} found ${clusters.length} matching clusters`);
 
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowedClusters){
@@ -558,15 +514,11 @@ const groupResolvers = {
         validateString( 'clusterId', clusterId );
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
-        // Validate and find groups
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups`);
-
+        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating`);
         // Check for cached IAM decision, Get Groups authorized by Access Policy, Update cache for individual resource authentication
         var groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - groups authorized`);
-
+        logger.info({req_id, user, org_id, groupUuids}, `${queryName} validating - authorized`);
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
-        logger.info({req_id, user, org_id, groupUuids}, `${queryName} found ${groups.length} matching groups`);
 
         groupUuids = _.map(groups, 'uuid');
 
@@ -621,8 +573,6 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
-
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
@@ -633,13 +583,9 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} found ${group.length} matching group`);
-
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
-        logger.info({req_id, user, org_id, group}, `${queryName} validating - group authorized`);
-
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} saving`);
+        logger.info({req_id, user, org_id, uuid, clusters, group}, `${queryName} validating - authorized, saving`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -688,8 +634,6 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
-
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
@@ -700,13 +644,9 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} found ${group.length} matching group`);
-
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-
-        logger.info({req_id, user, org_id, group}, `${queryName} validating - group authorized`);
-
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} saving`);
+        logger.info({req_id, user, org_id, clusters, group}, `${queryName} validating - authorized, saving`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -727,7 +667,7 @@ const groupResolvers = {
         // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} returning`);
+        logger.info({req_id, user, org_id, uuid, clusters, group}, `${queryName} returning`);
         return {modified: res.modifiedCount };
       }
       catch( error ) {

@@ -110,12 +110,8 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({req_id, user, org_id, clusterId}, `${queryName} found matching cluster`);
-
         logger.info({req_id, user, org_id, clusterId}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name]);
-
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name || cluster.name.name]);
         logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - authorized`);
 
         if(cluster){
@@ -135,8 +131,6 @@ const clusterResolvers = {
         }
 
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
-
-        logger.info({req_id, user, org_id, cluster}, `${queryName} applying query fields`);
 
         return cluster;
       }
@@ -186,12 +180,8 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
 
-        logger.info({req_id, user, org_id, clusterName}, `${queryName} found matching cluster`);
-
         logger.info({req_id, user, org_id, clusterName}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.id, clusterName]);
-
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.cluster_id, clusterName]);
         logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
 
         if(cluster){
@@ -211,8 +201,6 @@ const clusterResolvers = {
         }
 
         await applyQueryFieldsToClusters([cluster], queryFields, args, context);
-
-        logger.info({req_id, user, org_id, clusterName, cluster}, `${queryName} applying query fields`);
 
         return cluster;
       }
@@ -251,7 +239,7 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -270,19 +258,14 @@ const clusterResolvers = {
 
         var clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
 
-        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
-
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
-        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -316,7 +299,7 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const searchFilter = {
@@ -328,19 +311,14 @@ const clusterResolvers = {
 
         var clusters = await commonClusterSearch(models, searchFilter, { limit });
 
-        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
-
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
-        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -373,7 +351,7 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         // first get all users permitted cluster groups,
@@ -405,19 +383,14 @@ const clusterResolvers = {
 
         var clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
-        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
-
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
-
-        logger.info({req_id, user, org_id}, `${queryName} applying query fields`);
 
         return clusters;
       }
@@ -447,7 +420,7 @@ const clusterResolvers = {
 
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
-        // Check for cached IAM decision, returns true if cache is empty or all is authorized
+        // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
         const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -460,12 +433,9 @@ const clusterResolvers = {
 
         var clusters = await commonClusterSearch(models, searchFilter, { limit: 0 });
 
-        logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} matching clusters`);
-
         // Get Clusters authorized by access policy and update cache for individual resource authentication
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id}, `${queryName} found ${clusters.length} authorized clusters`);
         }
 
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
@@ -528,18 +498,11 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
-
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
-
+        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} saving`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized, saving`);
 
         // Delete the Cluster record
         const deletedCluster = await models.Cluster.findOneAndDelete({ org_id, cluster_id });
@@ -599,14 +562,9 @@ const clusterResolvers = {
 
       try {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
-
         validateString( 'org_id', org_id );
-
-        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
-
-        logger.info({req_id, user, org_id}, `${queryName} saving`);
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized, saving`);
 
         // Allow graphQL plugins to retrieve more information. deleteClusters can delete clusters. Include details of each deleted resource in pluginContext.
         const clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
@@ -678,9 +636,7 @@ const clusterResolvers = {
 
       try {
         logger.info({req_id, user, org_id, registration}, `${queryName} validating`);
-
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [UUID(), registration.name]);
-
         logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
 
         validateString( 'org_id', org_id );
@@ -776,23 +732,15 @@ const clusterResolvers = {
           org_id,
           cluster_id
         }).lean({ virtuals: true });
-
         if(!cluster){
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
-
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
-
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name]);
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
-
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} saving`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized, saving`);
 
         const updatedCluster = await models.Cluster.findOneAndUpdate(
           {org_id: org_id, cluster_id: cluster_id},
