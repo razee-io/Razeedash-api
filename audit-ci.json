@@ -1,14 +1,6 @@
 {
   "low": true,
   "_allowlistInfo": "none",
-  "allowlist": [
-    {
-      "GHSA-gpv5-7x3g-ghjv": {
-        "active": true,
-        "notes": "no fix available as of 20230622",
-        "expiry": "2023-07-14"
-      }
-    }
-  ],
+  "allowlist": [],
   "skip-dev": true
 }
