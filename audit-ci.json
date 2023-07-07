@@ -1,6 +1,14 @@
 {
   "low": true,
   "_allowlistInfo": "none",
-  "allowlist": [],
+  "allowlist": [
+    {
+      "GHSA-c2qf-rxjj-qqgw": {
+        "active": true,
+        "notes": "no fix available as of 20230622",
+        "expiry": "2023-07-07"
+      }
+    }
+  ],
   "skip-dev": true
 }
