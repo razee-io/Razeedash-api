@@ -50,10 +50,8 @@ const channelResolvers = {
 
         checkComplexity( queryFields );
 
-        // Check for cached IAM decision, Get Channels authorized by Access Policy, Update cache for individual resource authentication
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
         let channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
-        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, channels}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
@@ -84,7 +82,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
@@ -126,7 +123,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with name {{name}}.', {'name':name}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
@@ -159,10 +155,8 @@ const channelResolvers = {
           throw new RazeeValidationError('Please supply one or more tags', context);
         }
 
-        // Check for cached IAM decision, Get Channels authorized by Access Policy, Update cache for individual resource authentication
-        logger.info({req_id, user, org_id, tags}, `${queryName} validating`);
         let channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, tags);
-        logger.info({req_id, user, org_id, tags, channels}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, tags, channels}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
@@ -218,7 +212,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Could not find the configuration channel with uuid/name {{channelUuid}}/channelName.', {channelUuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, channelUuid, channelName}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, channelUuid, channelName}, `${queryName} validating - authorized`);
@@ -277,7 +270,6 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try {
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.CREATE, TYPES.CHANNEL, queryName, context, [name]);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
@@ -502,7 +494,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
@@ -602,7 +593,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - authorized`);
@@ -744,7 +734,6 @@ const channelResolvers = {
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
@@ -892,7 +881,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);

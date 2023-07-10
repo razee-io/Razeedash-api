@@ -154,10 +154,9 @@ const subscriptionResolvers = {
           query.tags = { $all: tags };
         }
 
-        // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
         let subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
-        logger.info({req_id, user, org_id, subs}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, subs}, `${queryName} retrieved allowed resources`);
+
 
         await applyQueryFieldsToSubscriptions(subs, queryFields, { orgId: org_id }, context);
 
@@ -228,14 +227,12 @@ const subscriptionResolvers = {
       try {
         checkComplexity( queryFields );
 
-        // Find groups in cluster
         let cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
         if (!cluster) {
           throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
         }
 
-        // Validate if user is authorized for the requested action
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating cluster`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - cluster`);
         validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id, cluster}, `${queryName} validating - cluster authorized`);
 
@@ -244,7 +241,6 @@ const subscriptionResolvers = {
           clusterGroupNames = cluster.groups.map(l => l.name);
         }
 
-        // Find and validate groups
         const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.READ, 'name', queryName, context);
         if (clusterGroupNames) {
           clusterGroupNames.some(group => {
@@ -273,11 +269,8 @@ const subscriptionResolvers = {
           query.tags = { $all: tags };
         }
 
-        // Find and validate Subscriptions
-        logger.info({req_id, user, org_id}, `${queryName} validating subscriptions`);
-        // Check for cached IAM decision, Get Subscriptions authorized by Access Policy, Update cache for individual resource authentication
         let subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
-        logger.info({req_id, user, org_id, cluster_id, subs}, `${queryName} validating - subscriptions authorized`);
+        logger.info({req_id, user, org_id, cluster_id, subs}, `${queryName} retrieved allowed subscriptions`);
 
         subs = subs.map((sub)=>{
           if(_.isUndefined(sub.channelName)){
@@ -307,7 +300,6 @@ const subscriptionResolvers = {
 
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
-      // Find the cluster
       const cluster = await models.Cluster.findOne({org_id, 'registration.name': clusterName}).lean({ virtuals: true });
       if (!cluster) {
         throw new RazeeValidationError(context.req.t('Could not locate the cluster with clusterName {{clusterName}}', {'clusterName':clusterName}), context);
@@ -327,7 +319,6 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       try{
-        // Validate if user is authorized for the requested action
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [name]);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - authorized`);
@@ -483,7 +474,6 @@ const subscriptionResolvers = {
         // If neither new version or version_uuid specified, keep the prior version (i.e. set version_uuid)
         if( !newVersion && !version_uuid ) version_uuid = oldVersionUuid;
 
-        // Validate if user is authorized for the requested action
         logger.info( {req_id, user, org_id, uuid, name}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info({req_id, user, org_id, uuid, name, subscription}, `${queryName} validating - authorized`);
@@ -690,7 +680,6 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info( {req_id, user, org_id, uuid, version_uuid, subscription}, `${queryName} validating - authorized` );
@@ -763,7 +752,6 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info( {req_id, user, org_id, uuid}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info( {req_id, user, org_id, uuid, subscription}, `${queryName} validating - authorized` );

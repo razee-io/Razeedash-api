@@ -110,7 +110,6 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, clusterId}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name || cluster.name.name]);
         logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - authorized`);
@@ -181,7 +180,6 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
 
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, clusterName}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.cluster_id, clusterName]);
         logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
@@ -239,16 +237,15 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
-
-        // Validate if user is authorized for the requested action
         let allAllowed = false;
         try {
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
-        catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
         }
+        logger.info({req_id, user, org_id}, `${queryName} validating - allAllowed: ${allAllowed}`);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         let searchFilter={};
@@ -266,8 +263,6 @@ const clusterResolvers = {
 
         let clusters = await commonClusterSearch(models, searchFilter, { limit, skip, startingAfter });
 
-        // Get Clusters authorized by access policy and update cache for individual resource authentication
-        logger.info({req_id, user, org_id, allAllowed}, `${queryName} allAllowed: ${allAllowed}`);
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
@@ -305,16 +300,15 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
-
-        // Validate if user is authorized for the requested action
         let allAllowed = false;
         try{
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
-        catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
         }
+        logger.info({req_id, user, org_id, allAllowed}, `${queryName} validating - allAllowed: ${allAllowed}`);
 
         const searchFilter = {
           org_id,
@@ -325,8 +319,6 @@ const clusterResolvers = {
 
         let clusters = await commonClusterSearch(models, searchFilter, { limit });
 
-        // Get Clusters authorized by access policy and update cache for individual resource authentication
-        logger.info({req_id, user, org_id, allAllowed}, `${queryName} allAllowed: ${allAllowed}`);
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
@@ -363,16 +355,15 @@ const clusterResolvers = {
 
         checkComplexity( queryFields );
 
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
-
-        // Validate if user is authorized for the requested action
         let allAllowed = false;
         try {
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
-        catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
         }
+        logger.info({req_id, user, org_id, allAllowed}, `${queryName} validating - allAllowed: ${allAllowed}`);
 
         // first get all users permitted cluster groups,
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -403,8 +394,6 @@ const clusterResolvers = {
 
         let clusters = await commonClusterSearch(models, searchFilter, { limit, skip });
 
-        // Get Clusters authorized by access policy and update cache for individual resource authentication
-        logger.info({req_id, user, org_id, allAllowed}, `${queryName} allAllowed: ${allAllowed}`);
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
@@ -438,16 +427,15 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
-
-        // Validate if user is authorized for the requested action
         let allAllowed = false;
         try {
+          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
-        catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
         }
+        logger.info({req_id, user, org_id, allAllowed}, `${queryName} validating - allAllowed: ${allAllowed}`);
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
@@ -459,8 +447,6 @@ const clusterResolvers = {
 
         let clusters = await commonClusterSearch(models, searchFilter, { limit: 0 });
 
-        // Get Clusters authorized by access policy and update cache for individual resource authentication
-        logger.info({req_id, user, org_id, allAllowed}, `${queryName} allAllowed: ${allAllowed}`);
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
@@ -524,10 +510,10 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
-        // Validate if user is authorized for the requested action
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
+
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
@@ -588,9 +574,9 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        // Validate if user is authorized for the requested action
-        logger.info({req_id, user, org_id}, `${queryName} validating`);
         validateString( 'org_id', org_id );
+
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
@@ -663,7 +649,6 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        // Validate if user is authorized for the requested action
         logger.info({req_id, user, org_id, registration}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
         logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
@@ -765,10 +750,10 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
-        // Validate if user is authorized for the requested action
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
+
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 

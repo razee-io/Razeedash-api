@@ -54,22 +54,19 @@ const validClusterAuth = async (me, queryName, context) => {
     return;
   }
 };
-
-// Polymorphically check for cached IAM decision, Get resources authorized by Access Policy, Update cache for individual resource authentication
+// get allowed resources
 const getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
   const { models } = context;
   let allAllowed = false;
   let resources;
 
-  // Validate if user is authorized for the requested action, throw exception if not
   try {
     await validAuth(me, org_id, action, type, queryName, context);
     allAllowed = true;
   }
-  catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
+  catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
   }
 
-  // Create to find by resource type
   const modelType = type.charAt(0).toUpperCase() + type.slice(1);
 
   // Find by resource type
@@ -93,7 +90,6 @@ const getAllowedResources = async(me, org_id, action, type, queryName, context, 
     resources = await models[modelType].find({org_id});
   }
 
-  // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
   if (!allAllowed) {
     return await filterResourcesToAllowed(me, org_id, action, type, resources, context);
   }
