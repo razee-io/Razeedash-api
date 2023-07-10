@@ -58,10 +58,16 @@ const validClusterAuth = async (me, queryName, context) => {
 // Polymorphically check for cached IAM decision, Get resources authorized by Access Policy, Update cache for individual resource authentication
 var getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
   const { models } = context;
+  var allAllowed = false;
   var resources;
 
   // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-  const allAllowed = await cacheAllAllowed(me, org_id, action, type, queryName, context);
+  try {
+    await validAuth(me, org_id, action, type, queryName, context);
+    allAllowed = true;
+  }
+  catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+  }
 
   // Create to find by resource type
   const modelType = type.charAt(0).toUpperCase() + type.slice(1);
@@ -206,20 +212,6 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs=nul
   }
 };
 
-/*
-Return true if user is authorized for every resource of passed 'type'
-Return false if user is not authorized for every resource of passed 'type'
-If the User implementation supports caching, only check cache -- in the case of cache miss, also return false.
-*/
-const cacheAllAllowed = async (me, org_id, action, type, queryName, context) => {
-  const {models} = context;
-
-  if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, null, context, true))) {
-    return false;
-  }
-  return true;
-};
-
 // a helper function to render clusterInfo for a list of resources
 const applyClusterInfoOnResources = async (org_id, resources, models) => {
   const clusterIds = _.uniq(_.map(resources, 'cluster_id'));
@@ -306,7 +298,7 @@ class RazeeMaintenanceMode extends BasicRazeeError {
 }
 
 module.exports =  {
-  whoIs, checkComplexity, validAuth, cacheAllAllowed, getAllowedResources, filterResourcesToAllowed,
+  whoIs, checkComplexity, validClusterAuth, getAllowedResources, filterResourcesToAllowed, getAllowedGroups,
+  getGroupConditions, getGroupConditionsIncludingEmpty, validAuth, applyClusterInfoOnResources, commonClusterSearch,
   BasicRazeeError, NotFoundError, RazeeValidationError, RazeeForbiddenError, RazeeQueryError, RazeeMaintenanceMode,
-  validClusterAuth, getAllowedGroups, getGroupConditions, getGroupConditionsIncludingEmpty, applyClusterInfoOnResources, commonClusterSearch,
 };

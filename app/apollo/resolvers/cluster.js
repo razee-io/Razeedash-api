@@ -16,7 +16,7 @@
 
 const Moment = require('moment');
 const { ACTIONS, TYPES, CLUSTER_LIMITS, CLUSTER_REG_STATES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, cacheAllAllowed, filterResourcesToAllowed, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, filterResourcesToAllowed, getGroupConditionsIncludingEmpty, commonClusterSearch, BasicRazeeError, NotFoundError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { v4: UUID } = require('uuid');
 const GraphqlFields = require('graphql-fields');
 const _ = require('lodash');
@@ -240,7 +240,13 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        var allAllowed = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
         var searchFilter={};
@@ -300,7 +306,13 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        var allAllowed = false;
+        try{
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
 
         const searchFilter = {
           org_id,
@@ -352,7 +364,13 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        var allAllowed = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
 
         // first get all users permitted cluster groups,
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -421,7 +439,13 @@ const clusterResolvers = {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowed = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+        var allAllowed = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 

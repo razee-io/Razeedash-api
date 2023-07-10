@@ -19,7 +19,7 @@ const { v4: UUID } = require('uuid');
 const {  ValidationError } = require('apollo-server');
 
 const { ACTIONS, TYPES } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, cacheAllAllowed, filterResourcesToAllowed, getAllowedResources, commonClusterSearch, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, filterResourcesToAllowed, getAllowedResources, commonClusterSearch, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToGroups } = require('../utils/applyQueryFields');
@@ -328,8 +328,14 @@ const groupResolvers = {
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowedClusters = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating - authorized`);
+        var allAllowedClusters = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowedClusters = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
+        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - authorized`);
 
         var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
 
@@ -440,8 +446,14 @@ const groupResolvers = {
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
         // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
-        const allAllowedClusters = await cacheAllAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating - authorized`);
+        var allAllowedClusters = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowedClusters = true;
+        }
+        catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+        }
+        logger.info({req_id, user, org_id, clusterIds}, `${queryName} validating - authorized`);
 
         var clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
 
