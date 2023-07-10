@@ -56,17 +56,17 @@ const validClusterAuth = async (me, queryName, context) => {
 };
 
 // Polymorphically check for cached IAM decision, Get resources authorized by Access Policy, Update cache for individual resource authentication
-var getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
+const getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
   const { models } = context;
-  var allAllowed = false;
-  var resources;
+  let allAllowed = false;
+  let resources;
 
-  // Check for cached IAM decision. Return true if all is authorized for resource type; false if not all authorized or empty cache. If false, use fine grained auth to query resources
+  // Validate if user is authorized for the requested action, throw exception if not
   try {
     await validAuth(me, org_id, action, type, queryName, context);
     allAllowed = true;
   }
-  catch(e){ // If not all authorized and/or empty cache, continue with fine grained auth and caching
+  catch(e){ // If cache missed OR cache indicated user is not authorized on all of this type, filter through fine grained authentication
   }
 
   // Create to find by resource type
@@ -102,9 +102,9 @@ var getAllowedResources = async(me, org_id, action, type, queryName, context, se
 };
 
 // return user permitted resources in an array
-var filterResourcesToAllowed = async(me, org_id, action, field, resources, context)=>{
+const filterResourcesToAllowed = async(me, org_id, action, field, resources, context)=>{
   const { models } = context;
-  var decisionInputs = _.map(resources, (resource)=>{
+  let decisionInputs = _.map(resources, (resource)=>{
     if (field === 'cluster'){
       return {
         type: field,
@@ -122,7 +122,7 @@ var filterResourcesToAllowed = async(me, org_id, action, field, resources, conte
       };
     }
   });
-  var decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
+  let decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
   resources = _.filter(resources, (val, idx)=>{
     return decisions[idx];
   });
