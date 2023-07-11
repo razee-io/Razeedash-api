@@ -54,6 +54,7 @@ const validClusterAuth = async (me, queryName, context) => {
     return;
   }
 };
+
 // get allowed resources
 const getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
   const { models } = context;
@@ -64,12 +65,12 @@ const getAllowedResources = async(me, org_id, action, type, queryName, context, 
     await validAuth(me, org_id, action, type, queryName, context);
     allAllowed = true;
   }
-  catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
+  catch(e){ // if exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
   }
 
   const modelType = type.charAt(0).toUpperCase() + type.slice(1);
 
-  // Find by resource type
+  // find by resource type
   if (searchByTags) {
     resources = await models[modelType].find({org_id, tags: {$all: searchByTags}});
   }
