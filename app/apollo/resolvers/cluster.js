@@ -455,7 +455,7 @@ const clusterResolvers = {
         // Extract the IDs of filtered authorzied clusters
         const clusterIds = clusters.map(cluster => cluster._id);
 
-        let results = await models.Cluster.aggregate([
+        const results = await models.Cluster.aggregate([
           {
             $match: {
               _id: { $in: clusterIds }, // Filter based on the filtered clusters
