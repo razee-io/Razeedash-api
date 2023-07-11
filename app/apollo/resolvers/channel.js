@@ -721,7 +721,9 @@ const channelResolvers = {
 
         // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne( { uuid, org_id } );
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - version found: ${!!channel}`);
+        if( !version ){
+          throw new NotFoundError( context.req.t( 'Version uuid "{{version_uuid}}" not found.', { 'version_uuid': uuid } ), context );
+        }
 
         const channel = await models.Channel.findOne( { uuid: version.channel_id, org_id } );
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - channel found: ${!!channel}`);
@@ -729,10 +731,6 @@ const channelResolvers = {
         const identifiers = channel ? [uuid, channel.name] : [uuid];
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, identifiers);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
-
-        if( !version ){
-          throw new NotFoundError( context.req.t( 'Version uuid "{{version_uuid}}" not found.', { 'version_uuid': uuid } ), context );
-        }
 
         if( !channel ){
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
