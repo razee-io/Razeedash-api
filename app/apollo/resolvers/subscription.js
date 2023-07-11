@@ -452,6 +452,7 @@ const subscriptionResolvers = {
 
       try{
         logger.info( {req_id, user, org_id, uuid, name}, `${queryName} validating` );
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateName( 'name', name );
@@ -663,6 +664,7 @@ const subscriptionResolvers = {
 
       try{
         logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating` );
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateString( 'version_uuid', version_uuid );
@@ -741,7 +743,8 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info( {req_id, user, org_id, uuid}, `${queryName} validating` );
+        logger.info( {req_id, user, org_id, uuid}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 

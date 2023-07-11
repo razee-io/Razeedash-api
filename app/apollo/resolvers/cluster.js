@@ -301,7 +301,7 @@ const clusterResolvers = {
         checkComplexity( queryFields );
 
         let allAllowed = false;
-        try{
+        try {
           logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
@@ -501,20 +501,23 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
+
+        validateString( 'org_id', org_id );
+        validateString( 'cluster_id', cluster_id );
+
         const cluster = await models.Cluster.findOne({
           org_id,
           cluster_id
         }).lean({ virtuals: true });
 
+        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
+
+        // If user is authorized but cluster does not exist, throw NotFoundError
         if(!cluster){
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
-        validateString( 'org_id', org_id );
-        validateString( 'cluster_id', cluster_id );
-        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
         // Delete the Cluster record
         const deletedCluster = await models.Cluster.findOneAndDelete({ org_id, cluster_id });
@@ -574,7 +577,9 @@ const clusterResolvers = {
 
       try {
         logger.info({req_id, user, org_id}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
+
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
@@ -648,13 +653,17 @@ const clusterResolvers = {
 
       try {
         logger.info({req_id, user, org_id, registration}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
+
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
+
+        await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
+
         if (!registration.name) {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
         validateName( 'registration.name', registration.name );
+
         logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
 
         let cluster_id = UUID();
@@ -748,8 +757,10 @@ const clusterResolvers = {
         }
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
+
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 

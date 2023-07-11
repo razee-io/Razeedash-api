@@ -486,6 +486,7 @@ const channelResolvers = {
 
       try{
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateName( 'name', name );
@@ -571,6 +572,7 @@ const channelResolvers = {
 
       try {
         logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'channel_uuid', channel_uuid );
 
@@ -701,6 +703,7 @@ const channelResolvers = {
 
       try{
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -874,6 +877,7 @@ const channelResolvers = {
 
       try{
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -953,6 +957,7 @@ const channelResolvers = {
 
       try{
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 

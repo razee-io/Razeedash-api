@@ -145,8 +145,10 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateName( 'name', name );
+
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [name]);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
@@ -191,6 +193,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -245,6 +248,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, name}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateName( 'name', name );
 
@@ -315,6 +319,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -430,6 +435,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -577,6 +583,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
@@ -638,6 +645,7 @@ const groupResolvers = {
 
       try {
         logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
