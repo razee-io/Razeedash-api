@@ -510,10 +510,9 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
@@ -574,9 +573,8 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        validateString( 'org_id', org_id );
-
         logger.info({req_id, user, org_id}, `${queryName} validating`);
+        validateString( 'org_id', org_id );
         await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context);
         logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
@@ -651,14 +649,13 @@ const clusterResolvers = {
       try {
         logger.info({req_id, user, org_id, registration}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
-        logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
-
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
         if (!registration.name) {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
         validateName( 'registration.name', registration.name );
+        logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
 
         let cluster_id = UUID();
         let reg_state = CLUSTER_REG_STATES.REGISTERING;
@@ -750,10 +747,9 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
         }
 
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 

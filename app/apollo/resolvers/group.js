@@ -144,10 +144,9 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateName( 'name', name );
-
-        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [name]);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
@@ -191,6 +190,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -199,7 +199,6 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         logger.info({req_id, user, org_id, uuid, group}, `${queryName} validating - authorized`);
 
@@ -245,6 +244,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateName( 'name', name );
 
@@ -261,7 +261,6 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
 
-        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         logger.info({req_id, user, org_id, name, group}, `${queryName} validating - authorized`);
 
@@ -315,6 +314,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -326,7 +326,6 @@ const groupResolvers = {
 
         let allAllowedClusters = false;
         try {
-          logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowedClusters = true;
         }
@@ -430,6 +429,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
@@ -441,7 +441,6 @@ const groupResolvers = {
 
         let allAllowedClusters = false;
         try {
-          logger.info({req_id, user, org_id, groupUuids, clusterIds, groups}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowedClusters = true;
         }
@@ -577,6 +576,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
@@ -587,7 +587,6 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         logger.info({req_id, user, org_id, uuid, clusters, group}, `${queryName} validating - authorized`);
 
@@ -638,6 +637,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
@@ -648,7 +648,6 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
         logger.info({req_id, user, org_id, clusters, group}, `${queryName} validating - authorized`);
 

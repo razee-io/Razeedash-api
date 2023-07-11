@@ -485,6 +485,7 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateName( 'name', name );
@@ -494,7 +495,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
 
@@ -570,6 +570,7 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'channel_uuid', channel_uuid );
 
@@ -593,7 +594,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - authorized`);
 
@@ -700,6 +700,7 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -734,7 +735,6 @@ const channelResolvers = {
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
@@ -873,6 +873,7 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -881,7 +882,6 @@ const channelResolvers = {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
 
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
@@ -952,6 +952,7 @@ const channelResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -978,7 +979,6 @@ const channelResolvers = {
         }
         else {
           // Channel is found, validate if user is authorized for the requested action
-          logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
           logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
         }

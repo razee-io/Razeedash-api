@@ -451,6 +451,7 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info( {req_id, user, org_id, uuid, name}, `${queryName} validating` );
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateName( 'name', name );
@@ -474,7 +475,6 @@ const subscriptionResolvers = {
         // If neither new version or version_uuid specified, keep the prior version (i.e. set version_uuid)
         if( !newVersion && !version_uuid ) version_uuid = oldVersionUuid;
 
-        logger.info( {req_id, user, org_id, uuid, name}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info({req_id, user, org_id, uuid, name, subscription}, `${queryName} validating - authorized`);
 
@@ -662,6 +662,7 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       try{
+        logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating` );
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         validateString( 'version_uuid', version_uuid );
@@ -680,7 +681,6 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
 
-        logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info( {req_id, user, org_id, uuid, version_uuid, subscription}, `${queryName} validating - authorized` );
 
@@ -741,6 +741,7 @@ const subscriptionResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info( {req_id, user, org_id, uuid}, `${queryName} validating` );
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
@@ -752,7 +753,6 @@ const subscriptionResolvers = {
           throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
         }
 
-        logger.info( {req_id, user, org_id, uuid}, `${queryName} validating` );
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
         logger.info( {req_id, user, org_id, uuid, subscription}, `${queryName} validating - authorized` );
 
