@@ -233,7 +233,7 @@ const subscriptionResolvers = {
         }
 
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - cluster`);
-        validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
         logger.info({req_id, user, org_id, cluster_id, cluster}, `${queryName} validating - cluster authorized`);
 
         let clusterGroupNames = [];
