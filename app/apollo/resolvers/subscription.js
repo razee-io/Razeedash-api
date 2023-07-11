@@ -65,8 +65,6 @@ const subscriptionResolvers = {
           throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
         }
 
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} found matching cluster`);
-
         const clusterGroupNames = (cluster.groups) ? cluster.groups.map(l => l.name) : [];
 
         logger.debug({user: 'graphql api user', org_id, clusterGroupNames}, `${queryName} enter`);
@@ -187,7 +185,6 @@ const subscriptionResolvers = {
 
         // If more than one matching subscription found, throw an error
         if( matchingSubs.length > 1 ) {
-          logger.info({req_id, user, org_id, uuid, name}, `${queryName} found ${matchingSubs.length} matching subscriptions` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'subscription', 'name':name}), context);
         }
         else if( matchingSubs.length == 0 ) {
@@ -225,16 +222,20 @@ const subscriptionResolvers = {
       logger.debug({req_id, user, org_id }, `${queryName} enter`);
 
       try {
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - cluster`);
+
         checkComplexity( queryFields );
 
         let cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - found: ${!!cluster}`);
+
+        const identifiers = cluster ? [cluster_id, cluster.registration.name || cluster.name] : [cluster_id];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - cluster authorized`);
+
         if (!cluster) {
           throw new RazeeValidationError(context.req.t('Could not locate the cluster with cluster_id {{cluster_id}}', {'cluster_id':cluster_id}), context);
         }
-
-        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - cluster`);
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
-        logger.info({req_id, user, org_id, cluster_id, cluster}, `${queryName} validating - cluster authorized`);
 
         let clusterGroupNames = [];
         if (cluster.groups) {
@@ -304,7 +305,6 @@ const subscriptionResolvers = {
       if (!cluster) {
         throw new RazeeValidationError(context.req.t('Could not locate the cluster with clusterName {{clusterName}}', {'clusterName':clusterName}), context);
       }
-      logger.info({req_id, user, org_id, clusterName}, `${queryName} found matching cluster`);
 
       // Get and return subscriptions using the cluster uuid
       return await subscriptionResolvers.Query.subscriptionsForCluster( parent, {orgId: org_id, clusterId: cluster.cluster_id, tags}, context, fullQuery);
@@ -318,10 +318,8 @@ const subscriptionResolvers = {
 
       const user = whoIs(me);
 
-      try{
+      try {
         logger.info( {req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating` );
-        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [name]);
-        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - authorized`);
 
         validateString( 'org_id', org_id );
         validateName( 'name', name );
@@ -330,6 +328,9 @@ const subscriptionResolvers = {
         if( version_uuid ) validateString( 'version_uuid', version_uuid );
         if( clusterId ) validateString( 'clusterId', clusterId );
         tags.forEach( value => { validateString( 'tags', value ); } );
+
+        await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [name]);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - authorized`);
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
@@ -450,7 +451,7 @@ const subscriptionResolvers = {
 
       const user = whoIs(me);
 
-      try{
+      try {
         logger.info( {req_id, user, org_id, uuid, name}, `${queryName} validating` );
 
         validateString( 'org_id', org_id );
@@ -468,16 +469,19 @@ const subscriptionResolvers = {
         logger.debug({req_id, user, org_id, conditions}, `${queryName} group conditions are...`);
 
         const subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
-        if(!subscription){
+        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - found: ${!!subscription}`);
+
+        const identifiers = subscription ? [uuid, subscription.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
+
+        if (!subscription) {
           throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
 
         const oldVersionUuid = subscription.version_uuid;
         // If neither new version or version_uuid specified, keep the prior version (i.e. set version_uuid)
         if( !newVersion && !version_uuid ) version_uuid = oldVersionUuid;
-
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
-        logger.info({req_id, user, org_id, uuid, name, subscription}, `${queryName} validating - authorized`);
 
         // get org
         const org = await models.Organization.findOne({ _id: org_id });
@@ -662,7 +666,7 @@ const subscriptionResolvers = {
 
       const user = whoIs(me);
 
-      try{
+      try {
         logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating` );
 
         validateString( 'org_id', org_id );
@@ -679,12 +683,15 @@ const subscriptionResolvers = {
         logger.debug({req_id, user, org_id, conditions}, `${queryName} group conditions are...`);
 
         let subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
-        if(!subscription){
+        logger.info({req_id, user, org_id, uuid, version_uuid}, `${queryName} validating - found: ${!!subscription}`);
+
+        const identifiers = subscription ? [uuid, subscription.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, identifiers);
+        logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating - authorized` );
+
+        if (!subscription) {
           throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
         }
-
-        await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
-        logger.info( {req_id, user, org_id, uuid, version_uuid, subscription}, `${queryName} validating - authorized` );
 
         // validate user has enough cluster groups permissions to for this sub
         // TODO: we should use specific groups action below instead of manage, e.g. setSubscription action
@@ -752,12 +759,15 @@ const subscriptionResolvers = {
         logger.debug({req_id, user, org_id, conditions}, `${queryName} group conditions are...`);
 
         let subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {});
-        if(!subscription){
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!subscription}`);
+
+        const identifiers = subscription ? [uuid, subscription.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, identifiers);
+        logger.info( {req_id, user, org_id, uuid}, `${queryName} validating - authorized` );
+
+        if (!subscription) {
           throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
         }
-
-        await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, [subscription.uuid, subscription.name]);
-        logger.info( {req_id, user, org_id, uuid, subscription}, `${queryName} validating - authorized` );
 
         // loads the channel
         let channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });

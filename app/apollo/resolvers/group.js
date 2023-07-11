@@ -40,7 +40,7 @@ const groupResolvers = {
 
       const user = whoIs(me);
 
-      try{
+      try {
         logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
         checkComplexity( queryFields );
@@ -52,7 +52,7 @@ const groupResolvers = {
 
         return groups;
       }
-      catch( error ) {
+      catch (error) {
         logger.error({req_id, user, org_id, error}, `${queryName} error encountered: ${error.message}`);
         if (error instanceof BasicRazeeError || error instanceof ValidationError) {
           throw error;
@@ -70,16 +70,20 @@ const groupResolvers = {
       try {
         logger.debug({req_id, user, org_id, uuid}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         const group = await models.Group.findOne({ org_id, uuid }).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [uuid, group.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
+
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with uuid {{uuid}}.', {'uuid':uuid}), context);
         }
-
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, uuid, group}, `${queryName} validating - authorized`);
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
 
@@ -100,30 +104,31 @@ const groupResolvers = {
 
       const user = whoIs(me);
 
-      try{
+      try {
         logger.debug({req_id, user, org_id, name}, `${queryName} enter`);
+
+        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
 
         checkComplexity( queryFields );
 
         const groups = await models.Group.find({ org_id, name }).limit(2).lean({ virtuals: true });
+        const group = groups[0] || null;
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [group.uuid, name] : [name];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
-          logger.info({req_id, user, org_id, name }, `${queryName} found ${groups.length} matching groups` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
-        const group = groups[0] || null;
 
         if (!group) {
           throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
 
-        logger.info({req_id, user, org_id, name}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, name, group}, `${queryName} validating - authorized`);
-
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
-        logger.info({req_id, user, org_id, group}, `${queryName} applying query fields`);
 
         return group;
       }
@@ -198,12 +203,15 @@ const groupResolvers = {
         validateString( 'uuid', uuid );
 
         const group = await models.Group.findOne({ uuid, org_id: org_id }).lean();
-        if(!group){
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [uuid, group.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
+
+        if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, uuid, group}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
@@ -253,20 +261,21 @@ const groupResolvers = {
         validateName( 'name', name );
 
         const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
+        const group = groups[0] || null;
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [group.uuid, name] : [name];
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
-          logger.info({req_id, user, org_id, name}, `${queryName} found ${groups.length} matching groups` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
-        const group = groups[0] || null;
 
-        if(!group){
+        if (!group) {
           throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, name, group}, `${queryName} validating - authorized`);
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
         if(subCount > 0){
@@ -590,12 +599,15 @@ const groupResolvers = {
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        if(!group){
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [uuid, group.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - authorized`);
+
+        if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, uuid, clusters, group}, `${queryName} validating - authorized`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -652,12 +664,15 @@ const groupResolvers = {
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        if(!group){
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
+
+        const identifiers = group ? [uuid, group.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, clusters}, `${queryName} validating - authorized`);
+
+        if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
-
-        await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, [group.uuid, group.name]);
-        logger.info({req_id, user, org_id, clusters, group}, `${queryName} validating - authorized`);
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(

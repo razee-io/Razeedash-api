@@ -96,6 +96,8 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, clusterId}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -105,14 +107,17 @@ const clusterResolvers = {
           cluster_id: clusterId,
           ...conditions
         }).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - found: ${!!cluster}`);
 
-        if(!cluster){
+        const identifiers = cluster ? [clusterId, cluster.registration.name || cluster.name] : [clusterId];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - authorized`);
+
+        if (!cluster) {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [clusterId, cluster.registration.name || cluster.name.name]);
-        logger.info({req_id, user, org_id, clusterId}, `${queryName} validating - authorized`);
+
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -159,6 +164,8 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, clusterName}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
@@ -168,21 +175,21 @@ const clusterResolvers = {
           'registration.name': clusterName,
           ...conditions
         }).limit(2).lean({ virtuals: true });
+        const cluster = clusters[0] || null;
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - found: ${!!cluster}`);
+
+        const identifiers = cluster ? [cluster.cluster_id, clusterName] : [clusterName];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
 
         // If more than one matching cluster found, throw an error
-        if( clusters.length > 1 ) {
-          logger.info({req_id, user, org_id, clusterName}, `${queryName} found ${clusters.length} matching clusters`);
+        if(clusters.length > 1) {
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'cluster', 'name':clusterName}), context);
         }
-        const cluster = clusters[0] || null;
 
-        if(!cluster){
+        if (!cluster) {
           throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
-
-        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating`);
-        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, [cluster.cluster_id, clusterName]);
-        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
 
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
@@ -235,11 +242,12 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, limit, startingAfter}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         let allAllowed = false;
         try {
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
@@ -298,11 +306,12 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, limit}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         let allAllowed = false;
         try {
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
@@ -353,11 +362,12 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id, filter, limit}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
         checkComplexity( queryFields );
 
         let allAllowed = false;
         try {
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
@@ -427,9 +437,10 @@ const clusterResolvers = {
       try {
         logger.debug({req_id, user, org_id}, `${queryName} enter`);
 
+        logger.info({req_id, user, org_id}, `${queryName} validating`);
+
         let allAllowed = false;
         try {
-          logger.info({req_id, user, org_id}, `${queryName} validating`);
           await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
           allAllowed = true;
         }
@@ -748,21 +759,24 @@ const clusterResolvers = {
       const user = whoIs(me);
 
       try {
-        const cluster = await models.Cluster.findOne({
-          org_id,
-          cluster_id
-        }).lean({ virtuals: true });
-        if(!cluster){
-          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
-        }
-
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'cluster_id', cluster_id );
 
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
+        const cluster = await models.Cluster.findOne({
+          org_id,
+          cluster_id
+        }).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - found: ${!!cluster}`);
+
+        const identifiers = cluster ? [cluster_id, cluster.registration.name || cluster.name] : [cluster_id];
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
+
+        if (!cluster) {
+          throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':cluster_id}), context);
+        }
 
         const updatedCluster = await models.Cluster.findOneAndUpdate(
           {org_id: org_id, cluster_id: cluster_id},
