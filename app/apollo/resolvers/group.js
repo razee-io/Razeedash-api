@@ -119,13 +119,13 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, identifiers);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
+        if (!group) {
+          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
+        }
+
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
-        }
-
-        if (!group) {
-          throw new NotFoundError(context.req.t('could not find group with name {{name}}.', {'name':name}), context);
         }
 
         await applyQueryFieldsToGroups([group], queryFields, { orgId: org_id }, context);
@@ -268,13 +268,13 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
         logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
 
+        if (!group) {
+          throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
+        }
+
         // If more than one matching group found, throw an error
         if( groups.length > 1 ) {
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
-        }
-
-        if (!group) {
-          throw new NotFoundError(context.req.t('group name "{{name}}" not found', {'name':name}));
         }
 
         const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });

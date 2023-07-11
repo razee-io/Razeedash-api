@@ -182,13 +182,13 @@ const clusterResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - authorized`);
 
+        if (!cluster) {
+          throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
+        }
+
         // If more than one matching cluster found, throw an error
         if(clusters.length > 1) {
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'cluster', 'name':clusterName}), context);
-        }
-
-        if (!cluster) {
-          throw new NotFoundError(context.req.t('Could not find the cluster with name {{clusterName}}.', {'clusterName':clusterName}), context);
         }
 
         if(cluster){
