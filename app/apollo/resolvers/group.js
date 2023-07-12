@@ -546,11 +546,17 @@ const groupResolvers = {
 
         groupUuids = _.map(groups, 'uuid');
 
-        // Create output for graphQL plugins
         let cluster = await models.Cluster.findOne({
           org_id,
           clusterId
         }).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - found: ${!!cluster}`);
+
+        const identifiers = cluster ? [clusterId, cluster.registration.name || cluster.name] : [clusterId];
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - cluster authorized`);
+
+        // Create output for graphQL plugins
         cluster = _.map(cluster, (c)=>{
           return {
             name: c.registration.name,
