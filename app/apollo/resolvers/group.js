@@ -556,7 +556,7 @@ const groupResolvers = {
 
         let cluster = await models.Cluster.findOne({
           org_id,
-          clusterId
+          cluster_id: clusterId
         }).lean({ virtuals: true });
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - found: ${!!cluster}`);
 
@@ -575,14 +575,11 @@ const groupResolvers = {
           groups: groupObjsToAdd,
           updated: Date.now(),
         };
-        cluster = _.map(cluster, (c)=>{
-          return {
-            name: c.registration.name,
-            uuid: c.cluster_id,
-            registration: c.registration
-          };
-        });
-
+        cluster = {
+          name: cluster.registration.name,
+          uuid: cluster.cluster_id,
+          registration: cluster.registration
+        };
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} saving`);
 
         const res = await models.Cluster.updateOne({ org_id, cluster_id: clusterId }, { $set: sets });
