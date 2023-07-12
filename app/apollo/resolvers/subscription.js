@@ -20,7 +20,7 @@ const { v4: UUID } = require('uuid');
 const { withFilter } = require('graphql-subscriptions');
 
 const { ACTIONS, TYPES, CHANNEL_CONSTANTS } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, validClusterAuth, getGroupConditions, getAllowedResources, getAllowedGroups, getGroupConditionsIncludingEmpty,
+const { whoIs, checkComplexity, validAuth, validClusterAuth, filterResourcesToAllowed, getGroupConditions, getAllowedResources, getAllowedGroups, getGroupConditionsIncludingEmpty,
   NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError, RazeeForbiddenError } = require ('./common');
 const getSubscriptionDetails = require('../../utils/subscriptions.js').getSubscriptionDetails;
 const getServiceSubscriptionDetails = require('../../utils/serviceSubscriptions.js').getServiceSubscriptionDetails;
@@ -331,7 +331,7 @@ const subscriptionResolvers = {
         tags.forEach( value => { validateString( 'tags', value ); } );
 
         await validAuth(me, org_id, ACTIONS.CREATE, TYPES.SUBSCRIPTION, queryName, context, [name]);
-        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - subscription authorized`);
 
         const kubeOwnerId = await models.User.getKubeOwnerId(context);
 
@@ -340,18 +340,28 @@ const subscriptionResolvers = {
 
         // loads the channel
         const channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${!!channel}`);
+
+        await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, [channel_uuid]);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - channel authorized`);
+
+        // loads the groups
+        let allowedGroups = await models.Group.find({ org_id, name: {$in: groups }}).lean({ virtuals: true });
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${allowedGroups.length}`);
+
+        allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, allowedGroups, context);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} filtered groups to allowed`);
+
+        const groupNames = _.map(allowedGroups, group => group.name);
+
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
-
         // get org
         const org = await models.Organization.findOne({ _id: org_id });
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
         }
-
-        // validate groups all exist and get names (while names or uuids could be passed, only the names are used on the database record at this time, and it is assumed/asserted that they are unique)
-        const groupNames = await getGroupNames( org_id, groups, context );
 
         // Get or create the version
         let version;
