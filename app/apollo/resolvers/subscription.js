@@ -95,7 +95,7 @@ const subscriptionResolvers = {
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['dev', 'prod', 'stage'] ==> true
         //   subscription groups: ['dev', 'prod'] , clusterGroupNames: ['stage'] ==> false
-        let foundSubscriptions = await models.Subscription.find({
+        const foundSubscriptions = await models.Subscription.find({
           'org_id': org_id,
           $or: [
             { groups: { $in: clusterGroupNames } },
@@ -185,6 +185,7 @@ const subscriptionResolvers = {
 
         // If more than one matching subscription found, throw an error
         if( matchingSubs.length > 1 ) {
+          logger.info({req_id, user, org_id, uuid, name}, `${queryName} found ${matchingSubs.length} matching subscriptions` );
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'subscription', 'name':name}), context);
         }
         else if( matchingSubs.length == 0 ) {
@@ -702,7 +703,7 @@ const subscriptionResolvers = {
         }
 
         // Find the channel
-        let channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
+        const channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }
@@ -719,7 +720,7 @@ const subscriptionResolvers = {
         context.pluginContext = {channel: {name: channel.name, uuid: channel.uuid, tags: channel.tags}, version: {name: version.name, uuid: version.uuid, description: version.description}, subscription: {name: subscription.name, uuid: subscription.uuid, groups: subscription.groups}};
 
         // Update the subscription
-        let sets = {
+        const sets = {
           version: version.name,
           version_uuid,
           updated: Date.now(),

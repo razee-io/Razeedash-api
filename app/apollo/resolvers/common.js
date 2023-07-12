@@ -55,8 +55,12 @@ const validClusterAuth = async (me, queryName, context) => {
   }
 };
 
-// get allowed resources
-const getAllowedResources = async(me, org_id, action, type, queryName, context, searchByTags=null, searchByUuid=null, searchQuery=null)=>{
+/*
+Get resources specified by `type`, restricted to those the user is authorized to `action` (which could be none, returning an empty array).
+If querying Groups, can query groups matching a passed array of group UUIDs.
+If querying Subscriptions, can query subscriptions matching a passed query object.
+*/
+const getAllowedResources = async(me, org_id, action, type, queryName, context, searchTags=null, searchUuids=null, searchQuery=null)=>{
   const { models } = context;
   let allAllowed = false;
   let resources;
@@ -71,12 +75,12 @@ const getAllowedResources = async(me, org_id, action, type, queryName, context, 
   const modelType = type.charAt(0).toUpperCase() + type.slice(1);
 
   // find by resource type
-  if (searchByTags) {
-    resources = await models[modelType].find({org_id, tags: {$all: searchByTags}});
+  if (searchTags) {
+    resources = await models[modelType].find({org_id, tags: {$all: searchTags}});
   }
   else if (type === 'group') {
-    if (searchByUuid) {
-      resources = await models[modelType].find({org_id, uuid: {$in: searchByUuid}});
+    if (searchUuids) {
+      resources = await models[modelType].find({org_id, uuid: {$in: searchUuids}});
     }
     else {
       resources = await models[modelType].find({org_id}).lean({virtuals: true});
@@ -119,7 +123,7 @@ const filterResourcesToAllowed = async(me, org_id, action, field, resources, con
       };
     }
   });
-  let decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
+  const decisions = await models.User.isAuthorizedBatch(me, org_id, decisionInputs, context);
   resources = _.filter(resources, (val, idx)=>{
     return decisions[idx];
   });

@@ -118,7 +118,7 @@ const channelResolvers = {
 
         const channels = await models.Channel.find({ org_id, name }).limit(2);
         const channel = channels[0] || null;
-        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${!!channel}`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${channel.length}`);
 
         const identifiers = channel ? [channel.uuid, name] : [name];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, identifiers);

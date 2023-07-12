@@ -176,7 +176,7 @@ const clusterResolvers = {
           ...conditions
         }).limit(2).lean({ virtuals: true });
         const cluster = clusters[0] || null;
-        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - found: ${!!cluster}`);
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - found: ${cluster.length}`);
 
         const identifiers = cluster ? [cluster.cluster_id, clusterName] : [clusterName];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
@@ -522,7 +522,8 @@ const clusterResolvers = {
           cluster_id
         }).lean({ virtuals: true });
 
-        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, [cluster_id, cluster.registration.name || cluster.name]);
+        const identifiers = cluster ? [cluster_id, cluster.registration.name || cluster.name] : [cluster_id];
+        await validAuth(me, org_id, ACTIONS.DETACH, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - authorized`);
 
         // If user is authorized but cluster does not exist, throw NotFoundError
@@ -667,14 +668,13 @@ const clusterResolvers = {
 
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
+        validateName( 'registration.name', registration.name );
 
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
 
         if (!registration.name) {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
-        validateName( 'registration.name', registration.name );
-
         logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
 
         let cluster_id = UUID();

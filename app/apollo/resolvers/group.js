@@ -113,7 +113,7 @@ const groupResolvers = {
 
         const groups = await models.Group.find({ org_id, name }).limit(2).lean({ virtuals: true });
         const group = groups[0] || null;
-        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${group.length}`);
 
         const identifiers = group ? [group.uuid, name] : [name];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, identifiers);
@@ -262,7 +262,7 @@ const groupResolvers = {
 
         const groups = await models.Group.find({ name, org_id: org_id }).limit(2).lean({ virtuals: true });
         const group = groups[0] || null;
-        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${group.length}`);
 
         const identifiers = group ? [group.uuid, name] : [name];
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
@@ -529,18 +529,35 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
+        logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating`);
+
         validateString( 'org_id', org_id );
         validateString( 'clusterId', clusterId );
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
-        let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
+        const groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} retrieved allowed resources`);
+
+        if (groups.length != groupUuids.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
 
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
         groupUuids = _.map(groups, 'uuid');
 
         // Create output for graphQL plugins
+        let cluster = await models.Cluster.findOne({
+          org_id,
+          clusterId
+        }).lean({ virtuals: true });
+        cluster = _.map(cluster, (c)=>{
+          return {
+            name: c.registration.name,
+            uuid: c.cluster_id,
+            registration: c.registration
+          };
+        });
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
@@ -568,7 +585,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
-        context.pluginContext = {clusterId: clusterId, groups: groupObjsToAdd};
+        context.pluginContext = {cluster: cluster, groups: groupObjsToAdd};
 
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} returning`);
         return {
