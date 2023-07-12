@@ -336,6 +336,10 @@ const groupResolvers = {
         let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} retrieved allowed resources`);
 
+        if (groups.length != groupUuids.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
+
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
         let allAllowedClusters = false;
@@ -452,6 +456,10 @@ const groupResolvers = {
         let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} retrieved allowed resources`);
 
+        if (groups.length != groupUuids.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
+
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
         let allAllowedClusters = false;
@@ -477,7 +485,7 @@ const groupResolvers = {
             uuid: group.uuid,
           };
         });
-        const clusterObjs = _.map(clusters, (cluster)=>{
+        clusters = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
@@ -501,7 +509,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id}, context);
 
         // Allow graphQL plugins to retrieve more information. unassignClusterGroups can unassign items in cluster groups. Include details of the unassigned resources in pluginContext.
-        context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
+        context.pluginContext = {clusters: clusters, groups: groupObjs};
 
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} returning`);
         return {
@@ -557,13 +565,6 @@ const groupResolvers = {
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - cluster authorized`);
 
         // Create output for graphQL plugins
-        cluster = _.map(cluster, (c)=>{
-          return {
-            name: c.registration.name,
-            uuid: c.cluster_id,
-            registration: c.registration
-          };
-        });
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
@@ -574,6 +575,13 @@ const groupResolvers = {
           groups: groupObjsToAdd,
           updated: Date.now(),
         };
+        cluster = _.map(cluster, (c)=>{
+          return {
+            name: c.registration.name,
+            uuid: c.cluster_id,
+            registration: c.registration
+          };
+        });
 
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} saving`);
 
@@ -614,23 +622,47 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
         clusters.forEach( value => validateString( 'clusters', value ) );
 
-        // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
 
         const identifiers = group ? [uuid, group.name] : [uuid];
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - authorized`);
 
         if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
+
+        let allAllowed = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
+        }
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - allAllowed: ${allAllowed}`);
+
+        let foundClusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+
+        if (!allAllowed){
+          foundClusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, foundClusters, context);
+          logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
+        }
+
+        // Create output for graphQL plugins
+        const clusterObjs = _.map(foundClusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+            registration: cluster.registration
+          };
+        });
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -648,15 +680,6 @@ const groupResolvers = {
         */
         groupsRbacSync( [group], { resync: false }, context ).catch(function(){/*ignore*/});
 
-        // Create output for graphQL plugins
-        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        const clusterObjs = _.map(clusterInfo, (cluster)=>{
-          return {
-            name: cluster.registration.name,
-            uuid: cluster.cluster_id,
-            registration: cluster.registration
-          };
-        });
         // Allow graphQL plugins to retrieve more information. groupClusters can group items in cluster groups. Include details of the grouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
@@ -679,7 +702,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
@@ -687,15 +710,40 @@ const groupResolvers = {
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
 
         const identifiers = group ? [uuid, group.name] : [uuid];
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
-        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - authorized`);
 
         if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
+
+        let allAllowed = false;
+        try {
+          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+          allAllowed = true;
+        }
+        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
+        }
+        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - allAllowed: ${allAllowed}`);
+
+        let foundClusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+
+        if (!allAllowed){
+          foundClusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, foundClusters, context);
+          logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
+        }
+
+        // Create output for graphQL plugins
+        const clusterObjs = _.map(foundClusters, (cluster)=>{
+          return {
+            name: cluster.registration.name,
+            uuid: cluster.cluster_id,
+            registration: cluster.registration
+          };
+        });
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
@@ -704,15 +752,6 @@ const groupResolvers = {
 
         pubSub.channelSubChangedFunc({org_id: org_id}, context);
 
-        // Create output for graphQL plugins
-        const clusterInfo = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        const clusterObjs = _.map(clusterInfo, (cluster)=>{
-          return {
-            name: cluster.registration.name,
-            uuid: cluster.cluster_id,
-            registration: cluster.registration
-          };
-        });
         // Allow graphQL plugins to retrieve more information. unGroupClusters can ungroup items in cluster groups. Include details of the ungrouped resources in pluginContext.
         context.pluginContext = {clusters: clusterObjs, group: {name: group.name, uuid: group.uuid}};
 
