@@ -143,7 +143,7 @@ const subscriptionResolvers = {
       try {
         const conditions = await getGroupConditions(me, org_id, ACTIONS.READ, 'name', queryName, context);
 
-        logger.debug({req_id, user, org_id, conditions }, `${queryName} group conditions are...`);
+        logger.debug({req_id, user, org_id, conditions}, `${queryName} group conditions are...`);
 
         checkComplexity( queryFields );
 
@@ -153,7 +153,7 @@ const subscriptionResolvers = {
         }
 
         let subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
-        logger.info({req_id, user, org_id, subs}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id}, `${queryName} retrieved allowed resources`);
 
 
         await applyQueryFieldsToSubscriptions(subs, queryFields, { orgId: org_id }, context);
@@ -271,7 +271,7 @@ const subscriptionResolvers = {
         }
 
         let subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
-        logger.info({req_id, user, org_id, cluster_id, subs}, `${queryName} retrieved allowed subscriptions`);
+        logger.info({req_id, user, org_id, cluster_id}, `${queryName} retrieved allowed subscriptions`);
 
         subs = subs.map((sub)=>{
           if(_.isUndefined(sub.channelName)){

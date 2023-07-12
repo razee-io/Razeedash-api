@@ -273,7 +273,7 @@ const clusterResolvers = {
 
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
@@ -330,7 +330,7 @@ const clusterResolvers = {
 
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
@@ -406,7 +406,7 @@ const clusterResolvers = {
 
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
         await applyQueryFieldsToClusters(clusters, queryFields, args, context);
@@ -460,7 +460,7 @@ const clusterResolvers = {
 
         if (!allAllowed){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
         // Extract the IDs of filtered authorzied clusters
@@ -604,7 +604,7 @@ const clusterResolvers = {
 
         // Delete all the Cluster records
         const deletedClusters = await models.Cluster.deleteMany({ org_id });
-        logger.info({req_id, user, org_id, deletedClusters}, 'Clusters deletion complete');
+        logger.info({req_id, user, org_id}, 'Clusters deletion complete');
 
         /*
         Delete children/references to any Clusters:

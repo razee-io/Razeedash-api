@@ -46,7 +46,7 @@ const groupResolvers = {
         checkComplexity( queryFields );
 
         let groups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
-        logger.info({req_id, user, org_id, groups}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
 
@@ -351,7 +351,7 @@ const groupResolvers = {
 
         if (!allAllowedClusters){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
         groupUuids = _.map(groups, 'uuid');
@@ -450,7 +450,7 @@ const groupResolvers = {
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
         let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
-        logger.info({req_id, user, org_id, groupUuids, clusterIds, groups}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} retrieved allowed resources`);
 
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
@@ -461,13 +461,13 @@ const groupResolvers = {
         }
         catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
         }
-        logger.info({req_id, user, org_id, groupUuids, clusterIds, groups, allAllowedClusters}, `${queryName} validating - allAllowed: ${allAllowedClusters}`);
+        logger.info({req_id, user, org_id, groupUuids, clusterIds, allAllowedClusters}, `${queryName} validating - allAllowed: ${allAllowedClusters}`);
 
         let clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
 
         if (!allAllowedClusters){
           clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, groupUuids, clusterIds, groups, clusters}, `${queryName} filtered resources to allowed`);
+          logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} filtered resources to allowed`);
         }
 
         // Create output for graphQL plugins
@@ -534,7 +534,7 @@ const groupResolvers = {
         groupUuids.forEach( value => validateString( 'groupUuids', value ) );
 
         let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
-        logger.info({req_id, user, org_id, clusterId, groupUuids, groups}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} retrieved allowed resources`);
 
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
@@ -591,7 +591,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
@@ -599,11 +599,11 @@ const groupResolvers = {
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
 
         const identifiers = group ? [uuid, group.name] : [uuid];
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
 
         if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
@@ -656,7 +656,7 @@ const groupResolvers = {
       const user = whoIs(me);
 
       try {
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating`);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
@@ -664,11 +664,11 @@ const groupResolvers = {
 
         // validate the group exits in the db first.
         const group = await models.Group.findOne({ org_id: org_id, uuid });
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - found: ${!!group}`);
+        logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!group}`);
 
         const identifiers = group ? [uuid, group.name] : [uuid];
         await validAuth(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, identifiers);
-        logger.info({req_id, user, org_id, clusters}, `${queryName} validating - authorized`);
+        logger.info({req_id, user, org_id}, `${queryName} validating - authorized`);
 
         if (!group) {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);

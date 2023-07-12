@@ -51,7 +51,7 @@ const channelResolvers = {
         checkComplexity( queryFields );
 
         let channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context);
-        logger.info({req_id, user, org_id, channels}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
@@ -162,7 +162,7 @@ const channelResolvers = {
         }
 
         let channels = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, tags);
-        logger.info({req_id, user, org_id, tags, channels}, `${queryName} retrieved allowed resources`);
+        logger.info({req_id, user, org_id, tags}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToChannels(channels, queryFields, { orgId: org_id }, context);
 
