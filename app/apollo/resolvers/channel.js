@@ -300,8 +300,6 @@ const channelResolvers = {
         validateString( 'org_id', org_id );
         validateName( 'name', name );
 
-        logger.info({req_id, user, org_id, name}, `${queryName} validating - authorized`);
-
         // Validate contentType
         if( !Object.values(CHANNEL_CONSTANTS.CONTENTTYPES).includes( contentType ) ) {
           throw new RazeeValidationError( context.req.t( 'The content type {{contentType}} is not valid.  Allowed values: [{{contentTypes}}]', { contentType, 'contentTypes': Array.from( Object.values(CHANNEL_CONSTANTS.CONTENTTYPES) ).join(' ') } ), context );
