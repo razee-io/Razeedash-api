@@ -497,15 +497,23 @@ const channelResolvers = {
         validateString( 'uuid', uuid );
         validateName( 'name', name );
 
-        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, [uuid, name]);
-        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
-
+        // Get the existing Channel by uuid
         const channel = await models.Channel.findOne({ uuid, org_id });
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - found: ${!!channel}`);
 
+        // Verify user is authorized on the existing Channel
+        const identifiers = channel ? [uuid, channel.name] : [uuid];
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
+
+        //Throw error if user is authorized, but the existing Channel could not be found
         if (!channel) {
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':uuid}), context);
         }
+
+        // Verify user will STILL be authorized on the Channel if it is renamed -- the user should be prevented from renaming if they only have authorization based on the original name
+        const newIdentifiers = [uuid, name];
+        await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.CHANNEL, queryName, context, newIdentifiers);
 
         // Validate REMOTE-specific values
         if( channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.REMOTE ) {
@@ -584,14 +592,6 @@ const channelResolvers = {
         validateString( 'org_id', org_id );
         validateString( 'channel_uuid', channel_uuid );
 
-        // get channel
-        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
-        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - found: ${!!channel}`);
-
-        const identifiers = channel ? [channel_uuid, channel.name] : [channel_uuid];
-        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, identifiers);
-        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - authorized`);
-
         // Experimental
         if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
           // Block experimental features
@@ -600,14 +600,22 @@ const channelResolvers = {
           }
         }
 
-        if (!channel) {
-          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
-        }
-
         // get org
         const org = await models.Organization.findOne({ _id: org_id });
         if (!org) {
           throw new NotFoundError(context.req.t('Could not find the organization with ID {{org_id}}.', {'org_id':org_id}), context);
+        }
+
+        // get channel
+        const channel = await models.Channel.findOne({ uuid: channel_uuid, org_id });
+        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - found: ${!!channel}`);
+
+        const identifiers = channel ? [channel_uuid, channel.name] : [channel_uuid];
+        await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, identifiers);
+        logger.info({req_id, user, org_id, channel_uuid, name, type}, `${queryName} validating - authorized`);
+
+        if (!channel) {
+          throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
         }
 
         // create newVersionObj
@@ -718,6 +726,12 @@ const channelResolvers = {
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
 
+        // Experimental
+        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
+          // The ability to edit Versions in-place was explored early in GitOps support, but is not used.  Versions are static -- new versions can be created, but existing ones cannot be modified.
+          throw new RazeeValidationError( context.req.t( 'Unsupported mutation: {{args}}', { args: 'editChannelVersion' } ), context );
+        }
+
         // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne( { uuid, org_id } );
 
@@ -734,12 +748,6 @@ const channelResolvers = {
 
         if( !channel ){
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
-        }
-
-        // Experimental
-        if( !process.env.EXPERIMENTAL_GITOPS_ALT ) {
-          // The ability to edit Versions in-place was explored early in GitOps support, but is not used.  Versions are static -- new versions can be created, but existing ones cannot be modified.
-          throw new RazeeValidationError( context.req.t( 'Unsupported mutation: {{args}}', { args: 'editChannelVersion' } ), context );
         }
 
         /*
@@ -989,6 +997,9 @@ const channelResolvers = {
 
         // Get the Version (avoid using the deprecated/ignored `versions` attribute on the channel)
         const deployableVersionObj = await models.DeployableVersion.findOne({ org_id, uuid });
+        if(!deployableVersionObj){
+          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':uuid}), context);
+        }
 
         const channel = await models.Channel.findOne({ uuid: deployableVersionObj.channel_id, org_id });
         if (!channel) {
@@ -998,10 +1009,6 @@ const channelResolvers = {
         else {
           await validAuth(me, org_id, ACTIONS.MANAGEVERSION, TYPES.CHANNEL, queryName, context, [channel.uuid, channel.name]);
           logger.info({req_id, user, org_id, uuid}, `${queryName} validating - authorized`);
-        }
-
-        if(!deployableVersionObj){
-          throw new NotFoundError(context.req.t('Version uuid "{{version_uuid}}" not found.', {'version_uuid':uuid}), context);
         }
 
         if(!deleteSubscriptions) {
