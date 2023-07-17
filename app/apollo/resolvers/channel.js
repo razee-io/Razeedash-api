@@ -931,7 +931,7 @@ const channelResolvers = {
 
         if( !channel.contentType || channel.contentType === CHANNEL_CONSTANTS.CONTENTTYPES.UPLOADED ) {
           // deletes the linked deployableVersions data
-          let versionsToDeleteFromS3 = await models.DeployableVersion.find({ org_id, channel_id: channel.uuid });
+          const versionsToDeleteFromS3 = await models.DeployableVersion.find({ org_id, channel_id: channel.uuid });
           const limit = pLimit(5);
           await Promise.all(_.map(versionsToDeleteFromS3, deployableVersionObj => {
             return limit(async () => {
