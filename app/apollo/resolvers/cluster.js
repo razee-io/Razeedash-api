@@ -378,8 +378,8 @@ const clusterResolvers = {
         // first get all users permitted cluster groups,
         const conditions = await getGroupConditionsIncludingEmpty(me, org_id, ACTIONS.READ, 'uuid', queryName, context);
 
-        let props = convertStrToTextPropsObj(filter);
-        let textProp = props.$text || '';
+        const props = convertStrToTextPropsObj(filter);
+        const textProp = props.$text || '';
         _.assign(conditions, models.Resource.translateAliases(_.omit(props, '$text')));
 
         let searchFilter;
