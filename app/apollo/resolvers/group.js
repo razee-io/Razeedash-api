@@ -354,7 +354,7 @@ const groupResolvers = {
         let clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
 
         if (!allAllowedClusters){
-          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.ATTACH, TYPES.CLUSTER, clusters, context);
+          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
           logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
