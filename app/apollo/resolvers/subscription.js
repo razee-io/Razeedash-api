@@ -227,7 +227,7 @@ const subscriptionResolvers = {
 
         checkComplexity( queryFields );
 
-        let cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
+        const cluster = await models.Cluster.findOne({org_id, cluster_id}).lean({ virtuals: true });
         logger.info({req_id, user, org_id, cluster_id}, `${queryName} validating - found: ${!!cluster}`);
 
         const identifiers = cluster ? [cluster_id, cluster.registration.name || cluster.name] : [cluster_id];
