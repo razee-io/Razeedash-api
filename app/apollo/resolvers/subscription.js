@@ -724,7 +724,7 @@ const subscriptionResolvers = {
         logger.debug({req_id, user, org_id, conditions}, `${queryName} group conditions are...`);
 
         // Find the subscription
-        let subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
+        const subscription = await models.Subscription.findOne({ org_id, uuid, ...conditions }, {}).lean({ virtuals: true });
         logger.info({req_id, user, org_id, uuid, version_uuid}, `${queryName} validating - found: ${!!subscription}`);
 
         const identifiers = subscription ? [uuid, subscription.name] : [uuid];
