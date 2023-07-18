@@ -45,7 +45,7 @@ const groupResolvers = {
 
         checkComplexity( queryFields );
 
-        let groups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+        const groups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
         logger.info({req_id, user, org_id}, `${queryName} retrieved allowed resources`);
 
         await applyQueryFieldsToGroups(groups, queryFields, { orgId: org_id }, context);
