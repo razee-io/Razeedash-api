@@ -333,7 +333,7 @@ const groupResolvers = {
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
-        let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
+        const groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} retrieved allowed resources`);
 
         if (groups.length != groupUuids.length) {
