@@ -152,7 +152,7 @@ const subscriptionResolvers = {
           query.tags = { $all: tags };
         }
 
-        let subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
+        const subs = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.SUBSCRIPTION, queryName, context, null, null, query);
         logger.info({req_id, user, org_id}, `${queryName} retrieved allowed resources`);
 
 
