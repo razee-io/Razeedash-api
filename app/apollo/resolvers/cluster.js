@@ -117,8 +117,6 @@ const clusterResolvers = {
           throw new NotFoundError(context.req.t('Could not find the cluster with Id {{clusterId}}.', {'clusterId':clusterId}), context);
         }
 
-
-
         if(cluster){
           let { url } = await models.Organization.getRegistrationUrl(org_id, context);
 
