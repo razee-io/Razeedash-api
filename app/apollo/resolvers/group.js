@@ -359,6 +359,9 @@ const groupResolvers = {
           logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
+        if(!clusterIds.length){
+          throw new ValidationError(context.req.t('No cluster uuids were passed', {'clusterIds':clusterIds}), context);
+        }
         if (foundClusters.length != clusterIds.length) {
           throw new NotFoundError(context.req.t('One or more of the clusters was not found', {'clusters':foundClusters}), context);
         }
@@ -663,6 +666,9 @@ const groupResolvers = {
           logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
         }
 
+        if(!clusters.length){
+          throw new ValidationError(context.req.t('No clusters were passed', {'clusters':clusters}), context);
+        }
         if (foundClusters.length != clusters.length) {
           throw new NotFoundError(context.req.t('One or more of the clusters was not found', {'clusters':clusters}), context);
         }
