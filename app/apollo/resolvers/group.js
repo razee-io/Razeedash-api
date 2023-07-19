@@ -470,39 +470,45 @@ const groupResolvers = {
 
         if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
 
-        let allAllowedClusters = false;
-        try {
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          allAllowedClusters = true;
-        }
-        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
-        }
-        logger.info({req_id, user, org_id, groupUuids, clusterIds, allAllowedClusters}, `${queryName} validating - allAllowed: ${allAllowedClusters}`);
+        let clusterObjs;
+        if (clusterIds) {
+          let allAllowedClusters = false;
+          try {
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+            allAllowedClusters = true;
+          }
+          catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
+          }
+          logger.info({req_id, user, org_id, groupUuids, clusterIds, allAllowedClusters}, `${queryName} validating - allAllowed: ${allAllowedClusters}`);
 
-        let clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        clusters = clusters.filter(cluster => clusterIds.includes(cluster.cluster_id));
+          let clusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+          clusters = clusters.filter(cluster => clusterIds.includes(cluster.cluster_id));
 
-        // Proceeding even if input clusters are not found is intentional with current implementation
-        // There are situations where we would want this function to continue in the situation where clusters may not exist but the user does have permission to use them
-        if (!allAllowedClusters){
-          clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
-          logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} filtered resources to allowed`);
+          // Proceeding even if input clusters are not found is intentional with current implementation
+          // There are situations where we would want this function to continue in the situation where clusters may not exist but the user does have permission to use them
+          if (!allAllowedClusters){
+            clusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, clusters, context);
+            logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} filtered resources to allowed`);
+          }
+
+          // Create cluster output for graphQL plugins
+          clusterObjs = _.map(clusters, (cluster)=>{
+            return {
+              name: cluster.registration.name,
+              uuid: cluster.cluster_id,
+              registration: cluster.registration
+            };
+          });
         }
 
-        // Create output for graphQL plugins
+        // Create group output for graphQL plugins
         const groupObjs = _.map(groups, (group)=>{
           return {
             name: group.name,
             uuid: group.uuid,
           };
         });
-        const clusterObjs = _.map(clusters, (cluster)=>{
-          return {
-            name: cluster.registration.name,
-            uuid: cluster.cluster_id,
-            registration: cluster.registration
-          };
-        });
+
 
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} saving`);
 
@@ -738,33 +744,36 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}), context);
         }
 
-        let allAllowed = false;
-        try {
-          await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
-          allAllowed = true;
-        }
-        catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
-        }
-        logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - allAllowed: ${allAllowed}`);
+        let clusterObjs;
+        if (clusters) {
+          let allAllowed = false;
+          try {
+            await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context);
+            allAllowed = true;
+          }
+          catch(e){ // If exception thrown, user does NOT have auth to all resources of this type, and code must later filter based on fine grained auth
+          }
+          logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} validating - allAllowed: ${allAllowed}`);
 
-        let foundClusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
-        foundClusters = foundClusters.filter(cluster => clusters.includes(cluster.cluster_id));
+          let foundClusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
+          foundClusters = foundClusters.filter(cluster => clusters.includes(cluster.cluster_id));
 
-        // Proceeding even if input clusters are not found is intentional with current implementation
-        // There are situations where we would want this function to continue in the situation where clusters may not exist but the user does have permission to use them
-        if (!allAllowed){
-          foundClusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, foundClusters, context);
-          logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
+          // Proceeding even if input clusters are not found is intentional with current implementation
+          // There are situations where we would want this function to continue in the situation where clusters may not exist but the user does have permission to use them
+          if (!allAllowed){
+            foundClusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, foundClusters, context);
+            logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
+          }
+
+          // Create output for graphQL plugins
+          clusterObjs = _.map(foundClusters, (cluster)=>{
+            return {
+              name: cluster.registration.name,
+              uuid: cluster.cluster_id,
+              registration: cluster.registration
+            };
+          });
         }
-
-        // Create output for graphQL plugins
-        const clusterObjs = _.map(foundClusters, (cluster)=>{
-          return {
-            name: cluster.registration.name,
-            uuid: cluster.cluster_id,
-            registration: cluster.registration
-          };
-        });
 
         // update clusters group array with the above group
         const res = await models.Cluster.updateMany(
