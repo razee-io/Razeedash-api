@@ -732,6 +732,20 @@ const channelResolvers = {
           throw new RazeeValidationError( context.req.t( 'Unsupported mutation: {{args}}', { args: 'editChannelVersion' } ), context );
         }
 
+        /*
+        - Allow changing description
+        - Allow altering `remote.parameters`
+        */
+        if( !description && !remote ){
+          throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
+        }
+
+        // Block experimental feature even if enabled as it's not fully implemented
+        if( subscriptions ) {
+          // Note this feature is not fully implemented, see commented out code later in this function.  Block even if experimental flag is enabled.
+          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
+        }
+
         // Find version (avoid using deprecated/ignored `versions` attribute on the channel)
         const version = await models.DeployableVersion.findOne( { uuid, org_id } );
         if( !version ){
@@ -747,20 +761,6 @@ const channelResolvers = {
 
         if( !channel ){
           throw new NotFoundError( context.req.t( 'Channel uuid "{{channel_uuid}}" not found.', { 'channel_uuid': version.channel_id } ), context );
-        }
-
-        /*
-        - Allow changing description
-        - Allow altering `remote.parameters`
-        */
-        if( !description && !remote ){
-          throw new RazeeValidationError( context.req.t( 'No changes specified.' ), context );
-        }
-
-        // Block experimental feature even if enabled as it's not fully implemented
-        if( subscriptions ) {
-          // Note this feature is not fully implemented, see commented out code later in this function.  Block even if experimental flag is enabled.
-          throw new RazeeValidationError( context.req.t( 'Unsupported arguments: [{{args}}]', { args: 'subscriptions' } ), context );
         }
 
         const set = {

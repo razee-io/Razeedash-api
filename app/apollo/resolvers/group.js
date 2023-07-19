@@ -485,7 +485,7 @@ const groupResolvers = {
             uuid: group.uuid,
           };
         });
-        clusters = _.map(clusters, (cluster)=>{
+        const clusterObjs = _.map(clusters, (cluster)=>{
           return {
             name: cluster.registration.name,
             uuid: cluster.cluster_id,
@@ -509,7 +509,7 @@ const groupResolvers = {
         pubSub.channelSubChangedFunc({org_id}, context);
 
         // Allow graphQL plugins to retrieve more information. unassignClusterGroups can unassign items in cluster groups. Include details of the unassigned resources in pluginContext.
-        context.pluginContext = {clusters: clusters, groups: groupObjs};
+        context.pluginContext = {clusters: clusterObjs, groups: groupObjs};
 
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} returning`);
         return {
@@ -571,15 +571,17 @@ const groupResolvers = {
             name: group.name,
           };
         });
-        const sets = {
-          groups: groupObjsToAdd,
-          updated: Date.now(),
-        };
-        cluster = {
+        const clusterObjs = {
           name: cluster.registration.name,
           uuid: cluster.cluster_id,
           registration: cluster.registration
         };
+
+        const sets = {
+          groups: groupObjsToAdd,
+          updated: Date.now(),
+        };
+
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} saving`);
 
         const res = await models.Cluster.updateOne({ org_id, cluster_id: clusterId }, { $set: sets });
@@ -596,7 +598,7 @@ const groupResolvers = {
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
         // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
-        context.pluginContext = {cluster: cluster, groups: groupObjsToAdd};
+        context.pluginContext = {cluster: clusterObjs, groups: groupObjsToAdd};
 
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} returning`);
         return {
@@ -647,9 +649,14 @@ const groupResolvers = {
 
         let foundClusters = await commonClusterSearch(models, {org_id}, { limit: 0, skip: 0, startingAfter: null });
 
-        if (!allAllowed){
+        if (!allAllowed) {
           foundClusters = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.CLUSTER, foundClusters, context);
           logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
+        }
+
+        const missingClusters = clusters.filter(cluster => !foundClusters.includes(cluster));
+        if (missingClusters.length) {
+          throw new NotFoundError(context.req.t('One or more of the clusters was not found', { 'clusters': missingClusters }), context);
         }
 
         // Create output for graphQL plugins

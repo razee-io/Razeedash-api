@@ -347,22 +347,25 @@ const subscriptionResolvers = {
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - channel authorized`);
 
         // loads the groups
-        const requestedGroups = await models.Group.find({
+        const foundGroups = await models.Group.find({
           org_id,
           $or: [
             { name: { $in: groups } },
             { uuid: { $in: groups } }
           ]
         }).lean({ virtuals: true });
-        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${requestedGroups.length}`);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${foundGroups.length}`);
 
-        const allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, requestedGroups, context);
+        const allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, foundGroups, context);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - allowed: ${allowedGroups.length}`);
 
         const groupNames = _.map(allowedGroups, group => group.name);
 
         // Check for errors after validation
-        if( allowedGroups.length < requestedGroups.length ) {
+        if(foundGroups.length < groups.length || allowedGroups.length < groups.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
+        if( allowedGroups.length < foundGroups.length ) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
         if(!channel){
@@ -507,22 +510,25 @@ const subscriptionResolvers = {
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - channel authorized`);
 
         // find the groups
-        const requestedGroups = await models.Group.find({
+        const foundGroups = await models.Group.find({
           org_id,
           $or: [
             { name: { $in: groups } },
             { uuid: { $in: groups } }
           ]
         }).lean({ virtuals: true });
-        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${requestedGroups.length}`);
+        logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${foundGroups.length}`);
 
-        const allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, requestedGroups, context);
+        const allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, foundGroups, context);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - allowed: ${allowedGroups.length}`);
 
         const groupNames = _.map(allowedGroups, group => group.name);
 
         // Check for errors after validation
-        if( allowedGroups.length < requestedGroups.length ) {
+        if(foundGroups.length < groups.length || allowedGroups.length < groups.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        }
+        if( allowedGroups.length < foundGroups.length ) {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
         if (!subscription) {
