@@ -361,12 +361,9 @@ const subscriptionResolvers = {
 
         const groupNames = _.map(allowedGroups, group => group.name);
 
-        // Check for errors after validation
-        if(foundGroups.length < groups.length || allowedGroups.length < groups.length) {
-          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
-        }
-        if( allowedGroups.length < foundGroups.length ) {
-          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
+        // Validate group access
+        if( allowedGroups.length < groups.length ) {
+          throw new NotFoundError(context.req.t('One or more of the passed groups were not found'));
         }
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':channel_uuid}), context);
