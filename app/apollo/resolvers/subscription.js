@@ -501,6 +501,10 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.UPDATE, TYPES.SUBSCRIPTION, queryName, context, identifiers);
         logger.info({req_id, user, org_id, uuid, name}, `${queryName} validating - authorized`);
 
+        if (!subscription) {
+          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
+        }
+
         // find the channel
         const channel = await models.Channel.findOne({ org_id, uuid: channel_uuid });
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - found: ${!!channel}`);
@@ -508,6 +512,10 @@ const subscriptionResolvers = {
         const channelIdentifiers = channel ? [channel_uuid, channel.name] : [channel_uuid];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, channelIdentifiers);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - channel authorized`);
+
+        if (!channel) {
+          throw new NotFoundError(context.req.t('Channel { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':channel_uuid, 'org_id':org_id}), context);
+        }
 
         // find the groups
         const foundGroups = await models.Group.find({
@@ -522,18 +530,11 @@ const subscriptionResolvers = {
         const allowedGroups = await filterResourcesToAllowed(me, org_id, ACTIONS.READ, TYPES.GROUP, foundGroups, context);
         logger.info({req_id, user, org_id, name, channel_uuid, version_uuid}, `${queryName} validating - allowed: ${allowedGroups.length}`);
 
-        const groupNames = _.map(allowedGroups, group => group.name);
+        if(allowedGroups.length < groups.length) {
+          throw new NotFoundError(context.req.t('One or more of the passed groups were not found'));
+        }
 
-        // Check for errors after validation
-        if(foundGroups.length < groups.length || allowedGroups.length < groups.length) {
-          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
-        }
-        if( allowedGroups.length < foundGroups.length ) {
-          throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
-        }
-        if (!subscription) {
-          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
-        }
+        const groupNames = _.map(allowedGroups, group => group.name);
 
         const oldVersionUuid = subscription.version_uuid;
         // If neither new version or version_uuid specified, keep the prior version (i.e. set version_uuid)
