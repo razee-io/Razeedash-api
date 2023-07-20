@@ -488,8 +488,11 @@ const groupResolvers = {
         }
 
         /*
-        Note: If some (but not all) of the passed clusters are not found or not authorized, the code will continue and ungroup the remainder.  The response will indicate how many were modified.
+        Note: If ANY of the passed clusters are not found or not authorized, the code will continue and attempt to ungroup the remainder.
+        This will be true even if ZERO clusters are found/authorized -- in this case, the database 'updateMany' will simply do nothing.
+        The response will indicate how many were modified, even zero
         */
+
         // Create output for graphQL plugins
         const clusterObjs = _.map(clusters, (cluster)=>{
           return {
@@ -498,8 +501,6 @@ const groupResolvers = {
             registration: cluster.registration
           };
         });
-
-        // Create group output for graphQL plugins
         const groupObjs = _.map(groups, (group)=>{
           return {
             name: group.name,
@@ -761,8 +762,11 @@ const groupResolvers = {
         }
 
         /*
-        Note: If some (but not all) of the passed clusters are not found or not authorized, the code will continue and ungroup the remainder.  The response will indicate how many were modified.
+        Note: If ANY of the passed clusters are not found or not authorized, the code will continue and attempt to ungroup the remainder.
+        This will be true even if ZERO clusters are found/authorized -- in this case, the database 'updateMany' will simply do nothing.
+        The response will indicate how many were modified, even zero
         */
+
         // Create output for graphQL plugins
         const clusterObjs = _.map(foundClusters, (cluster)=>{
           return {
