@@ -331,6 +331,9 @@ const groupResolvers = {
 
         validateString( 'org_id', org_id );
         groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+        if(clusterIds.length < 1){
+          throw new ValidationError(context.req.t('No cluster uuids were passed', {'clusterIds':clusterIds}), context);
+        }
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
         const groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
@@ -359,9 +362,6 @@ const groupResolvers = {
           logger.info({req_id, user, org_id}, `${queryName} filtered resources to allowed`);
         }
 
-        if(!clusterIds.length){
-          throw new ValidationError(context.req.t('No cluster uuids were passed', {'clusterIds':clusterIds}), context);
-        }
         if (foundClusters.length != clusterIds.length) {
           throw new NotFoundError(context.req.t('One or more of the clusters was not found', {'clusters':foundClusters}), context);
         }
@@ -458,7 +458,7 @@ const groupResolvers = {
         logger.info({req_id, user, org_id, groupUuids, clusterIds}, `${queryName} validating`);
 
         validateString( 'org_id', org_id );
-        groupUuids.forEach( value => { validateString( 'groupUuids', value ); } );
+        groupUuids.forEach( value => validateString( 'groupUuids', value ) );
         clusterIds.forEach( value => validateString( 'clusterIds', value ) );
 
         let groups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, groupUuids);
@@ -642,6 +642,9 @@ const groupResolvers = {
 
         validateString( 'org_id', org_id );
         validateString( 'uuid', uuid );
+        if(clusters.length < 1){
+          throw new ValidationError(context.req.t('No clusters were passed', {'clusters':clusters}), context);
+        }
         clusters.forEach( value => validateString( 'clusters', value ) );
 
         const group = await models.Group.findOne({ org_id: org_id, uuid });
@@ -672,9 +675,6 @@ const groupResolvers = {
           logger.info({req_id, user, org_id, uuid, clusters}, `${queryName} filtered resources to allowed`);
         }
 
-        if(!clusters.length){
-          throw new ValidationError(context.req.t('No clusters were passed', {'clusters':clusters}), context);
-        }
         if (foundClusters.length != clusters.length) {
           throw new NotFoundError(context.req.t('One or more of the clusters was not found', {'clusters':clusters}), context);
         }

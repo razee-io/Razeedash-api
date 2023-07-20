@@ -666,11 +666,10 @@ const clusterResolvers = {
 
         validateString( 'org_id', org_id );
         validateJson( 'registration', registration );
-        validateName( 'registration.name', registration.name );
-
         if (!registration.name) {
           throw new RazeeValidationError(context.req.t('A cluster name is not defined in the registration data'), context);
         }
+        validateName( 'registration.name', registration.name );
 
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context, [registration.name]);
         logger.info({req_id, user, org_id, registration}, `${queryName} validating - authorized`);
