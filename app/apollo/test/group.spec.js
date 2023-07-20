@@ -692,6 +692,28 @@ describe('groups graphql test suite', () => {
     }
   });
 
+  it('ungroup clusters with non-existing cluster', async () => {
+    try {
+      const {
+        data: {
+          data: { unGroupClusters },
+        },
+      } = await groupApi.unGroupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: ['cluster_99']
+      });
+      expect(unGroupClusters.modified).to.equal(0);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('assignClusterGroups / unassignClusterGroups', async()=>{
     // assign
     var result = await groupApi.assignClusterGroups(adminToken, {
@@ -743,6 +765,16 @@ describe('groups graphql test suite', () => {
       orgId: org01._id,
       groupUuids: [group_02_uuid],
       clusterIds: []
+    });
+    var unassignClusterGroups = result.data.data.unassignClusterGroups;
+    expect(unassignClusterGroups.modified).to.equal(0);
+  });
+
+  it('unassign cluster groups with a non-existing cluster', async () => {
+    var result = await groupApi.unassignClusterGroups(adminToken, {
+      orgId: org01._id,
+      groupUuids: [group_02_uuid],
+      clusterIds: ['cluster_99']
     });
     var unassignClusterGroups = result.data.data.unassignClusterGroups;
     expect(unassignClusterGroups.modified).to.equal(0);
