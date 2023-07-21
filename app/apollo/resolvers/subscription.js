@@ -898,10 +898,8 @@ const subscriptionResolvers = {
     subscriptionUpdated: {
       // eslint-disable-next-line no-unused-vars
       resolve: async (parent, args) => {
-        //
         // Sends a message back to a subscribed client
         // 'parent' is the object representing the subscription that was updated
-        //
         return { hasUpdates: true };
       },
 
