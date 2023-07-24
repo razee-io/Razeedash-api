@@ -779,4 +779,27 @@ describe('groups graphql test suite', () => {
     var unassignClusterGroups = result.data.data.unassignClusterGroups;
     expect(unassignClusterGroups.modified).to.equal(0);
   });
+
+  it('edit cluster groups and remove passed cluster from all groups', async () => {
+    try {
+      const {
+        data: {
+          data: { editClusterGroups },
+        },
+      } = await groupApi.editClusterGroups(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+        groupUuids: [],
+      });
+      expect(editClusterGroups.modified).to.equal(1);
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });

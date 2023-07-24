@@ -735,9 +735,18 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.SETVERSION, TYPES.SUBSCRIPTION, queryName, context, identifiers);
         logger.info( {req_id, user, org_id, uuid, version_uuid}, `${queryName} validating - authorized` );
 
+        if (!subscription) {
+          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
+        }
+
         // validate user has enough cluster groups permissions to for this sub
         // TODO: we should use specific groups action below instead of manage, e.g. setSubscription action
         const allowedGroups = await getAllowedGroups(me, org_id, ACTIONS.SETVERSION, 'name', queryName, context);
+
+        if (subscription.groups.some(t => {return allowedGroups.indexOf(t) === -1;})) {
+          // if some tag of the sub does not in user's cluster group list, throws an error
+          throw new RazeeForbiddenError(context.req.t('You are not allowed to set subscription for all of {{subscription.groups}} groups.', {'subscription.groups':subscription.groups}), context);
+        }
 
         // Find the channel
         const channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
@@ -747,14 +756,6 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, channelIdentifiers);
         logger.info({req_id, user, org_id, uuid, version_uuid}, `${queryName} validating - channel authorized`);
 
-        // Check for errors after validation
-        if (!subscription) {
-          throw new NotFoundError(context.req.t('Subscription { uuid: "{{uuid}}", org_id:{{org_id}} } not found.', {'uuid':uuid, 'org_id':org_id}), context);
-        }
-        if (subscription.groups.some(t => {return allowedGroups.indexOf(t) === -1;})) {
-          // if some tag of the sub does not in user's cluster group list, throws an error
-          throw new RazeeForbiddenError(context.req.t('You are not allowed to set subscription for all of {{subscription.groups}} groups.', {'subscription.groups':subscription.groups}), context);
-        }
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }
@@ -818,6 +819,10 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.DELETE, TYPES.SUBSCRIPTION, queryName, context, subscriptionIdentifiers);
         logger.info( {req_id, user, org_id, uuid}, `${queryName} validating - authorized` );
 
+        if (!subscription) {
+          throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
+        }
+
         // Find the channel
         const channel = await models.Channel.findOne({ org_id, uuid: subscription.channel_uuid });
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - found: ${!!channel}`);
@@ -826,10 +831,6 @@ const subscriptionResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CHANNEL, queryName, context, channelIdentifiers);
         logger.info({req_id, user, org_id, uuid}, `${queryName} validating - channel authorized`);
 
-        // Check for errors after validation
-        if (!subscription) {
-          throw new NotFoundError(context.req.t('Subscription uuid "{{uuid}}" not found.', {'uuid':uuid}), context);
-        }
         if(!channel){
           throw new NotFoundError(context.req.t('Channel uuid "{{channel_uuid}}" not found.', {'channel_uuid':subscription.channel_uuid}), context);
         }

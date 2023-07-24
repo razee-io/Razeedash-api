@@ -567,8 +567,6 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('One or more of the passed group uuids were not found'));
         }
 
-        if (groups.length < 1) { throw new NotFoundError(context.req.t('None of the passed group uuids were found')); }
-
         groupUuids = _.map(groups, 'uuid');
 
         let cluster = await models.Cluster.findOne({
