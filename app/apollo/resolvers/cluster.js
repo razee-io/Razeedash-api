@@ -174,7 +174,7 @@ const clusterResolvers = {
           ...conditions
         }).limit(2).lean({ virtuals: true });
         const cluster = clusters[0] || null;
-        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - found: ${cluster.length}`);
+        logger.info({req_id, user, org_id, clusterName}, `${queryName} validating - found: ${clusters.length}`);
 
         const identifiers = cluster ? [cluster.cluster_id, clusterName] : [clusterName];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
