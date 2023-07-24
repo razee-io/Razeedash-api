@@ -113,7 +113,7 @@ const groupResolvers = {
 
         const groups = await models.Group.find({ org_id, name }).limit(2).lean({ virtuals: true });
         const group = groups[0] || null;
-        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${group.length}`);
+        logger.info({req_id, user, org_id, name}, `${queryName} validating - found: ${groups.length}`);
 
         const identifiers = group ? [group.uuid, name] : [name];
         await validAuth(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, identifiers);
