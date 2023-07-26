@@ -579,7 +579,37 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - cluster authorized`);
 
+        // 1. find existing groups from the cluster record (i.e. identify which groups it is already a member of)
+
+        // Find existing group uuids not in the groupUuids input
+        const existingGroups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context);
+        const existingGroupUuids = existingGroups.map((group) => group.uuid);
+        const existingGroupUuidsNotInInput = existingGroupUuids.filter((uuid) => !groupUuids.includes(uuid));
+
+        // 2. Identify which existing-groups-not-in-the-input the user can READ but not MANAGE -- if any, throw an error like "You are not authorized to modify group XYZ"
+
+        // Identify what groups the user can READ but not MANAGE from existingGroups
+        const readGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, null, existingGroupUuidsNotInInput);
+        const manageGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, existingGroupUuidsNotInInput);
+
+        // Find the difference between read and manage
+        const differenceGroupsNotInInput = readGroupsNotInInput.filter((group) => !manageGroupsNotInInput.includes(group.uuid));
+
+        // Check if user is authorized to modify existing groups from cluster record not passed in groupUuids
+        if (readGroupsNotInInput.length > manageGroupsNotInInput.length) {
+          throw new ValidationError(context.req.t('You are not authorized to modify', {'groups':differenceGroupsNotInInput}), context);
+        }
+
         // Create output for graphQL plugins
+
+        // 3. Identify which existing-groups-not-in-the-input the user is allowed to MANAGE -- add those to a new list of groupObjsToRemove
+
+        const groupObjsToRemove = _.map(manageGroupsNotInInput, (group)=>{
+          return {
+            uuid: group.uuid,
+            name: group.name,
+          };
+        });
         const groupObjsToAdd = _.map(groups, (group)=>{
           return {
             uuid: group.uuid,
@@ -592,14 +622,30 @@ const groupResolvers = {
           registration: cluster.registration
         };
 
-        const sets = {
-          groups: groupObjsToAdd,
-          updated: Date.now(),
-        };
-
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} saving`);
 
-        const res = await models.Cluster.updateOne({ org_id, cluster_id: clusterId }, { $set: sets });
+        // 4. Convert the db operation from $set to instead $push the input groups and simultaneously $pull the groupObjsToRemove
+        const ops = [
+          {
+            updateOne: {
+              filter: { org_id, cluster_id: clusterId },
+              update: { $pull: { groups: { $in: groupObjsToRemove } } },
+            }
+          },
+          {
+            updateOne: {
+              filter: { org_id, cluster_id: clusterId },
+              update: { $push: { groups: { $each: groupObjsToAdd } } },
+            }
+          },
+          {
+            updateOne: {
+              filter: { org_id, cluster_id: clusterId },
+              update: { $set: { updated: Date.now() } },
+            }
+          },
+        ];
+        const res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
 
         pubSub.channelSubChangedFunc({org_id}, context);
 
@@ -612,8 +658,9 @@ const groupResolvers = {
         */
         groupsRbacSync( groups, { resync: false }, context ).catch(function(){/*ignore*/});
 
+        // 5. Ensure the groups actually removed from the clusters are passed to pluginContext
         // Allow graphQL plugins to retrieve more information. editClusterGroups can edit items in cluster groups. Include details of the edited resources in pluginContext.
-        context.pluginContext = {cluster: clusterObjs, groups: groupObjsToAdd};
+        context.pluginContext = {cluster: clusterObjs, groups: groupObjsToAdd, removedGroups: groupObjsToRemove};
 
         logger.info({req_id, user, org_id, groupUuids, clusterId}, `${queryName} returning`);
         return {

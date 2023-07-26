@@ -802,4 +802,28 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
+
+  // 6. A unit test for trying to set cluster groups when the user does/does not have permissions on all the existing groups
+  it('edit cluster groups', async () => {
+    try {
+      const {
+        data: {
+          data: { editClusterGroups },
+        },
+      } = await groupApi.editClusterGroups(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+        groupUuids: [group_01_uuid, group_02_uuid],
+      });
+      expect(editClusterGroups.modified).to.equal(2);
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
 });
