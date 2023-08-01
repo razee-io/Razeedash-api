@@ -579,23 +579,22 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - cluster authorized`);
 
-        // Find current cluster group uuids not in the groupUuids input
-        const currentClusterGroups = cluster.groups;
-        const currentClusterGroupUuids = currentClusterGroups.map((group) => group.uuid);
-        const currentClusterGroupUuidsNotInInput = currentClusterGroupUuids.filter((uuid) => !groupUuids.includes(uuid));
+        // Find current cluster group uuids not in the input.
+        const currentGroupUuids = cluster.groups.map((group) => group.uuid);
+        const omittedGroupUuids = currentGroupUuids.filter((uuid) => !groupUuids.includes(uuid));
 
-        // Identify what current cluster groups not in groupUuids the user can READ but not MANAGE
-        const readGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, null, currentClusterGroupUuidsNotInInput);
-        const manageGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, currentClusterGroupUuidsNotInInput);
-        const differenceGroupsNotInInput = readGroupsNotInInput.filter((group) => !manageGroupsNotInInput.includes(group.uuid));
-
-        // Check if the user is authorized to modify all groups from current cluster record not passed in groupUuids
-        if (readGroupsNotInInput.length > manageGroupsNotInInput.length) {
-          throw new ValidationError(context.req.t('You are not authorized to modify', {'groups':differenceGroupsNotInInput}), context);
+        // Of the groups NOT passed in, determine which the user can read, which the user can manage (which includes those that are readable), and which the user can ONLY read.
+        // Any read-only groups would be altered by this operation, so an error must be thrown if there are any.
+        // Any groups that the user cannot even read will be un-altered by this operation.
+        const readableGroups = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, null, omittedGroupUuids);
+        const manageableGroups = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, omittedGroupUuids);
+        const readOnlyGroups = readableGroups.filter(readableGroup => !manageableGroups.some(g => g.uuid === readableGroup.uuid));
+        if (readOnlyGroups.length > 0) {
+          throw new ValidationError(context.req.t('You are not authorized to modify some of the cluster groups', {'groups': readOnlyGroups}), context);
         }
 
         // Create output for graphQL plugins
-        const groupObjsToRemove = _.map(manageGroupsNotInInput, (group)=>{
+        const groupObjsToRemove = _.map(manageableGroups, (group)=>{
           return {
             uuid: group.uuid,
             name: group.name,
