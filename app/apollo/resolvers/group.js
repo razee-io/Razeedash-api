@@ -589,7 +589,7 @@ const groupResolvers = {
         const manageGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, allowedGroupUuidsNotInInput);
         const differenceGroupsNotInInput = readGroupsNotInInput.filter((group) => !manageGroupsNotInInput.includes(group.uuid));
 
-        // Check if the user is not authorized to modify all groups from cluster record not passed in groupUuids
+        // Check if the user is authorized to modify all groups from cluster record not passed in groupUuids
         if (readGroupsNotInInput.length > manageGroupsNotInInput.length) {
           throw new ValidationError(context.req.t('You are not authorized to modify', {'groups':differenceGroupsNotInInput}), context);
         }
