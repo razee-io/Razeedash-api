@@ -803,7 +803,6 @@ describe('groups graphql test suite', () => {
     }
   });
 
-  // 6. A unit test for trying to set cluster groups when the user does/does not have permissions on all the existing groups
   it('edit cluster groups', async () => {
     try {
       const {
