@@ -579,17 +579,17 @@ const groupResolvers = {
         await validAuth(me, org_id, ACTIONS.READ, TYPES.CLUSTER, queryName, context, identifiers);
         logger.info({req_id, user, org_id, clusterId, groupUuids}, `${queryName} validating - cluster authorized`);
 
-        // Find allowed group uuids not in the groupUuids input
-        const allowedClusterGroups = cluster.groups;
-        const allowedGroupUuids = allowedClusterGroups.map((group) => group.uuid);
-        const allowedGroupUuidsNotInInput = allowedGroupUuids.filter((uuid) => !groupUuids.includes(uuid));
+        // Find current cluster group uuids not in the groupUuids input
+        const currentClusterGroups = cluster.groups;
+        const currentClusterGroupUuids = currentClusterGroups.map((group) => group.uuid);
+        const currentClusterGroupUuidsNotInInput = currentClusterGroupUuids.filter((uuid) => !groupUuids.includes(uuid));
 
-        // Identify what groups the user can READ but not MANAGE
-        const readGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, null, allowedGroupUuidsNotInInput);
-        const manageGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, allowedGroupUuidsNotInInput);
+        // Identify what current cluster groups not in groupUuids the user can READ but not MANAGE
+        const readGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.READ, TYPES.GROUP, queryName, context, null, currentClusterGroupUuidsNotInInput);
+        const manageGroupsNotInInput = await getAllowedResources(me, org_id, ACTIONS.MANAGE, TYPES.GROUP, queryName, context, null, currentClusterGroupUuidsNotInInput);
         const differenceGroupsNotInInput = readGroupsNotInInput.filter((group) => !manageGroupsNotInInput.includes(group.uuid));
 
-        // Check if the user is authorized to modify all groups from cluster record not passed in groupUuids
+        // Check if the user is authorized to modify all groups from current cluster record not passed in groupUuids
         if (readGroupsNotInInput.length > manageGroupsNotInInput.length) {
           throw new ValidationError(context.req.t('You are not authorized to modify', {'groups':differenceGroupsNotInInput}), context);
         }
