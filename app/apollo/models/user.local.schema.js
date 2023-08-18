@@ -70,6 +70,34 @@ const UserLocalSchema = new mongoose.Schema({
         role: {
           type: String,
         },
+        authorization: {
+          cluster: {
+            read: String,
+            attach: String,
+            detach: String,
+            register: String,
+            update: String,
+          },
+          group: {
+            manage: String,
+            read: String,
+            setversion: String,
+          },
+          channel: {
+            create: String,
+            delete: String,
+            manageversion: String,
+            read: String,
+            update: String,
+          },
+          subscription: {
+            create: String,
+            delete: String,
+            read: String,
+            setversion: String,
+            update: String,
+          }
+        }
       },
     ],
   },
@@ -119,6 +147,7 @@ UserLocalSchema.statics.createUser = async function(models, args) {
           _id: org._id,
           name: org.name,
           role: args.role === 'ADMIN' ? 'ADMIN' : 'READER',
+          authorization: args.authorization,
         },
       ],
     },
@@ -298,10 +327,20 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
   });
 
   if (orgMeta) {
+    const userAuthorizationArray = me.meta.orgs.find(org => org.authorization);
     const results = objectArray.map( o => {
-      if (o.action === ACTIONS.READ) {
+      if (userAuthorizationArray) {
+        // Determine if user has fine-grained authorization for action and type.
+        // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
+        const fineGrainedAttribute = userAuthorizationArray.authorization[o.type][o.action];
+        if ((o.uuid === fineGrainedAttribute) || (o.name === fineGrainedAttribute)) {
+          return true;
+        }
+      }
+      else if ((o.action === ACTIONS.READ) && !userAuthorizationArray) {
         return !!orgMeta;
-      } else {
+      }
+      else {
         return orgMeta.role === 'ADMIN';
       }
     });
@@ -331,6 +370,19 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   });
   if(!orgMeta){
     return false;
+  }
+
+  // Determine if user has fine-grained authorization for action and type.
+  // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
+  const userAuthorizationArray = me.meta.orgs.find(org => org.authorization);
+  if (userAuthorizationArray) {
+    const fineGrainedAttribute = userAuthorizationArray.authorization[type][action];
+    if (attributes.includes(fineGrainedAttribute) || (!attributes)) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
   if (action === ACTIONS.READ) {
     return !!orgMeta;

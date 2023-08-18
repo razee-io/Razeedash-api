@@ -1,0 +1,34 @@
+{
+    "username": "fineGrainedAuthUser02",
+    "email": "fineGrainedAuthUser02@us.ibm.com",
+    "password": "password123",
+    "orgName": "org_01",
+    "authorization": {
+        "cluster": {
+            "read": "testCluster2",
+            "attach": "testCluster2",
+            "detach": "testCluster2",
+            "register": "testCluster2",
+            "update": "testCluster2"
+          },
+          "group": {
+            "manage": "testGroup2",
+            "read": "testGroup2",
+            "setversion": "testGroup2"
+          },
+          "channel": {
+            "create": "testConfiguration2",
+            "delete": "testConfiguration2",
+            "manageversion": "testConfiguration2",
+            "read": "testConfiguration2",
+            "update": "testConfiguration2"
+          },
+          "subscription": {
+            "create": "testSubscription2",
+            "delete": "testSubscription2",
+            "read": "testSubscription2",
+            "setversion": "testSubscription2",
+            "update": "testSubscription2"
+          }
+    }
+}

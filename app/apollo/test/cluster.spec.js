@@ -944,7 +944,10 @@ describe('cluster graphql test suite', () => {
         orgId: org01._id,
         registration: { name: 'my-cluster-plus-1' },
       });
-
+      registerCluster = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
+        registration: { name: 'my-cluster-plus-2' },
+      });
       registerCluster = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
         registration: { name: 'my-cluster-past-max' },
