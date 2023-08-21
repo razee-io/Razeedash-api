@@ -18,6 +18,7 @@ const bcrypt = require('bcrypt');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const objectPath = require('object-path');
 const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-server');
 const _ = require('lodash');
@@ -327,17 +328,17 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
   });
 
   if (orgMeta) {
-    const userAuthorizationArray = me.meta.orgs.find(org => org.authorization);
+    const userAuthObject = (me.meta.orgs.length > 0 ? me.meta.orgs[0] : null);
     const results = objectArray.map( o => {
-      if (userAuthorizationArray) {
+      if (userAuthObject.authorization) {
         // Determine if user has fine-grained authorization for action and type.
         // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-        const fineGrainedAttribute = userAuthorizationArray.authorization[o.type][o.action];
+        const fineGrainedAttribute = objectPath.get(userAuthObject, `authorization.${o.type}.${o.action}`);
         if ((o.uuid === fineGrainedAttribute) || (o.name === fineGrainedAttribute)) {
           return true;
         }
       }
-      else if ((o.action === ACTIONS.READ) && !userAuthorizationArray) {
+      else if ((o.action === ACTIONS.READ)) {
         return !!orgMeta;
       }
       else {
@@ -374,9 +375,9 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
 
   // Determine if user has fine-grained authorization for action and type.
   // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-  const userAuthorizationArray = me.meta.orgs.find(org => org.authorization);
-  if (userAuthorizationArray) {
-    const fineGrainedAttribute = userAuthorizationArray.authorization[type][action];
+  const userAuthObject = (me.meta.orgs.length > 0 ? me.meta.orgs[0] : null);
+  if (userAuthObject.authorization) {
+    const fineGrainedAttribute = objectPath.get(userAuthObject, `authorization.${type}.${action}`);
     if (attributes.includes(fineGrainedAttribute) || (!attributes)) {
       return true;
     }
@@ -384,9 +385,10 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
       return false;
     }
   }
-  if (action === ACTIONS.READ) {
+  else if (action === ACTIONS.READ) {
     return !!orgMeta;
-  } else {
+  }
+  else {
     return orgMeta.role === 'ADMIN';
   }
 };
