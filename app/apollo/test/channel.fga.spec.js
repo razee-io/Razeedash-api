@@ -26,9 +26,9 @@ const channelFunc = require('./channelApi');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-// If built-in fine-grained auth model defined, use it. Else, exit FGA unit tests.
+// If the current auth model does not support FGA, skip FGA unit tests without error.
 if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
-  console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Passing fine-grained tests for this model.`);
+  console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Skipping fine-grained auth tests.`);
   return process.exit(0);
 }
 const externalAuth = require('../../externalAuth.js');
@@ -52,9 +52,6 @@ let org01;
 
 let fgaUser01Data;
 let fgaUser02Data;
-
-// goal is to detect what auth version is being called and immediately pass tests if it's from extauth or passport.local
-
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
