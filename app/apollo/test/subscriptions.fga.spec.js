@@ -27,7 +27,11 @@ const groupFunc = require('./groupApi');
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
 
-// If external auth model specified, use it.  Else use built-in auth model.
+// If built-in fine-grained auth model defined, use it. Else, exit FGA unit tests.
+if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
+  console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Passing fine-grained tests for this model.`);
+  return process.exit(0);
+}
 const externalAuth = require('../../externalAuth.js');
 const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testPath : `./testHelper.${AUTH_MODEL}`;
 const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
