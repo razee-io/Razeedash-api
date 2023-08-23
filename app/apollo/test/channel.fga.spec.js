@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
+ * This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
+ * Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
  */
 
 const { expect } = require('chai');
@@ -20,12 +24,11 @@ const { v4: UUID } = require('uuid');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const resourceFunc = require('./api');
+const authFunc = require('./api');
 const channelFunc = require('./channelApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
-
 // If the current auth model does not support FGA, skip FGA unit tests without error.
 if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
   console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Skipping fine-grained auth tests.`);
@@ -41,17 +44,15 @@ let myApollo;
 
 const graphqlPort = 18000;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = resourceFunc(graphqlUrl);
+const authApi = authFunc(graphqlUrl);
 const channelApi = channelFunc(graphqlUrl);
 
-let fgaToken01;
-let fgaToken02;
-
-let org01Data;
-let org01;
-
-let fgaUser01Data;
-let fgaUser02Data;
+let fgaToken01, fgaToken02;
+let fgaUser01Data, fgaUser02Data;
+let org01Data, org01;
+let testChannel1, testChannel2;
+let testVersion1, testVersion2;
+let testGroup1, testGroup2;
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -82,60 +83,66 @@ const createUsers = async () => {
 };
 
 const createChannels = async () => {
-  await models.Channel.create({
-    _id: 'fake_ch_id_1',
+  testChannel1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration1',
-    name: 'test-configuration1',
+    uuid: 'test-channel1-uuid',
+    name: 'test-channel1-name',
     versions: [],  /* channel versions is deprecated and no longer used */
     tags: ['tag_01'],
     contentType: 'local'
-  });
-  await models.Channel.create({
-    _id: 'fake_ch_id_2',
+  };
+  await models.Channel.create(testChannel1);
+  testChannel2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration2',
-    name: 'test-configuration2',
+    uuid: 'test-channel2-uuid',
+    name: 'test-channel2-name',
     versions: [],  /* channel versions is deprecated and no longer used */
     tags: ['tag_02'],
     contentType: 'local'
-  });
+  };
+  await models.Channel.create(testChannel2);
 };
 
 const createVersions = async () => {
-  await models.DeployableVersion.create({
-    _id: 'fake_ver_id_1',
+  testVersion1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testVersion1',
-    name: 'test-version1',
-    channel_id: 'testConfiguration1',
-    channel_name: 'test-configuration1',
-  });
-  await models.DeployableVersion.create({
-    _id: 'fake_ver_id_2',
+    uuid: 'test-version1-uuid',
+    name: 'test-version1-name',
+    channel_id: testChannel1.uuid,
+    channel_name: testChannel1.name
+  };
+  await models.DeployableVersion.create(testVersion1);
+  testVersion2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testVersion2',
-    name: 'test-version2',
-    channel_id: 'testConfiguration2',
-    channel_name: 'test-configuration2',
-  });
+    uuid: 'test-version2-uuid',
+    name: 'test-version2-name',
+    channel_id: testChannel2.uuid,
+    channel_name: testChannel2.name
+  };
+  await models.DeployableVersion.create(testVersion2);
 };
 
 const createGroups = async () => {
-  await models.Group.create({
+  testGroup1 = {
     _id: UUID(),
     org_id: org01._id,
-    uuid: 'testGroup1',
-    name: 'testGroup1',
+    uuid: 'test-group1-uuid',
+    name: 'test-group1-name',
     owner: 'undefined'
-  });
-  await models.Group.create({
+  };
+  await models.Group.create(testGroup1);
+  testGroup2 = {
     _id: UUID(),
     org_id: org01._id,
-    uuid: 'testGroup2',
-    name: 'testGroup2',
+    uuid: 'test-group2-uuid',
+    name: 'test-group2-name',
     owner: 'undefined'
-  });
+  };
+  await models.Group.create(testGroup2);
 };
 
 describe('channel graphql test suite', () => {
@@ -157,8 +164,8 @@ describe('channel graphql test suite', () => {
     await createVersions();
     await createGroups();
 
-    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
+    fgaToken01 = await signInUser(models, authApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, authApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -167,499 +174,388 @@ describe('channel graphql test suite', () => {
   }); // after
 
   // channels fgaUser01
-  it('fgaUser01 has authentication to get ALLOWED channels', async () => {
+  it('fgaUser01 has authorization to get ALLOWED channels', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channels },
-        },
-      } = await channelApi.channels(fgaToken01, {
+      response = await channelApi.channels(fgaToken01, {
         orgId: org01._id,
       });
-
-      expect(channels).to.have.length(1);
-
+      expect(response.data.data.channels).to.have.length(1);
+      expect(response.data.data.channels[0].name).to.equal(testChannel1.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // channels fgaUser02
-  it('fgaUser02 has authentication to get ALLOWED channels', async () => {
+  it('fgaUser02 has authorization to get ALLOWED channels', async () => {
+    let response;
     try {
-      const result = await channelApi.channels(fgaToken02, {
+      response = await channelApi.channels(fgaToken02, {
         orgId: org01._id,
       });
-
-      expect(result.data.data.channels).to.have.length(1);
-
+      expect(response.data.data.channels).to.have.length(1);
+      expect(response.data.data.channels[0].name).to.equal(testChannel2.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // channel
-  it('fgaUser01 has authentication to get channel by channel uuid', async () => {
+  it('fgaUser01 has authorization to get channel 1 by channel uuid', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channel },
-        },
-      } = await channelApi.channel(fgaToken01, {
+      response = await channelApi.channel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration1',
+        uuid: testChannel1.uuid,
       });
-
-      expect(channel.name).to.equal('test-configuration1');
-
+      expect(response.data.data.channel.uuid).to.equal(testChannel1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // channel without authentication
-  it('fgaUser01 does NOT have authentication to get channel by channel uuid', async () => {
+  // channel without authorization
+  it('fgaUser01 does NOT have authorization to get channel 2 by channel uuid', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channel },
-        },
-      } = await channelApi.channel(fgaToken01, {
+      response = await channelApi.channel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration2',
+        uuid: testChannel2.uuid,
       });
-
-      expect(channel).to.equal(null);
-
+      console.log(response.data);
+      expect(response.data.data.channel).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // channelByName
-  it('fgaUser01 has authentication to get channel by channel name', async () => {
+  it('fgaUser01 has authorization to get channel 1 by channel name', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channelByName },
-        },
-      } = await channelApi.channelByName(fgaToken01, {
+      response = await channelApi.channelByName(fgaToken01, {
         orgId: org01._id,
-        name: 'test-configuration1',
+        name: testChannel1.name,
       });
-
-      expect(channelByName.uuid).to.equal('testConfiguration1');
-
+      expect(response.data.data.channelByName.uuid).to.equal(testChannel1.uuid);
+      expect(response.data.data.channelByName.name).to.equal(testChannel1.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // channelByName without authentication
-  it('fgaUser01 does NOT have authentication to get channel by channel name', async () => {
+  // channelByName without authorization
+  it('fgaUser01 does NOT have authorization to get channel 2 by channel name', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channelByName },
-        },
-      } = await channelApi.channelByName(fgaToken01, {
+      response = await channelApi.channelByName(fgaToken01, {
         orgId: org01._id,
-        name: 'test-configuration2',
+        name: testChannel2.name,
       });
-
-      expect(channelByName).to.equal(null);
-
+      expect(response.data.data.channelByName).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // channelsByTags
-  it('fgaUser01 has authentication to get ALLOWED channel by channel tags', async () => {
+  it('fgaUser01 has authorization to get ALLOWED channel 1 by channel tags', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { channelsByTags },
-        },
-      } = await channelApi.channelsByTags(fgaToken01, {
+      response = await channelApi.channelsByTags(fgaToken01, {
         orgId: org01._id,
         tags: ['tag_01'],
       });
-
-      expect(channelsByTags.length).to.equal(1);
-      expect(channelsByTags[0].uuid).to.equal('testConfiguration1');
-
+      expect(response.data.data.channelsByTags.length).to.equal(1);
+      expect(response.data.data.channelsByTags[0].uuid).to.equal(testChannel1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // channelVersion
-  it('fgaUser01 has authentication to ADD and GET channel version by NAME and UUID', async () => {
+  it('fgaUser01 has authorization to ADD and GET channel 1 version by NAME and UUID', async () => {
+    let response;
     try {
       // step 1: add a channel version
-      const result = await channelApi.addChannelVersion(fgaToken01, {
+      response = await channelApi.addChannelVersion(fgaToken01, {
         orgId: org01._id,
-        channelUuid: 'testConfiguration1',
-        name: `${'test-configuration1'}:v.0.1`,
+        channelUuid: testChannel1.uuid,
+        name: `${testChannel1.name}:v.0.1`,
         type: 'yaml',
         content: '{"n0": 123.45}',
-        description: `${'test-configuration1'}:v.0.1`
+        description: `${testChannel1.name}:v.0.1`
       });
-      console.log( `addChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
-      const addChannelVersion = result.data.data.addChannelVersion;
-
+      const addChannelVersion = response.data.data.addChannelVersion;
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
 
-      // step 2: get a channel version
-      const {
-        data: {
-          data: data,
-          errors: errors
-        },
-      } = await channelApi.channelVersion(fgaToken01, {
+      // step 2: get the newly created channel version
+      response = await channelApi.channelVersion(fgaToken01, {
         orgId: org01._id,
-        channelUuid: 'testConfiguration1',
+        channelUuid: testChannel1.uuid,
         versionUuid: addChannelVersion.versionUuid,
       });
-      if (errors) {
-        expect.fail(errors[0].message);
-      }
-      const channelVersion = data.channelVersion;
-
-      expect(channelVersion.channelName).to.equal('test-configuration1');
-      expect(channelVersion.name).to.equal(`${'test-configuration1'}:v.0.1`);
+      const channelVersion = response.data.data.channelVersion;
+      expect(channelVersion.channelName).to.equal(testChannel1.name);
+      expect(channelVersion.name).to.equal(`${testChannel1.name}:v.0.1`);
       expect(channelVersion.content).to.equal('{"n0": 123.45}');
       expect(channelVersion.created).to.be.an('string');
 
-      // step 3: get a channel version by name
-      const {
-        data: {
-          data: { channelVersionByName },
-        },
-      } = await channelApi.channelVersionByName(fgaToken01, {
+      // step 3: get the newly created channel version by name
+      response = await channelApi.channelVersionByName(fgaToken01, {
         orgId: org01._id,
-        channelName: 'test-configuration1',
-        versionName: `${'test-configuration1'}:v.0.1`,
+        channelName: testChannel1.name,
+        versionName: `${testChannel1.name}:v.0.1`,
       });
-
-      expect(channelVersionByName.channelName).to.equal('test-configuration1');
-      expect(channelVersionByName.name).to.equal(`${'test-configuration1'}:v.0.1`);
+      const channelVersionByName = response.data.data.channelVersionByName;
+      expect(channelVersionByName.channelName).to.equal(testChannel1.name);
+      expect(channelVersionByName.name).to.equal(`${testChannel1.name}:v.0.1`);
       expect(channelVersionByName.content).to.equal('{"n0": 123.45}');
       expect(channelVersionByName.created).to.be.an('string');
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // addChannelVersion without authentication
-  it('fgaUser01 does not have authentication to add channel version', async () => {
+  // addChannelVersion without authorization
+  it('fgaUser01 does NOT have authorization to add channel 2 version', async () => {
+    let response;
     try {
-      const result = await channelApi.addChannelVersion(fgaToken01, {
+      response = await channelApi.addChannelVersion(fgaToken01, {
         orgId: org01._id,
-        channelUuid: 'testConfiguration2',
-        name: `${'test-configuration1'}:v.0.1`,
+        channelUuid: testChannel2.uuid,
+        name: `${testChannel1.name}:v.0.1`,
         type: 'yaml',
         content: '{"n0": 123.45}',
-        description: `${'test-configuration1'}:v.0.1`
+        description: `${testChannel1.name}:v.0.1`
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // channelVersion without authentication
-  it('fgaUser01 does not have authentication to get channel version', async () => {
+  // channelVersion without authorization
+  it('fgaUser01 does NOT have authorization to get channel 2 version', async () => {
+    let response;
     try {
-      const result = await channelApi.channelVersion(fgaToken01, {
+      response = await channelApi.channelVersion(fgaToken01, {
         orgId: org01._id,
-        channelUuid: 'testConfiguration2',
-        versionUuid: 'testVersion1',
+        channelUuid: testChannel2.uuid,
+        versionUuid: testVersion1.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // channelVersionByName without authentication
-  it('fgaUser01 has authentication to get channel version by name', async () => {
+  // channelVersionByName without authorization
+  it('fgaUser01 does NOT authorization to get channel version 1 by name', async () => {
+    let response;
     try {
-      const result = await channelApi.channelVersionByName(fgaToken01, {
+      response = await channelApi.channelVersionByName(fgaToken01, {
         orgId: org01._id,
-        channelName: 'test-configuration2',
-        versionName: `${'test-configuration1'}`,
+        channelName: testChannel2.name,
+        versionName: `${testChannel1.name}`,
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // removeChannelVersion
-  it('fgaUser01 has authentication to add and remove channel version from a channel with another version', async () => {
+  it('fgaUser01 has authorization to add and remove channel version 1 from a channel with another version', async () => {
+    let response;
     try {
-      // step 1: add a channel version by admin token
-      const result = await channelApi.addChannelVersion(fgaToken01, {
+      // step 1: add a channel version
+      response = await channelApi.addChannelVersion(fgaToken01, {
         orgId: org01._id,
-        channelUuid: 'testConfiguration1',
-        name: `${'test-configuration1'}:v.0.3`,
+        channelUuid: testChannel1.uuid,
+        name: `${testChannel1.name}:v.0.3`,
         type: 'yaml',
         content: '{"n0": 123.45}',
-        description: `${'test-configuration1'}:v.0.3`
+        description: `${testChannel1.name}:v.0.3`
       });
-      console.log( `addChannelVersion result: ${JSON.stringify( result.data, null, 2 )}` );
-      const addChannelVersion = result.data.data.addChannelVersion;
-
+      const addChannelVersion = response.data.data.addChannelVersion;
       expect(addChannelVersion.success).to.equal(true);
       expect(addChannelVersion.versionUuid).to.be.an('string');
 
-      // step 2: delete a channel version by admin token
-      const {
-        data: {
-          data: { removeChannelVersion },
-        },
-      } = await channelApi.removeChannelVersion(fgaToken01, {
+      // step 2: delete the newly added channel version
+      response = await channelApi.removeChannelVersion(fgaToken01, {
         orgId: org01._id,
         uuid: addChannelVersion.versionUuid,
       });
-
+      const removeChannelVersion = response.data.data.removeChannelVersion;
       expect(removeChannelVersion.success).to.equal(true);
       expect(removeChannelVersion.uuid).to.equal(addChannelVersion.versionUuid);
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // removeChannelVersion without authentication
-  it('fgaUser01 does not have authentication to remove channel version from a channel with another version', async () => {
+  // removeChannelVersion without authorization
+  it('fgaUser01 does not have authorization to remove channel version 2 from a channel with another version', async () => {
+    let response;
     try {
-      const result = await channelApi.removeChannelVersion(fgaToken01, {
+      response = await channelApi.removeChannelVersion(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testVersion2',
+        uuid: testVersion2.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // addChannel
-  it('fgaUser02 has authentication to add a channel', async () => {
+  it('fgaUser02 has authorization to add a channel 2', async () => {
+    let response;
     try {
-      const result = await channelApi.addChannel(fgaToken02, {
+      response = await channelApi.addChannel(fgaToken02, {
         orgId: org01._id,
-        name: 'testConfiguration2',
+        name: testChannel2.uuid, // Use testChannel2.uuid due to fgaUser02 having authorization for that value
         data_location: 'dal',
       });
-
-      expect(result.data.data.addChannel.uuid).to.be.an('string');
-      const channel1 = await models.Channel.findOne({uuid: result.data.data.addChannel.uuid});
-      expect(channel1.data_location).to.equal('dal');
-
+      expect(response.data.data.addChannel.uuid).to.be.an('string');
+      const channel = await models.Channel.findOne({uuid: response.data.data.addChannel.uuid});
+      expect(channel.data_location).to.equal('dal');
+      expect(channel.name).to.equal(testChannel2.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // addChannel without authentication
-  it('fgaUser01 does NOT have authentication to add a channel', async () => {
+  // addChannel without authorization
+  it('fgaUser01 does NOT have authorization to add non-authorized channel 3', async () => {
+    let response;
     try {
-      const result = await channelApi.addChannel(fgaToken01, {
+      response = await channelApi.addChannel(fgaToken01, {
         orgId: org01._id,
         name: 'testConfiguration3',
         data_location: 'dal',
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // editChannel
-  it('fgaUser01 has authentication to edit channel and update channel name', async () => {
+  it('fgaUser01 has authorization to edit channel 1 and update channel 1 name', async () => {
+    let response;
     try {
-      const result = await channelApi.editChannel(fgaToken01, {
+      response = await channelApi.editChannel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration1',
-        name: `${'test-configuration1'}_new`
+        uuid: testChannel1.uuid,
+        name: `${testChannel1.name}_new`
       });
-      console.log( `editChannel result: ${JSON.stringify( result.data, null, 2 )}` );
-      const editChannel = result.data.data.editChannel;
-
-      expect(editChannel.success).to.equal(true);
-      expect(editChannel.name).to.equal(`${'test-configuration1'}_new`);
-
+      expect(response.data.data.editChannel.success).to.equal(true);
+      expect(response.data.data.editChannel.name).to.equal(`${testChannel1.name}_new`);
     } catch(error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // editChannel without authentication
-  it('fgaUser01 does NOT have authentication to edit channel and update channel name', async () => {
+  // editChannel without authorization
+  it('fgaUser01 does NOT have authorization to edit channel 2 and update channel 2 name', async () => {
+    let response;
     try {
-      const result = await channelApi.editChannel(fgaToken01, {
+      response = await channelApi.editChannel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration2',
-        name: `${'test-configuration2'}_new`
+        uuid: testChannel2.uuid,
+        name: `${testChannel2.name}_new`
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch(error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // removeChannel
-  it('fgaUser01 has authentication to remove channel', async () => {
+  it('fgaUser01 has authorization to remove channel 1', async () => {
+    let response;
     try {
-      const result2 = await channelApi.removeChannel(fgaToken01, {
+      // step 1: remove the channel
+      response = await channelApi.removeChannel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration1',
+        uuid: testChannel1.uuid,
       });
-      const removeChannel = result2.data.data.removeChannel;
-
+      const removeChannel = response.data.data.removeChannel;
       expect(removeChannel.success).to.equal(true);
-      expect(removeChannel.uuid).to.equal('testConfiguration1');
+      expect(removeChannel.uuid).to.equal(testChannel1.uuid);
 
-      // step 3 validate the channel is not there
-      const {
-        data: {
-          data: { channel },
-        },
-      } = await channelApi.channel(fgaToken01, {
+      // step 2: validate the channel is not there
+      response = await channelApi.channel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration1',
+        uuid: testChannel1.uuid,
       });
-
-      expect(channel).to.equal(null);
-
+      expect(response.data.data.channel).to.equal(null);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // removeChannel without authentication
-  it('fgaUser01 has authentication to remove channel', async () => {
+  // removeChannel without authorization
+  it('fgaUser01 does NOT have authorization to remove channel 2', async () => {
+    let response;
     try {
-      const result = await channelApi.removeChannel(fgaToken01, {
+      response = await channelApi.removeChannel(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testConfiguration2',
+        uuid: testChannel2.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });

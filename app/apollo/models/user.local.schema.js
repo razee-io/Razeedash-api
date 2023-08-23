@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -328,12 +328,11 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
   });
 
   if (orgMeta) {
-    const userAuthObject = (me.meta.orgs.length > 0 ? me.meta.orgs[0] : null);
     const results = objectArray.map( o => {
-      if (userAuthObject.authorization) {
+      if (orgMeta.authorization) {
         // Determine if user has fine-grained authorization for action and type.
         // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-        const fineGrainedAttribute = objectPath.get(userAuthObject, `authorization.${o.type}.${o.action}`);
+        const fineGrainedAttribute = objectPath.get(orgMeta, `authorization.${o.type}.${o.action}`);
         if ((o.uuid === fineGrainedAttribute) || (o.name === fineGrainedAttribute)) {
           return true;
         }
@@ -375,9 +374,8 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
 
   // Determine if user has fine-grained authorization for action and type.
   // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-  const userAuthObject = (me.meta.orgs.length > 0 ? me.meta.orgs[0] : null);
-  if (userAuthObject.authorization) {
-    const fineGrainedAttribute = objectPath.get(userAuthObject, `authorization.${type}.${action}`);
+  if (orgMeta.authorization) {
+    const fineGrainedAttribute = objectPath.get(orgMeta, `authorization.${type}.${action}`);
     if (attributes.includes(fineGrainedAttribute) || (!attributes)) {
       return true;
     }

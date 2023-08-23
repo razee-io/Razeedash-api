@@ -1,34 +1,34 @@
 {
-    "username": "fineGrainedAuthUser01",
-    "email": "fineGrainedAuthUser01@us.ibm.com",
-    "password": "password123",
-    "orgName": "org_01",
-    "authorization": {
-        "cluster": {
-            "read": "testCluster1",
-            "attach": "testCluster1",
-            "detach": "testCluster1",
-            "register": "testCluster1",
-            "update": "testCluster1"
-          },
-          "group": {
-            "manage": "testGroup1",
-            "read": "testGroup1",
-            "setversion": "testGroup1"
-          },
-          "channel": {
-            "create": "testConfiguration1",
-            "delete": "testConfiguration1",
-            "manageversion": "testConfiguration1",
-            "read": "testConfiguration1",
-            "update": "testConfiguration1"
-          },
-          "subscription": {
-            "create": "testSubscription1",
-            "delete": "testSubscription1",
-            "read": "testSubscription1",
-            "setversion": "testSubscription1",
-            "update": "testSubscription1"
-          }
+  "username": "fineGrainedAuthUser01",
+  "email": "fineGrainedAuthUser01@us.ibm.com",
+  "password": "password123",
+  "orgName": "org_01",
+  "authorization": {
+    "cluster": {
+      "read": "test-cluster1-uuid",
+      "attach": "test-cluster1-uuid",
+      "detach": "test-cluster1-uuid",
+      "register": "test-cluster1-uuid",
+      "update": "test-cluster1-uuid"
+    },
+    "group": {
+      "manage": "test-group1-uuid",
+      "read": "test-group1-uuid",
+      "setversion": "test-group1-uuid"
+    },
+    "channel": {
+      "create": "test-channel1-uuid",
+      "delete": "test-channel1-uuid",
+      "manageversion": "test-channel1-uuid",
+      "read": "test-channel1-uuid",
+      "update": "test-channel1-uuid"
+    },
+    "subscription": {
+      "create": "test-subscription1-uuid",
+      "delete": "test-subscription1-uuid",
+      "read": "test-subscription1-uuid",
+      "setversion": "test-subscription1-uuid",
+      "update": "test-subscription1-uuid"
     }
+  }
 }
