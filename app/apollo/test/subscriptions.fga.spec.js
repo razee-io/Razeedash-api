@@ -290,13 +290,11 @@ describe('subscription graphql test suite', () => {
       const subscriptions = response.data.data.subscriptions;
       expect(subscriptions).to.have.length(1);
       expect(subscriptions[0].name).to.equal(testSubscription1.name);
-      for( const subscription of subscriptions ) {
-        expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
-        expect( subscription.identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
-      }
+      expect(subscriptions[0].identitySyncStatus, 'subscription did not include identitySyncStatus').to.exist;
+      expect(subscriptions[0].identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero').to.equal(0);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -314,13 +312,11 @@ describe('subscription graphql test suite', () => {
       const subscriptions = response.data.data.subscriptions;
       expect(subscriptions).to.have.length(1);
       expect(subscriptions[0].name).to.equal(testSubscription2.name);
-      for( const subscription of subscriptions ) {
-        expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
-        expect( subscription.identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero' ).to.equal(0);
-        expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
-      }
+      expect(subscriptions[0].identitySyncStatus, 'subscription did not include identitySyncStatus').to.exist;
+      expect(subscriptions[0].identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero').to.equal(0);
+      expect(subscriptions[0].identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero').to.equal(0);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
