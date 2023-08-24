@@ -615,7 +615,7 @@ describe('subscription graphql test suite', () => {
   });
 
   // removeSubscription
-  it('fgaUser01 has authorization to remove a subscription 1', async () => {
+  it('fgaUser01 has authorization to remove subscription 1', async () => {
     let response;
     try {
       // step 1: Remove the subscription
