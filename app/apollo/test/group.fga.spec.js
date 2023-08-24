@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
+/*
+* Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
+* This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
+* Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
+*/
+
 const { expect } = require('chai');
 const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const resourceFunc = require('./api');
+const authApi = require('./api');
 const groupFunc = require('./groupApi');
 
 const apollo = require('../index');
-const { AUTH_MODEL } = require('../models/const');
 const { v4: UUID } = require('uuid');
-
+const { AUTH_MODEL } = require('../models/const');
 // If the current auth model does not support FGA, skip FGA unit tests without error.
 if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
   console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Skipping fine-grained auth tests.`);
@@ -41,20 +46,16 @@ let myApollo;
 
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = resourceFunc(graphqlUrl);
+const resourceApi = authApi(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 
-let fgaToken01;
-let fgaToken02;
-
-let org01Data;
-let org01;
-
-let fineGrainedAuthUser01Data;
-let fineGrainedAuthUser02Data;
-
-const group_01_uuid = 'testGroup1';
-const group_02_uuid = 'testGroup2';
+let fgaToken01, fgaToken02;
+let fgaUser01Data, fgaUser02Data;
+let org01Data, org01;
+let testGroup1, testGroup2;
+let testChannel1, testChannel2;
+let testCluster1, testCluster2;
+let testSubscription1, testSubscription2;
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -67,44 +68,46 @@ const createOrganizations = async () => {
 };
 
 const createUsers = async () => {
-  fineGrainedAuthUser01Data = JSON.parse(
+  fgaUser01Data = JSON.parse(
     fs.readFileSync(
       `${testDataPath}/fga.spec.user01.json`,
       'utf8',
     ),
   );
-  await prepareUser(models, fineGrainedAuthUser01Data);
-  fineGrainedAuthUser02Data = JSON.parse(
+  await prepareUser(models, fgaUser01Data);
+  fgaUser02Data = JSON.parse(
     fs.readFileSync(
       `${testDataPath}/fga.spec.user02.json`,
       'utf8',
     ),
   );
-  await prepareUser(models, fineGrainedAuthUser02Data);
+  await prepareUser(models, fgaUser02Data);
   return {};
 };
 
 const createGroups = async () => {
-  await models.Group.create({
+  testGroup1 = {
     _id: UUID(),
-    uuid: group_01_uuid,
     org_id: org01._id,
-    name: 'test-group1',
+    uuid: 'test-group1-uuid',
+    name: 'test-group1-name',
     owner: 'undefined'
-  });
-  await models.Group.create({
+  };
+  await models.Group.create(testGroup1);
+  testGroup2 = {
     _id: UUID(),
-    uuid: group_02_uuid,
     org_id: org01._id,
-    name: 'test-group2',
+    uuid: 'test-group2-uuid',
+    name: 'test-group2-name',
     owner: 'undefined'
-  });
-}; // create groups
+  };
+  await models.Group.create(testGroup2);
+};
 
 const createClusters = async () => {
-  await models.Cluster.create({
+  testCluster1 = {
     org_id: org01._id,
-    cluster_id: 'testCluster1',
+    cluster_id: 'test-cluster1-uuid',
     metadata: {
       kube_version: {
         major: '1',
@@ -118,11 +121,12 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
-    registration: { name: 'test-cluster1' },
-  });
-  await models.Cluster.create({
+    registration: { name: 'test-cluster1-name' },
+  };
+  await models.Cluster.create(testCluster1);
+  testCluster2 = {
     org_id: org01._id,
-    cluster_id: 'testCluster2',
+    cluster_id: 'test-cluster2-uuid',
     metadata: {
       kube_version: {
         major: '1',
@@ -136,66 +140,69 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
-    registration: { name: 'test-cluster2' },
-  });
-}; // create clusters
+    registration: { name: 'test-cluster2-name' },
+  };
+  await models.Cluster.create(testCluster2);
+};
 
 const createChannels = async () => {
-  await models.Channel.create({
-    _id: 'fake_ch_id_1',
+  testChannel1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration1',
-    name: 'test-configuration1',
-    versions: []  /* channel versions is deprecated and no longer used */
-  });
-  await models.Channel.create({
-    _id: 'fake_ch_id_2',
+    uuid: 'test-channel1-uuid',
+    name: 'test-channel1-name',
+    versions: [],  /* channel versions is deprecated and no longer used */
+  };
+  await models.Channel.create(testChannel1);
+  testChannel2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration2',
-    name: 'test-configuration2',
-    versions: []  /* channel versions is deprecated and no longer used */
-  });
+    uuid: 'test-channel2-uuid',
+    name: 'test-channel2-name',
+    versions: [],  /* channel versions is deprecated and no longer used */
+  };
+  await models.Channel.create(testChannel2);
 };
 
 const createSubscriptions = async () => {
-  // Subscription 01 is owned by fgaUser01
-  await models.Subscription.create({
-    _id: 'fga_subscription_id_1',
+  testSubscription1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testSubscription1',
-    name: 'test-subscription1',
+    uuid: 'test-subscription1-uuid',
+    name: 'test-subscription1-name',
     owner: 'undefined',
-    groups: ['test-group1'],
-    channel_uuid: 'testConfiguration1',
-    channel: 'test-configuration1',
-    version: 'test-version1',
-    version_uuid: 'testVersion1',
-  });
-  // Subscription 02 is owned by fgaUser02
-  await models.Subscription.create({
-    _id: 'fga_subscription_id_2',
+    groups: [testGroup1.name],
+    channel_uuid: testChannel1.uuid,
+    channel: testChannel1.name,
+    version: 'test-version1-name',
+    version_uuid: 'test-version1-uuid',
+  };
+  await models.Subscription.create(testSubscription1);
+  testSubscription2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testSubscription2',
-    name: 'testSubscription2',
+    uuid: 'test-subscription2-uuid',
+    name: 'test-subscription2-name',
     owner: 'undefined',
-    groups: ['test-group2'],
-    channel_uuid: 'testConfiguration2',
-    channel: 'test-configuration2',
-    version: 'test-version2',
-    version_uuid: 'testVersion2',
-  });
+    groups: [testGroup2.name],
+    channel_uuid: testChannel2.uuid,
+    channel: testChannel2.name,
+    version: 'test-version2-name',
+    version_uuid: 'test-version2-uuid',
+  };
+  await models.Subscription.create(testSubscription2);
 };
 
 const groupClusters = async () => {
   await models.Cluster.updateMany({
     org_id: org01._id,
-    cluster_id: {$in: ['testCluster1']},
-    'groups.uuid': {$nin: [group_01_uuid]}
+    cluster_id: {$in: [testCluster1.cluster_id]},
+    'groups.uuid': {$nin: [testGroup1.uuid]}
   },
   {$push: {
     groups: {
-      uuid: group_01_uuid,
-      name: 'test-group1'
+      uuid: testGroup1.uuid,
+      name: testGroup1.name
     }
   }});
 };
@@ -221,8 +228,8 @@ describe('groups graphql test suite', () => {
     await createSubscriptions();
     await groupClusters();
 
-    fgaToken01 = await signInUser(models, resourceApi, fineGrainedAuthUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fineGrainedAuthUser02Data);
+    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -231,487 +238,389 @@ describe('groups graphql test suite', () => {
   }); // after
 
   // groups fgaUser01
-  it('fgaUser01 has authentication to get ALLOWED groups by Org ID', async () => {
+  it('fgaUser01 has authorization to get ALLOWED groups by Org ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { groups },
-        },
-      } = await groupApi.groups(fgaToken01, {
+      response = await groupApi.groups(fgaToken01, {
         orgId: org01._id,
       });
-      console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
-
-      expect(groups).to.be.an('array');
-      expect(groups).to.have.length(1);
-
+      expect(response.data.data.groups).to.be.an('array');
+      expect(response.data.data.groups).to.have.length(1);
+      expect(response.data.data.groups[0].name).to.equal(testGroup1.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // groups fgaUser02
-  it('fgaUser02 has authentication to get ALLOWED groups by Org ID', async () => {
+  it('fgaUser02 has authorization to get ALLOWED groups by Org ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { groups },
-        },
-      } = await groupApi.groups(fgaToken02, {
+      response = await groupApi.groups(fgaToken02, {
         orgId: org01._id,
       });
-      console.log(`get all groups by Org ID: groups = ${JSON.stringify(groups)}`);
-
-      expect(groups).to.be.an('array');
-      expect(groups).to.have.length(1);
-
+      expect(response.data.data.groups).to.be.an('array');
+      expect(response.data.data.groups).to.have.length(1);
+      expect(response.data.data.groups[0].name).to.equal(testGroup2.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // group
-  it('fgaUser01 has authentication to get group by id', async () => {
+  it('fgaUser01 has authorization to get group 1 by id', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { group },
-        },
-      } = await groupApi.group(fgaToken01, {
+      response = await groupApi.group(fgaToken01, {
         orgId: org01._id,
-        uuid: group_01_uuid
+        uuid: testGroup1.uuid
       });
-      console.log(`get group by id: group = ${JSON.stringify(group)}`);
-
-      expect(group).to.be.an('Object');
-      expect(group.subscriptionCount).to.equal(1);
-      expect(group.clusterCount).to.equal(1);
-
+      expect(response.data.data.group).to.be.an('Object');
+      expect(response.data.data.group.subscriptionCount).to.equal(1);
+      expect(response.data.data.group.clusterCount).to.equal(1);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // group without authentication
-  it('fgaUser01 does NOT have authentication to get group by id', async () => {
+  // group without authorization
+  it('fgaUser01 does NOT have authorization to get group 2 by id', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { group },
-        },
-      } = await groupApi.group(fgaToken01, {
+      response = await groupApi.group(fgaToken01, {
         orgId: org01._id,
-        uuid: group_02_uuid
+        uuid: testGroup2.uuid
       });
-
-      expect(group).to.equal(null);
-
+      expect(response.data.data.group).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // groupByName
-  it('fgaUser01 has authentication to get groups by name', async () => {
+  it('fgaUser01 has authorization to get group 1 by name', async () => {
+    let response;
     try {
-      const result = await groupApi.groupByName(fgaToken01, {
+      response = await groupApi.groupByName(fgaToken01, {
         orgId: org01._id,
-        name: 'test-group1'
+        name: testGroup1.name
       });
-      const {
-        data: {
-          data: { groupByName },
-        },
-      } = result;
-      console.log(`get group by name: groupByName = ${JSON.stringify(groupByName)}`);
-
-      expect(groupByName).to.be.an('Object');
-      expect(groupByName.subscriptionCount).to.equal(1);
-      expect(groupByName.clusterCount).to.equal(1);
-
+      expect(response.data.data.groupByName).to.be.an('Object');
+      expect(response.data.data.groupByName.subscriptionCount).to.equal(1);
+      expect(response.data.data.groupByName.clusterCount).to.equal(1);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // groupByName without authentication
-  it('fgaUser01 does NOT have authentication to get groups by name', async () => {
+  // groupByName without authorization
+  it('fgaUser01 does NOT have authorization to get group 2 by name', async () => {
+    let response;
     try {
-      const result = await groupApi.groupByName(fgaToken01, {
+      response = await groupApi.groupByName(fgaToken01, {
         orgId: org01._id,
-        name: 'test-group2'
+        name: testGroup2.name
       });
-      const {
-        data: {
-          data: { groupByName },
-        },
-      } = result;
-
-      expect(groupByName).to.equal(null);
-
+      expect(response.data.data.groupByName).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // addGroup
-  it('fgaUser01 has authentication to add group', async () => {
+  it('fgaUser01 has authorization to add group 1', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { addGroup },
-        },
-      } = await groupApi.addGroup(fgaToken01, {
+      response = await groupApi.addGroup(fgaToken01, {
         orgId: org01._id,
-        name: 'testGroup1'
+        name: testGroup1.uuid
       });
-
-      expect(addGroup.uuid).to.be.an('string');
-
+      expect(response.data.data.addGroup.uuid).to.be.an('string');
+      const group = await models.Group.findOne({uuid: response.data.data.addGroup.uuid});
+      expect(group.name).to.equal(testGroup1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // addGroup without authentication
-  it('fgaUser01 does NOT have authentication to add group', async () => {
+  // addGroup without authorization
+  it('fgaUser01 does NOT have authorization to add group 2', async () => {
+    let response;
     try {
-      const result = await groupApi.addGroup(fgaToken01, {
+      response = await groupApi.addGroup(fgaToken01, {
         orgId: org01._id,
-        name: 'testGroup2'
+        name: testGroup2.uuid
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // removeGroup
-  it('fgaUser02 has authentication to remove a group by uuid', async () => {
+  it('fgaUser02 has authorization to remove a group by uuid 2', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { addGroup },
-        },
-      } = await groupApi.addGroup(fgaToken02, {
+      response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: 'testGroup2'
+        name: testGroup2.uuid
       });
-      const uuid = addGroup.uuid;
-      const {
-        data: {
-          data: { removeGroup },
-        },
-      } = await groupApi.removeGroup(fgaToken02, {
+      response = await groupApi.removeGroup(fgaToken02, {
         orgId: org01._id,
-        uuid: uuid
+        uuid: response.data.data.addGroup.uuid
       });
-
-      expect(removeGroup.uuid).to.be.an('string');
-      expect(removeGroup.success).to.equal(true);
-
+      expect(response.data.data.removeGroup.uuid).to.be.an('string');
+      expect(response.data.data.removeGroup.success).to.equal(true);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // removeGroup without authentication
-  it('fgaUser01 does NOT have authentication to remove a group by uuid', async () => {
+  // removeGroup without authorization
+  it('fgaUser01 does NOT have authorization to remove group 1 by uuid', async () => {
+    let response;
     try {
-      const result = await groupApi.removeGroup(fgaToken01, {
+      response = await groupApi.removeGroup(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testGroup1'
+        uuid: testGroup1.name
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // removeGroupByName
-  it('fgaUser02 has authentication to remove a group by name', async () => {
+  it('fgaUser02 has authorization to remove a group 2 by name', async () => {
+    let response;
     try {
-      await groupApi.addGroup(fgaToken02, {
+      response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: 'testGroup2'
+        name: testGroup2.uuid
       });
-      const {
-        data: {
-          data: { removeGroupByName },
-        },
-      } = await groupApi.removeGroupByName(fgaToken02, {
+      response = await groupApi.removeGroupByName(fgaToken02, {
         orgId: org01._id,
-        name: 'testGroup2'
+        name: testGroup2.uuid
       });
-
-      expect(removeGroupByName.uuid).to.be.an('string');
-      expect(removeGroupByName.success).to.equal(true);
-
+      expect(response.data.data.removeGroupByName.uuid).to.be.an('string');
+      expect(response.data.data.removeGroupByName.success).to.equal(true);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // removeGroupByName without authentication
-  it('fgaUser01 does NOT have authentication to remove a group by name', async () => {
+  // removeGroupByName without authorization
+  it('fgaUser01 does NOT have authorization to remove group 2 by name', async () => {
+    let response;
     try {
-      const result = await groupApi.removeGroupByName(fgaToken01, {
+      response = await groupApi.removeGroupByName(fgaToken01, {
         orgId: org01._id,
-        name: 'test-group2'
+        name: testGroup2.name
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // groupClusters
-  it('fgaUser02 has authentication to group clusters', async () => {
+  it('fgaUser02 has authorization to group cluster 2', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { groupClusters },
-        },
-      } = await groupApi.groupClusters(fgaToken02, {
+      response = await groupApi.groupClusters(fgaToken02, {
         orgId: org01._id,
-        uuid: group_02_uuid,
-        clusters: ['testCluster2']
+        uuid: testGroup2.uuid,
+        clusters: [testCluster2.cluster_id]
       });
-
-      expect(groupClusters.modified).to.equal(1);
-      const cluster1 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'testCluster2'}).exec();
-      expect(cluster1.groups).to.have.length(1);
-
+      expect(response.data.data.groupClusters.modified).to.equal(1);
+      const cluster = await models.Cluster.findOne({org_id : org01._id, cluster_id: testCluster2.cluster_id}).exec();
+      expect(cluster.groups).to.have.length(1);
+      expect(cluster.groups[0].name).to.equal(testGroup2.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // groupClusters without authentication
-  it('fgaUser01 does NOT have authentication to group clusters', async () => {
+  // groupClusters without authorization
+  it('fgaUser01 does NOT have authorization to group cluster 2', async () => {
+    let response;
     try {
-      const result = await groupApi.groupClusters(fgaToken01, {
+      response = await groupApi.groupClusters(fgaToken01, {
         orgId: org01._id,
-        uuid: group_02_uuid,
-        clusters: ['testCluster2']
+        uuid: testGroup2.uuid,
+        clusters: [testCluster2.cluster_id]
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // unGroupClusters
-  it('fgaUser02 has authentication to ungroup clusters', async () => {
+  it('fgaUser02 has authorization to ungroup cluster 2', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { unGroupClusters },
-        },
-      } = await groupApi.unGroupClusters(fgaToken02, {
+      response = await groupApi.unGroupClusters(fgaToken02, {
         orgId: org01._id,
-        uuid: group_02_uuid,
-        clusters: ['testCluster2']
+        uuid: testGroup2.uuid,
+        clusters: [testCluster2.cluster_id]
       });
-
-      expect(unGroupClusters.modified).to.equal(1);
-
+      expect(response.data.data.unGroupClusters.modified).to.equal(1);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // unGroupClusters without authentication
-  it('fgaUser01 does NOT have authentication to ungroup clusters', async () => {
+  // unGroupClusters without authorization
+  it('fgaUser01 does NOT have authorization to ungroup cluster 2', async () => {
+    let response;
     try {
-      const result = await groupApi.unGroupClusters(fgaToken01, {
+      response = await groupApi.unGroupClusters(fgaToken01, {
         orgId: org01._id,
-        uuid: group_02_uuid,
-        clusters: ['testCluster2']
+        uuid: testGroup2.uuid,
+        clusters: [testCluster2.cluster_id]
       });
-
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // assignClustersGroups / unassignClusterGroups
-  it('fgaUser01 has authentication to assignClusterGroups / unassignClusterGroups', async()=>{
-    // assign
-    var result = await groupApi.assignClusterGroups(fgaToken01, {
-      orgId: org01._id,
-      groupUuids: [group_01_uuid],
-      clusterIds: ['testCluster1']
-    });
-    var assignClusterGroups = result.data.data.assignClusterGroups;
-
-    expect(assignClusterGroups.modified).to.equal(2);
-
-    // unassign
-    result = await groupApi.unassignClusterGroups(fgaToken01, {
-      orgId: org01._id,
-      groupUuids: [group_01_uuid],
-      clusterIds: ['testCluster1']
-    });
-    var unassignClusterGroups = result.data.data.unassignClusterGroups;
-
-    expect(unassignClusterGroups.modified).to.equal(1);
-  });
-
-  // assignClustersGroups without authentication
-  it('fgaUser01 does NOT have authentication to assignClusterGroups', async()=>{
-    var result = await groupApi.assignClusterGroups(fgaToken01, {
-      orgId: org01._id,
-      groupUuids: [group_02_uuid],
-      clusterIds: ['testCluster2']
-    });
-
-    expect(result.data.data).to.equal(null);
-  });
-
-  // unassignClusterGroups without authentication
-  it('fgaUser01 does NOT have authentication to unassignClusterGroups', async()=>{
-    const result = await groupApi.unassignClusterGroups(fgaToken01, {
-      orgId: org01._id,
-      groupUuids: [group_02_uuid],
-      clusterIds: ['testCluster2']
-    });
-
-    expect(result.data.data).to.equal(null);
-  });
-
-  // editClusterGroups
-  it('fgaUser01 has authentication to edit cluster groups', async () => {
+  it('fgaUser01 has authorization to assignClusterGroups / unassignClusterGroups for group 1 and cluster 1', async()=>{
+    let response;
     try {
-      const {
-        data: {
-          data: { editClusterGroups },
-        },
-      } = await groupApi.editClusterGroups(fgaToken01, {
+      // assign
+      response = await groupApi.assignClusterGroups(fgaToken01, {
         orgId: org01._id,
-        clusterId: 'testCluster1',
-        groupUuids: [group_01_uuid],
+        groupUuids: [testGroup1.uuid],
+        clusterIds: [testCluster1.cluster_id]
       });
+      var assignClusterGroups = response.data.data.assignClusterGroups;
+      expect(assignClusterGroups.modified).to.equal(2);
 
-      expect(editClusterGroups.modified).to.equal(2);
-
+      // unassign
+      response = await groupApi.unassignClusterGroups(fgaToken01, {
+        orgId: org01._id,
+        groupUuids: [testGroup1.uuid],
+        clusterIds: [testCluster1.cluster_id]
+      });
+      var unassignClusterGroups = response.data.data.unassignClusterGroups;
+      expect(unassignClusterGroups.modified).to.equal(1);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // editClusterGroups without authentication
-  it('fgaUser01 does NOT have authentication to edit cluster groups', async () => {
+  // assignClustersGroups without authorization
+  it('fgaUser01 does NOT have authorization to assignClusterGroups for group 2 and cluster 2', async()=>{
+    let response;
     try {
-      const result = await groupApi.editClusterGroups(fgaToken01, {
+      response = await groupApi.assignClusterGroups(fgaToken01, {
         orgId: org01._id,
-        clusterId: 'testCluster2',
-        groupUuids: [group_02_uuid],
+        groupUuids: ['test-group2-uuid'],
+        clusterIds: [testCluster2.cluster_id]
+      });
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('Query assignClusterGroups error'); // assignClusterGroups() reaches a QueryError before ForbiddenError
+    } catch (error) {
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
+      throw error;
+    }
+  });
+
+  // unassignClusterGroups without authorization
+  it('fgaUser01 does NOT have authorization to unassignClusterGroups for group 2 and cluster 2', async()=>{
+    let response;
+    try {
+      response = await groupApi.unassignClusterGroups(fgaToken01, {
+        orgId: org01._id,
+        groupUuids: [testGroup2.uuid],
+        clusterIds: [testCluster2.cluster_id]
       });
 
-      expect(result.data.data).to.equal(null);
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('Query unassignClusterGroups error'); // unassignClusterGroups() reaches a QueryError before ForbiddenError
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
+      throw error;
+    }
+  });
+
+  // editClusterGroups
+  it('fgaUser01 has authorization to editClusterGroups for group 1 and cluster 1', async () => {
+    let response;
+    try {
+      response = await groupApi.editClusterGroups(fgaToken01, {
+        orgId: org01._id,
+        clusterId: testCluster1.cluster_id,
+        groupUuids: [testGroup1.uuid],
+      });
+      expect(response.data.data.editClusterGroups.modified).to.equal(2);
+    } catch (error) {
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
+      throw error;
+    }
+  });
+
+  // editClusterGroups without authorization
+  it('fgaUser01 does NOT have authorization to editClusterGroups for group 2 and cluster 2', async () => {
+    let response;
+    try {
+      response = await groupApi.editClusterGroups(fgaToken01, {
+        orgId: org01._id,
+        clusterId: testCluster2.cluster_id,
+        groupUuids: [testGroup2.uuid],
+      });
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('Query editClusterGroups error'); // editClusterGroups() reaches a QueryError before ForbiddenError
+    } catch (error) {
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
+ * Copyright 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
+/*
+* Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
+* This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
+* Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
+*/
+
 const { expect } = require('chai');
 const fs = require('fs');
 const { v4: UUID } = require('uuid');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const resourceFunc = require('./api');
+const authApi = require('./api');
 const subscriptionFunc = require('./subscriptionsApi');
 const groupFunc = require('./groupApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
-
 // If the current auth model does not support FGA, skip FGA unit tests without error.
 if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
   console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Skipping fine-grained auth tests.`);
@@ -38,7 +43,6 @@ const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath)
 const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
 const rbacSync = require('../utils/rbacSync.js');
-
 const { GraphqlPubSub } = require('../subscription');
 
 let mongoServer;
@@ -46,18 +50,18 @@ let myApollo;
 
 const graphqlPort = 18006;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = resourceFunc(graphqlUrl);
+const resourceApi = authApi(graphqlUrl);
 const subscriptionApi = subscriptionFunc(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 
-let fgaToken01;
-let fgaToken02;
-
-let org01Data;
-let org01;
-
-let fgaUser01Data;
-let fgaUser02Data;
+let fgaToken01, fgaToken02;
+let fgaUser01Data, fgaUser02Data;
+let org01Data, org01;
+let testGroup1, testGroup2;
+let testChannel1, testChannel2;
+let testCluster1;
+let testSubscription1, testSubscription2;
+let testVersion1, testVersion2;
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -88,30 +92,32 @@ const createUsers = async () => {
 };
 
 const createChannels = async () => {
-  await models.Channel.create({
-    _id: 'fake_ch_id_1',
+  testChannel1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration1',
-    name: 'test-configuration1',
-    versions: []  /* channel versions is deprecated and no longer used */
-  });
-  await models.Channel.create({
-    _id: 'fake_ch_id_2',
+    uuid: 'test-channel1-uuid',
+    name: 'test-channel1-name',
+    versions: [],  /* channel versions is deprecated and no longer used */
+  };
+  await models.Channel.create(testChannel1);
+  testChannel2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testConfiguration2',
-    name: 'test-configuration2',
-    versions: []  /* channel versions is deprecated and no longer used */
-  });
+    uuid: 'test-channel2-uuid',
+    name: 'test-channel2-name',
+    versions: [],  /* channel versions is deprecated and no longer used */
+  };
+  await models.Channel.create(testChannel2);
 };
 
 const createVersions = async () => {
-  await models.DeployableVersion.create({
-    _id: 'fake_ver_id_1',
+  testVersion1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testVersion1',
-    name: 'test-version1',
-    channel_id: 'testConfiguration1',
-    channel_name: 'test-configuration1',
+    uuid: 'test-version1-uuid',
+    name: 'test-version1-name',
+    channel_id: testChannel1.uuid,
+    channel_name: testChannel1.name,
     content: {
       metadata: {
         type: 'remote'
@@ -123,14 +129,15 @@ const createVersions = async () => {
         }]
       }
     }
-  });
-  await models.DeployableVersion.create({
-    _id: 'fake_ver_id_2',
+  };
+  await models.DeployableVersion.create(testVersion1);
+  testVersion2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testVersion2',
-    name: 'test-version2',
-    channel_id: 'testConfiguration2',
-    channel_name: 'test-configuration2',
+    uuid: 'test-version2-uuid',
+    name: 'test-version2-name',
+    channel_id: testChannel2.uuid,
+    channel_name: testChannel2.name,
     content: {
       metadata: {
         type: 'remote'
@@ -142,60 +149,63 @@ const createVersions = async () => {
         }]
       }
     }
-  });
+  };
+  await models.DeployableVersion.create(testVersion2);
 };
 
 const createGroups = async () => {
-  await models.Group.create({
+  testGroup1 = {
     _id: UUID(),
     org_id: org01._id,
-    uuid: 'testGroup1',
-    name: 'testGroup1',
+    uuid: 'test-group1-uuid',
+    name: 'test-group1-name',
     owner: 'undefined'
-  });
-  await models.Group.create({
+  };
+  await models.Group.create(testGroup1);
+  testGroup2 = {
     _id: UUID(),
     org_id: org01._id,
-    uuid: 'testGroup2',
-    name: 'testGroup2',
+    uuid: 'test-group2-uuid',
+    name: 'test-group2-name',
     owner: 'undefined'
-  });
+  };
+  await models.Group.create(testGroup2);
 };
 
 const createSubscriptions = async () => {
-  // Subscription 01 is owned by fgaUser01
-  await models.Subscription.create({
-    _id: 'fga_subscription_id_1',
+  testSubscription1 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testSubscription1',
-    name: 'testSubscription1',
+    uuid: 'test-subscription1-uuid',
+    name: 'test-subscription1-name',
     owner: 'undefined',
-    groups: ['testGroup1'],
-    channel_uuid: 'testConfiguration1',
-    channel: 'test-configuration1',
-    version: 'test-version1',
-    version_uuid: 'testVersion1',
-  });
-  // Subscription 02 is owned by fgaUser02 and has tags
-  await models.Subscription.create({
-    _id: 'fga_subscription_id_2',
+    groups: [testGroup1.name],
+    channel_uuid: testChannel1.uuid,
+    channel: testChannel1.name,
+    version: testVersion1.name,
+    version_uuid: testVersion1.uuid,
+  };
+  await models.Subscription.create(testSubscription1);
+  testSubscription2 = {
+    _id: UUID(),
     org_id: org01._id,
-    uuid: 'testSubscription2',
-    name: 'testSubscription2',
+    uuid: 'test-subscription2-uuid',
+    name: 'test-subscription2-name',
     owner: 'undefined',
-    groups: ['testGroup2'],
-    channel_uuid: 'testConfiguration2',
-    channel: 'test-configuration2',
-    version: 'test-version2',
-    version_uuid: 'testVersion2',
+    groups: [testGroup2.name],
+    channel_uuid: testChannel2.uuid,
+    channel: testChannel2.name,
+    version: testVersion2.name,
+    version_uuid: testVersion2.uuid,
     tags: ['test-tag']
-  });
+  };
+  await models.Subscription.create(testSubscription2);
 };
 
 const createClusters = async () => {
-  await models.Cluster.create({
+  testCluster1 = {
     org_id: org01._id,
-    cluster_id: 'testCluster1',
+    cluster_id: 'test-cluster1-uuid',
     metadata: {
       kube_version: {
         major: '1',
@@ -209,8 +219,9 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
-    registration: { name: 'test-cluster1' }
-  });
+    registration: { name: 'test-cluster1-name' },
+  };
+  await models.Cluster.create(testCluster1);
 };
 
 const assignClusterGroups = async ( token, orgId, groupUUIDs, clusterUUID ) => {
@@ -237,7 +248,6 @@ const sleep = async ( ms ) => {
 };
 
 describe('subscription graphql test suite', () => {
-
   before(async () => {
     process.env.NODE_ENV = 'test';
     rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
@@ -270,14 +280,16 @@ describe('subscription graphql test suite', () => {
     await mongoServer.stop();
   }); // after
 
-  // subscriptions
-  it('fgaUser01 has authentication to get subscriptions', async () => {
+  // subscriptions for fgaUser01
+  it('fgaUser01 has authorization to get ALLOWED subscription 1', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptions(fgaToken01, {
+      response = await subscriptionApi.subscriptions(fgaToken01, {
         orgId: org01._id,
       });
-      const subscriptions = result.data.data.subscriptions;
-      expect( subscriptions ).to.have.length(1);
+      const subscriptions = response.data.data.subscriptions;
+      expect(subscriptions).to.have.length(1);
+      expect(subscriptions[0].name).to.equal(testSubscription1.name);
       for( const subscription of subscriptions ) {
         expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
         expect( subscription.identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero' ).to.equal(0);
@@ -286,23 +298,22 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // subscriptions without authentication to all subscriptions
-  it('fgaUser02 does NOT have authentication to get ALL subscriptions', async () => {
+  // subscriptions for fgaUser02
+  it('fgaUser02 has authorization to get ALLOWED subscription 2', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptions(fgaToken02, {
+      response = await subscriptionApi.subscriptions(fgaToken02, {
         orgId: org01._id,
       });
-      const subscriptions = result.data.data.subscriptions;
-      expect( subscriptions ).to.have.length(1);
+      const subscriptions = response.data.data.subscriptions;
+      expect(subscriptions).to.have.length(1);
+      expect(subscriptions[0].name).to.equal(testSubscription2.name);
       for( const subscription of subscriptions ) {
         expect( subscription.identitySyncStatus, 'subscription did not include identitySyncStatus' ).to.exist;
         expect( subscription.identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero' ).to.equal(0);
@@ -311,437 +322,337 @@ describe('subscription graphql test suite', () => {
         expect( subscription.identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero' ).to.equal(0);
       }
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // subscription
-  it('fgaUser01 has authentication to get subscription by subscription uuid', async () => {
+  it('fgaUser01 has authorization to get subscription by subscription 1 uuid', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscription(fgaToken01, {
+      response = await subscriptionApi.subscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
-      console.log( `subscription result.data: ${JSON.stringify(result.data,null,2)}` );
-
-      expect(result.data.errors).to.be.undefined;
-      const subscription = result.data.data.subscription;
-      expect(subscription.name).to.equal('testSubscription1');
+      expect(response.data.errors).to.be.undefined;
+      const subscription = response.data.data.subscription;
+      expect(subscription.name).to.equal(testSubscription1.name);
       expect(subscription.groupObjs).to.exist;
       expect(subscription.groupObjs.length).to.equal(1);
-      expect(subscription.groupObjs[0].uuid).to.equal('testGroup1');
+      expect(subscription.groupObjs[0].uuid).to.equal(testGroup1.uuid);
       expect(subscription.versionObj).to.exist;
-      expect(subscription.versionObj.name).to.equal( 'test-version1' );
+      expect(subscription.versionObj.name).to.equal( testVersion1.name );
       expect(subscription.versionObj.remote).to.exist;
       expect(subscription.versionObj.remote.parameters).to.exist;
       expect(subscription.versionObj.remote.parameters.length).to.equal(1);
       expect(subscription.versionObj.remote.parameters[0].key).to.equal( 'key1' );
       expect(subscription.versionObj.remote.parameters[0].value).to.equal( 'val1' );
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // subscription without authentication
-  it('fgaUser02 does NOT have authentication to get subscription by subscription uuid', async () => {
+  // subscription without authorization
+  it('fgaUser02 does NOT have authorization to get subscription by subscription 1 uuid', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscription(fgaToken02, {
+      response = await subscriptionApi.subscription(fgaToken02, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
-      const subscription = result.data.data.subscription;
-
-      expect(subscription).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.subscription).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('Subscription not found');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // subscriptionByName
-  it('fgaUser01 has authentication to get subscription by subscription name', async () => {
+  it('fgaUser01 has authorization to get subscription 1 by subscription 1 name', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptionByName(fgaToken01, {
+      response = await subscriptionApi.subscriptionByName(fgaToken01, {
         orgId: org01._id,
-        name: 'testSubscription1',
+        name: testSubscription1.name,
       });
-
-      expect(result.data.errors).to.be.undefined;
-      const subscriptionByName = result.data.data.subscriptionByName;
-      expect(subscriptionByName.uuid).to.equal('testSubscription1');
-
+      expect(response.data.errors).to.be.undefined;
+      expect(response.data.data.subscriptionByName.uuid).to.equal(testSubscription1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // subscrptionByName without authentication
-  it('fgaUser02 does NOT have authentication to get subscription by subscription name', async () => {
+  // subscrptionByName without authorization
+  it('fgaUser02 does NOT have authorization to get subscription 1 by subscription name', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptionByName(fgaToken02, {
+      response = await subscriptionApi.subscriptionByName(fgaToken02, {
         orgId: org01._id,
-        name: 'test-subscription1',
+        name: testSubscription1.name,
       });
-      const subscription = result.data.data.subscriptionByName;
-
-      expect(subscription).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.subscriptionByName).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('Subscription not found');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // subscriptionForCluster
-  it('fgaUser01 has authentication to get subscriptions by clusterId', async () => {
+  it('fgaUser01 has authorization to get subscriptions by clusterId for cluster 1', async () => {
+    let response;
     try {
-      await assignClusterGroups( fgaToken01, org01._id, ['testGroup1'], 'testCluster1' );
-      const result = await subscriptionApi.subscriptionsForCluster(fgaToken01, {
+      await assignClusterGroups( fgaToken01, org01._id, [testGroup1.uuid], testCluster1.cluster_id );
+      response = await subscriptionApi.subscriptionsForCluster(fgaToken01, {
         orgId: org01._id,
-        clusterId: 'testCluster1',
+        clusterId: testCluster1.cluster_id,
       });
-      console.log( `subscriptions by clusterId result.data: ${JSON.stringify(result.data,null,2)}` );
-      const subscriptionsForCluster = result.data.data.subscriptionsForCluster;
-
-      expect(subscriptionsForCluster[0].uuid).to.equal('testSubscription1');
-
+      expect(response.data.data.subscriptionsForCluster[0].uuid).to.equal(testSubscription1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // subscriptionForCluster without authentication
-  it('fgaUser02 does NOT have authentication to get subscriptions by clusterId', async () => {
+  // subscriptionForCluster without authorization
+  it('fgaUser02 does NOT have authorization to get subscriptions by clusterId for cluster 1', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptionsForCluster(fgaToken02, {
+      response = await subscriptionApi.subscriptionsForCluster(fgaToken02, {
         orgId: org01._id,
-        clusterId: 'testCluster1',
+        clusterId: 'test-cluster1-uuid',
       });
-      const subscription = result.data.data.subscriptionsForCluster;
-
-      expect(subscription).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.subscriptionsForCluster).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // subscriptionForClusterByName
-  it('fgaUser01 has authentication to get subscriptions by clusterName', async () => {
+  it('fgaUser01 has authorization to get subscriptions by clusterName for cluster 1', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptionsForClusterByName(fgaToken01, {
+      response = await subscriptionApi.subscriptionsForClusterByName(fgaToken01, {
         orgId: org01._id,
-        clusterName: 'test-cluster1',
+        clusterName: testCluster1.registration.name,
       });
-      const subscriptionsForCluster = result.data.data.subscriptionsForClusterByName;
-
-      expect(subscriptionsForCluster[0].uuid).to.equal('testSubscription1');
-
+      expect(response.data.data.subscriptionsForClusterByName[0].uuid).to.equal(testSubscription1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // subscriptionForClusterByName without authentication
-  it('fgaUser02 does NOT have authentication to get subscriptions by clusterName', async () => {
+  // subscriptionForClusterByName without authorization
+  it('fgaUser02 does NOT have authorization to get subscriptions by clusterName for cluster 1', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.subscriptionsForClusterByName(fgaToken02, {
+      response = await subscriptionApi.subscriptionsForClusterByName(fgaToken02, {
         orgId: org01._id,
-        clusterName: 'test-cluster1',
+        clusterName: testCluster1.registration.name,
       });
-      const subscriptionsForCluster = result.data.data.subscriptionsForClusterByName;
-
-      expect(subscriptionsForCluster).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.subscriptionsForClusterByName).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // addSubscripiton
-  it('fgaUser01 has authentication to add subscriptions', async () => {
+  it('fgaUser01 has authorization to add subscription 1', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.addSubscription(fgaToken01, {
+      response = await subscriptionApi.addSubscription(fgaToken01, {
         orgId: org01._id,
-        name: 'testSubscription1',
-        groups:['testGroup1'],
-        channelUuid: 'testConfiguration1',
-        versionUuid: 'testVersion1',
+        name: testSubscription1.uuid,
+        groups:[testGroup1.uuid],
+        channelUuid: testChannel1.uuid,
+        versionUuid: testVersion1.uuid,
       });
-
-      expect(result.data.data.addSubscription.uuid).to.be.an('string');
-
+      expect(response.data.data.addSubscription.uuid).to.be.an('string');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // addSubscription without authentication
-  it('fgaUser01 does NOT have authentication to add subscriptions', async () => {
+  // addSubscription without authorization
+  it('fgaUser01 does NOT have authorization to add subscription 3', async () => {
+    let response;
     try {
-      const result = await subscriptionApi.addSubscription(fgaToken01, {
+      response = await subscriptionApi.addSubscription(fgaToken01, {
         orgId: org01._id,
         name: 'testSubscription3',
-        groups:['testGroup1'],
-        channelUuid: 'testConfiguration1',
-        versionUuid: 'testVersion1',
+        groups:[testGroup1.uuid],
+        channelUuid: testChannel1.uuid,
+        versionUuid: testVersion1.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // editSubscription
-  it('fgaUser01 has authentication to edit subscriptions', async () => {
+  it('fgaUser01 has authorization to edit subscription 1', async () => {
+    let response;
     try {
-      // Edit the subscription
-      const result = await subscriptionApi.editSubscription(fgaToken01, {
+      // step 1: Edit the subscription
+      response = await subscriptionApi.editSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
         name: 'test-subscription3', // new name
-        groups:['testGroup1'],
-        channelUuid: 'testConfiguration1',
-        versionUuid: 'testVersion1',
+        groups:[testGroup1.uuid],
+        channelUuid: testChannel1.uuid,
+        versionUuid: testVersion1.uuid,
       });
-      const {
-        data: {
-          data: { editSubscription },
-        },
-      } = result;
+      expect(response.data.data.editSubscription.uuid).to.be.an('string');
+      expect(response.data.data.editSubscription.success).to.equal(true);
 
-      expect(editSubscription.uuid).to.be.an('string');
-      expect(editSubscription.success).to.equal(true);
-
-      // Get the updated subscription
-      const result2 = await subscriptionApi.subscription(fgaToken01, {
+      // step 2: Get the updated subscription
+      response = await subscriptionApi.subscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
-      const {
-        data: {
-          data: { subscription },
-        },
-      } = result2;
-
-      expect(subscription.name).to.equal('test-subscription3');
-
+      expect(response.data.data.subscription.name).to.equal('test-subscription3');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // editSubscription without authentication
-  it('fgaUser01 does NOT have authentication to edit subscriptions', async () => {
+  // editSubscription without authorization
+  it('fgaUser01 does NOT have authorization to edit subscription 2', async () => {
+    let response;
     try {
-      // Edit the subscription
-      const result = await subscriptionApi.editSubscription(fgaToken01, {
+      response = await subscriptionApi.editSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription2',
+        uuid: testSubscription2.uuid,
         name: 'test-subscription3', // new name
-        groups:['testGroup1'],
-        channelUuid: 'testConfiguration1',
-        versionUuid: 'testVersion1',
+        groups:[testGroup1.uuid],
+        channelUuid: testChannel1.uuid,
+        versionUuid: testVersion1.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // setSubscription
-  it('fgaUser01 has authentication to set a subscription configurationVersion', async () => {
+  it('fgaUser01 has authorization to set subscription 1 configurationVersion', async () => {
+    let response;
     try {
-      //step1, edit the subscription's configurationVerision
-      const {
-        data: {
-          data: { setSubscription },
-        },
-      } = await subscriptionApi.setSubscription(fgaToken01, {
+      // step 1: Edit the subscription's configurationVerision
+      response = await subscriptionApi.setSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
-        versionUuid: 'testVersion1',
+        uuid: testSubscription1.uuid,
+        versionUuid: testVersion1.uuid,
       });
+      expect(response.data.data.setSubscription.uuid).to.be.an('string');
+      expect(response.data.data.setSubscription.success).to.equal(true);
 
-      expect(setSubscription.uuid).to.be.an('string');
-      expect(setSubscription.success).to.equal(true);
-
-      // Get the updated subscription
-      const {
-        data: {
-          data: { subscription },
-        },
-      } = await subscriptionApi.subscription(fgaToken01, {
+      // step 2: Get the updated subscription
+      response = await subscriptionApi.subscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
-
-      expect(subscription.versionUuid).to.equal('testVersion1');
-
+      expect(response.data.data.subscription.versionUuid).to.equal(testVersion1.uuid);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // setSubscription without authentication
-  it('fgaUser01 does NOT have authentication to set a subscription configurationVersion', async () => {
+  // setSubscription without authorization
+  it('fgaUser01 does NOT have authorization to set subscription 2 configurationVersion', async () => {
+    let response;
     try {
-      //step1, edit the subscription's configurationVerision
-      const result = await subscriptionApi.setSubscription(fgaToken01, {
+      response = await subscriptionApi.setSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
-        versionUuid: 'testVersion2',
+        uuid: testSubscription2.uuid,
+        versionUuid: testVersion2.uuid,
       });
-
-      expect(result.data.data).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // removeSubscription
-  it('fgaUser01 has authentication to remove a subscription', async () => {
+  it('fgaUser01 has authorization to remove a subscription 1', async () => {
+    let response;
     try {
-      // Remove the subscription
-      const {
-        data: {
-          data: { removeSubscription },
-        },
-      } = await subscriptionApi.removeSubscription(fgaToken01, {
+      // step 1: Remove the subscription
+      response = await subscriptionApi.removeSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
+      expect(response.data.data.removeSubscription.uuid).to.be.an('string');
+      expect(response.data.data.removeSubscription.success).to.equal(true);
 
-      expect(removeSubscription.uuid).to.be.an('string');
-      expect(removeSubscription.success).to.equal(true);
-
-      // Validate the subscription is not there
-      const {
-        data: {
-          data: { subscription },
-        },
-      } = await subscriptionApi.subscription(fgaToken01, {
+      // step 2: Validate the subscription is not there
+      response = await subscriptionApi.subscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription1',
+        uuid: testSubscription1.uuid,
       });
-
-      expect(subscription).to.equal(null);
-
+      expect(response.data.data.subscription).to.equal(null);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // removeSubscription without authentication
-  it('fgaUser01 does NOT have authentication to remove a subscription', async () => {
+  // removeSubscription without authorization
+  it('fgaUser01 does NOT have authorization to remove subscription 2', async () => {
+    let response;
     try {
-      //step1, remove the subscription
-      const result = await subscriptionApi.removeSubscription(fgaToken01, {
+      response = await subscriptionApi.removeSubscription(fgaToken01, {
         orgId: org01._id,
-        uuid: 'testSubscription2',
+        uuid: testSubscription2.uuid,
       });
-
-      expect(result.data.data.removeSubscription).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.removeSubscription).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });

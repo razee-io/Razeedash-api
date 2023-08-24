@@ -12,11 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
- * This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
- * Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
  */
+
+/*
+* Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
+* This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
+* Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
+*/
 
 const { expect } = require('chai');
 const fs = require('fs');
@@ -229,7 +231,6 @@ describe('channel graphql test suite', () => {
         orgId: org01._id,
         uuid: testChannel2.uuid,
       });
-      console.log(response.data);
       expect(response.data.data.channel).to.equal(null);
       expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {

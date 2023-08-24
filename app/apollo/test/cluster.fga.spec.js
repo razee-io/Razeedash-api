@@ -1,5 +1,5 @@
 /**
- * Copyright 2020, 2022 IBM Corp. All Rights Reserved.
+ * Copyright 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+* Fine-Grained-Authorization (FGA) allows the auth model to determine access to resources based on the name or id of the resource, and on the action being taken (e.g. read vs edit).
+* This test suite provides validation of FGA behavior for auth models that support it by verifying that users with different FGA permissions are correctly allowed or restricted.
+* Other test suites will validate behavior based on having admin permissions (or lack thereof) independently.
+*/
+
 const { expect } = require('chai');
 const fs = require('fs');
 const Moment = require('moment');
@@ -21,12 +27,11 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const { v4: UUID } = require('uuid');
 
 const { models } = require('../models');
-const resourceFunc = require('./api');
+const authApi = require('./api');
 const clusterFunc = require('./clusterApi');
 
 const apollo = require('../index');
 const { AUTH_MODEL } = require('../models/const');
-
 // If the current auth model does not support FGA, skip FGA unit tests without error.
 if (AUTH_MODEL === 'extauthtest' || AUTH_MODEL === 'passport.local') {
   console.log(`Found non fine-grained auth model: ${AUTH_MODEL}. Skipping fine-grained auth tests.`);
@@ -44,29 +49,14 @@ let myApollo;
 
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = resourceFunc(graphqlUrl);
+const resourceApi = authApi(graphqlUrl);
 const clusterApi = clusterFunc(graphqlUrl);
 
-let fgaToken01;
-let fgaToken02;
-
-let org01Data;
-let org01;
-
-let fineGrainedAuthUser01Data;
-let fineGrainedAuthUser02Data;
-
-const group_01_uuid = 'testGroup1';
-const group_02_uuid = 'testGroup2';
-const org_01_orgkey = 'orgApiKey-0a9f5ee7-c879-4302-907c-238178ec9071';
-const org_01_orgkey2 = {
-  orgKeyUuid: 'fcb8af1e-e4f1-4e7b-8c52-0e8360b48a13',
-  name: 'testOrgKey2',
-  primary: true,
-  key: 'dummy-key-value'
-};
-
-// If external auth model specified, use it.  Else use built-in auth model.
+let fgaToken01, fgaToken02;
+let fgaUser01Data, fgaUser02Data;
+let org01Data, org01;
+let testGroup1, testGroup2;
+let testCluster1;
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -75,32 +65,31 @@ const createOrganizations = async () => {
       'utf8',
     ),
   );
-  org01Data.orgKeys2 = [org_01_orgkey2];
   org01 = await prepareOrganization(models, org01Data);
 };
 
 const createUsers = async () => {
-  fineGrainedAuthUser01Data = JSON.parse(
+  fgaUser01Data = JSON.parse(
     fs.readFileSync(
       `${testDataPath}/fga.spec.user01.json`,
       'utf8',
     ),
   );
-  await prepareUser(models, fineGrainedAuthUser01Data);
-  fineGrainedAuthUser02Data = JSON.parse(
+  await prepareUser(models, fgaUser01Data);
+  fgaUser02Data = JSON.parse(
     fs.readFileSync(
       `${testDataPath}/fga.spec.user02.json`,
       'utf8',
     ),
   );
-  await prepareUser(models, fineGrainedAuthUser02Data);
+  await prepareUser(models, fgaUser02Data);
   return {};
 };
 
 const createClusters = async () => {
-  await models.Cluster.create({
+  testCluster1 = {
     org_id: org01._id,
-    cluster_id: 'testCluster1',
+    cluster_id: 'test-cluster1-uuid',
     metadata: {
       kube_version: {
         major: '1',
@@ -114,57 +103,59 @@ const createClusters = async () => {
         platform: 'linux/amd64',
       },
     },
-    lastOrgKeyUuid: org_01_orgkey,
-    registration: { name: 'test-cluster1' },
+    registration: { name: 'test-cluster1-name' },
     reg_state: 'registering',
     created: new Moment().subtract(2, 'day').toDate(),
     updated: new Moment().subtract(2, 'day').toDate(),
-  });
-}; // create clusters
+  };
+  await models.Cluster.create(testCluster1);
+};
 
 const createGroups = async () => {
-  await models.Group.create({
+  testGroup1 = {
     _id: UUID(),
-    uuid: group_01_uuid,
     org_id: org01._id,
-    name: 'test-group1',
+    uuid: 'test-group1-uuid',
+    name: 'test-group1-name',
     owner: 'undefined'
-  });
-  await models.Group.create({
+  };
+  await models.Group.create(testGroup1);
+  testGroup2 = {
     _id: UUID(),
-    uuid: group_02_uuid,
     org_id: org01._id,
-    name: 'test-group2',
+    uuid: 'test-group2-uuid',
+    name: 'test-group2-name',
     owner: 'undefined'
-  });
-}; // create groups
+  };
+  await models.Group.create(testGroup2);
+};
 
 const groupClusters = async () => {
   await models.Cluster.updateMany({
     org_id: org01._id,
-    cluster_id: {$in: ['testCluster1']},
-    'groups.uuid': {$nin: [group_01_uuid]}
+    cluster_id: {$in: [testCluster1.cluster_id]},
+    'groups.uuid': {$nin: [testGroup1.uuid]}
   },
   {$push: {
     groups: {
-      uuid: group_01_uuid,
-      name: 'test-group1'
+      uuid: testGroup1.uuid,
+      name: testGroup1.name
     }
   }});
   await models.Cluster.updateMany({
     org_id: org01._id,
     cluster_id: {$in: ['noAuthCluster']},
-    'groups.uuid': {$nin: [group_02_uuid]}
+    'groups.uuid': {$nin: [testGroup2.uuid]}
   },
   {$push: {
     groups: {
-      uuid: group_02_uuid,
-      name: 'test-group2'
+      uuid: testGroup2.uuid,
+      name: testGroup2.name
     }
   }});
 };
 
-describe('cluster fine-grained authentication graphql test suite', () => {
+describe('cluster fine-grained authorization graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
     mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
@@ -183,8 +174,8 @@ describe('cluster fine-grained authentication graphql test suite', () => {
     await createGroups();
     await groupClusters();
 
-    fgaToken01 = await signInUser(models, resourceApi, fineGrainedAuthUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fineGrainedAuthUser02Data);
+    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -193,316 +184,239 @@ describe('cluster fine-grained authentication graphql test suite', () => {
   }); // after
 
   // clusterByClusterId
-  it('fgaUser01 has authentication to get cluster by clusterID', async () => {
+  it('fgaUser01 has authorization to get cluster 1 by clusterID', async () => {
+    let response;
     try {
-      const clusterId = 'testCluster1';
-      const result = await clusterApi.byClusterID(fgaToken01, {
+      const clusterId = testCluster1.cluster_id;
+      response = await clusterApi.byClusterID(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterId,
       });
-      const clusterByClusterId = result.data.data.clusterByClusterId;
-
+      const clusterByClusterId = response.data.data.clusterByClusterId;
       expect(clusterByClusterId.clusterId).to.equal(clusterId);
       expect(clusterByClusterId.regState).to.equal('registering');  // record attr
       expect(clusterByClusterId.status).to.equal('registered'); // created ~= updated
-      expect(clusterByClusterId.lastOrgKey.uuid).to.equal(org_01_orgkey);
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // clusterbyClusterId without authentication
-  it('fgaUser01 does NOT have authentication to get cluster by clusterID', async () => {
+  // clusterbyClusterId without authorization
+  it('fgaUser01 does NOT have authorization to get cluster noAuthCluster by clusterID', async () => {
+    let response;
     try {
       const clusterId = 'noAuthCluster';
-      const result = await clusterApi.byClusterID(fgaToken01, {
+      response = await clusterApi.byClusterID(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterId,
       });
-
-      expect(result.data.data.clusterByClusterId).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.clusterByClusterId).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // clusterByName
-  it('fgaUser01 has authentication to get cluster by cluster name', async () => {
+  it('fgaUser01 has authorization to get cluster 1 by cluster name', async () => {
+    let response;
     try {
-      const clusterId = 'testCluster1';
-      const clusterName = 'test-cluster1';
-      const result = await clusterApi.byClusterName(fgaToken01, {
+      const clusterId = testCluster1.cluster_id;
+      const clusterName = testCluster1.registration.name;
+      response = await clusterApi.byClusterName(fgaToken01, {
         orgId: org01._id,
         clusterName: clusterName,
       });
-      const clusterByClusterName = result.data.data.clusterByName;
-
+      const clusterByClusterName = response.data.data.clusterByName;
       expect(clusterByClusterName.clusterId).to.equal(clusterId);
       expect(clusterByClusterName.regState).to.equal('registering');  // record attr
       expect(clusterByClusterName.status).to.equal('registered'); // created ~= updated
-      expect(clusterByClusterName.lastOrgKey.uuid).to.equal(org_01_orgkey);
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // clusterByName without authentication
-  it('fgaUser01 does NOT have authentication to get cluster by cluster name', async () => {
+  // clusterByName without authorization
+  it('fgaUser01 does NOT have authorization to get cluster noAuthCluster by cluster name', async () => {
+    let response;
     try {
       const clusterName = 'no-auth-cluster';
-      const result = await clusterApi.byClusterName(fgaToken01, {
+      response = await clusterApi.byClusterName(fgaToken01, {
         orgId: org01._id,
         clusterName: clusterName,
       });
-
-      expect(result.data.data.clusterByName).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data.clusterByName).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // clustersByOrgId
-  it('fgaUser01 has authentication to get all clusters by Org ID', async () => {
+  it('fgaUser01 has authorization to get all clusters by Org ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clustersByOrgId },
-        },
-      } = await clusterApi.byOrgID(fgaToken01, {
+      response = await clusterApi.byOrgID(fgaToken01, {
         orgId: org01._id,
       });
-
+      const clustersByOrgId = response.data.data.clustersByOrgId;
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(1);
       expect(clustersByOrgId[0].resources).to.be.an('array');
-      expect(clustersByOrgId[0].lastOrgKey.name).to.equal(null);
 
       // test skip and limit implementation
-      const skipResponse = await clusterApi.byOrgID(fgaToken01, {
+      response = await clusterApi.byOrgID(fgaToken01, {
         orgId: org01._id,
         skip: 1, limit: 1,
       });
-      const skipLimitedClustersByOrgId = skipResponse.data.data.clustersByOrgId;
-
-      expect(skipLimitedClustersByOrgId[0]).to.equal(undefined);
-
+      expect(response.data.data.clustersByOrgId[0]).to.equal(undefined);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // clustersByOrgId without authentication
-  it('fgaUser02 does NOT have authentication to get all clusters by Org ID', async () => {
+  // clustersByOrgId without authorization
+  it('fgaUser02 does NOT have authorization to get all clusters by Org ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clustersByOrgId },
-        },
-      } = await clusterApi.byOrgID(fgaToken02, {
+      response = await clusterApi.byOrgID(fgaToken02, {
         orgId: org01._id,
       });
-
-      expect(clustersByOrgId).to.be.an('array');
-      expect(clustersByOrgId).to.have.length(0);
-
+      expect(response.data.data.clustersByOrgId).to.be.an('array');
+      expect(response.data.data.clustersByOrgId).to.have.length(0);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // inactiveClusters
-  it('fgaUser01 has authentication to get all (inactive) clusters who have not been updated in last day', async () => {
+  it('fgaUser01 has authorization to get (inactive) cluster 1 who has not been updated in last day', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { inactiveClusters },
-        },
-      } = await clusterApi.inactiveClusters(fgaToken01, { orgId: org01._id });
-
+      response = await clusterApi.inactiveClusters(fgaToken01, { orgId: org01._id });
+      const inactiveClusters = response.data.data.inactiveClusters;
       expect(inactiveClusters).to.be.an('array');
       expect(inactiveClusters).to.have.length(1);
-      expect(inactiveClusters[0].clusterId).to.equal('testCluster1');
+      expect(inactiveClusters[0].clusterId).to.equal(testCluster1.cluster_id);
       expect(inactiveClusters[0].groups).to.have.length(1);
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // inactiveClusters without authentication
-  it('fgaUser02 does NOT have authentication to get all (inactive) clusters who have not been updated in last day', async () => {
+  // inactiveClusters without authorization
+  it('fgaUser02 does NOT have authorization to get (inactive) cluster 1 who have not been updated in last day', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { inactiveClusters },
-        },
-      } = await clusterApi.inactiveClusters(fgaToken02, { orgId: org01._id });
-
-      expect(inactiveClusters).to.be.an('array');
-      expect(inactiveClusters).to.have.length(0);
-
+      response = await clusterApi.inactiveClusters(fgaToken02, { orgId: org01._id });
+      expect(response.data.data.inactiveClusters).to.be.an('array');
+      expect(response.data.data.inactiveClusters).to.have.length(0);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // clusterSearch
-  it('fgaUser01 has authentication to search cluster with filter (cluster) on cluster ID', async () => {
+  it('fgaUser01 has authorization to search cluster 1 with filter (cluster) on cluster ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clusterSearch },
-        },
-      } = await clusterApi.search(fgaToken01, {
+      response = await clusterApi.search(fgaToken01, {
         orgId: org01._id,
         filter: 'cluster',
         limit: 45,
       });
-
-      expect(clusterSearch).to.be.an('array');
-      expect(clusterSearch).to.have.length(1);
-
+      expect(response.data.data.clusterSearch).to.be.an('array');
+      expect(response.data.data.clusterSearch).to.have.length(1);
+      expect(response.data.data.clusterSearch[0].name).to.equal(testCluster1.name);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // clusterSearch without authentication
-  it('fgaUser02 does NOT have authentication to search cluster with filter (cluster) on cluster ID', async () => {
+  // clusterSearch without authorization
+  it('fgaUser02 does NOT have authorization to search cluster 1 with filter (cluster) on cluster ID', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clusterSearch },
-        },
-      } = await clusterApi.search(fgaToken02, {
+      response = await clusterApi.search(fgaToken02, {
         orgId: org01._id,
         filter: 'cluster',
         limit: 45,
       });
-
-      expect(clusterSearch).to.be.an('array');
-      expect(clusterSearch).to.have.length(0);
-
+      expect(response.data.data.clusterSearch).to.be.an('array');
+      expect(response.data.data.clusterSearch).to.have.length(0);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // clusterCountByKubeVersion
-  it('fgaUser01 has authentication to get count of different kube versions for clusters in an org', async () => {
-    // Update the date to find the active and authorized cluster
-    await models.Cluster.updateMany({
-      org_id: org01._id,
-      cluster_id: 'testCluster1',
-    },
-    {$set: {
-      updated: new Moment().add(2, 'day').toDate()+1,
-    }});
-
+  it('fgaUser01 has authorization to get count of different kube versions for cluster 1 in an org', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clusterCountByKubeVersion },
-        },
-      } = await clusterApi.kubeVersionCount(fgaToken01, { orgId: org01._id });
+      // step 1: Update the date to find the active and authorized cluster
+      response = await models.Cluster.updateMany({
+        org_id: org01._id,
+        cluster_id: testCluster1.cluster_id,
+      },
+      {$set: {
+        updated: new Moment().add(2, 'day').toDate()+1,
+      }});
 
+      // step 2: Find kubeVersionCount
+      response = await clusterApi.kubeVersionCount(fgaToken01, { orgId: org01._id });
+      const clusterCountByKubeVersion = response.data.data.clusterCountByKubeVersion;
       expect(clusterCountByKubeVersion).to.be.an('array');
       expect(clusterCountByKubeVersion).to.have.length(1);
       expect(clusterCountByKubeVersion[0].id.minor).to.equal('16');
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // clusterCountByKubeVersion without authentication
-  it('fgaUser02 does NOT have authentication to get count of different kube versions for clusters in an org', async () => {
+  // clusterCountByKubeVersion without authorization
+  it('fgaUser02 does NOT have authorization to get count of different kube versions for cluster 1 in an org', async () => {
+    let response;
     try {
-      const {
-        data: {
-          data: { clusterCountByKubeVersion },
-        },
-      } = await clusterApi.kubeVersionCount(fgaToken02, { orgId: org01._id });
-
-      expect(clusterCountByKubeVersion).to.be.an('array');
-      expect(clusterCountByKubeVersion).to.have.length(0);
-
+      response = await clusterApi.kubeVersionCount(fgaToken02, { orgId: org01._id });
+      expect(response.data.data.clusterCountByKubeVersion).to.be.an('array');
+      expect(response.data.data.clusterCountByKubeVersion).to.have.length(0);
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // deleteClusterByClusterId
-  it('fgaUser02 has authentication to delete cluster by clusterID', async () => {
+  it('fgaUser02 has authorization to delete cluster 2 by clusterID', async () => {
+    let response;
     try {
-      const clusterIdToBeDeleted = 'testCluster2';
-      await models.Cluster.create({
+      const clusterIdToBeDeleted = 'test-cluster2-uuid';
+      response = await models.Cluster.create({
         _id: new ObjectId('fgaObject001'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
@@ -519,9 +433,9 @@ describe('cluster fine-grained authentication graphql test suite', () => {
             platform: 'linux/amd64',
           },
         },
-        registration: { name: 'test-cluster2' },
+        registration: { name: 'test-cluster2-name' },
       });
-      await models.Resource.create({
+      response = await models.Resource.create({
         _id: new ObjectId('fgaObject002'),
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
@@ -532,160 +446,122 @@ describe('cluster fine-grained authentication graphql test suite', () => {
         searchableData: { key01: 'any value 01', key02: 'any value 02' },
         searchableDataHash: 'some random hash.',
       });
-      const {
-        data: {
-          data: { deleteClusterByClusterId },
-        },
-      } = await clusterApi.deleteClusterByClusterId(fgaToken02, {
+      response = await clusterApi.deleteClusterByClusterId(fgaToken02, {
         orgId: org01._id,
         clusterId: clusterIdToBeDeleted,
       });
-
+      const deleteClusterByClusterId = response.data.data.deleteClusterByClusterId;
       expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
       expect(deleteClusterByClusterId.deletedResourceCount).to.equal(1);
       expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
       expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
       expect(deleteClusterByClusterId.url).to.be.an('string');
       expect(Object.getOwnPropertyNames(deleteClusterByClusterId.headers).length).to.equal(0);
-
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // deleteClusterByClusterId without authentication
-  it('fgaUser01 does NOT have authentication to delete cluster by clusterID', async () => {
+  // deleteClusterByClusterId without authorization
+  it('fgaUser01 does NOT have authorization to delete cluster noAuthCluster by clusterID', async () => {
+    let response;
     try {
       const clusterIdToBeDeleted = 'noAuthCluster';
-      const result = await clusterApi.deleteClusterByClusterId(fgaToken01, {
+      response = await clusterApi.deleteClusterByClusterId(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterIdToBeDeleted,
       });
-
-      expect(result.data.data).to.equal(null);
-      expect(result.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
-      throw error;
-    }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
+      throw error;    }
   });
 
   // registerCluster
-  it('fgaUser02 has authentication to register Cluster', async () => {
+  it('fgaUser02 has authorization to register cluster 2', async () => {
+    let response;
     try {
-      const registerCluster = await clusterApi.registerCluster(fgaToken02, {
+      // step 1: register new cluster
+      response = await clusterApi.registerCluster(fgaToken02, {
         orgId: org01._id,
-        registration: { name: 'testCluster2' },
+        registration: { name: 'test-cluster2-uuid' }, // Must use 'test-cluster2-uuid' for name due to fgaUser02's authorization to that value
       });
-      console.log( `response: ${JSON.stringify( registerCluster.data, null, 2 )}` );
+      expect(response.data.data.registerCluster.url).to.be.an('string');
+      expect(response.data.data.registerCluster.headers['razee-org-key']).to.be.an('string');
 
-      expect(registerCluster.data.data.registerCluster.url).to.be.an('string');
-      expect(registerCluster.data.data.registerCluster.headers['razee-org-key']).to.be.an('string');
-
-      const result = await clusterApi.byClusterName(fgaToken02, {
+      // step 2: find cluster by name
+      response = await clusterApi.byClusterName(fgaToken02, {
         orgId: org01._id,
-        clusterName: 'testCluster2',
+        clusterName: 'test-cluster2-uuid',
       });
-
-      expect(result.data.data.clusterByName.status).to.equal('registered');
-
+      expect(response.data.data.clusterByName.status).to.equal('registered');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // registerCluster without authentication
-  it('fgaUser01 does NOT have authentication to register Cluster', async () => {
+  // registerCluster without authorization
+  it('fgaUser01 does NOT have authorization to register noAuthCluster 2', async () => {
+    let response;
     try {
-      const registerCluster = await clusterApi.registerCluster(fgaToken01, {
+      response = await clusterApi.registerCluster(fgaToken01, {
         orgId: org01._id,
         registration: { name: 'noAuthCluster2' },
       });
-      console.log( `response: ${JSON.stringify( registerCluster.data, null, 2 )}` );
-
-      expect(registerCluster.data.data).to.equal(null);
-      expect(registerCluster.data.errors[0].message).to.be.a('string');
-
+      expect(response.data.data).to.equal(null);
+      expect(response.data.errors[0].message).to.be.a('string');
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
   // enableRegistrationURL
-  it('fgaUser01 has authentication to enable registration url for Cluster', async () => {
+  it('fgaUser01 has authorization to enable registration url for cluster 1', async () => {
+    let response;
     try {
-      const clusterIdEnableRegUrl = 'testCluster1';
-      const {
-        data: {
-          data: { enableRegistrationUrl },
-        },
-      } = await clusterApi.enableRegistrationUrl(fgaToken01, {
+      const clusterIdEnableRegUrl = testCluster1.cluster_id;
+      response = await clusterApi.enableRegistrationUrl(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterIdEnableRegUrl,
       });
-
-      expect(enableRegistrationUrl.url).to.be.an('string');
-      expect(enableRegistrationUrl.headers['razee-org-key']).to.be.an('string');
-
-      const result = await clusterApi.byClusterID(fgaToken01, {
+      expect(response.data.data.enableRegistrationUrl.url).to.be.an('string');
+      expect(response.data.data.enableRegistrationUrl.headers['razee-org-key']).to.be.an('string');
+      response = await clusterApi.byClusterID(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterIdEnableRegUrl,
       });
-      const clusterByClusterId = result.data.data.clusterByClusterId;
-
-      expect(clusterByClusterId.regState).to.equal('registering');
-
+      expect(response.data.data.clusterByClusterId.regState).to.equal('registering');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
 
-  // enableRegistrationURL without authentication
-  it('fgaUser01 does NOT have authentication to enable registration url for Cluster', async () => {
+  // enableRegistrationURL without authorization
+  it('fgaUser01 does NOT have authorization to enable registration url for cluster noAuthCluster', async () => {
+    let response;
     try {
       const clusterIdEnableRegUrl = 'noAuthCluster';
-      const {
-        data: {
-          data: { enableRegistrationUrl },
-        },
-      } = await clusterApi.enableRegistrationUrl(fgaToken01, {
+      response = await clusterApi.enableRegistrationUrl(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterIdEnableRegUrl,
       });
-
-      expect(enableRegistrationUrl).to.equal(null);
-
+      expect(response.data.data.enableRegistrationUrl).to.equal(null);
+      expect(response.data.errors[0].message).to.contain('You are not allowed');
     } catch (error) {
-      if (error.response) {
-        console.error('error encountered:  ', error.response.data);
-      } else {
-        console.error('error encountered:  ', error);
-      }
+      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
+      console.error('Test failure, error: ', error);
       throw error;
     }
   });
