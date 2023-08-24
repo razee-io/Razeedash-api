@@ -42,8 +42,6 @@ const testHelperPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAut
 const { prepareUser, prepareOrganization, signInUser } = require(testHelperPath);
 const testDataPath = externalAuth.ExternalAuthModels[AUTH_MODEL] ? externalAuth.ExternalAuthModels[AUTH_MODEL].testDataPath : `./app/apollo/test/data/${AUTH_MODEL}`;
 
-const ObjectId = require('mongoose').Types.ObjectId;
-
 let mongoServer;
 let myApollo;
 
