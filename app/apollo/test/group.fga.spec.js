@@ -25,7 +25,7 @@ const fs = require('fs');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const authApi = require('./api');
+const authFunc = require('./api');
 const groupFunc = require('./groupApi');
 
 const apollo = require('../index');
@@ -46,7 +46,7 @@ let myApollo;
 
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = authApi(graphqlUrl);
+const authApi = authFunc(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 
 let fgaToken01, fgaToken02;
@@ -228,8 +228,8 @@ describe('groups graphql test suite', () => {
     await createSubscriptions();
     await groupClusters();
 
-    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
+    fgaToken01 = await signInUser(models, authApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, authApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -347,7 +347,7 @@ describe('groups graphql test suite', () => {
     try {
       response = await groupApi.addGroup(fgaToken01, {
         orgId: org01._id,
-        name: testGroup1.uuid
+        name: testGroup1.uuid // Adding by uuid for name to keep within test auth for fgaUser02
       });
       expect(response.data.data.addGroup.uuid).to.be.an('string');
       const group = await models.Group.findOne({uuid: response.data.data.addGroup.uuid});
@@ -365,7 +365,7 @@ describe('groups graphql test suite', () => {
     try {
       response = await groupApi.addGroup(fgaToken01, {
         orgId: org01._id,
-        name: testGroup2.uuid
+        name: testGroup2.name
       });
       expect(response.data.data).to.equal(null);
       expect(response.data.errors[0].message).to.contain('You are not allowed');
@@ -377,12 +377,12 @@ describe('groups graphql test suite', () => {
   });
 
   // removeGroup
-  it('fgaUser02 has authorization to remove a group by uuid 2', async () => {
+  it('fgaUser02 has authorization to add and remove a group by uuid', async () => {
     let response;
     try {
       response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: testGroup2.uuid
+        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
       });
       response = await groupApi.removeGroup(fgaToken02, {
         orgId: org01._id,
@@ -398,12 +398,12 @@ describe('groups graphql test suite', () => {
   });
 
   // removeGroup without authorization
-  it('fgaUser01 does NOT have authorization to remove group 1 by uuid', async () => {
+  it('fgaUser01 does NOT have authorization to remove group 2 by uuid', async () => {
     let response;
     try {
       response = await groupApi.removeGroup(fgaToken01, {
         orgId: org01._id,
-        uuid: testGroup1.name
+        uuid: testGroup2.uuid
       });
       expect(response.data.data).to.equal(null);
       expect(response.data.errors[0].message).to.contain('You are not allowed');
@@ -415,16 +415,16 @@ describe('groups graphql test suite', () => {
   });
 
   // removeGroupByName
-  it('fgaUser02 has authorization to remove a group 2 by name', async () => {
+  it('fgaUser02 has authorization to remove group 2 by name', async () => {
     let response;
     try {
       response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: testGroup2.uuid
+        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
       });
       response = await groupApi.removeGroupByName(fgaToken02, {
         orgId: org01._id,
-        name: testGroup2.uuid
+        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
       });
       expect(response.data.data.removeGroupByName.uuid).to.be.an('string');
       expect(response.data.data.removeGroupByName.success).to.equal(true);
@@ -559,7 +559,7 @@ describe('groups graphql test suite', () => {
     try {
       response = await groupApi.assignClusterGroups(fgaToken01, {
         orgId: org01._id,
-        groupUuids: ['test-group2-uuid'],
+        groupUuids: [testGroup2.uuid],
         clusterIds: [testCluster2.cluster_id]
       });
       expect(response.data.data).to.equal(null);

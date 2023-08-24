@@ -946,6 +946,10 @@ describe('cluster graphql test suite', () => {
       });
       registerCluster = await clusterApi.registerCluster(adminToken, {
         orgId: org01._id,
+        registration: { name: 'my-cluster-plus-2' },
+      });
+      registerCluster = await clusterApi.registerCluster(adminToken, {
+        orgId: org01._id,
         registration: { name: 'my-cluster-past-max' },
       });
       expect(registerCluster.data.errors[0].message).to.contain('You have exceeded the maximum amount of clusters for this org');

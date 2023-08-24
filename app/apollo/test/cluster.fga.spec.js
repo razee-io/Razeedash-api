@@ -27,7 +27,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const { v4: UUID } = require('uuid');
 
 const { models } = require('../models');
-const authApi = require('./api');
+const authFunc = require('./api');
 const clusterFunc = require('./clusterApi');
 
 const apollo = require('../index');
@@ -49,14 +49,14 @@ let myApollo;
 
 const graphqlPort = 18001;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = authApi(graphqlUrl);
+const authApi = authFunc(graphqlUrl);
 const clusterApi = clusterFunc(graphqlUrl);
 
 let fgaToken01, fgaToken02;
 let fgaUser01Data, fgaUser02Data;
 let org01Data, org01;
 let testGroup1, testGroup2;
-let testCluster1;
+let testCluster1, noAuthCluster;
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -109,6 +109,28 @@ const createClusters = async () => {
     updated: new Moment().subtract(2, 'day').toDate(),
   };
   await models.Cluster.create(testCluster1);
+  noAuthCluster = {
+    org_id: org01._id,
+    cluster_id: 'no-auth-cluster-uuid',
+    metadata: {
+      kube_version: {
+        major: '1',
+        minor: '16',
+        gitVersion: '1.99',
+        gitCommit: 'abc',
+        gitTreeState: 'def',
+        buildDate: 'a_date',
+        goVersion: '1.88',
+        compiler: 'some compiler',
+        platform: 'linux/amd64',
+      },
+    },
+    registration: { name: 'no-auth-cluster-name' },
+    reg_state: 'registering',
+    created: new Moment().subtract(2, 'day').toDate(),
+    updated: new Moment().subtract(2, 'day').toDate(),
+  };
+  await models.Cluster.create(noAuthCluster);
 };
 
 const createGroups = async () => {
@@ -144,7 +166,7 @@ const groupClusters = async () => {
   }});
   await models.Cluster.updateMany({
     org_id: org01._id,
-    cluster_id: {$in: ['noAuthCluster']},
+    cluster_id: {$in: [noAuthCluster.cluster_id]},
     'groups.uuid': {$nin: [testGroup2.uuid]}
   },
   {$push: {
@@ -174,8 +196,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     await createGroups();
     await groupClusters();
 
-    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
+    fgaToken01 = await signInUser(models, authApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, authApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -204,13 +226,12 @@ describe('cluster fine-grained authorization graphql test suite', () => {
   });
 
   // clusterbyClusterId without authorization
-  it('fgaUser01 does NOT have authorization to get cluster noAuthCluster by clusterID', async () => {
+  it('fgaUser02 does NOT have authorization to get cluster 1 by clusterID', async () => {
     let response;
     try {
-      const clusterId = 'noAuthCluster';
-      response = await clusterApi.byClusterID(fgaToken01, {
+      response = await clusterApi.byClusterID(fgaToken02, {
         orgId: org01._id,
-        clusterId: clusterId,
+        clusterId: testCluster1.cluster_id,
       });
       expect(response.data.data.clusterByClusterId).to.equal(null);
       expect(response.data.errors[0].message).to.be.a('string');
@@ -247,10 +268,9 @@ describe('cluster fine-grained authorization graphql test suite', () => {
   it('fgaUser01 does NOT have authorization to get cluster noAuthCluster by cluster name', async () => {
     let response;
     try {
-      const clusterName = 'no-auth-cluster';
       response = await clusterApi.byClusterName(fgaToken01, {
         orgId: org01._id,
-        clusterName: clusterName,
+        clusterName: noAuthCluster.registration.name,
       });
       expect(response.data.data.clusterByName).to.equal(null);
       expect(response.data.errors[0].message).to.be.a('string');
@@ -262,8 +282,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clustersByOrgId
-  it('fgaUser01 has authorization to get all clusters by Org ID', async () => {
+  // clustersByOrgId for fgaUser01
+  it('fgaUser01 has authorization to get all authorized clusters by Org ID', async () => {
     let response;
     try {
       response = await clusterApi.byOrgID(fgaToken01, {
@@ -273,6 +293,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
       expect(clustersByOrgId).to.be.an('array');
       expect(clustersByOrgId).to.have.length(1);
       expect(clustersByOrgId[0].resources).to.be.an('array');
+      expect(clustersByOrgId[0].name).to.equal(testCluster1.name);
 
       // test skip and limit implementation
       response = await clusterApi.byOrgID(fgaToken01, {
@@ -287,8 +308,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clustersByOrgId without authorization
-  it('fgaUser02 does NOT have authorization to get all clusters by Org ID', async () => {
+  // clustersByOrgId for fgaUser02
+  it('fgaUser02 gets zero authorized clusters when getting all clusters by Org ID', async () => {
     let response;
     try {
       response = await clusterApi.byOrgID(fgaToken02, {
@@ -303,7 +324,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // inactiveClusters
+  // inactiveClusters for fgaUser01
   it('fgaUser01 has authorization to get (inactive) cluster 1 who has not been updated in last day', async () => {
     let response;
     try {
@@ -320,8 +341,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // inactiveClusters without authorization
-  it('fgaUser02 does NOT have authorization to get (inactive) cluster 1 who have not been updated in last day', async () => {
+  // inactiveClusters for fgaUser02
+  it('fgaUser02 gets zero authorized clusters when getting (inactive) clusters who have not been updated in last day', async () => {
     let response;
     try {
       response = await clusterApi.inactiveClusters(fgaToken02, { orgId: org01._id });
@@ -334,7 +355,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clusterSearch
+  // clusterSearch for fgaUser01
   it('fgaUser01 has authorization to search cluster 1 with filter (cluster) on cluster ID', async () => {
     let response;
     try {
@@ -353,8 +374,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clusterSearch without authorization
-  it('fgaUser02 does NOT have authorization to search cluster 1 with filter (cluster) on cluster ID', async () => {
+  // clusterSearch for fgaUser02
+  it('fgaUser02 gets zero authorized clusters when searching with filter (cluster) on cluster ID', async () => {
     let response;
     try {
       response = await clusterApi.search(fgaToken02, {
@@ -371,7 +392,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clusterCountByKubeVersion
+  // clusterCountByKubeVersion for fgaUser01
   it('fgaUser01 has authorization to get count of different kube versions for cluster 1 in an org', async () => {
     let response;
     try {
@@ -397,8 +418,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // clusterCountByKubeVersion without authorization
-  it('fgaUser02 does NOT have authorization to get count of different kube versions for cluster 1 in an org', async () => {
+  // clusterCountByKubeVersion for fgaUser02
+  it('fgaUser02 gets zero authorized clusters when getting count of different kube versions in an org', async () => {
     let response;
     try {
       response = await clusterApi.kubeVersionCount(fgaToken02, { orgId: org01._id });
@@ -411,67 +432,13 @@ describe('cluster fine-grained authorization graphql test suite', () => {
     }
   });
 
-  // deleteClusterByClusterId
-  it('fgaUser02 has authorization to delete cluster 2 by clusterID', async () => {
-    let response;
-    try {
-      const clusterIdToBeDeleted = 'test-cluster2-uuid';
-      response = await models.Cluster.create({
-        _id: new ObjectId('fgaObject001'),
-        org_id: org01._id,
-        cluster_id: clusterIdToBeDeleted,
-        metadata: {
-          kube_version: {
-            major: '1',
-            minor: '17',
-            gitVersion: '1.99',
-            gitCommit: 'abc',
-            gitTreeState: 'def',
-            buildDate: 'a_date',
-            goVersion: '1.88',
-            compiler: 'some compiler',
-            platform: 'linux/amd64',
-          },
-        },
-        registration: { name: 'test-cluster2-name' },
-      });
-      response = await models.Resource.create({
-        _id: new ObjectId('fgaObject002'),
-        org_id: org01._id,
-        cluster_id: clusterIdToBeDeleted,
-        selfLink: '/mybla/selfLink',
-        hash: 'any_hash',
-        deleted: false,
-        data: 'any_data',
-        searchableData: { key01: 'any value 01', key02: 'any value 02' },
-        searchableDataHash: 'some random hash.',
-      });
-      response = await clusterApi.deleteClusterByClusterId(fgaToken02, {
-        orgId: org01._id,
-        clusterId: clusterIdToBeDeleted,
-      });
-      const deleteClusterByClusterId = response.data.data.deleteClusterByClusterId;
-      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
-      expect(deleteClusterByClusterId.deletedResourceCount).to.equal(1);
-      expect(deleteClusterByClusterId.deletedResourceYamlHistCount).to.equal(0);
-      expect(deleteClusterByClusterId.deletedServiceSubscriptionCount).to.equal(0);
-      expect(deleteClusterByClusterId.url).to.be.an('string');
-      expect(Object.getOwnPropertyNames(deleteClusterByClusterId.headers).length).to.equal(0);
-    } catch (error) {
-      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
-      console.error('Test failure, error: ', error);
-      throw error;
-    }
-  });
-
   // deleteClusterByClusterId without authorization
   it('fgaUser01 does NOT have authorization to delete cluster noAuthCluster by clusterID', async () => {
     let response;
     try {
-      const clusterIdToBeDeleted = 'noAuthCluster';
       response = await clusterApi.deleteClusterByClusterId(fgaToken01, {
         orgId: org01._id,
-        clusterId: clusterIdToBeDeleted,
+        clusterId: noAuthCluster.cluster_id,
       });
       expect(response.data.data).to.equal(null);
       expect(response.data.errors[0].message).to.be.a('string');
@@ -482,8 +449,8 @@ describe('cluster fine-grained authorization graphql test suite', () => {
       throw error;    }
   });
 
-  // registerCluster
-  it('fgaUser02 has authorization to register cluster 2', async () => {
+  // registerCluster // deleteClusterByClusterID
+  it('fgaUser02 has authorization to create a new cluster by name, find it by name, and delete it by cluster_id', async () => {
     let response;
     try {
       // step 1: register new cluster
@@ -500,6 +467,14 @@ describe('cluster fine-grained authorization graphql test suite', () => {
         clusterName: 'test-cluster2-uuid',
       });
       expect(response.data.data.clusterByName.status).to.equal('registered');
+
+      // step 3: delete cluster by clusterId
+      response = await clusterApi.deleteClusterByClusterId(fgaToken02, {
+        orgId: org01._id,
+        clusterId: response.data.data.clusterByName.clusterId,
+      });
+      const deleteClusterByClusterId = response.data.data.deleteClusterByClusterId;
+      expect(deleteClusterByClusterId.deletedClusterCount).to.equal(1);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -508,7 +483,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
   });
 
   // registerCluster without authorization
-  it('fgaUser01 does NOT have authorization to register noAuthCluster 2', async () => {
+  it('fgaUser01 does NOT have authorization to register noAuthCluster2', async () => {
     let response;
     try {
       response = await clusterApi.registerCluster(fgaToken01, {
@@ -552,7 +527,7 @@ describe('cluster fine-grained authorization graphql test suite', () => {
   it('fgaUser01 does NOT have authorization to enable registration url for cluster noAuthCluster', async () => {
     let response;
     try {
-      const clusterIdEnableRegUrl = 'noAuthCluster';
+      const clusterIdEnableRegUrl = noAuthCluster.cluster_id;
       response = await clusterApi.enableRegistrationUrl(fgaToken01, {
         orgId: org01._id,
         clusterId: clusterIdEnableRegUrl,

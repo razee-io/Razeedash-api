@@ -26,7 +26,7 @@ const { v4: UUID } = require('uuid');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { models } = require('../models');
-const authApi = require('./api');
+const authFunc = require('./api');
 const subscriptionFunc = require('./subscriptionsApi');
 const groupFunc = require('./groupApi');
 
@@ -50,7 +50,7 @@ let myApollo;
 
 const graphqlPort = 18006;
 const graphqlUrl = `http://localhost:${graphqlPort}/graphql`;
-const resourceApi = authApi(graphqlUrl);
+const authApi = authFunc(graphqlUrl);
 const subscriptionApi = subscriptionFunc(graphqlUrl);
 const groupApi = groupFunc(graphqlUrl);
 
@@ -270,8 +270,8 @@ describe('subscription graphql test suite', () => {
     await createSubscriptions();
     await createClusters();
 
-    fgaToken01 = await signInUser(models, resourceApi, fgaUser01Data);
-    fgaToken02 = await signInUser(models, resourceApi, fgaUser02Data);
+    fgaToken01 = await signInUser(models, authApi, fgaUser01Data);
+    fgaToken02 = await signInUser(models, authApi, fgaUser02Data);
   }); // before
 
   after(async () => {
@@ -357,7 +357,7 @@ describe('subscription graphql test suite', () => {
   });
 
   // subscription without authorization
-  it('fgaUser02 does NOT have authorization to get subscription by subscription 1 uuid', async () => {
+  it('fgaUser02 does NOT have authorization to get subscription 1 by subscription 1 uuid', async () => {
     let response;
     try {
       response = await subscriptionApi.subscription(fgaToken02, {
@@ -432,7 +432,7 @@ describe('subscription graphql test suite', () => {
     try {
       response = await subscriptionApi.subscriptionsForCluster(fgaToken02, {
         orgId: org01._id,
-        clusterId: 'test-cluster1-uuid',
+        clusterId: testCluster1.cluster_id,
       });
       expect(response.data.data.subscriptionsForCluster).to.equal(null);
       expect(response.data.errors[0].message).to.be.a('string');
