@@ -53,6 +53,7 @@ let fgaToken01, fgaToken02;
 let fgaUser01Data, fgaUser02Data;
 let org01Data, org01;
 let testGroup1, testGroup2;
+let testAddGroup = 'test-add-group-uuid'; // fgaUser02 has full authorization for testAddGroup
 let testChannel1, testChannel2;
 let testCluster1, testCluster2;
 let testSubscription1, testSubscription2;
@@ -341,17 +342,26 @@ describe('groups graphql test suite', () => {
     }
   });
 
-  // addGroup
-  it('fgaUser01 has authorization to add group 1', async () => {
+  // addGroup // removeGroup
+  it('fgaUser02 has authorization to add and remove group "testAddGroup" by uuid', async () => {
     let response;
     try {
-      response = await groupApi.addGroup(fgaToken01, {
+      // step 1: add group
+      response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: testGroup1.uuid // Adding by uuid for name to keep within test auth for fgaUser02
+        name: testAddGroup
       });
       expect(response.data.data.addGroup.uuid).to.be.an('string');
       const group = await models.Group.findOne({uuid: response.data.data.addGroup.uuid});
-      expect(group.name).to.equal(testGroup1.uuid);
+      expect(group.name).to.equal(testAddGroup);
+
+      // step 2: remove group
+      response = await groupApi.removeGroup(fgaToken02, {
+        orgId: org01._id,
+        uuid: response.data.data.addGroup.uuid
+      });
+      expect(response.data.data.removeGroup.uuid).to.be.an('string');
+      expect(response.data.data.removeGroup.success).to.equal(true);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -369,27 +379,6 @@ describe('groups graphql test suite', () => {
       });
       expect(response.data.data).to.equal(null);
       expect(response.data.errors[0].message).to.contain('You are not allowed');
-    } catch (error) {
-      console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
-      console.error('Test failure, error: ', error);
-      throw error;
-    }
-  });
-
-  // removeGroup
-  it('fgaUser02 has authorization to add and remove a group by uuid', async () => {
-    let response;
-    try {
-      response = await groupApi.addGroup(fgaToken02, {
-        orgId: org01._id,
-        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
-      });
-      response = await groupApi.removeGroup(fgaToken02, {
-        orgId: org01._id,
-        uuid: response.data.data.addGroup.uuid
-      });
-      expect(response.data.data.removeGroup.uuid).to.be.an('string');
-      expect(response.data.data.removeGroup.success).to.equal(true);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -415,16 +404,16 @@ describe('groups graphql test suite', () => {
   });
 
   // removeGroupByName
-  it('fgaUser02 has authorization to remove group 2 by name', async () => {
+  it('fgaUser02 has authorization to add and remove group "testAddGroup" by name', async () => {
     let response;
     try {
       response = await groupApi.addGroup(fgaToken02, {
         orgId: org01._id,
-        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
+        name: testAddGroup
       });
       response = await groupApi.removeGroupByName(fgaToken02, {
         orgId: org01._id,
-        name: testGroup2.uuid // Adding by uuid for name to keep within test auth for fgaUser02
+        name: testAddGroup
       });
       expect(response.data.data.removeGroupByName.uuid).to.be.an('string');
       expect(response.data.data.removeGroupByName.success).to.equal(true);

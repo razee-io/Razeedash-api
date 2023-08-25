@@ -5,30 +5,30 @@
   "orgName": "org_01",
   "authorization": {
     "cluster": {
-      "read": "test-cluster2-uuid",
-      "attach": "test-cluster2-uuid",
-      "detach": "test-cluster2-uuid",
-      "register": "test-cluster2-uuid",
-      "update": "test-cluster2-uuid"
+      "read": ["test-cluster2-uuid"],
+      "attach": ["test-cluster2-uuid"],
+      "detach": ["test-cluster2-uuid"],
+      "register": ["test-cluster2-uuid"],
+      "update": ["test-cluster2-uuid"]
     },
     "group": {
-      "manage": "test-group2-uuid",
-      "read": "test-group2-uuid",
-      "setversion": "test-group2-uuid"
+      "manage": ["test-group2-uuid", "test-add-group-uuid"],
+      "read": ["test-group2-uuid", "test-add-group-uuid"],
+      "setversion": ["test-group2-uuid", "test-add-group-uuid"]
     },
     "channel": {
-      "create": "test-channel2-uuid",
-      "delete": "test-channel2-uuid",
-      "manageversion": "test-channel2-uuid",
-      "read": "test-channel2-uuid",
-      "update": "test-channel2-uuid"
+      "create": ["test-channel2-uuid"],
+      "delete": ["test-channel2-uuid"],
+      "manageversion": ["test-channel2-uuid"],
+      "read": ["test-channel2-uuid"],
+      "update": ["test-channel2-uuid"]
     },
     "subscription": {
-      "create": "test-subscription2-uuid",
-      "delete": "test-subscription2-uuid",
-      "read": "test-subscription2-uuid",
-      "setversion": "test-subscription2-uuid",
-      "update": "test-subscription2-uuid"
+      "create": ["test-subscription2-uuid"],
+      "delete": ["test-subscription2-uuid"],
+      "read": ["test-subscription2-uuid"],
+      "setversion": ["test-subscription2-uuid"],
+      "update": ["test-subscription2-uuid"]
     }
   }
 }

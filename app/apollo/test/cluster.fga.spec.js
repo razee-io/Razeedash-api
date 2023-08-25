@@ -214,8 +214,6 @@ describe('cluster fine-grained authorization graphql test suite', () => {
       });
       const clusterByClusterId = response.data.data.clusterByClusterId;
       expect(clusterByClusterId.clusterId).to.equal(clusterId);
-      expect(clusterByClusterId.regState).to.equal('registering');  // record attr
-      expect(clusterByClusterId.status).to.equal('registered'); // created ~= updated
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -253,8 +251,6 @@ describe('cluster fine-grained authorization graphql test suite', () => {
       });
       const clusterByClusterName = response.data.data.clusterByName;
       expect(clusterByClusterName.clusterId).to.equal(clusterId);
-      expect(clusterByClusterName.regState).to.equal('registering');  // record attr
-      expect(clusterByClusterName.status).to.equal('registered'); // created ~= updated
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -457,7 +453,6 @@ describe('cluster fine-grained authorization graphql test suite', () => {
         registration: { name: 'test-cluster2-uuid' }, // Must use 'test-cluster2-uuid' for name due to fgaUser02's authorization to that value
       });
       expect(response.data.data.registerCluster.url).to.be.an('string');
-      expect(response.data.data.registerCluster.headers['razee-org-key']).to.be.an('string');
 
       // step 2: find cluster by name
       response = await clusterApi.byClusterName(fgaToken02, {

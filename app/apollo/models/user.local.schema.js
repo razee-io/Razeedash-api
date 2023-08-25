@@ -73,30 +73,30 @@ const UserLocalSchema = new mongoose.Schema({
         },
         authorization: {
           cluster: {
-            read: String,
-            attach: String,
-            detach: String,
-            register: String,
-            update: String,
+            read: [{type: String}],
+            attach: [{type: String}],
+            detach: [{type: String}],
+            register: [{type: String}],
+            update: [{type: String}],
           },
           group: {
-            manage: String,
-            read: String,
-            setversion: String,
+            manage: [{type: String}],
+            read: [{type: String}],
+            setversion: [{type: String}],
           },
           channel: {
-            create: String,
-            delete: String,
-            manageversion: String,
-            read: String,
-            update: String,
+            create: [{type: String}],
+            delete: [{type: String}],
+            manageversion: [{type: String}],
+            read: [{type: String}],
+            update: [{type: String}],
           },
           subscription: {
-            create: String,
-            delete: String,
-            read: String,
-            setversion: String,
-            update: String,
+            create: [{type: String}],
+            delete: [{type: String}],
+            read: [{type: String}],
+            setversion: [{type: String}],
+            update: [{type: String}],
           }
         }
       },
@@ -329,17 +329,17 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
 
   if (orgMeta) {
     const results = objectArray.map( o => {
-      if (orgMeta.authorization) {
-        // Determine if user has fine-grained authorization for action and type.
-        // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-        const fineGrainedAttribute = objectPath.get(orgMeta, `authorization.${o.type}.${o.action}`);
-        if ((o.uuid === fineGrainedAttribute) || (o.name === fineGrainedAttribute)) {
-          return true;
-        }
+      // If this user has FGA rules for this type+action, use them.
+      const fineGrainedArray = objectPath.get(orgMeta, `authorization.${o.type}.${o.action}`) || [];
+      if( fineGrainedArray.length > 0 ) {
+        const attributes = [o.name, o.uuid];
+        return attributes.some( a => fineGrainedArray.includes( a ) );
       }
-      else if ((o.action === ACTIONS.READ)) {
-        return !!orgMeta;
+      // If this user does NOT have FGA rules for this type+action, they always have READ if they're in the org
+      else if (o.action === ACTIONS.READ) {
+        return true;
       }
+      // If this user does NOT have FGA rules for this type+action, and it's not READ, they are authorized only if ADMIN
       else {
         return orgMeta.role === 'ADMIN';
       }
@@ -372,20 +372,16 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     return false;
   }
 
-  // Determine if user has fine-grained authorization for action and type.
-  // Note: No need for a forbiddenError throw as user could be an ADMIN and not have specified auth for unit tests.
-  if (orgMeta.authorization) {
-    const fineGrainedAttribute = objectPath.get(orgMeta, `authorization.${type}.${action}`);
-    if (attributes.includes(fineGrainedAttribute) || (!attributes)) {
-      return true;
-    }
-    else {
-      return false;
-    }
+  // If this user has FGA rules for this type+action, use them.
+  const fineGrainedArray = objectPath.get(orgMeta, `authorization.${type}.${action}`) || [];
+  if( fineGrainedArray.length > 0 ) {
+    return attributes.some( a => fineGrainedArray.includes( a ) );
   }
+  // If this user does NOT have FGA rules for this type+action, they always have READ if they're in the org
   else if (action === ACTIONS.READ) {
-    return !!orgMeta;
+    return true;
   }
+  // If this user does NOT have FGA rules for this type+action, and it's not READ, they are authorized only if ADMIN
   else {
     return orgMeta.role === 'ADMIN';
   }

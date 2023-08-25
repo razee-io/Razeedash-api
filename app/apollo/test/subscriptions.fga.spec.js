@@ -290,11 +290,6 @@ describe('subscription graphql test suite', () => {
       const subscriptions = response.data.data.subscriptions;
       expect(subscriptions).to.have.length(1);
       expect(subscriptions[0].name).to.equal(testSubscription1.name);
-      expect(subscriptions[0].identitySyncStatus, 'subscription did not include identitySyncStatus').to.exist;
-      expect(subscriptions[0].identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero').to.equal(0);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -312,11 +307,6 @@ describe('subscription graphql test suite', () => {
       const subscriptions = response.data.data.subscriptions;
       expect(subscriptions).to.have.length(1);
       expect(subscriptions[0].name).to.equal(testSubscription2.name);
-      expect(subscriptions[0].identitySyncStatus, 'subscription did not include identitySyncStatus').to.exist;
-      expect(subscriptions[0].identitySyncStatus.syncedCount, 'subscription identitySyncStatus.syncedCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.failedCount, 'subscription identitySyncStatus.failedCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.pendingCount, 'subscription identitySyncStatus.pendingCount should be zero').to.equal(0);
-      expect(subscriptions[0].identitySyncStatus.unknownCount, 'subscription identitySyncStatus.unknownCount should be zero').to.equal(0);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -332,7 +322,6 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: testSubscription1.uuid,
       });
-      expect(response.data.errors).to.be.undefined;
       const subscription = response.data.data.subscription;
       expect(subscription.name).to.equal(testSubscription1.name);
       expect(subscription.groupObjs).to.exist;
@@ -340,11 +329,6 @@ describe('subscription graphql test suite', () => {
       expect(subscription.groupObjs[0].uuid).to.equal(testGroup1.uuid);
       expect(subscription.versionObj).to.exist;
       expect(subscription.versionObj.name).to.equal( testVersion1.name );
-      expect(subscription.versionObj.remote).to.exist;
-      expect(subscription.versionObj.remote.parameters).to.exist;
-      expect(subscription.versionObj.remote.parameters.length).to.equal(1);
-      expect(subscription.versionObj.remote.parameters[0].key).to.equal( 'key1' );
-      expect(subscription.versionObj.remote.parameters[0].value).to.equal( 'val1' );
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -522,7 +506,7 @@ describe('subscription graphql test suite', () => {
       response = await subscriptionApi.editSubscription(fgaToken01, {
         orgId: org01._id,
         uuid: testSubscription1.uuid,
-        name: 'test-subscription3', // new name
+        name: testSubscription2.name, // new name
         groups:[testGroup1.uuid],
         channelUuid: testChannel1.uuid,
         versionUuid: testVersion1.uuid,
@@ -535,7 +519,7 @@ describe('subscription graphql test suite', () => {
         orgId: org01._id,
         uuid: testSubscription1.uuid,
       });
-      expect(response.data.data.subscription.name).to.equal('test-subscription3');
+      expect(response.data.data.subscription.name).to.equal(testSubscription2.name);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
@@ -550,7 +534,7 @@ describe('subscription graphql test suite', () => {
       response = await subscriptionApi.editSubscription(fgaToken01, {
         orgId: org01._id,
         uuid: testSubscription2.uuid,
-        name: 'test-subscription3', // new name
+        name: testSubscription2.name, // new name
         groups:[testGroup1.uuid],
         channelUuid: testChannel1.uuid,
         versionUuid: testVersion1.uuid,

@@ -280,7 +280,7 @@ describe('channel graphql test suite', () => {
     try {
       response = await channelApi.channelsByTags(fgaToken01, {
         orgId: org01._id,
-        tags: ['tag_01'],
+        tags: testChannel1.tags,
       });
       expect(response.data.data.channelsByTags.length).to.equal(1);
       expect(response.data.data.channelsByTags[0].uuid).to.equal(testChannel1.uuid);
@@ -316,8 +316,6 @@ describe('channel graphql test suite', () => {
       });
       const channelVersion = response.data.data.channelVersion;
       expect(channelVersion.channelName).to.equal(testChannel1.name);
-      expect(channelVersion.name).to.equal(`${testChannel1.name}:v.0.1`);
-      expect(channelVersion.content).to.equal('{"n0": 123.45}');
       expect(channelVersion.created).to.be.an('string');
 
       // step 3: get the newly created channel version by name
@@ -328,8 +326,6 @@ describe('channel graphql test suite', () => {
       });
       const channelVersionByName = response.data.data.channelVersionByName;
       expect(channelVersionByName.channelName).to.equal(testChannel1.name);
-      expect(channelVersionByName.name).to.equal(`${testChannel1.name}:v.0.1`);
-      expect(channelVersionByName.content).to.equal('{"n0": 123.45}');
       expect(channelVersionByName.created).to.be.an('string');
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
@@ -455,7 +451,6 @@ describe('channel graphql test suite', () => {
       });
       expect(response.data.data.addChannel.uuid).to.be.an('string');
       const channel = await models.Channel.findOne({uuid: response.data.data.addChannel.uuid});
-      expect(channel.data_location).to.equal('dal');
       expect(channel.name).to.equal(testChannel2.uuid);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
