@@ -5,16 +5,16 @@
   "orgName": "org_01",
   "authorization": {
     "cluster": {
-      "read": ["test-cluster2-uuid"],
-      "attach": ["test-cluster2-uuid"],
-      "detach": ["test-cluster2-uuid"],
-      "register": ["test-cluster2-uuid"],
-      "update": ["test-cluster2-uuid"]
+      "read": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "attach": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "detach": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "register": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "update": ["test-cluster2-uuid", "test-register-cluster-name"]
     },
     "group": {
-      "manage": ["test-group2-uuid", "test-add-group-uuid"],
-      "read": ["test-group2-uuid", "test-add-group-uuid"],
-      "setversion": ["test-group2-uuid", "test-add-group-uuid"]
+      "manage": ["test-group2-uuid", "test-add-group-name"],
+      "read": ["test-group2-uuid", "test-add-group-name"],
+      "setversion": ["test-group2-uuid", "test-add-group-name"]
     },
     "channel": {
       "create": ["test-channel2-uuid"],

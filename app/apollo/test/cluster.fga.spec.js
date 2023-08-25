@@ -55,6 +55,7 @@ let fgaUser01Data, fgaUser02Data;
 let org01Data, org01;
 let testGroup1, testGroup2;
 let testCluster1, noAuthCluster;
+let testRegisterCluster =  'test-register-cluster-name'; // fgaUser02 has full authorization for testRegisterCluster
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -450,14 +451,14 @@ describe('cluster fine-grained authorization graphql test suite', () => {
       // step 1: register new cluster
       response = await clusterApi.registerCluster(fgaToken02, {
         orgId: org01._id,
-        registration: { name: 'test-cluster2-uuid' }, // Must use 'test-cluster2-uuid' for name due to fgaUser02's authorization to that value
+        registration: { name: testRegisterCluster },
       });
       expect(response.data.data.registerCluster.url).to.be.an('string');
 
       // step 2: find cluster by name
       response = await clusterApi.byClusterName(fgaToken02, {
         orgId: org01._id,
-        clusterName: 'test-cluster2-uuid',
+        clusterName: testRegisterCluster,
       });
       expect(response.data.data.clusterByName.status).to.equal('registered');
 

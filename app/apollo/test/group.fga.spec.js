@@ -53,7 +53,7 @@ let fgaToken01, fgaToken02;
 let fgaUser01Data, fgaUser02Data;
 let org01Data, org01;
 let testGroup1, testGroup2;
-let testAddGroup = 'test-add-group-uuid'; // fgaUser02 has full authorization for testAddGroup
+let testAddGroup = 'test-add-group-name'; // fgaUser02 has full authorization for testAddGroup
 let testChannel1, testChannel2;
 let testCluster1, testCluster2;
 let testSubscription1, testSubscription2;
