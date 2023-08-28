@@ -165,11 +165,7 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
 
   // razeedash users (x-api-key)
   if(me && me.type == 'userToken'){
-    //likely IAM location
-    const startTime = Date.now();
     const result = await models.User.userTokenIsAuthorized(me, org_id, action, type, context);
-    const endTime = Date.now();
-    if( context.IAM_PERF ) logger.info( {req_id, org_id, me, iam_time: endTime - startTime }, 'IAM api call completed' );
     if(!result){
       throw new RazeeForbiddenError(
         context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}
@@ -178,6 +174,9 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
     }
     return;
   }
+
+  // Debug: Find how long registerCluster() IAM validation takes
+  const startTime = Date.now();
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     if (type === TYPES.RESOURCE){
@@ -186,6 +185,8 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
       throw new RazeeForbiddenError(context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}), context);
 
     }
+  const endTime = Date.now();
+  if( context.IAM_PERF ) logger.info( {req_id, org_id, me, iam_time: endTime - startTime }, 'IAM api call completed' );
   }
 };
 
