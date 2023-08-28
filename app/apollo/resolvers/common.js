@@ -185,9 +185,9 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
       throw new RazeeForbiddenError(context.req.t('You are not allowed to {{action}} on {{type}} under organization {{org_id}} for the query {{queryName}}.', {'action':action, 'type':type, 'org_id':org_id, 'queryName':queryName, interpolation: { escapeValue: false }}), context);
 
     }
+  }
   const endTime = Date.now();
   if( context.IAM_PERF ) logger.info( {req_id, org_id, me, iam_time: endTime - startTime }, 'IAM api call completed' );
-  }
 };
 
 // a helper function to render clusterInfo for a list of resources
