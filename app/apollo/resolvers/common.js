@@ -174,6 +174,9 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
     }
     return;
   }
+
+  // Debug: Find how long registerCluster() IAM validation takes
+  const startTime = Date.now();
   if (me === null || !(await models.User.isAuthorized(me, org_id, action, type, attrs, context))) {
     logger.error({req_id, me: whoIs(me), org_id, action, type}, `ForbiddenError - ${queryName}`);
     if (type === TYPES.RESOURCE){
@@ -183,6 +186,8 @@ const validAuth = async (me, org_id, action, type, queryName, context, attrs = n
 
     }
   }
+  const endTime = Date.now();
+  if( context.IAM_PERF ) logger.info( {req_id, org_id, me, iam_time: endTime - startTime }, 'IAM api call completed' );
 };
 
 // a helper function to render clusterInfo for a list of resources

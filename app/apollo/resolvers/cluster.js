@@ -579,6 +579,8 @@ const clusterResolvers = {
       try {
         logger.info({ req_id, user, org_id, registration }, `${queryName} validating`);
 
+        //step where IAM is authorized
+        context.IAM_PERF = true;
         await validAuth(me, org_id, ACTIONS.REGISTER, TYPES.CLUSTER, queryName, context);
 
         logger.info({ req_id, user, org_id, registration }, `${queryName} validating - authorized`);
