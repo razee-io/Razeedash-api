@@ -19,6 +19,7 @@ async function getRddJobUrl() {
   return( process.env.RDD_JOB_URL || 'https://github.com/razee-io/razeedeploy-delta/releases/latest/download/job.yaml' );
 }
 
+// Return additional RDD query parameters, avoiding sensitive information which should be returned in headers instead
 async function getRddArgs() {
   return( process.env.RDD_STATIC_ARGS ? process.env.RDD_STATIC_ARGS.split(',') : [] );
 }
