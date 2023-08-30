@@ -329,7 +329,7 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
 
   if (orgMeta) {
     const results = objectArray.map( o => {
-      // If this user has FGA rules for this type+action, use them.
+      // If this user has FGA rules for this type+action, use them
       const fineGrainedArray = objectPath.get(orgMeta, `authorization.${o.type}.${o.action}`) || [];
       if( fineGrainedArray.length > 0 ) {
         const attributes = [o.name, o.uuid];
@@ -372,7 +372,7 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
     return false;
   }
 
-  // If this user has FGA rules for this type+action, use them.
+  // If this user has FGA rules for this type+action, use them
   const fineGrainedArray = objectPath.get(orgMeta, `authorization.${type}.${action}`) || [];
   if( fineGrainedArray.length > 0 ) {
     return attributes.some( a => fineGrainedArray.includes( a ) );
