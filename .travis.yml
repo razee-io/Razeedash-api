@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - 16
+  - 18
 
 services:
   - docker
@@ -9,6 +9,7 @@ before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
   - unset GITHUB_TOKEN
   - export GITHUB_TOKEN="${GITHUB_TOKEN_20230511}"
+  - export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
