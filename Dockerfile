@@ -19,12 +19,13 @@
 FROM node:18-alpine as buildImg
 
 RUN apk update
+RUN apk --no-cache add python3 make g++
 
 USER node
 WORKDIR /home/node
 
 COPY --chown=node . /home/node
-RUN npm install --production --loglevel=warn
+RUN npm ci --legacy-peer-deps --omit=dev --loglevel=warn
 
 
 #######################################
