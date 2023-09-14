@@ -27,6 +27,10 @@ const {router, initialize} = require('./routes/index.js');
 const log = require('./log').createLogger('razeedash-api/app/index');
 const port = 3333;
 
+// Set ipv4first (changed in Node 18)
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 if(process.env.EXTERNAL_HOST){
