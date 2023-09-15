@@ -16,22 +16,22 @@
 #######################################
 # Build the preliminary image
 #######################################
-FROM node:12-alpine as buildImg
+FROM node:18-alpine as buildImg
 
 RUN apk update
-RUN apk --no-cache add python2 make g++
+RUN apk --no-cache add python3 make g++
 
 USER node
 WORKDIR /home/node
 
 COPY --chown=node . /home/node
-RUN npm install --production --loglevel=warn
+RUN npm ci --legacy-peer-deps --omit=dev --loglevel=warn
 
 
 #######################################
 # Build the production image
 #######################################
-FROM node:12-alpine
+FROM node:18-alpine
 
 USER node
 WORKDIR /home/node
@@ -45,4 +45,5 @@ ENV BUILD_ID=${BUILD_ID}
 COPY --chown=node --from=buildImg /home/node /home/node
 
 EXPOSE 3333
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 CMD ["npm", "start"]
