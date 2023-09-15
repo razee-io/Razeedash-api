@@ -245,6 +245,25 @@ const groupFunc = grahqlUrl => {
         },
       },
     );
+  const editClusterGroups = async (token, variables) =>
+    axios.post(
+      grahqlUrl,
+      {
+        query: `
+          mutation editClusterGroups($orgId:String!, $clusterId: String!, $groupUuids: [String!]!) {
+            editClusterGroups(orgId:$orgId, clusterId:$clusterId, groupUuids:$groupUuids){
+              modified
+            }
+          }
+        `,
+        variables,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
   return {
     groups,
     group,
@@ -256,6 +275,7 @@ const groupFunc = grahqlUrl => {
     unGroupClusters,
     assignClusterGroups,
     unassignClusterGroups,
+    editClusterGroups,
   };
 };
 

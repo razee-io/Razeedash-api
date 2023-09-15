@@ -1,0 +1,34 @@
+{
+  "username": "fineGrainedAuthUser02",
+  "email": "fineGrainedAuthUser02@us.ibm.com",
+  "password": "password123",
+  "orgName": "org_01",
+  "authorization": {
+    "cluster": {
+      "read": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "attach": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "detach": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "register": ["test-cluster2-uuid", "test-register-cluster-name"],
+      "update": ["test-cluster2-uuid", "test-register-cluster-name"]
+    },
+    "group": {
+      "manage": ["test-group2-uuid", "test-add-group-name"],
+      "read": ["test-group2-uuid", "test-add-group-name"],
+      "setversion": ["test-group2-uuid", "test-add-group-name"]
+    },
+    "channel": {
+      "create": ["test-channel2-uuid"],
+      "delete": ["test-channel2-uuid"],
+      "manageversion": ["test-channel2-uuid"],
+      "read": ["test-channel2-uuid"],
+      "update": ["test-channel2-uuid"]
+    },
+    "subscription": {
+      "create": ["test-subscription2-uuid"],
+      "delete": ["test-subscription2-uuid"],
+      "read": ["test-subscription2-uuid"],
+      "setversion": ["test-subscription2-uuid"],
+      "update": ["test-subscription2-uuid"]
+    }
+  }
+}

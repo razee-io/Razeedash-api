@@ -16,7 +16,7 @@
 
 const { v4: UUID } = require('uuid');
 const { ACTIONS, TYPES, SERVICE_SUBSCRIPTION_LIMITS } = require('../models/const');
-const { whoIs, checkComplexity, validAuth, filterSubscriptionsToAllowed, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
+const { whoIs, checkComplexity, validAuth, filterResourcesToAllowed, NotFoundError, BasicRazeeError, RazeeValidationError, RazeeQueryError } = require ('./common');
 const { GraphqlPubSub } = require('../subscription');
 const GraphqlFields = require('graphql-fields');
 const { applyQueryFieldsToSubscriptions } = require('../utils/applyQueryFields');
@@ -98,7 +98,7 @@ const serviceResolvers = {
 
         // User is allowed to see a service subscription only if they have subscription READ permission in the target cluster org
         for await (const ss of models.ServiceSubscription.find(query).lean({ virtuals: true })) {
-          const allowed = await filterSubscriptionsToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
+          const allowed = await filterResourcesToAllowed(me, ss.clusterOrgId, ACTIONS.READ, TYPES.SERVICESUBSCRIPTION, [ss], context);
           serviceSubscriptions = serviceSubscriptions.concat(allowed);
         }
 

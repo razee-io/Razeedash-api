@@ -625,6 +625,24 @@ describe('groups graphql test suite', () => {
     }
   });
 
+  it('group clusters with no passed clusters', async () => {
+    try {
+      const data = await groupApi.groupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: []
+      });
+      expect(data.data.errors[0].message).to.have.string('No clusters were passed');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('ungroup clusters', async () => {
     try {
       const {
@@ -651,6 +669,51 @@ describe('groups graphql test suite', () => {
       throw error;
     }
   });
+
+  it('ungroup clusters with no passed clusters', async () => {
+    try {
+      const {
+        data: {
+          data: { unGroupClusters },
+        },
+      } = await groupApi.unGroupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: []
+      });
+      expect(unGroupClusters.modified).to.equal(0);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('ungroup clusters with non-existing cluster', async () => {
+    try {
+      const {
+        data: {
+          data: { unGroupClusters },
+        },
+      } = await groupApi.unGroupClusters(adminToken, {
+        orgId: org01._id,
+        uuid: group_02_uuid,
+        clusters: ['cluster_99']
+      });
+      expect(unGroupClusters.modified).to.equal(0);
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
   it('assignClusterGroups / unassignClusterGroups', async()=>{
     // assign
     var result = await groupApi.assignClusterGroups(adminToken, {
@@ -677,5 +740,89 @@ describe('groups graphql test suite', () => {
     expect(cluster1.groups).to.have.length(1);
     cluster4 = await models.Cluster.findOne({org_id : org01._id, cluster_id: 'cluster_04'}).exec();
     expect(cluster4.groups).to.have.length(0);
+  });
+
+  it('assign cluster groups with no passed clusters', async () => {
+    try {
+      var data = await groupApi.assignClusterGroups(adminToken, {
+        orgId: org01._id,
+        groupUuids: [group_02_uuid],
+        clusterIds: []
+      });
+      expect(data.data.errors[0].message).to.have.string('No cluster uuids were passed');
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('unassign cluster groups with no passed clusters', async () => {
+    var result = await groupApi.unassignClusterGroups(adminToken, {
+      orgId: org01._id,
+      groupUuids: [group_02_uuid],
+      clusterIds: []
+    });
+    var unassignClusterGroups = result.data.data.unassignClusterGroups;
+    expect(unassignClusterGroups.modified).to.equal(0);
+  });
+
+  it('unassign cluster groups with a non-existing cluster', async () => {
+    var result = await groupApi.unassignClusterGroups(adminToken, {
+      orgId: org01._id,
+      groupUuids: [group_02_uuid],
+      clusterIds: ['cluster_99']
+    });
+    var unassignClusterGroups = result.data.data.unassignClusterGroups;
+    expect(unassignClusterGroups.modified).to.equal(0);
+  });
+
+  it('edit cluster groups and remove passed cluster from all groups', async () => {
+    try {
+      const {
+        data: {
+          data: { editClusterGroups },
+        },
+      } = await groupApi.editClusterGroups(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+        groupUuids: [],
+      });
+      expect(editClusterGroups.modified).to.equal(1);
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
+  });
+
+  it('edit cluster groups', async () => {
+    try {
+      const {
+        data: {
+          data: { editClusterGroups },
+        },
+      } = await groupApi.editClusterGroups(adminToken, {
+        orgId: org01._id,
+        clusterId: 'cluster_01',
+        groupUuids: [group_01_uuid, group_02_uuid],
+      });
+      expect(editClusterGroups.modified).to.equal(2);
+
+    } catch (error) {
+      if (error.response) {
+        console.error('error encountered:  ', error.response.data);
+      } else {
+        console.error('error encountered:  ', error);
+      }
+      throw error;
+    }
   });
 });

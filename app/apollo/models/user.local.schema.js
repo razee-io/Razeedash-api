@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 IBM Corp. All Rights Reserved.
+ * Copyright 2020, 2023 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ const bcrypt = require('bcrypt');
 const isEmail = require('validator/lib/isEmail');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const objectPath = require('object-path');
 const { v4: uuid } = require('uuid');
 const { AuthenticationError, UserInputError, ForbiddenError} = require('apollo-server');
 const _ = require('lodash');
@@ -70,6 +71,34 @@ const UserLocalSchema = new mongoose.Schema({
         role: {
           type: String,
         },
+        authorization: {
+          cluster: {
+            read: [{type: String}],
+            attach: [{type: String}],
+            detach: [{type: String}],
+            register: [{type: String}],
+            update: [{type: String}],
+          },
+          group: {
+            manage: [{type: String}],
+            read: [{type: String}],
+            setversion: [{type: String}],
+          },
+          channel: {
+            create: [{type: String}],
+            delete: [{type: String}],
+            manageversion: [{type: String}],
+            read: [{type: String}],
+            update: [{type: String}],
+          },
+          subscription: {
+            create: [{type: String}],
+            delete: [{type: String}],
+            read: [{type: String}],
+            setversion: [{type: String}],
+            update: [{type: String}],
+          }
+        }
       },
     ],
   },
@@ -119,6 +148,7 @@ UserLocalSchema.statics.createUser = async function(models, args) {
           _id: org._id,
           name: org.name,
           role: args.role === 'ADMIN' ? 'ADMIN' : 'READER',
+          authorization: args.authorization,
         },
       ],
     },
@@ -299,9 +329,18 @@ UserLocalSchema.statics.isAuthorizedBatch = async function(me, orgId, objectArra
 
   if (orgMeta) {
     const results = objectArray.map( o => {
-      if (o.action === ACTIONS.READ) {
-        return !!orgMeta;
-      } else {
+      // If this user has FGA rules for this type+action, use them
+      const fineGrainedArray = objectPath.get(orgMeta, `authorization.${o.type}.${o.action}`) || [];
+      if( fineGrainedArray.length > 0 ) {
+        const attributes = [o.name, o.uuid];
+        return attributes.some( a => fineGrainedArray.includes( a ) );
+      }
+      // If this user does NOT have FGA rules for this type+action, they always have READ if they're in the org
+      else if (o.action === ACTIONS.READ) {
+        return true;
+      }
+      // If this user does NOT have FGA rules for this type+action, and it's not READ, they are authorized only if ADMIN
+      else {
         return orgMeta.role === 'ADMIN';
       }
     });
@@ -332,9 +371,18 @@ UserLocalSchema.statics.isAuthorized = async function(me, orgId, action, type, a
   if(!orgMeta){
     return false;
   }
-  if (action === ACTIONS.READ) {
-    return !!orgMeta;
-  } else {
+
+  // If this user has FGA rules for this type+action, use them
+  const fineGrainedArray = objectPath.get(orgMeta, `authorization.${type}.${action}`) || [];
+  if( fineGrainedArray.length > 0 ) {
+    return attributes.some( a => fineGrainedArray.includes( a ) );
+  }
+  // If this user does NOT have FGA rules for this type+action, they always have READ if they're in the org
+  else if (action === ACTIONS.READ) {
+    return true;
+  }
+  // If this user does NOT have FGA rules for this type+action, and it's not READ, they are authorized only if ADMIN
+  else {
     return orgMeta.role === 'ADMIN';
   }
 };
