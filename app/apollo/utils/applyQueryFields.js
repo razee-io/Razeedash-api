@@ -15,7 +15,7 @@
  */
 
 const _ = require('lodash');
-const { getGroupConditions, filterChannelsToAllowed, filterResourcesToAllowed } = require('../resolvers/common');
+const { getGroupConditions, filterResourcesToAllowed } = require('../resolvers/common');
 // RBAC Sync
 const { ACTIONS, TYPES, CLUSTER_STATUS, CLUSTER_IDENTITY_SYNC_STATUS } = require('../models/const');
 const { NotFoundError } = require ('../resolvers/common');
@@ -380,7 +380,7 @@ const applyQueryFieldsToSubscriptions = async(subs, queryFields={}, args, contex
   if(queryFields.channel){
     const channelUuids = _.uniq(_.map(subs, 'channelUuid'));
     let channels = await models.Channel.find({ uuid: { $in: channelUuids } }).lean({ virtuals: true });
-    channels = await filterChannelsToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
+    channels = await filterResourcesToAllowed(me, orgId, ACTIONS.READ, TYPES.CHANNEL, channels, context);
 
     await applyQueryFieldsToChannels(channels, queryFields.channel, args, context);
 
