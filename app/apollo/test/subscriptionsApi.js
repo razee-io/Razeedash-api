@@ -139,6 +139,12 @@ const subscriptionsFunc = grahqlUrl => {
                   }
                 }
               }
+              channel {
+                uuid
+                name
+                tags
+                contentType
+              }
               custom
               tags
           }
