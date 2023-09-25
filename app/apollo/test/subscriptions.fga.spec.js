@@ -329,9 +329,7 @@ describe('subscription graphql test suite', () => {
       expect(subscription.groupObjs[0].uuid).to.equal(testGroup1.uuid);
       expect(subscription.versionObj).to.exist;
       expect(subscription.versionObj.name).to.equal( testVersion1.name );
-      expect(subscription.channelUuid).to.equal(testSubscription1.channel_uuid);
-      expect(subscription.channelName).to.equal(testSubscription1.channel);
-
+      expect(subscription.channel.uuid).to.equal(testSubscription1.channel_uuid);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
