@@ -36,6 +36,7 @@ const { models, connectDb } = require('./models');
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
+const { customMetricsClient } = require('../customMetricsClient'); // Add custom metrics plugin
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 
@@ -140,7 +141,31 @@ const createApolloServer = (schema) => {
   initLogger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
-    plugins: customPlugins,
+    plugins: [
+      customPlugins,
+      {
+        // Detect custom metrics as they occur
+        requestDidStart() {
+          // Capture the start time when the request starts
+          const startTime = Date.now();
+          return {
+            didResolveOperation(context) {
+              // Increment my_api_calls_total when operation detected
+              customMetricsClient.incrementApiCall();
+
+              // Observe and record API operation duration
+              const durationInSeconds = (Date.now() - startTime) / 1000;
+              const match = context.request.query.match(/\{\s*([\w]+)\s*\(/);
+              const operationName = match ? match[1] : 'Query name not found';
+              const operationNameDuration = operationName + 'Duration';
+              if (customMetricsClient[operationNameDuration]) {
+                customMetricsClient[operationNameDuration].observe(durationInSeconds);
+              }
+            },
+          };
+        },
+      },
+    ],
     schema,
     allowBatchedHttpRequests: (process.env.GRAPHQL_DISABLE_BATCHING ? false : true),
     formatError: error => {
