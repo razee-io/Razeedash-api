@@ -14,286 +14,360 @@
  * limitations under the License.
  */
 
-const { Counter, Histogram } = require('prom-client');
+const { Counter, Gauge, Histogram } = require('prom-client');
+// --- Define Custom API Metrics ---
 
-// Define custom metrics
-// Did API action succeed or fail? How long did it take?
+// --- Other API Action Metrics ---
+// Count how many API calls occur
+const signInHistogram = new Histogram({
+  name: 'sign_in_duration_seconds',
+  help: 'Duration of signIn operations in seconds',
+  buckets: [0.1, 0.5, 1, 2, 5]
+});
 
-// Track how many API calls occur
 const apiCallsCounter = new Counter({
   name: 'my_api_calls_total',
   help: 'Total number of API calls'
 });
-function incrementApiCall() {
-  apiCallsCounter.inc();
-}
 
-// Cluster Resolver API Metrics
-// Track duration and count of clustersByClusterId
+// Gauge success and failure of signIn
+const signInGauge = new Gauge({
+  name: 'sign_in_result_status',
+  help: 'Total number of signIn operations, labeled by success or failure',
+  labelNames: ['status'],
+});
+
+// --- Cluster Resolver API Metrics ---
+// Count duration of clustersByClusterId
 const clusterByClusterIdHistogram = new Histogram({
   name: 'cluster_by_cluster_id_duration_seconds',
   help: 'Duration of clusterByClusterId operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of clusterByName
+
+// Gauge success and failure of clustersByClusterId
+const clusterByClusterIdGauge = new Gauge({
+  name: 'cluster_by_cluster_id_gauge',
+  help: 'Total number of clusterByClusterId operations, labeled by success or failure',
+  labelNames: ['status'],
+});
+
+// Count duration of clusterByName
 const clusterByNameHistogram = new Histogram({
   name: 'cluster_by_name_duration_seconds',
   help: 'Duration of clusterByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of clustersByOrgId
+
+// Gauge success and failure of clustersByClusterId
+const clusterByNameGauge = new Gauge({
+  name: 'cluster_by_name_gauge',
+  help: 'Total number of clusterByName operations, labeled by success or failure',
+  labelNames: ['status'],
+});
+
+// Count duration of clustersByOrgId
 const clustersByOrgIdHistogram = new Histogram({
   name: 'clusters_by_org_id_duration_seconds',
   help: 'Duration of clustersByOrgId operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of inactiveClusters
+
+// Count duration of inactiveClusters
 const inactiveClustersHistogram = new Histogram({
-  name: 'inactiveClusters_duration_seconds',
+  name: 'inactive_clusters_duration_seconds',
   help: 'Duration of inactiveClusters operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of clusterSearch
+
+// Count duration of clusterSearch
 const clusterSearchHistogram = new Histogram({
-  name: 'clusterSearch_duration_seconds',
+  name: 'cluster_search_duration_seconds',
   help: 'Duration of clusterSearch operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of clusterCountByKubeVersion
+
+// Count duration of clusterCountByKubeVersion
 const clusterCountByKubeVersionHistogram = new Histogram({
-  name: 'clusterCountByKubeVersion_duration_seconds',
+  name: 'cluster_count_by_kube_version_duration_seconds',
   help: 'Duration of clusterCountByKubeVersion operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of deleteClusterByClusterId
+
+// Count duration of deleteClusterByClusterId
 const deleteClusterByClusterIdHistogram = new Histogram({
-  name: 'deleteClusterByClusterId_duration_seconds',
+  name: 'delete_cluster_by_cluster_id_duration_seconds',
   help: 'Duration of deleteClusterByClusterId operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of deleteClusters
+
+// Count duration of deleteClusters
 const deleteClustersHistogram = new Histogram({
-  name: 'deleteClusters_duration_seconds',
+  name: 'delete_clusters_duration_seconds',
   help: 'Duration of deleteClusters operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of registerCluster
+
+// Count duration of registerCluster
 const registerClusterHistogram = new Histogram({
-  name: 'registerCluster_duration_seconds',
+  name: 'register_cluster_duration_seconds',
   help: 'Duration of registerCluster operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of enableRegistrationUrl
+
+// Count duration of enableRegistrationUrl
 const enableRegistrationUrlHistogram = new Histogram({
-  name: 'enableRegistrationUrl_duration_seconds',
+  name: 'enable_registration_url_duration_seconds',
   help: 'Duration of enableRegistrationUrl operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
 
 // Channel Resolver API Metrics
-// Track duration and count of channels
+// Count duration of channels
 const channelsHistogram = new Histogram({
   name: 'channels_duration_seconds',
   help: 'Duration of channels operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of channel
+
+// Count duration of channel
 const channelHistogram = new Histogram({
   name: 'channel_duration_seconds',
   help: 'Duration of channel operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of channelByName
+
+// Count duration of channelByName
 const channelByNameHistogram = new Histogram({
-  name: 'channelByName_duration_seconds',
+  name: 'channel_by_name_duration_seconds',
   help: 'Duration of channelByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of channelsByTags
+
+// Count duration of channelsByTags
 const channelsByTagsHistogram = new Histogram({
-  name: 'channelsByTags_duration_seconds',
+  name: 'channels_by_tags_duration_seconds',
   help: 'Duration of channelsByTags operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of channelsByVersion
+
+// Count duration of channelsByVersion
 const channelVersionHistogram = new Histogram({
-  name: 'channelVersion_duration_seconds',
+  name: 'channel_version_duration_seconds',
   help: 'Duration of channelVersion operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of addChannel
+
+// Count duration of addChannel
 const addChannelHistogram = new Histogram({
-  name: 'addChannel_duration_seconds',
+  name: 'add_channel_duration_seconds',
   help: 'Duration of addChannel operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of editChannel
+
+// Count duration of editChannel
 const editChannelHistogram = new Histogram({
-  name: 'editChannel_duration_seconds',
+  name: 'edit_channel_duration_seconds',
   help: 'Duration of editChannel operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of addChannelVersion
+
+// Count duration of addChannelVersion
 const addChannelVersionHistogram = new Histogram({
-  name: 'addChannelVersion_duration_seconds',
+  name: 'add_channel_version_duration_seconds',
   help: 'Duration of addChannelVersion operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of editChannelVersion
+
+// Count duration of editChannelVersion
 const editChannelVersionHistogram = new Histogram({
-  name: 'editChannelVersion_duration_seconds',
+  name: 'edit_channel_version_duration_seconds',
   help: 'Duration of editChannelVersion operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of removeChannel
+
+// Count duration of removeChannel
 const removeChannelHistogram = new Histogram({
-  name: 'removeChannel_duration_seconds',
+  name: 'remove_channel_duration_seconds',
   help: 'Duration of removeChannel operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of removeChannelVersion
+
+// Count duration of removeChannelVersion
 const removeChannelVersionHistogram = new Histogram({
-  name: 'removeChannelVersion_duration_seconds',
+  name: 'remove_channel_version_duration_seconds',
   help: 'Duration of removeChannelVersion operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
 
 // Group Resolver API Metrics
-// Track duration and count of groups
+// Count duration of groups
 const groupsHistogram = new Histogram({
   name: 'groups_duration_seconds',
   help: 'Duration of groups operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of group
+
+// Count duration of group
 const groupHistogram = new Histogram({
   name: 'group_duration_seconds',
   help: 'Duration of group operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of groupByName
+
+// Count duration of groupByName
 const groupByNameHistogram = new Histogram({
-  name: 'groupByName_duration_seconds',
+  name: 'group_by_name_duration_seconds',
   help: 'Duration of groupByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of addGroup
+
+// Count duration of addGroup
 const addGroupHistogram = new Histogram({
-  name: 'addGroup_duration_seconds',
+  name: 'add_group_duration_seconds',
   help: 'Duration of addGroup operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of removeGroup
+
+// Count duration of removeGroup
 const removeGroupHistogram = new Histogram({
-  name: 'removeGroup_duration_seconds',
+  name: 'remove_group_duration_seconds',
   help: 'Duration of removeGroup operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of removeGroupByName
+
+// Count duration of removeGroupByName
 const removeGroupByNameHistogram = new Histogram({
-  name: 'removeGroupByName_duration_seconds',
+  name: 'remove_group_by_name_duration_seconds',
   help: 'Duration of removeGroupByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of assignClusterGroups
+
+// Count duration of assignClusterGroups
 const assignClusterGroupsHistogram = new Histogram({
-  name: 'assignClusterGroups_duration_seconds',
+  name: 'assign_cluster_groups_duration_seconds',
   help: 'Duration of assignClusterGroups operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of unassignClusterGroups
+
+// Count duration of unassignClusterGroups
 const unassignClusterGroupsHistogram = new Histogram({
-  name: 'unassignClusterGroups_duration_seconds',
+  name: 'unassign_cluster_groups_duration_seconds',
   help: 'Duration of unassignClusterGroups operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of editClusterGroups
+
+// Count duration of editClusterGroups
 const editClusterGroupsHistogram = new Histogram({
-  name: 'editClusterGroups_duration_seconds',
+  name: 'edit_cluster_groups_duration_seconds',
   help: 'Duration of editClusterGroups operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of groupClusters
+
+// Count duration of groupClusters
 const groupClustersHistogram = new Histogram({
-  name: 'groupClusters_duration_seconds',
+  name: 'group_clusters_duration_seconds',
   help: 'Duration of groupClusters operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of unGroupClusters
+
+// Count duration of unGroupClusters
 const unGroupClustersHistogram = new Histogram({
-  name: 'unGroupClusters_duration_seconds',
+  name: 'ungroup_clusters_duration_seconds',
   help: 'Duration of unGroupClusters operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
 
 // Subscription Resolver API Metrics
-// Track duration and count of subscriptionsByClusterId
+// Count duration of subscriptionsByClusterId
 const subscriptionsByClusterIdHistogram = new Histogram({
-  name: 'subscriptionsByClusterId_duration_seconds',
+  name: 'subscriptions_by_cluster_id_duration_seconds',
   help: 'Duration of subscriptionsByClusterId operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of subscriptions
+
+// Count duration of subscriptions
 const subscriptionsHistogram = new Histogram({
   name: 'subscriptions_duration_seconds',
   help: 'Duration of subscriptions operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of subscription
+
+// Count duration of subscription
 const subscriptionHistogram = new Histogram({
   name: 'subscription_duration_seconds',
   help: 'Duration of subscription operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of subscriptionByName
+
+// Count duration of subscriptionByName
 const subscriptionByNameHistogram = new Histogram({
-  name: 'subscriptionByName_duration_seconds',
+  name: 'subscription_by_name_duration_seconds',
   help: 'Duration of subscriptionByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of subscriptionsForCluster
+
+// Count duration of subscriptionsForCluster
 const subscriptionsForClusterHistogram = new Histogram({
-  name: 'subscriptionsForCluster_duration_seconds',
+  name: 'subscriptions_for_cluster_duration_seconds',
   help: 'Duration of subscriptionsForCluster operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of subscriptionsForClusterByName
+
+// Count duration of subscriptionsForClusterByName
 const subscriptionsForClusterByNameHistogram = new Histogram({
-  name: 'subscriptionsForClusterByName_duration_seconds',
+  name: 'subscriptions_for_cluster_by_name_duration_seconds',
   help: 'Duration of subscriptionsForClusterByName operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of addSubscription
+
+// Count duration of addSubscription
 const addSubscriptionHistogram = new Histogram({
-  name: 'addSubscription_duration_seconds',
+  name: 'add_subscription_duration_seconds',
   help: 'Duration of addSubscription operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of editSubscription
+
+// Count duration of editSubscription
 const editSubscriptionHistogram = new Histogram({
-  name: 'editSubscription_duration_seconds',
+  name: 'edit_subscription_duration_seconds',
   help: 'Duration of editSubscription operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of setSubscription
+
+// Count duration of setSubscription
 const setSubscriptionHistogram = new Histogram({
-  name: 'setSubscription_duration_seconds',
+  name: 'set_subscription_duration_seconds',
   help: 'Duration of setSubscription operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
-// Track duration and count of removeSubscription
+
+// Count duration of removeSubscription
 const removeSubscriptionHistogram = new Histogram({
-  name: 'removeSubscription_duration_seconds',
+  name: 'remove_subscription_duration_seconds',
   help: 'Duration of removeSubscription operations in seconds',
   buckets: [0.1, 0.5, 1, 2, 5]
 });
 
-const customMetricsClient = {
-  incrementApiCall: incrementApiCall,
+// --- Helper Functions ---
+// Increment each API call
+function incrementApiCall() {
+  apiCallsCounter.inc();
+}
 
-  // Cluster Metrics
+// Define exportable list of metrics
+const customMetricsClient = {
+  // Other API Metrics
+  signInDuration: signInHistogram,
+  signInGauge: signInGauge,
+
+  // Cluster Resolver API Metrics
   clusterByClusterIdDuration: clusterByClusterIdHistogram,
+  clusterByClusterIdGauge: clusterByClusterIdGauge,
+
   clusterByNameDuration: clusterByNameHistogram,
+  clusterByNameGauge: clusterByNameGauge,
+
   clustersByOrgIdDuration: clustersByOrgIdHistogram,
   inactiveClustersDuration: inactiveClustersHistogram,
   clusterSearchDuration: clusterSearchHistogram,
@@ -341,6 +415,8 @@ const customMetricsClient = {
   setSubscriptionDuration: setSubscriptionHistogram,
   removeSubscriptionDuration: removeSubscriptionHistogram,
 
+  // Helper Functions
+  incrementApiCall: incrementApiCall,
 };
 
 module.exports = {

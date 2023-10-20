@@ -145,21 +145,45 @@ const createApolloServer = (schema) => {
       customPlugins,
       {
         // Detect custom metrics as they occur
-        requestDidStart() {
+        requestDidStart(context) {
           // Capture the start time when the request starts
           const startTime = Date.now();
-          return {
-            didResolveOperation(context) {
-              // Increment my_api_calls_total when operation detected
-              customMetricsClient.incrementApiCall();
 
-              // Observe and record API operation duration
+          // Track if API operation has errored since didEncounterErrors() could trigger after didResolveOperation()
+          let gaugeIncremented = false;
+
+          // Parse API operation name
+          const match = context.request.query.match(/\{\s*(\w+)/);
+          const operationName = match ? match[1] : 'Query name not found ';
+          const operationNameDuration = operationName + 'Duration';
+          const operationNameGauge = operationName + 'Gauge';
+
+          // Increment my_api_calls_total when operation detected
+          customMetricsClient.incrementApiCall();
+
+          return {
+            didResolveOperation() {
+              // Record API operation duration metrics
               const durationInSeconds = (Date.now() - startTime) / 1000;
-              const match = context.request.query.match(/\{\s*([\w]+)\s*\(/);
-              const operationName = match ? match[1] : 'Query name not found';
-              const operationNameDuration = operationName + 'Duration';
               if (customMetricsClient[operationNameDuration]) {
                 customMetricsClient[operationNameDuration].observe(durationInSeconds);
+              }
+
+              // Record API operation success and failure gauge metrics
+              if (customMetricsClient[operationNameGauge]) {
+                customMetricsClient[operationNameGauge].inc({ status: 'success' });
+                gaugeIncremented = true;
+              }
+            },
+
+            didEncounterErrors() {
+              // Record API operation success and failure gauge metrics
+              if (customMetricsClient[operationNameGauge]) {
+                customMetricsClient[operationNameGauge].inc({ status: 'failure' });
+                // Decrease gauge success count if error found later in request process
+                if (gaugeIncremented == true) {
+                  customMetricsClient[operationNameGauge].dec({ status: 'success' });
+                }
               }
             },
           };
