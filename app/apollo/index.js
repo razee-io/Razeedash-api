@@ -36,7 +36,7 @@ const { models, connectDb } = require('./models');
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
-const { customMetricsClient } = require('../customMetricsClient'); // Add custom metrics plugin
+const { customMetricsClient, passOperationName } = require('../customMetricsClient'); // Add custom metrics plugin
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 
@@ -144,51 +144,40 @@ const createApolloServer = (schema) => {
     plugins: [
       customPlugins,
       {
-        // Detect custom metrics as they occur
+        // Populate API metrics as they occur
         requestDidStart(context) {
           // Capture the start time when the request starts
           const startTime = Date.now();
 
-          // Track if API operation has errored since didEncounterErrors() could trigger after didResolveOperation()
-          let gaugeIncremented = false;
+          // Increment API counter metric
+          customMetricsClient.incrementAPICalls.inc();
 
           // Parse API operation name
           const match = context.request.query.match(/\{\s*(\w+)/);
-          const operationName = match ? match[1] : 'Query name not found ';
-          const operationNameDuration = operationName + 'Duration';
-          const operationNameGauge = operationName + 'Gauge';
+          const operationName = match ? match[1] : 'Query name not found';
+          passOperationName(operationName);
 
-          // Increment my_api_calls_total when operation detected
-          customMetricsClient.incrementApiCall();
-
+          let encounteredError = false;
           return {
             didResolveOperation() {
               // Record API operation duration metrics
               const durationInSeconds = (Date.now() - startTime) / 1000;
-              if (customMetricsClient[operationNameDuration]) {
-                customMetricsClient[operationNameDuration].observe(durationInSeconds);
-              }
-
-              // Record API operation success and failure gauge metrics
-              if (customMetricsClient[operationNameGauge]) {
-                customMetricsClient[operationNameGauge].inc({ status: 'success' });
-                gaugeIncremented = true;
-              }
+              customMetricsClient.apiCallHistogram.observe(durationInSeconds);
             },
-
             didEncounterErrors() {
-              // Record API operation success and failure gauge metrics
-              if (customMetricsClient[operationNameGauge]) {
-                customMetricsClient[operationNameGauge].inc({ status: 'failure' });
-                // Decrease gauge success count if error found later in request process
-                if (gaugeIncremented == true) {
-                  customMetricsClient[operationNameGauge].dec({ status: 'success' });
-                }
-              }
+              encounteredError = true;
             },
+            willSendResponse() {
+              // Record API operation success and failure gauge metrics
+              if (encounteredError) {
+                customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+              } else {
+                customMetricsClient.apiCallCounter.inc({ status: 'success' });
+              }
+            }
           };
         },
-      },
+      }
     ],
     schema,
     allowBatchedHttpRequests: (process.env.GRAPHQL_DISABLE_BATCHING ? false : true),
