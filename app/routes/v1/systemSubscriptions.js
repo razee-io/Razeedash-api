@@ -21,11 +21,19 @@ const { getOrg, bestOrgKey } = require('../../utils/orgs');
 const axios = require('axios');
 const yaml = require('js-yaml');
 const { getRddArgs } = require('../../utils/rdd');
+const { customMetricsClient, passOperationName } = require('../../customMetricsClient'); // Add custom metrics plugin
 
 /*
 Serves a System Subscription that regenerates the `razee-identity` secret with the 'best' OrgKey value.
 */
 const getPrimaryOrgKeySubscription = async(req, res) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('getPrimaryOrgKeySubscription');
+
   const razeeIdentitySecretYaml = `apiVersion: v1
 kind: Secret
 metadata:
@@ -39,6 +47,11 @@ data:
 type: Opaque
 `;
 
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
   res.status( 200 ).send( razeeIdentitySecretYaml );
 };
 
@@ -46,6 +59,13 @@ type: Opaque
 Serves a System Subscription that returns a CronJob that updates the operators: Cluster Subscription, Remote Resource and Watch-Keeper
 */
 const getOperatorsSubscription = async(req, res) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('getOperatorsSubscription');
+
   // Get the image and command for the update cronjob from the current values returned from the razeedeploy-job api
   const protocol = req.protocol || 'http';
   let host = req.header('host') || 'localhost:3333';
@@ -109,6 +129,11 @@ metadata:
   name: razeedeploy-sa
   namespace: razeedeploy
 `;
+
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
 
   res.status( 200 ).send( razeeupdateYaml );
 };

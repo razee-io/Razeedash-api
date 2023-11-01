@@ -40,8 +40,16 @@ const { GraphqlPubSub } = require('../../apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const conf = require('../../conf.js').conf;
 const storageFactory = require('./../../storage/storageFactory');
+const { customMetricsClient, passOperationName } = require('../../customMetricsClient'); // Add custom metrics plugin
 
 const addUpdateCluster = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('addUpdateCluster');
+
   try {
     const Clusters = req.db.collection('clusters');
     const Stats = req.db.collection('resourceStats');
@@ -51,28 +59,56 @@ const addUpdateCluster = async (req, res, next) => {
     if (!cluster) {
       // new cluster flow requires a cluster to be registered first.
       if (process.env.CLUSTER_REGISTRATION_REQUIRED) {
+        // Observe the duration for the histogram
+        const durationInSeconds = (Date.now() - startTime) / 1000;
+        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+        customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
         res.status(404).send({error: 'Not found, the api requires you to register the cluster first.'});
         return;
       }
       const total = await Clusters.count({org_id:  req.org._id});
       if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
+        // Observe the duration for the histogram
+        const durationInSeconds = (Date.now() - startTime) / 1000;
+        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+        customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
         res.status(400).send({error: 'Too many clusters are registered under this organization.'});
         return;
       }
       await Clusters.insertOne({ org_id: req.org._id, cluster_id: req.params.cluster_id, reg_state, registration: {}, metadata, created: new Date(), updated: new Date() });
       runAddClusterWebhook(req, req.org._id, req.params.cluster_id, metadata.name); // dont await. just put it in the bg
       Stats.updateOne({ org_id: req.org._id }, { $inc: { clusterCount: 1 } }, { upsert: true });
+
+      // Observe the duration for the histogram
+      const durationInSeconds = (Date.now() - startTime) / 1000;
+      customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+      customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
       res.status(200).send('Welcome to Razee');
     }
     else {
       if (cluster.dirty) {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
           { $set: { metadata, reg_state, updated: new Date(), dirty: false } });
+
+        // Observe the duration for the histogram
+        const durationInSeconds = (Date.now() - startTime) / 1000;
+        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+        customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
         res.status(205).send('Please resync');
       }
       else {
         await Clusters.updateOne({ org_id: req.org._id, cluster_id: req.params.cluster_id },
           { $set: { metadata, reg_state, updated: new Date() } });
+
+        // Observe the duration for the histogram
+        const durationInSeconds = (Date.now() - startTime) / 1000;
+        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+        customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
         res.status(200).send('Thanks for the update');
       }
     }
@@ -84,6 +120,13 @@ const addUpdateCluster = async (req, res, next) => {
 };
 
 const getAddClusterWebhookHeaders = async()=>{
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('getAddClusterWebhookHeaders');
+
   // loads the headers specified in the 'razeedash-add-cluster-webhook-headers-secret' secret
   // returns the key-value pairs of the secret as a js obj
   const filesDir = '/var/run/secrets/razeeio/razeedash-api/add-cluster-webhook-headers';
@@ -96,10 +139,23 @@ const getAddClusterWebhookHeaders = async()=>{
     const val = fs.readFileSync(`${filesDir}/${name}`, 'utf8');
     headers[encodeURIComponent(name)] = val;
   });
+
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
   return headers;
 };
 
 const runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('runAddClusterWebhook');
+
   var postData = {
     org_id: orgId,
     cluster_id: clusterId,
@@ -107,6 +163,10 @@ const runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
   };
   var url = process.env.ADD_CLUSTER_WEBHOOK_URL;
   if(!url){
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     return;
   }
   req.log.info({ url, postData }, 'posting add cluster webhook');
@@ -116,14 +176,32 @@ const runAddClusterWebhook = async(req, orgId, clusterId, clusterName)=>{
       data: postData,
       headers,
     });
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
     req.log.info({ url, postData, statusCode: result.status }, 'posted add cluster webhook');
   }catch(err){
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
     req.log.error({ url, postData, err }, 'add cluster webhook failed');
   }
 };
 
 function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
-  //if its a new or changed resource, write the data out to an S3 object
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('pushToS3Sync');
+
+  // if its a new or changed resource, write the data out to an S3 object
   const result = {};
   const bucket = conf.storage.getResourceBucket(data_location);
   const hash = crypto.createHash('sha256');
@@ -131,16 +209,37 @@ function pushToS3Sync(key, searchableDataHash, dataStr, data_location, logger) {
   const handler = storageFactory(logger).newResourceHandler(`${keyHash}/${searchableDataHash}`, bucket, data_location);
   result.promise = handler.setData(dataStr);
   result.encodedData = handler.serialize();
+
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+
   return result;
 }
 
 const deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks)=>{
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('deleteOrgClusterResourceSelfLinks');
+
   const Resources = req.db.collection('resources');
   selfLinks = _.filter(selfLinks); // in such a case that a null is passed to us. if you do $in:[null], it returns all items missing the attr, which is not what we want
   if(selfLinks.length < 1){
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     return;
   }
   if(!orgId || !clusterId){
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     throw `missing orgId or clusterId: ${JSON.stringify({ orgId, clusterId })}`;
   }
   var search = {
@@ -150,10 +249,21 @@ const deleteOrgClusterResourceSelfLinks = async(req, orgId, clusterId, selfLinks
       $in: selfLinks,
     }
   };
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
   await Resources.deleteMany(search);
 };
 
 const syncClusterResources = async(req, res)=>{
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('syncClusterResources');
+
   const orgId = req.org._id;
   const clusterId = req.params.cluster_id;
   const Resources = req.db.collection('resources');
@@ -179,15 +289,28 @@ const syncClusterResources = async(req, res)=>{
 
     Stats.updateOne({ org_id: orgId }, { $inc: { deploymentCount: -1 * objsToDelete.length } });
   }
-
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
   res.status(200).send('Thanks');
 };
 
 const updateClusterResources = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('updateClusterResources');
   try {
     var clusterId = req.params.cluster_id;
     const body = req.body;
     if (!body) {
+      // Observe the duration for the histogram
+      const durationInSeconds = (Date.now() - startTime) / 1000;
+      customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+      customMetricsClient.apiCallCounter.inc({ status: 'failure' });
       res.status(400).send('Missing resource body');
       return;
     }
@@ -350,6 +473,10 @@ const updateClusterResources = async (req, res, next) => {
               // if obj not in db, then adds it
               const total = await Resources.count({org_id:  req.org._id, deleted: false});
               if (total >= RESOURCE_LIMITS.MAX_TOTAL ) {
+                // Observe the duration for the histogram
+                const durationInSeconds = (Date.now() - startTime) / 1000;
+                customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+                customMetricsClient.apiCallCounter.inc({ status: 'failure' });
                 res.status(400).send({error: 'Too many resources are registered under this organization.'});
                 return;
               }
@@ -442,20 +569,40 @@ const updateClusterResources = async (req, res, next) => {
       });
     }));
     if( unsupportedResourceEvents.length > 0 ) {
+      // Observe the duration for the histogram
+      const durationInSeconds = (Date.now() - startTime) / 1000;
+      customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+      customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
       // This could occur if agent sends `x is forbidden` objects instead of expected polled/modified/added/deleted events.  It is useful info, but not a server side error.
       req.log.info( `Unsupported events received: ${JSON.stringify( unsupportedResourceEvents )}` );
       res.status(400).send('invalid payload');
     }
     else {
+      // Observe the duration for the histogram
+      const durationInSeconds = (Date.now() - startTime) / 1000;
+      customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+      customMetricsClient.apiCallCounter.inc({ status: 'success' });
       res.status(200).send('Thanks');
     }
   } catch (err) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     req.log.error(err.message);
     next(err);
   }
 };
 
 const addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, yamlStr)=>{
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('addResocurceYamlHistObj');
+
   var ResourceYamlHist = req.db.collection('resourceYamlHist');
   var id = uuid();
   var obj = {
@@ -467,12 +614,29 @@ const addResourceYamlHistObj = async(req, orgId, clusterId, resourceSelfLink, ya
     updated: new Date(),
   };
   await ResourceYamlHist.insertOne(obj);
+
+  // Observe the duration for the histogram
+  const durationInSeconds = (Date.now() - startTime) / 1000;
+  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+  customMetricsClient.apiCallCounter.inc({ status: 'success' });
   return id;
 };
 
 const addClusterMessages = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('addClusterMessages');
+
   const body = req.body;
   if (!body) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+
     res.status(400).send('Missing message body');
     return;
   }
@@ -507,36 +671,81 @@ const addClusterMessages = async (req, res, next) => {
 
     const Messages = req.db.collection('messages');
     await Messages.updateOne(key, { $set: data, $setOnInsert: insertData }, { upsert: true });
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'success' });
     req.log.debug({ messagedata: data }, `${messageType} message data posted`);
     res.status(200).send(`${messageType} message received`);
   } catch (err) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     req.log.error(err.message);
     next(err);
   }
 };
 
 const getClusters = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('getClusters');
   try {
     const Clusters = req.db.collection('clusters');
     const orgId = req.org._id + '';
     const clusters = await Clusters.find({ 'org_id': orgId }).toArray();
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'success' });
     return res.status(200).send({clusters});
   } catch (err) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     req.log.error(err.message);
     next(err);
   }
 };
 
 const clusterDetails = async (req, res) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('clusterDetails');
+
   const cluster = req.cluster; // req.cluster was set in `getCluster`
   if(cluster) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'success' });
     return res.status(200).send({cluster});
   } else {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     return res.status(404).send('cluster was not found');
   }
 };
 
 const deleteCluster = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.incrementAPICalls.inc();
+  // Parse API operation name
+  passOperationName('deleteCluster');
   try {
     if(!req.org._id || !req.params.cluster_id){
       throw 'missing orgId or clusterId';
@@ -544,9 +753,18 @@ const deleteCluster = async (req, res, next) => {
     const Clusters = req.db.collection('clusters');
     const cluster_id = req.params.cluster_id;
     await Clusters.deleteOne({ org_id: req.org._id, cluster_id: cluster_id });
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'success' });
     req.log.info(`cluster ${cluster_id} deleted`);
     next();
   } catch (error) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
     req.log.error(error.message);
     return res.status(500).json({ status: 'error', message: error.message });
   }
