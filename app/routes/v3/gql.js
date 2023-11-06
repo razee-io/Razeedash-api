@@ -20,7 +20,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const mainServer = require('../../');
 const log = require('../../log').createLogger('razeedash-api/app/routes/v1/gql');
-const { customMetricsClient, passOperationName } = require('../../customMetricsClient'); // Add custom metrics plugin
+const { customMetricsClient } = require('../../customMetricsClient'); // Add custom metrics plugin
 
 const methodTypes = [
   'findOne', 'findMany', 'create', 'update',
@@ -31,9 +31,7 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('sendReqToGraphql');
+  customMetricsClient.apiCallsCount.inc();
 
   const methodName = 'sendReqToGraphql';
   log.debug( `${methodName} entry, operationName: ${operationName}` );
@@ -71,14 +69,14 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
         if(methodType == 'findOne' && !resVal){
           // Observe the duration for the histogram
           const durationInSeconds = (Date.now() - startTime) / 1000;
-          customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-          customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+          customMetricsClient.apiCallHistogram('sendReqToGraphql').observe(durationInSeconds);
+          customMetricsClient.apiCallCounter('sendReqToGraphql').inc({ status: 'failure' });
           return this.status(404).oldSend('');
         }
         // Observe the duration for the histogram
         const durationInSeconds = (Date.now() - startTime) / 1000;
-        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-        customMetricsClient.apiCallCounter.inc({ status: 'success' });
+        customMetricsClient.apiCallHistogram('sendReqToGraphql').observe(durationInSeconds);
+        customMetricsClient.apiCallCounter('sendReqToGraphql').inc({ status: 'success' });
         // One/Multiple expected, one/multiple found, return 200 (OK)
         return this.status(200).oldSend( JSON.stringify(resVal) );
       }
@@ -86,8 +84,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
       else if( restReqType == 'PUT' ) {
         // Observe the duration for the histogram
         const durationInSeconds = (Date.now() - startTime) / 1000;
-        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-        customMetricsClient.apiCallCounter.inc({ status: 'success' });
+        customMetricsClient.apiCallHistogram('sendReqToGraphql').observe(durationInSeconds);
+        customMetricsClient.apiCallCounter('sendReqToGraphql').inc({ status: 'success' });
         // Modification may or may not have been necessary, return 200 (OK)
         return this.status(200).oldSend( '' );  // Ideally should return the updated object(s) here, but graphql doesn't return that
       }
@@ -98,8 +96,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
 
         // Observe the duration for the histogram
         const durationInSeconds = (Date.now() - startTime) / 1000;
-        customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-        customMetricsClient.apiCallCounter.inc({ status: 'success' });
+        customMetricsClient.apiCallHistogram('sendReqToGraphql').observe(durationInSeconds);
+        customMetricsClient.apiCallCounter('sendReqToGraphql').inc({ status: 'success' });
         return this.status(201).oldSend( JSON.stringify(resVal) );
       }
       // Else (unexpected request type)
@@ -108,8 +106,8 @@ const sendReqToGraphql = async({ req, res, query, variables, operationName, meth
     catch( e ) {
       // Observe the duration for the histogram
       const durationInSeconds = (Date.now() - startTime) / 1000;
-      customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-      customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+      customMetricsClient.apiCallHistogram('sendReqToGraphql').observe(durationInSeconds);
+      customMetricsClient.apiCallCounter('sendReqToGraphql').inc({ status: 'failure' });
       log.debug( `${methodName} error: ${e.message}` );
       return this.status(400).oldSend( e.message );
     }
@@ -131,23 +129,21 @@ const getOrgId = (req, res, next)=>{
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getOrgId');
+  customMetricsClient.apiCallsCount.inc();
 
   const orgId = req.get('org-id') || req.body.orgId || req.query.orgId;
   if(!orgId){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getOrgId').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getOrgId').inc({ status: 'failure' });
     res.status(400).send( 'Please pass an orgId in an "org-id" header, an "orgId" post body param, or an orgId query string attribute' );
     return;
   }
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getOrgId').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getOrgId').inc({ status: 'success' });
   req.orgId = orgId;
   next();
 };
@@ -156,10 +152,7 @@ const postChannels = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('postChannels');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a channel'
   const { orgId } = req;
@@ -175,8 +168,8 @@ const postChannels = async (req, res) => {
   if(!name){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('postChannels').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('postChannels').inc({ status: 'failure' });
     res.status(400).send( 'needs { name }' );
     return;
   }
@@ -189,8 +182,8 @@ const postChannels = async (req, res) => {
 
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('postChannels').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('postChannels').inc({ status: 'success' });
 };
 router.post('/channels', getOrgId, asyncHandler(postChannels));
 
@@ -198,10 +191,7 @@ const getChannels = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getChannels');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets all channels'
   const { orgId } = req;
@@ -230,8 +220,8 @@ const getChannels = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getChannels').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getChannels').inc({ status: 'success' });
 };
 router.get('/channels', getOrgId, asyncHandler(getChannels));
 
@@ -239,10 +229,7 @@ const getChannel = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getChannel');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel'
   const { orgId } = req;
@@ -267,8 +254,8 @@ const getChannel = async (req, res) => {
   if(!uuid){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getChannel').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannel').inc({ status: 'failure' });
     res.status(400).send( 'needs { uuid }' );
     return;
   }
@@ -281,8 +268,8 @@ const getChannel = async (req, res) => {
 
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getChannel').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getChannel').inc({ status: 'success' });
 };
 router.get('/channels/:uuid', getOrgId, asyncHandler(getChannel));
 
@@ -290,10 +277,7 @@ const postChannelVersion = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getChannelVersion');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Adds a new channel version'
   const { orgId } = req;
@@ -313,8 +297,8 @@ const postChannelVersion = async (req, res) => {
   if(!name || !channelUuid || !type || !content){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'failure' });
     res.status(400).send( 'needs { channelUuid, name, type, content }' );
     return;
   }
@@ -329,8 +313,8 @@ const postChannelVersion = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'versionUuid' });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'success' });
 };
 router.post('/channels/:channelUuid/versions', getOrgId, asyncHandler(postChannelVersion));
 
@@ -338,10 +322,7 @@ const getChannelVersion = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getChannelVersion');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['channels']
   // #swagger.summary = 'Gets a specified channel version'
   const { orgId } = req;
@@ -361,8 +342,8 @@ const getChannelVersion = async (req, res) => {
   if(!channelUuid || !versionUuid){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'failure' });
     res.status(400).send( 'needs { channelUuid, versionUuid }' );
     return;
   }
@@ -375,8 +356,8 @@ const getChannelVersion = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'success' });
 };
 router.get('/channels/:channelUuid/versions/:versionUuid', getOrgId, asyncHandler(getChannelVersion));
 
@@ -384,10 +365,7 @@ const getClusters = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getClusters');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets all clusters'
   const { orgId } = req;
@@ -411,8 +389,8 @@ const getClusters = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getClusters').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getClusters').inc({ status: 'success' });
 };
 router.get('/clusters', getOrgId, asyncHandler(getClusters));
 
@@ -420,10 +398,7 @@ const getCluster = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getCluster');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['clusters']
   // #swagger.summary = 'Gets a specified cluster'
   const { orgId } = req;
@@ -443,8 +418,8 @@ const getCluster = async (req, res) => {
   if(!clusterId){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getCluster').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getCluster').inc({ status: 'failure' });
     res.status(400).send( 'needs { clusterId }' );
     return;
   }
@@ -456,8 +431,8 @@ const getCluster = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getCluster').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getCluster').inc({ status: 'success' });
 };
 router.get('/clusters/:clusterId', getOrgId, asyncHandler(getCluster));
 
@@ -465,10 +440,7 @@ const postGroups = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('postGroups');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Adds a group'
   const { orgId } = req;
@@ -484,8 +456,8 @@ const postGroups = async (req, res) => {
   if(!name){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('postGroups').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('postGroups').inc({ status: 'failure' });
     res.status(400).send( 'needs { name }' );
     return;
   }
@@ -508,8 +480,8 @@ const postGroups = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('postGroups').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('postGroups').inc({ status: 'success' });
 };
 router.post('/groups', getOrgId, asyncHandler(postGroups));
 
@@ -518,10 +490,7 @@ const putGroup = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('putGroup');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Sets the clusters for a specified group'
   const { orgId } = req;
@@ -538,8 +507,8 @@ const putGroup = async (req, res) => {
   if(!uuid || !clusters){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('putGroup').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('putGroup').inc({ status: 'failure' });
     res.status(400).send( 'needs { uuid, clusters }' );
     return;
   }
@@ -552,8 +521,8 @@ const putGroup = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('putGroup').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('putGroup').inc({ status: 'success' });
 };
 router.put('/groups/:uuid', getOrgId, asyncHandler(putGroup));
 
@@ -561,10 +530,7 @@ const getGroups = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getGroups');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets all groups'
   const { orgId } = req;
@@ -586,8 +552,8 @@ const getGroups = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getGroups').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getGroups').inc({ status: 'success' });
 };
 router.get('/groups', getOrgId, asyncHandler(getGroups));
 
@@ -595,10 +561,7 @@ const getGroup = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getGroup');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['groups']
   // #swagger.summary = 'Gets a specified group'
   const { orgId } = req;
@@ -617,8 +580,8 @@ const getGroup = async (req, res) => {
   if(!uuid){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getGroup').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getGroup').inc({ status: 'failure' });
     res.status(400).send( 'needs { uuid }' );
     return;
   }
@@ -630,8 +593,8 @@ const getGroup = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getGroup').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getGroup').inc({ status: 'success' });
 };
 router.get('/groups/:uuid', getOrgId, asyncHandler(getGroup));
 
@@ -639,10 +602,7 @@ const postSubscriptions = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('postSubscriptions');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Adds a subscription'
   const { orgId } = req;
@@ -662,8 +622,8 @@ const postSubscriptions = async (req, res) => {
   if(!name || !groups || clusterId || !channelUuid || !versionUuid){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('postSubscriptions').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('postSubscriptions').inc({ status: 'failure' });
     res.status(400).send( 'needs { name, groups, channelUuid, versionUuid }' );
     return;
   }
@@ -679,8 +639,8 @@ const postSubscriptions = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType, createdIdentifier: 'uuid' });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('postSubscriptions').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('postSubscriptions').inc({ status: 'success' });
 };
 router.post('/subscriptions', getOrgId, asyncHandler(postSubscriptions));
 
@@ -688,10 +648,7 @@ const getSubscriptions = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getSubscriptions');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets all subscriptions'
   const { orgId } = req;
@@ -718,8 +675,8 @@ const getSubscriptions = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getSubscriptions').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getSubscriptions').inc({ status: 'success' });
 };
 router.get('/subscriptions', getOrgId, asyncHandler(getSubscriptions));
 
@@ -727,10 +684,7 @@ const getSubscription = async (req, res) => {
   // Capture the start time when the request starts
   const startTime = Date.now();
   // Increment API counter metric
-  customMetricsClient.incrementAPICalls.inc();
-  // Parse API operation name
-  passOperationName('getSubscription');
-
+  customMetricsClient.apiCallsCount.inc();
   // #swagger.tags = ['subscriptions']
   // #swagger.summary = 'Gets a specified subscription'
   const { orgId } = req;
@@ -754,8 +708,8 @@ const getSubscription = async (req, res) => {
   if(!uuid){
     // Observe the duration for the histogram
     const durationInSeconds = (Date.now() - startTime) / 1000;
-    customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-    customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+    customMetricsClient.apiCallHistogram('getSubscription').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getSubscription').inc({ status: 'failure' });
     res.status(400).send( 'needs { uuid }' );
     return;
   }
@@ -767,8 +721,8 @@ const getSubscription = async (req, res) => {
   await sendReqToGraphql({ req, res, query, variables, operationName, methodType });
   // Observe the duration for the histogram
   const durationInSeconds = (Date.now() - startTime) / 1000;
-  customMetricsClient.apiCallHistogram.observe(durationInSeconds);
-  customMetricsClient.apiCallCounter.inc({ status: 'success' });
+  customMetricsClient.apiCallHistogram('getSubscription').observe(durationInSeconds);
+  customMetricsClient.apiCallCounter('getSubscription').inc({ status: 'success' });
 };
 router.get('/subscriptions/:uuid', getOrgId, asyncHandler(getSubscription));
 

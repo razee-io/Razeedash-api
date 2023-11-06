@@ -15,28 +15,20 @@
  */
 
 const { Counter, Histogram } = require('prom-client');
-
-let operationName;
-
-// Update current API operation name to access correct metric
-function passOperationName(name) {
-  operationName = name;
-}
-
-const incrementAPICalls = new Counter({
-  name: 'api_calls_total',
-  help: 'Total number of API calls'
-});
-
 // Maintain a map for previously created counters and histograms
 const counters = {};
 const histograms = {};
 
+const apiCallsCount = new Counter({
+  name: 'api_calls_total',
+  help: 'Total number of API calls'
+});
+
 const customMetricsClient = {
-  incrementAPICalls: incrementAPICalls,
+  apiCallsCount: apiCallsCount,
 
   // Count success and failure of each API operation and record as unique metric
-  get apiCallCounter() {
+  apiCallCounter(operationName) {
     if (!counters[operationName]) {
       counters[operationName] = new Counter({
         name: `${operationName}_counter_result_total`,
@@ -48,7 +40,7 @@ const customMetricsClient = {
   },
 
   // Track duration of each API operation and record as unique metric
-  get apiCallHistogram() {
+  apiCallHistogram(operationName) {
     if (!histograms[operationName]) {
       histograms[operationName] = new Histogram({
         name: `${operationName}_duration_seconds`,
@@ -61,6 +53,5 @@ const customMetricsClient = {
 };
 
 module.exports = {
-  customMetricsClient,
-  passOperationName
+  customMetricsClient
 };

@@ -36,7 +36,7 @@ const { models, connectDb } = require('./models');
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
-const { customMetricsClient, passOperationName } = require('../customMetricsClient'); // Add custom metrics plugin
+const { customMetricsClient } = require('../customMetricsClient'); // Add custom metrics plugin
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 
@@ -150,29 +150,32 @@ const createApolloServer = (schema) => {
           const startTime = Date.now();
 
           // Increment API counter metric
-          customMetricsClient.incrementAPICalls.inc();
-
-          // Parse API operation name
-          const match = context.request.query.match(/\{\s*(\w+)/);
-          const operationName = match ? match[1] : 'Query name not found';
-          passOperationName(operationName);
+          customMetricsClient.apiCallsCount.inc();
 
           let encounteredError = false;
           return {
             didResolveOperation() {
+              // Parse API operation name
+              const match = context.request.query.match(/\{\s*(\w+)/);
+              const operationName = match ? match[1] : 'Query name not found';
               // Record API operation duration metrics
               const durationInSeconds = (Date.now() - startTime) / 1000;
-              customMetricsClient.apiCallHistogram.observe(durationInSeconds);
+              console.log('potato');
+              customMetricsClient.apiCallHistogram(operationName).observe(durationInSeconds);
+              console.log('potato1');
             },
             didEncounterErrors() {
               encounteredError = true;
             },
             willSendResponse() {
+              // Parse API operation name
+              const match = context.request.query.match(/\{\s*(\w+)/);
+              const operationName = match ? match[1] : 'Query name not found';
               // Record API operation success and failure gauge metrics
               if (encounteredError) {
-                customMetricsClient.apiCallCounter.inc({ status: 'failure' });
+                customMetricsClient.apiCallCounter(operationName).inc({ status: 'failure' });
               } else {
-                customMetricsClient.apiCallCounter.inc({ status: 'success' });
+                customMetricsClient.apiCallCounter(operationName).inc({ status: 'success' });
               }
             }
           };
