@@ -9,3 +9,5 @@ compose/
 build/
 kubernetes/
 samples/
+# MEND unified agent
+wss-unified-agent.jar

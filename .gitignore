@@ -70,3 +70,6 @@ dev/
 # vscode settings
 .vscode
 .DS_Store
+
+# MEND unified agaent
+wss-unified-agent.jar
