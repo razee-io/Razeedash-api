@@ -71,5 +71,5 @@ dev/
 .vscode
 .DS_Store
 
-# MEND unified agaent
+# MEND unified agent
 wss-unified-agent.jar
