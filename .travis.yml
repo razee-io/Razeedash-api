@@ -10,6 +10,11 @@ before_install:
   - echo "$DOCKERHUB_TOKEN" | docker login -u "icdevops" --password-stdin;
   - unset GITHUB_TOKEN
   - export GITHUB_TOKEN="${GITHUB_TOKEN_20230511}"
+  - export WS_APIKEY=${WS_APIKEY}
+  - export WS_USERKEY=${WS_USERKEY}
+  - export WS_PRODUCTNAME=${WS_PRODUCTNAME}
+  - export WS_PROJECTNAME=Razeedash-api
+  - export WS_WSS_URL=https://ibmets.whitesourcesoftware.com/agent
 
 script:
   # Audit npm packages. Fail build whan a PR audit fails, otherwise report the vulnerability and proceed.  See audit-ci for details of allowlisted packages etc.
@@ -25,6 +30,8 @@ script:
   - if [ -n "${TRAVIS_TAG}" ]; then docker tag quay.io/razee/razeedash-api:${TRAVIS_COMMIT} quay.io/razee/razeedash-api:${TRAVIS_TAG}; fi
   - docker images
   - ./build/process-template.sh kubernetes/razeedash-api/resource.yaml >/tmp/resource.yaml
+  # Perform UA scan on non-PR builds
+  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ]; then curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar; java -jar wss-unified-agent.jar -d . || echo "UA Scan Error occurred"; fi
 
 before_deploy:
   - docker login -u="${QUAY_ID}" -p="${QUAY_TOKEN}" quay.io
