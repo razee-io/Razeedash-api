@@ -379,4 +379,4 @@ With the following HTTP Header:
 {"Authorization": "Bearer <the token value returned from signUp or signIn>"}
 ```
 
-For all other supported graphql APIs, please click `DOCS` or `SCHEMA` from the graphql play-ground.
+For all other supported graphql APIs, please click `DOCS` or `SCHEMA` from the graphql play-ground
