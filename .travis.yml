@@ -66,5 +66,7 @@ deploy:
     on:
       tags: true
       # condition: ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$
-    api_key: "${GITHUB_TOKEN}"
+    # api_key: "${GITHUB_TOKEN}"
+    api_key:
+      secure: "DG9NpPJ/aKFSTMyGx3TiZQgIhCBpw2Y90WG/SqY2hGFwBYujWD6LKotc3kWt4pPknvKi6AitLgk1MTVnw6M/UC6BOALkviFncUC/MBxJHHP6Z/zbHj/oaY7eEP+lU6cEF3L4y2LVWlg8o7ZRuFqLJlPI0uGVC+/M5d/54cqIkGhTOzl+sP4348T5yr7HHEvB6Evpk2p+dkJ4b729Y+GF4Hd5MAH1GlqQY6ht8cWQ6KbpsDtLRtc15kGC/X+SA1C94muacM2A7XgxDVQKEYz0mKFkogt3AetF96cW48vwvTcOJZSBgFuK3env++jhnPahNPoUoTLAsyUyiy5KLCInYnyAa5fswcvXD49WkZCjLxZYY3MQVXNNtp4hQbEKxNMSoa3EDYSSD3EBAdTJWPu2JRX0iEbKz0oP0KA6d9WZYc1tacu/eCrMWtAQDhbXu17cBqaQlmg7zWqDxSyNlWjRUkkvRuLsTz7VeRhVMOJdevlTzAdqvn3Pz7mfQQ7Wuou4SeTsQ67Nb+DW10bcOZVl6jwzJsmuwCBwF7IItI/t17/pyOJNU6VliTZ+oz0VlvTCssYKIZnDd5Y1lEYpP8Es99Y8lkjcMGD/UD9fSbhDP4jbG/T8dossKWoYK+QpbaL7Ai67MvGuL76Tv91fSfIj3jM2Sbyivx7vsG2UL+TVftQ="
     name: "${TRAVIS_TAG}"
