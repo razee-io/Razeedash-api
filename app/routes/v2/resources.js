@@ -19,9 +19,13 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const verifyAdminOrgKey = require('../../utils/orgs.js').verifyAdminOrgKey;
 const _ = require('lodash');
-
+const { customMetricsClient } = require('../../customMetricsClient'); // Add custom metrics plugin
 
 const getResources = async (req, res, next) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.apiCallsCount.inc();
   try {
     const Resources = req.db.collection('resources');
     const orgId = req.org._id + '';
@@ -50,11 +54,20 @@ const getResources = async (req, res, next) => {
     };
 
     const resources = await Resources.find(query, options).toArray();
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram('getResources').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getResources').inc({ status: 'success' });
     return res.status(200).send({
       resources,
       limit, skip,
     });
   } catch (err) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram('getResources').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getResources').inc({ status: 'failure' });
     req.log.error(err.message);
     next(err);
   }

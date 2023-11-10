@@ -36,6 +36,7 @@ const { models, connectDb } = require('./models');
 const promClient = require('prom-client');
 const createMetricsPlugin = require('apollo-metrics');
 const apolloMetricsPlugin = createMetricsPlugin(promClient.register);
+const { customMetricsClient } = require('../customMetricsClient'); // Add custom metrics plugin
 const apolloMaintenancePlugin = require('./maintenance/maintenanceModePlugin.js');
 const { GraphqlPubSub } = require('./subscription');
 
@@ -140,7 +141,47 @@ const createApolloServer = (schema) => {
   initLogger.info(customPlugins, 'Apollo server custom plugin are loaded.');
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
-    plugins: customPlugins,
+    plugins: [
+      customPlugins,
+      {
+        // Populate API metrics as they occur
+        requestDidStart(context) {
+          // Capture the start time when the request starts
+          const startTime = Date.now();
+
+          // Increment API counter metric
+          customMetricsClient.apiCallsCount.inc();
+
+          let encounteredError = false;
+          return {
+            didResolveOperation() {
+              // Parse API operation name
+              const match = context.request.query.match(/\{\s*(\w+)/);
+              const operationName = match ? match[1] : 'Query name not found';
+              // Record API operation duration metrics
+              const durationInSeconds = (Date.now() - startTime) / 1000;
+              console.log('potato');
+              customMetricsClient.apiCallHistogram(operationName).observe(durationInSeconds);
+              console.log('potato1');
+            },
+            didEncounterErrors() {
+              encounteredError = true;
+            },
+            willSendResponse() {
+              // Parse API operation name
+              const match = context.request.query.match(/\{\s*(\w+)/);
+              const operationName = match ? match[1] : 'Query name not found';
+              // Record API operation success and failure gauge metrics
+              if (encounteredError) {
+                customMetricsClient.apiCallCounter(operationName).inc({ status: 'failure' });
+              } else {
+                customMetricsClient.apiCallCounter(operationName).inc({ status: 'success' });
+              }
+            }
+          };
+        },
+      }
+    ],
     schema,
     allowBatchedHttpRequests: (process.env.GRAPHQL_DISABLE_BATCHING ? false : true),
     formatError: error => {

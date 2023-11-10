@@ -22,6 +22,7 @@ const MongoClientClass = require('../../mongo/mongoClient.js');
 const MongoClient = new MongoClientClass(mongoConf);
 const getOrg = require('../../utils/orgs.js').getOrg;
 const { getDecryptedContent } = require('../../apollo/utils/versionUtils');
+const { customMetricsClient } = require('../../customMetricsClient'); // Add custom metrics plugin
 
 router.use(asyncHandler(async (req, res, next) => {
   req.db = await MongoClient.getClient();
@@ -33,6 +34,11 @@ router.use(asyncHandler(async (req, res, next) => {
 //   --url http://localhost:3333/api/v1/channels/:channelName/:versionId \
 //   --header 'razee-org-key: orgApiKey-api-key-goes-here' \
 const getChannelVersion = async (req, res) => {
+  // Capture the start time when the request starts
+  const startTime = Date.now();
+  // Increment API counter metric
+  customMetricsClient.apiCallsCount.inc();
+
   var orgId = req.org._id;
   var channelName = req.params.channelName + '';
   var versionId = req.params.versionId + '';
@@ -60,6 +66,11 @@ const getChannelVersion = async (req, res) => {
       org = await Orgs.findOne({ _id: orgId });
       deployable = await Channels.findOne({ org_id: orgId, name: channelName });
     } else {
+      // Observe the duration for the histogram
+      const durationInSeconds = (Date.now() - startTime) / 1000;
+      customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+      customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'failure' });
+
       res.status(404).send({ status: 'error', message: `channel "${channelName}" not found for this org` });
       return;
     }
@@ -67,6 +78,11 @@ const getChannelVersion = async (req, res) => {
 
   var deployableVersion = await DeployableVersions.findOne({ org_id: orgId, channel_id: deployable.uuid, uuid: versionId });
   if (!deployableVersion) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'failure' });
+
     res.status(404).send({ status: 'error', message: `versionId "${versionId}" not found` });
     return;
   }
@@ -74,8 +90,19 @@ const getChannelVersion = async (req, res) => {
   try {
     const data = await getDecryptedContent({ logger: req.log, req_id: req.id, me: null }, org, deployableVersion);
     res.set('Content-Type', deployableVersion.type);
+
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'success' });
+
     res.status(200).send(data.content);
   } catch (error) {
+    // Observe the duration for the histogram
+    const durationInSeconds = (Date.now() - startTime) / 1000;
+    customMetricsClient.apiCallHistogram('getChannelVersion').observe(durationInSeconds);
+    customMetricsClient.apiCallCounter('getChannelVersion').inc({ status: 'failure' });
+
     req.log.error(error);
     return res.status(500).json({ status: 'error', message: error.message });
   }

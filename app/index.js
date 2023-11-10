@@ -41,7 +41,7 @@ const apollo = require('./apollo');
 
 const promClient = require('prom-client');
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
-collectDefaultMetrics({ timeout: 5000 });    //Collect all default metrics
+collectDefaultMetrics({ timeout: 5000 }); //Collect all default metrics
 const connections = new promClient.Gauge({ name: 'razee_server_connections_count', help: 'Razee server request count' });
 const i18next = require('i18next');
 const i18nextMiddleware = require('i18next-http-middleware');
