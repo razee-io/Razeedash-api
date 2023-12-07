@@ -160,9 +160,7 @@ const createApolloServer = (schema) => {
               const operationName = match ? match[1] : 'Query name not found';
               // Record API operation duration metrics
               const durationInSeconds = (Date.now() - startTime) / 1000;
-              console.log('potato');
               customMetricsClient.apiCallHistogram(operationName).observe(durationInSeconds);
-              console.log('potato1');
             },
             didEncounterErrors() {
               encounteredError = true;
