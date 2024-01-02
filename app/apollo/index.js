@@ -138,48 +138,48 @@ const createApolloServer = (schema) => {
     customPlugins.push(apolloMaintenancePlugin);
   }
 
+  customPlugins.push({
+    // Populate API metrics as they occur
+    requestDidStart(context) {
+      // Capture the start time when the request starts
+      const startTime = Date.now();
+
+      // Increment API counter metric
+      customMetricsClient.apiCallsCount.inc();
+
+      let encounteredError = false;
+      return {
+        didResolveOperation() {
+          // Parse API operation name
+          const match = context.request.query.match(/\{\s*(\w+)/);
+          const operationName = match ? match[1] : 'Query name not found';
+          // Record API operation duration metrics
+          const durationInSeconds = (Date.now() - startTime) / 1000;
+          customMetricsClient.apiCallHistogram(operationName).observe(durationInSeconds);
+        },
+        didEncounterErrors() {
+          encounteredError = true;
+        },
+        willSendResponse() {
+          // Parse API operation name
+          const match = context.request.query.match(/\{\s*(\w+)/);
+          const operationName = match ? match[1] : 'Query name not found';
+          // Record API operation success and failure gauge metrics
+          if (encounteredError) {
+            customMetricsClient.apiCallCounter(operationName).inc({ status: 'failure' });
+          } else {
+            customMetricsClient.apiCallCounter(operationName).inc({ status: 'success' });
+          }
+        }
+      };
+    },
+  });
+
   initLogger.info(customPlugins, 'Apollo server custom plugin are loaded.');
+
   const server = new ApolloServer({
     introspection: true, // set to true as long as user has valid token
-    plugins: [
-      customPlugins,
-      {
-        // Populate API metrics as they occur
-        requestDidStart(context) {
-          // Capture the start time when the request starts
-          const startTime = Date.now();
-
-          // Increment API counter metric
-          customMetricsClient.apiCallsCount.inc();
-
-          let encounteredError = false;
-          return {
-            didResolveOperation() {
-              // Parse API operation name
-              const match = context.request.query.match(/\{\s*(\w+)/);
-              const operationName = match ? match[1] : 'Query name not found';
-              // Record API operation duration metrics
-              const durationInSeconds = (Date.now() - startTime) / 1000;
-              customMetricsClient.apiCallHistogram(operationName).observe(durationInSeconds);
-            },
-            didEncounterErrors() {
-              encounteredError = true;
-            },
-            willSendResponse() {
-              // Parse API operation name
-              const match = context.request.query.match(/\{\s*(\w+)/);
-              const operationName = match ? match[1] : 'Query name not found';
-              // Record API operation success and failure gauge metrics
-              if (encounteredError) {
-                customMetricsClient.apiCallCounter(operationName).inc({ status: 'failure' });
-              } else {
-                customMetricsClient.apiCallCounter(operationName).inc({ status: 'success' });
-              }
-            }
-          };
-        },
-      }
-    ],
+    plugins: customPlugins,
     schema,
     allowBatchedHttpRequests: (process.env.GRAPHQL_DISABLE_BATCHING ? false : true),
     formatError: error => {
