@@ -124,6 +124,8 @@ kind: ServiceAccount
 metadata:
   name: razeedeploy-sa
   namespace: razeedeploy
+  labels:
+    deploy.razee.io/Reconcile: "false"
 `;
 
   // Observe the duration for the histogram
