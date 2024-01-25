@@ -1,6 +1,22 @@
 {
   "low": true,
-  "_allowlistInfo": "none",
-  "allowlist": [],
+  "_allowListExample": [
+    {
+      "GHSA-1234-5678-9012": {
+        "active": true,
+        "notes": "The package X has vuln Y that is ignored because Y",
+        "expiry": "2077-04-01"
+      }
+    },
+  ],
+  "allowlist": [
+    {
+      "GHSA-p6mc-m468-83gw": {
+        "active": true,
+        "notes": "The express-bunyan-logger package requires lodash.set at a vulnerable version, but is no longer being updated.  A replacement is needed.",
+        "expiry": "2024-01-30"
+      }
+    }
+  ],
   "skip-dev": true
 }
