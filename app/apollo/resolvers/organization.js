@@ -336,9 +336,9 @@ const organizationResolvers = {
             $and: [
               // Include all versions using the orgKey or not specifying which orgKey is used (could have been created before orgKey mgmt introduced and not yet updated)
               { $or: [
-                { verifiedOrgKeyUuid: { $exists: false } }, 
-                { desiredOrgKeyUuid: { $exists: false } }, 
-                { verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid }, 
+                { verifiedOrgKeyUuid: { $exists: false } },
+                { desiredOrgKeyUuid: { $exists: false } },
+                { verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid },
                 { desiredOrgKeyUuid: foundOrgKey.orgKeyUuid }
               ] },
               // Omit remote versions, which do not use encryption via orgkey -- the content data is stored elsewhere

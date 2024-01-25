@@ -166,7 +166,7 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   logger.info( logContext, 'Entry' );
 
   // If this version is 'remote' (i.e. not using encryption), return success
-  if( version?.content?.metadata?.type == 'remote' ) {
+  if( version.content && version.content.metadata && version.content.metadata.type == 'remote' ) {
     logger.info( logContext, 'Version does not use encryption, continue' );
     return( true );
   }
