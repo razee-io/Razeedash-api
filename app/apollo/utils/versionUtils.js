@@ -165,9 +165,9 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, orgKey: newOrgKey.orgKeyUuid, methodName: 'updateVersionEncryption' };
   logger.info( logContext, 'Entry' );
 
-  // PLC If this version is not using encryption (e.g. a 'remote' version), return success
+  // If this version is 'remote' (i.e. not using encryption), return success
   if( version?.content?.metadata?.type == 'remote' ) {
-    logger.info( logContext, `Version does not use encryption, continue` );
+    logger.info( logContext, 'Version does not use encryption, continue' );
     return( true );
   }
 
