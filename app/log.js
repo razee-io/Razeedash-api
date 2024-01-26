@@ -40,11 +40,11 @@ const createExpressLogger = (route) => {
     },
     customLogLevel: function (req, res, err) {
       if (res.statusCode >= 400 && res.statusCode < 500) {
-        return 'warn'
+        return 'warn';
       } else if (res.statusCode >= 500 || err) {
-        return 'error'
+        return 'error';
       }
-      return 'silent'
+      return 'silent';
     }
   });
 };
@@ -53,7 +53,7 @@ const createLogger = (route, ids) => {
   const config = getPinoConfig(route);
   config.base = { ...config.base, ...ids };
   return pino(config);
-}
+};
 
 const log = pino( getPinoConfig('razeedash-api-test') );  // logger for unit-tests
 
