@@ -9,14 +9,6 @@
       }
     },
   ],
-  "allowlist": [
-    {
-      "GHSA-p6mc-m468-83gw": {
-        "active": true,
-        "notes": "The express-bunyan-logger package requires lodash.set at a vulnerable version, but is no longer being updated.  A replacement is needed.",
-        "expiry": "2024-01-30"
-      }
-    }
-  ],
+  "allowlist": [],
   "skip-dev": true
 }

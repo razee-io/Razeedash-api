@@ -114,8 +114,7 @@ router.use(async (req, res, next) => {
 router.use(getOrg);
 
 router.use( (req, res, next) => {
-  const log = req.log;
-  if (req.org) log.fields.org_id = req.org._id;
+  if (req.org) req.log = req.log.child({org_id: req.org._id});
   next();
 });
 
