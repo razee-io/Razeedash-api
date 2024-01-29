@@ -76,7 +76,6 @@ const createDefaultApp = () => {
 const buildCommonApolloContext = async ({ models, req, res, connection, req_id }) => {
   if (connection) { // Operation is a Subscription
     const logger = connection.context.logger;
-    const req_id = req_id;
     const req = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
