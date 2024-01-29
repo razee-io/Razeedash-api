@@ -73,10 +73,9 @@ const createDefaultApp = () => {
   return app;
 };
 
-const buildCommonApolloContext = async ({ models, req, res, connection }) => {
+const buildCommonApolloContext = async ({ models, req, res, connection, req_id }) => {
   if (connection) { // Operation is a Subscription
     const logger = connection.context.logger;
-    const req_id = connection.context.logger.fields.req_id;
     const req = connection.context.upgradeReq;
     const apiKey = connection.context.orgKey;
     const userToken = connection.context.userToken;
@@ -84,16 +83,16 @@ const buildCommonApolloContext = async ({ models, req, res, connection }) => {
     const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
     return { apiKey, req, req_id, userToken, recoveryHintsMap, orgId, ...context };
   } else if (req) { // Operation is a Query/Mutation
-    const logger = req.log; // request context logger created by express-bunyan-logger
+    const logger = req.log;
     const context = await initModule.buildApolloContext({ models, req, res, connection, logger });
     if (context.me && context.me.orgKey) {
       const org = await models.Organization.findOne( { $or: [ { orgKeys: context.me.orgKey }, { 'orgKeys2.key': context.me.orgKey } ] } );
-      logger.fields.org_id = org._id;
+      req.log = req.log.child({org_id: org._id});
     }
     if (context.me && context.me.org_id) {
-      logger.fields.org_id = context.me.org_id;
+      req.log = req.log.child({org_id: context.me.org_id});
     }
-    return { req, req_id: logger.fields.req_id, recoveryHintsMap, ...context }; // req_id = req.id
+    return { req, req_id, recoveryHintsMap, ...context };
   }
 };
 
@@ -199,7 +198,8 @@ const createApolloServer = (schema) => {
         models,
         req,
         res,
-        connection
+        connection,
+        req_id: uuid()
       });
     },
   });
@@ -238,7 +238,7 @@ const createSubscriptionServer = (httpServer, apolloServer, schema) => {
         }
         // add original upgrade request to the context
         const subscriptionContext = { me, upgradeReq: webSocket.upgradeReq, logger, orgKey, orgId };
-        return await buildCommonApolloContext( { models, req: context.request, res: { this_is_a_dummy_response: true }, connection: { context: subscriptionContext } } );
+        return await buildCommonApolloContext( { models, req: context.request, res: { this_is_a_dummy_response: true }, connection: { context: subscriptionContext }, req_id } );
       },
     },
     {

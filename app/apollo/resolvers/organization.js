@@ -330,7 +330,26 @@ const organizationResolvers = {
         Re-encryption is ASYNCHRONOUS and could fail for various reasons (pod evicted, database failure, etc), so re-encryption is triggered again when attempting to delete any OrgKey that is still used for encryption.
         */
         // Ensure not removing a potentially in-use OrgKey (for version content encryption) (cannot force)
-        const versionsUsingOrgKey = await models.DeployableVersion.find({ org_id: orgId, $or: [ { verifiedOrgKeyUuid: { $exists: false } }, { desiredOrgKeyUuid: { $exists: false } }, {verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid}, {desiredOrgKeyUuid: foundOrgKey.orgKeyUuid} ] });
+        const versionsUsingOrgKey = await models.DeployableVersion.find(
+          {
+            org_id: orgId,
+            $and: [
+              // Include all versions using the orgKey or not specifying which orgKey is used (could have been created before orgKey mgmt introduced and not yet updated)
+              { $or: [
+                { verifiedOrgKeyUuid: { $exists: false } },
+                { desiredOrgKeyUuid: { $exists: false } },
+                { verifiedOrgKeyUuid: foundOrgKey.orgKeyUuid },
+                { desiredOrgKeyUuid: foundOrgKey.orgKeyUuid }
+              ] },
+              // Omit remote versions, which do not use encryption via orgkey -- the content data is stored elsewhere
+              { $or: [
+                { 'content.metadata.type': { $exists: false } },
+                { 'content.metadata.type': { $ne: 'remote' } },
+              ]}
+            ]
+          }
+        );
+
         if( versionsUsingOrgKey.length > 0 ) {
           // Forbidden
           logger.warn({ req_id, user, orgId, uuid, forceDeletion }, `${queryName} OrgKey cannot be removed because it is in use (version encryption).` );

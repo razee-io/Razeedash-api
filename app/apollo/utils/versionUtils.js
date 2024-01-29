@@ -165,6 +165,12 @@ const updateVersionEncryption = async (context, org, version, newOrgKey) => {
   const logContext = { req_id, user: whoIs(me), orgId: org.uuid, version: version.uuid, orgKey: newOrgKey.orgKeyUuid, methodName: 'updateVersionEncryption' };
   logger.info( logContext, 'Entry' );
 
+  // If this version is 'remote' (i.e. not using encryption), return success
+  if( version.content && version.content.metadata && version.content.metadata.type == 'remote' ) {
+    logger.info( logContext, 'Version does not use encryption, continue' );
+    return( true );
+  }
+
   // Re-retrieve the Org from the DB
   try {
     org = await models.Organization.findById(org._id);

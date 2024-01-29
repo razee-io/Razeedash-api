@@ -1,6 +1,14 @@
 {
   "low": true,
-  "_allowlistInfo": "none",
+  "_allowListExample": [
+    {
+      "GHSA-1234-5678-9012": {
+        "active": true,
+        "notes": "The package X has vuln Y that is ignored because Y",
+        "expiry": "2077-04-01"
+      }
+    },
+  ],
   "allowlist": [],
   "skip-dev": true
 }
