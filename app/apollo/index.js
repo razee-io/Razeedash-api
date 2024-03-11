@@ -358,7 +358,7 @@ const apollo = async (options = {}) => {
         }
       }
       return( count );
-    }
+    };
     app.use(GRAPHQL_PATH, (req,res,next)=>{
       // Fail if limit defined and batch greater than limit
       if( GQL_BATCH_LIMIT > 0 && countQueries( req.body ) > GQL_BATCH_LIMIT ) {
