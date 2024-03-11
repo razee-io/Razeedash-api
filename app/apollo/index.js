@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { execute, subscribe } = require( 'graphql' );
+const { execute, subscribe, parse } = require( 'graphql' );
 const { SubscriptionServer } = require( 'subscriptions-transport-ws' );
 const { makeExecutableSchema } = require( '@graphql-tools/schema' );
 let subscriptionServer;
@@ -341,6 +341,33 @@ const apollo = async (options = {}) => {
     // This middleware should be added before calling `applyMiddleware`.
     app.use(graphqlUploadExpress());
     //Note: there does not yet appear to be an automated test for upload, it is unclear if this even functioning.
+
+    // Protect against batched queries of both forms described here: https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html#batching-attacks
+    const GQL_BATCH_LIMIT = process.env.GRAPHQL_BATCH_LIMIT || -1;
+    const countQueries = function( payload ) {
+      let count = 0;
+      if( Array.isArray(payload) ) {
+        for( const q of payload ) {
+          count += countQueries(q);
+        }
+      }
+      else {
+        const parsedQuery = parse( payload.query );
+        for( let def of parsedQuery.definitions ) {
+          if( def.selectionSet && def.selectionSet.selections ) count += def.selectionSet.selections.length;
+        }
+      }
+      return( count );
+    };
+    app.use(GRAPHQL_PATH, (req,res,next)=>{
+      // Fail if limit defined and batch greater than limit
+      if( GQL_BATCH_LIMIT > 0 && countQueries( req.body ) > GQL_BATCH_LIMIT ) {
+        res.status(400).send( { errors: [ { message: 'Batched query limit exceeded' } ] } );
+      }
+      else {
+        next();
+      }
+    });
 
     server.applyMiddleware({
       app,
