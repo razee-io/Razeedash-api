@@ -352,9 +352,14 @@ const apollo = async (options = {}) => {
         }
       }
       else {
-        const parsedQuery = parse( payload.query );
-        for( let def of parsedQuery.definitions ) {
-          if( def.selectionSet && def.selectionSet.selections ) count += def.selectionSet.selections.length;
+        try {
+          const parsedQuery = parse( payload.query );
+          for( let def of parsedQuery.definitions ) {
+            if( def.selectionSet && def.selectionSet.selections ) count += def.selectionSet.selections.length;
+          }
+        }
+        catch( e ) {
+          // invalid/unparsable GQL query, ignore (gql will handle faiure)
         }
       }
       return( count );
