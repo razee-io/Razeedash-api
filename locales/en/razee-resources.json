@@ -91,6 +91,7 @@
   "You are not allowed to read resources due to missing permissions on subscription group {{group}}.": "You are not allowed to read resources due to missing permissions on subscription group {{group}}.",
   "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.": "You are not allowed to read subscriptions due to missing permissions on cluster group {{group.name}}.",
   "You are not allowed to set subscription for all of {{subscription.groups}} groups.": "You are not allowed to set subscription for all of {{subscription.groups}} groups.",
+  "You are not authorized to modify some of the cluster groups": "You are not authorized to modify some of the cluster groups",
   "You have exceeded the maximum amount of clusters for this org - {{org_id}}": "You have exceeded the maximum amount of clusters for this org - {{org_id}}",
   "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.": "You have exeeded the maximum amount of pending clusters for this org - {{org_id}}."
 }
