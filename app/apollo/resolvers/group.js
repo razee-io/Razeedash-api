@@ -414,8 +414,13 @@ const groupResolvers = {
               },
             }
           }
+          // Do not set `updated` value for cluster records when altering groups -- the `updated` value is used to determine whether the cluster is active or inactive.
         ];
         const res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
+        // Note: Exercise caution using `bulkWrite` with values other than strings (especially dates)
+        // If `findOneAndUpdate` uses `Date.now()`, the value is stored as a date string like `2024-03-20T21:05:28.645+00:00`
+        // If `bulkWrite` sets a date value to `Date.now()`, the value stored will be millis-since-epoch (using `new Date()` instead works)
+        // This can result in the record being retrieved later with a non-Date attribute, and errors if code attempts `record.attr.getTime()` for instance.
 
         pubSub.channelSubChangedFunc({org_id}, context);
 
@@ -628,14 +633,13 @@ const groupResolvers = {
               update: { $push: { groups: { $each: groupObjsToAdd } } },
             }
           },
-          {
-            updateOne: {
-              filter: { org_id, cluster_id: clusterId },
-              update: { $set: { updated: Date.now() } },
-            }
-          },
+          // Do not set `updated` value for cluster records when altering groups -- the `updated` value is used to determine whether the cluster is active or inactive.
         ];
         const res = await models.Cluster.collection.bulkWrite(ops, { ordered: true });
+        // Note: Exercise caution using `bulkWrite` with values other than strings (especially dates)
+        // If `findOneAndUpdate` uses `Date.now()`, the value is stored as a date string like `2024-03-20T21:05:28.645+00:00`
+        // If `bulkWrite` sets a date value to `Date.now()`, the value stored will be millis-since-epoch (using `new Date()` instead works)
+        // This can result in the record being retrieved later with a non-Date attribute, and errors if code attempts `record.attr.getTime()` for instance.
 
         pubSub.channelSubChangedFunc({org_id}, context);
 
