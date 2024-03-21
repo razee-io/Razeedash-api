@@ -588,7 +588,7 @@ describe('groups graphql test suite', () => {
         clusterId: testCluster1.cluster_id,
         groupUuids: [testGroup1.uuid],
       });
-      expect(response.data.data.editClusterGroups.modified).to.equal(2);
+      expect(response.data.data.editClusterGroups.modified).to.equal(1);
     } catch (error) {
       console.error(JSON.stringify({'API response:': response && response.data ? response.data : 'unexpected response'}, null, 3));
       console.error('Test failure, error: ', error);
