@@ -624,7 +624,7 @@ const groupResolvers = {
           {
             updateOne: {
               filter: { org_id, cluster_id: clusterId },
-              update: { $pull: { groups: { $in: groupObjsToRemove } } },
+              update: { $pull: { groups: { uuid: { $in: groupObjsToRemove.map( (g) => g.uuid ) } } } },
             }
           },
           {
