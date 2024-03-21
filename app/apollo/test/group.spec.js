@@ -83,9 +83,9 @@ const subscription_02_uuid = 'fake_sub_02_uuid';
 const subscription_03_name = 'fake_subscription_03';
 const subscription_03_uuid = 'fake_sub_03_uuid';
 
-const group_01_uuid = 'fake_group_01_uuid;';
-const group_02_uuid = 'fake_group_02_uuid;';
-const group_01_77_uuid = 'fake_group_01_77_uuid;';
+const group_01_uuid = 'fake_group_01_uuid';
+const group_02_uuid = 'fake_group_02_uuid';
+const group_01_77_uuid = 'fake_group_01_77_uuid';
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(
@@ -814,7 +814,7 @@ describe('groups graphql test suite', () => {
         clusterId: 'cluster_01',
         groupUuids: [group_01_uuid, group_02_uuid],
       });
-      expect(editClusterGroups.modified).to.equal(2);
+      expect(editClusterGroups.modified).to.equal(1);
 
     } catch (error) {
       if (error.response) {

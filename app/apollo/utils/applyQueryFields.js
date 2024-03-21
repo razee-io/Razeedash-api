@@ -44,6 +44,9 @@ const applyQueryFieldsToClusters = async(clusters, queryFields={}, args, context
   _.each(clusters, (cluster)=>{
     cluster.name = cluster.name || (cluster.metadata || {}).name || (cluster.registration || {}).name || cluster.clusterId || cluster.id;
 
+    // Ensure cluster `updated` value is a Date (may have been set as millis-since-epoch incorrectly by group apis -- see `bulkWrite` notes in resolvers/group.js)
+    if( !cluster.updated.getTime ) cluster.updated = new Date(cluster.updated);
+
     /*
     Cluster records have their `updated` field set at creation and when the `api/v2/addUpdateCluster` is called by the watch-keeper.
     As long as record creation time and updated time are within TIME_DIFF_TOLERATION milliseconds, it is considered to be un-updated *since creation*.
