@@ -107,9 +107,11 @@ const CHANNEL_CONSTANTS = {
     TYPES: {
       GITHUB: 'github',
       GITLAB: 'gitlab',
+      /*S3: 's3',*/ // Not yet supported, set EXPERIMENTAL_REMOTE_S3 env var to experiment
     },
   },
 };
+
 const MAX_REMOTE_PARAMETERS_LENGTH = process.env.REMOTE_PARAMETERS_LENGTH_LIMIT || 1000;
 
 // console.log('NODE_ENV: ' + config.util.getEnv('NODE_ENV') + `, DIRECTIVE_LIMITS: ${JSON.stringify(DIRECTIVE_LIMITS)}`);
