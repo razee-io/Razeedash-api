@@ -73,3 +73,5 @@ dev/
 
 # MEND unified agent
 wss-unified-agent.jar
+
+.idea/

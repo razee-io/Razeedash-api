@@ -235,7 +235,7 @@ const channelResolvers = {
 
         // If no matching version found, throw an error
         if (!deployableVersionObj) {
-          throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.', {'channel.name':channel.name, 'channel.uuid':channel.uuid, 'versionName':versionName, 'versionObj.uuid':versionUuid}), context);
+          throw new NotFoundError(context.req.t('DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.', {'channelName':channel.name, 'channelUuid':channel.uuid, 'versionName':versionName, 'versionUuid':versionUuid}), context);
         }
 
         await applyQueryFieldsToDeployableVersions([ deployableVersionObj ], queryFields, { orgId: org_id }, context);
