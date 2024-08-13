@@ -28,7 +28,7 @@
   "Could not find the subscription for the subscription id {{subscription_id}}.": "找不到訂閱 ID {{subscription_id}} 的訂閱。",
   "Could not locate the cluster with cluster_id {{cluster_id}}": "找不到 cluster_id 為 {{cluster_id}} 的叢集",
   "Could not locate the cluster with clusterName {{clusterName}}": "找不到 clusterName 為 {{clusterName}} 的叢集",
-  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "找不到 {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}} 的 DeployableVersion。",
+  "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.": "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.",
   "Failed to Publish resource notification, please reload the page.": "無法發佈資源通知，請重新載入頁面。",
   "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "無法發佈資源通知，發佈/訂閱尚未備妥，請稍後重試。",
   "Failed to Publish subscription notification to clusters, please retry.": "無法發佈訂閱通知至叢集，請重試。",

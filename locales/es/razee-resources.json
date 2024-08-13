@@ -28,7 +28,7 @@
   "Could not find the subscription for the subscription id {{subscription_id}}.": "No se ha podido encontrar la suscripción para el id de suscripción {{subscription_id}}.",
   "Could not locate the cluster with cluster_id {{cluster_id}}": "No se ha podido localizar el clúster con ID_clúster {{cluster_id}}",
   "Could not locate the cluster with clusterName {{clusterName}}": "No se ha podido localizar el clúster con el nombre de clúster {{clusterName}}",
-  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "No se ha encontrado DeployableVersion para {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.",
+  "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.": "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.",
   "Failed to Publish resource notification, please reload the page.": "No se ha podido publicar la notificación del recurso, vuelva a cargar la página.",
   "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "No se ha podido publicar la notificación de recurso, pubsub aún no está preparado; vuelva a intentarlo más tarde.",
   "Failed to Publish subscription notification to clusters, please retry.": "No se ha podido publicar la notificación de suscripción a los clústeres; vuelva a intentarlo.",

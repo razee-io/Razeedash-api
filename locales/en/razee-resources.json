@@ -28,7 +28,7 @@
   "Could not find the subscription for the subscription id {{subscription_id}}.": "Could not find the subscription for the subscription id {{subscription_id}}.",
   "Could not locate the cluster with cluster_id {{cluster_id}}": "Could not locate the cluster with cluster_id {{cluster_id}}",
   "Could not locate the cluster with clusterName {{clusterName}}": "Could not locate the cluster with clusterName {{clusterName}}",
-  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.",
+  "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.": "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.",
   "Failed to Publish resource notification, please reload the page.": "Failed to Publish resource notification, please reload the page.",
   "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "Failed to Publish resource notification, pubsub is not ready yet, please retry later.",
   "Failed to Publish subscription notification to clusters, please retry.": "Failed to Publish subscription notification to clusters, please retry.",

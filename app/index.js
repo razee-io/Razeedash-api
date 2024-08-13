@@ -25,6 +25,7 @@ const _ = require('lodash');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').createLogger('razeedash-api/app/index');
+const DefaultProbes = require('./utils/probes/probe_default.js');
 const port = 3333;
 
 // Set ipv4first (changed in Node 18)
@@ -97,19 +98,8 @@ app.get('/metrics', async function (request, response) {
   response.end(await promClient.register.metrics());
 });
 
-// Ensure server-health, often used in liveness/readiness checks, is allowed
-app.get('/.well-known/apollo/server-health', function(req, res, next) {
-  res.locals.isHealthCheck = true;
-  next();
-});
-
-app.get('*', function(req, res, next) { // this must be the last route
-  if( res.locals && res.locals.isHealthCheck ) {
-    next();
-  }
-  else {
-    res.status(400).json('{"msg": "Method/Url not allowed"}');
-  }
+app.get('*', function(req, res) { // this must be the last route
+  res.status(400).json('{"msg": "Method/Url not allowed"}');
 });
 
 const server = http.createServer(app);
@@ -151,6 +141,7 @@ function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
   log.info(`🏄 razeedash-api listening on ${bind}/api`);
+  DefaultProbes.setStartupComplete(true);
 }
 
 function onError(error) {

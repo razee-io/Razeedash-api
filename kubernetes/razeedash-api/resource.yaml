@@ -127,7 +127,7 @@ items:
                 timeoutSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: /.well-known/apollo/server-health
+                  path: /api/kube/readiness
                   port: 3333
                 initialDelaySeconds: 5
                 periodSeconds: 30
