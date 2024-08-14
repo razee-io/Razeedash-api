@@ -25,7 +25,7 @@ const _ = require('lodash');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').createLogger('razeedash-api/app/index');
-const DefaultProbes = require('./utils/probes/probe_default.js');
+const DefaultProbes = require('./utils/probes/probe-default.js');
 const port = 3333;
 
 // Set ipv4first (changed in Node 18)
