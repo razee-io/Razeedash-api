@@ -25,6 +25,7 @@ const _ = require('lodash');
 const addRequestId = require('express-request-id')();
 const {router, initialize} = require('./routes/index.js');
 const log = require('./log').createLogger('razeedash-api/app/index');
+const DefaultProbes = require('./utils/probes/probe-default.js');
 const port = 3333;
 
 // Set ipv4first (changed in Node 18)
@@ -151,6 +152,7 @@ function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
   log.info(`🏄 razeedash-api listening on ${bind}/api`);
+  DefaultProbes.setStartupComplete(true);
 }
 
 function onError(error) {
