@@ -113,10 +113,6 @@ app.get('*', function(req, res, next) { // this must be the last route
   }
 });
 
-app.get('*', function(req, res) { // this must be the last route
-  res.status(400).json('{"msg": "Method/Url not allowed"}');
-});
-
 const server = http.createServer(app);
 
 server.on('ready', onReady);
