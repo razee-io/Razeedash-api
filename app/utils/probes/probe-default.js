@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const Models = require('./apollo/models');
+const Models = require('../../apollo/models');
 const { GraphqlPubSub } = require('./apollo/subscription');
 const pubSub = GraphqlPubSub.getInstance();
 const timeInterval = 300000; //5 mintues
