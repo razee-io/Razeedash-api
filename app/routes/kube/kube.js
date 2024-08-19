@@ -19,7 +19,7 @@ const probeUtil = require('../../utils/probes');
 
 const router = express.Router();
 
-router.get('/startup', asyncHandler(async (req, res) => {
+const startupHandler = asyncHandler(async (req, res) => {
   try {
     const payload = await probeUtil.getStartupPayload(req);
     return res.status(200).send(payload);
@@ -27,9 +27,10 @@ router.get('/startup', asyncHandler(async (req, res) => {
   catch (e) {
     return res.status(503).send('service unavailable');
   }
-}));
+});
+router.get('/startup', startupHandler)
 
-router.get('/readiness', asyncHandler(async (req, res) => {
+const readinessHandler = asyncHandler(async (req, res) => {
   try {
     const payload = await probeUtil.getReadinessPayload(req);
     return res.status(200).send(payload);
@@ -37,9 +38,10 @@ router.get('/readiness', asyncHandler(async (req, res) => {
   catch (e) {
     return res.status(503).send('service unavailable');
   }
-}));
+});
+router.get('/readiness', readinessHandler)
 
-router.get('/liveness', asyncHandler(async(req, res) => {
+const livenessHandler = asyncHandler(async(req, res) => {
   try {
     const payload = await probeUtil.getLivenessPayload(req);
     return res.status(200).send(payload);
@@ -47,6 +49,7 @@ router.get('/liveness', asyncHandler(async(req, res) => {
   catch (e) {
     return res.status(503).send('service unavailable');
   }
-}));
+});
+router.get('/liveness', livenessHandler);
 
 module.exports = router;

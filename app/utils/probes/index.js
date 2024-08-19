@@ -15,7 +15,7 @@
  */
 
 const PROBE_DEFAULT_IMPL = require( './probe-default.js' );
-const PROBE_CUSTOM_IMPL = require( process.env.PROBE_IMPL || './probe-none.js' );
+let PROBE_CUSTOM_IMPL = require( process.env.PROBE_IMPL || './probe-none.js' );
 
 /*
 Return an impl for each of the probe types:
@@ -49,6 +49,9 @@ const PROBE_IMPL = {
       return( await PROBE_CUSTOM_IMPL[method](req) );
     }
     return defaultPayload;
+  },
+  setImpl: function( newImpl ) {
+    PROBE_CUSTOM_IMPL = require( newImpl || './probe-none.js' );
   }
 };
 
