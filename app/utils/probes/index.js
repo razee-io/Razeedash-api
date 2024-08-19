@@ -15,7 +15,7 @@
  */
 
 const PROBE_DEFAULT_IMPL = require( './probe-default.js' );
-const PROBE_CUSTOM_IMPL = require( process.env.PROBE_IMPL || './probe-none.js' );
+let PROBE_CUSTOM_IMPL = require( process.env.PROBE_IMPL || './probe-none.js' );
 
 /*
 Return an impl for each of the probe types:
@@ -26,29 +26,32 @@ Return an impl for each of the probe types:
   Return the custom payload, or the default payload if there is none.
 */
 const PROBE_IMPL = {
-  getStartupPayload: async function( context ) {
+  getStartupPayload: async function( req ) {
     const method = 'getStartupPayload';
-    const defaultPayload = await PROBE_DEFAULT_IMPL[method](context);
-    if( !Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
-      return( PROBE_DEFAULT_IMPL[method](context) );
+    const defaultPayload = await PROBE_DEFAULT_IMPL[method](req);
+    if( Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
+      return( await PROBE_CUSTOM_IMPL[method](req) );
     }
     return defaultPayload;
   },
-  getReadinessPayload: async function( context ) {
+  getReadinessPayload: async function( req ) {
     const method = 'getReadinessPayload';
-    const defaultPayload = await PROBE_DEFAULT_IMPL[method](context);
-    if( !Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
-      return( PROBE_DEFAULT_IMPL[method](context) );
+    const defaultPayload = await PROBE_DEFAULT_IMPL[method](req);
+    if( Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
+      return( await PROBE_CUSTOM_IMPL[method](req) );
     }
     return defaultPayload;
   },
-  getLivenessPayload: async function( context ) {
+  getLivenessPayload: async function( req ) {
     const method = 'getLivenessPayload';
-    const defaultPayload = await PROBE_DEFAULT_IMPL[method](context);
-    if( !Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
-      return( PROBE_DEFAULT_IMPL[method](context) );
+    const defaultPayload = await PROBE_DEFAULT_IMPL[method](req);
+    if( Object.prototype.hasOwnProperty.call(PROBE_CUSTOM_IMPL, method) ) {
+      return( await PROBE_CUSTOM_IMPL[method](req) );
     }
     return defaultPayload;
+  },
+  setImpl: function( newImpl ) {
+    PROBE_CUSTOM_IMPL = require( newImpl || './probe-none.js' );
   }
 };
 
