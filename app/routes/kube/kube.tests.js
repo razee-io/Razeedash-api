@@ -20,7 +20,7 @@ var httpMocks = require('node-mocks-http');
 const log = require('../../log').log;
 
 const probeUtil = require('../../utils/probes');
-const defaultProbe = require('../../utils/probes/probe-default.js')
+const defaultProbe = require('../../utils/probes/probe-default.js');
 
 const rewire = require('rewire');
 let kube = rewire('./kube');
@@ -75,7 +75,7 @@ describe('probes', () => {
 
       // Note: default probe setStartupComplete has already been called by earlier test
 
-      probeUtil.setImpl("./probe-testFailure.js");
+      probeUtil.setImpl('./probe-testFailure.js');
       await startupHandler(request, response);
 
       assert.equal(response.statusCode, 503);
@@ -94,7 +94,7 @@ describe('probes', () => {
 
       // Note: default probe setStartupComplete has already been called by earlier test
 
-      probeUtil.setImpl("./probe-testSuccess.js");
+      probeUtil.setImpl('./probe-testSuccess.js');
       await startupHandler(request, response);
 
       assert.equal(response.statusCode, 200);
