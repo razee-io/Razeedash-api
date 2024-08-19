@@ -20,15 +20,15 @@ This sample shows how the startup/liveness/readiness probes can be customized to
 It is used by automated unit testing.
 */
 
-async function getStartupPayload(req) {
+async function getStartupPayload() {
   return('probe success for testing');
 }
 
-async function getReadinessPayload(req) {
+async function getReadinessPayload() {
   return('probe success for testing');
 }
 
-async function getLivenessPayload(req) {
+async function getLivenessPayload() {
   return('probe success for testing');
 }
 
