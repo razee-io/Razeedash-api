@@ -28,7 +28,7 @@ const startupHandler = asyncHandler(async (req, res) => {
     return res.status(503).send('service unavailable');
   }
 });
-router.get('/startup', startupHandler)
+router.get('/startup', startupHandler);
 
 const readinessHandler = asyncHandler(async (req, res) => {
   try {
@@ -39,7 +39,7 @@ const readinessHandler = asyncHandler(async (req, res) => {
     return res.status(503).send('service unavailable');
   }
 });
-router.get('/readiness', readinessHandler)
+router.get('/readiness', readinessHandler);
 
 const livenessHandler = asyncHandler(async(req, res) => {
   try {
