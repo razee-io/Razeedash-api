@@ -48,8 +48,10 @@ router.get('/v1/health', (req, res)=>{
   });
 });
 
-router.use('/kube', Kube);
 router.use(createExpressLogger('razeedash-api/api'));
+
+// Respond to /api/kube/[liveness|readiness|startup]
+router.use('/kube', Kube);
 
 router.use(asyncHandler(async (req, res, next) => {
   const db = req.app.get('db');

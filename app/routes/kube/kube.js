@@ -1,5 +1,5 @@
 /**
-* Copyright 2019 IBM Corp. All Rights Reserved.
+* Copyright 2019,2024 IBM Corp. All Rights Reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,36 +15,41 @@
 */
 const express = require('express');
 const asyncHandler = require('express-async-handler');
+const probeUtil = require('../../utils/probes');
+
 const router = express.Router();
-const { GraphqlPubSub } = require('../../apollo/subscription');
-const pubSub = GraphqlPubSub.getInstance();
-const logger = require('../../log').createLogger('razeedash-api/kube/liveness');
-const timeInterval = 300000; //5 mintues
 
-// /kube/liveness
-router.get('/liveness', asyncHandler(async(req, res) => {
-  // does a db call to make sure we didnt disconnect
+const startupHandler = asyncHandler(async (req, res) => {
   try {
-    await require('../../apollo/models').models.Organization.findOne({});
-  } catch (err) {
-    logger.error(err, 'razeedash-api liveness probe failed due to a mongo connection issue');
-    return res.sendStatus(503);
+    const payload = await probeUtil.getStartupPayload(req);
+    return res.status(200).send(payload);
   }
+  catch (e) {
+    return res.status(503).send('service unavailable');
+  }
+});
+router.get('/startup', startupHandler);
 
-  // TODO: not real pub-sub liveness test yet, will add later
-  if (pubSub.initRetries > 5) {
-    // if the remote redis is not ready after 5 initial retries, then
-    // it is better to restart this pod, return 500 error
-    logger.error('Razeedash Api is down due to Redis pubsub connection issue, please check logs.');
-    return res.sendStatus(503);
+const readinessHandler = asyncHandler(async (req, res) => {
+  try {
+    const payload = await probeUtil.getReadinessPayload(req);
+    return res.status(200).send(payload);
   }
+  catch (e) {
+    return res.status(503).send('service unavailable');
+  }
+});
+router.get('/readiness', readinessHandler);
 
-  if (pubSub.lastPubSubMessage !== null && Date.now()- pubSub.lastPubSubMessage.time > timeInterval) {
-    // check if the most recent message received is within ${timeInterval/60000} minitue
-    logger.error(`Razeedash Api is down, haven't received any published messages within ${timeInterval/60000} minitue, please check logs.`);
-    return res.sendStatus(503);
+const livenessHandler = asyncHandler(async(req, res) => {
+  try {
+    const payload = await probeUtil.getLivenessPayload(req);
+    return res.status(200).send(payload);
   }
-  return res.sendStatus(200);
-}));
+  catch (e) {
+    return res.status(503).send('service unavailable');
+  }
+});
+router.get('/liveness', livenessHandler);
 
 module.exports = router;

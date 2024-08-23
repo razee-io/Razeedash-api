@@ -28,7 +28,7 @@
   "Could not find the subscription for the subscription id {{subscription_id}}.": "구독 ID가 {{subscription_id}}인 구독을 찾을 수 없습니다.",
   "Could not locate the cluster with cluster_id {{cluster_id}}": "클러스터 ID가 {{cluster_id}}인 클러스터를 찾을 수 없습니다.",
   "Could not locate the cluster with clusterName {{clusterName}}": "클러스터 이름이 {{clusterName}}인 클러스터를 찾을 수 없습니다.",
-  "DeployableVersion is not found for {{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}.": "{{channel.name}}:{{channel.uuid}}/{{versionObj.name}}:{{versionObj.uuid}}의 배치 가능 버전을 찾을 수 없습니다.",
+  "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.": "DeployableVersion is not found for {{channelName}}:{{channelUuid}}/{{versionName}}:{{versionUuid}}.",
   "Failed to Publish resource notification, please reload the page.": "리소스 알림을 공개하지 못했습니다. 페이지를 다시 로드하십시오.",
   "Failed to Publish resource notification, pubsub is not ready yet, please retry later.": "리소스 알림을 공개하지 못했습니다. pubsub이 아직 준비되지 않았습니다. 나중에 다시 시도하십시오.",
   "Failed to Publish subscription notification to clusters, please retry.": "클러스터에 구독 알림을 공개하지 못했습니다. 다시 시도하십시오.",
