@@ -152,7 +152,7 @@ const createTestData = async () => {
   });
 
   await models.Resource.create({
-    _id: new ObjectId('aaaabbbbccccddddeeeeffff'),
+    _id: new ObjectId('aaaabbbbccccddddeeeefff1'),  // 24 chars hex string
     org_id: org02._id,
     cluster_id: cluster2Data.cluster_id,
     selfLink: 'any_selfLink',

@@ -252,7 +252,7 @@ describe('subscription graphql test suite', () => {
     process.env.NODE_ENV = 'test';
     rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
 
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
     console.log(`subscriptions.spec.js in memory test mongodb url is ${mongoUrl}`);

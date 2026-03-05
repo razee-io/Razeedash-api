@@ -102,7 +102,7 @@ const getPresetUsers = async () => {
 describe('user graphql', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongo_url = mongoServer.getUri();
     console.log(`user.spec.js in memory test mongodb url is ${mongo_url}`);

@@ -601,7 +601,7 @@ const subscriptionResolvers = {
           channel_uuid,
           version: version.name,
           version_uuid: version.uuid,
-          clusterId,
+          clusterId: clusterId || subscription.clusterId, // If subscription previously has clusterId set (e.g. a Storage Assignment subscription), it should never be unset (even _changing_ the clusterId is questionable but may be of use in certain error recovery scenarios)
           custom,
           updated: Date.now(),
         };
@@ -656,7 +656,7 @@ const subscriptionResolvers = {
         // If newVersion is specified try to remove the old version
         if( newVersion ) {
           try {
-            const subCount = await models.Subscription.count({ org_id, version_uuid: oldVersionUuid });
+            const subCount = await models.Subscription.countDocuments({ org_id, version_uuid: oldVersionUuid });
             if( subCount > 0 ) {
               logger.info( {org_id, req_id, user, subscription: subscription.uuid, ver_uuid: oldVersionUuid}, `${queryName} old version ${oldVersionUuid} is still in use by ${subCount} subscriptions, skipping deletion` );
             }
@@ -837,7 +837,7 @@ const subscriptionResolvers = {
 
         let deployableVersionObj;
         if( deleteVersion ) {
-          const subCount = await models.Subscription.count( { org_id, version_uuid: subscription.version_uuid } );
+          const subCount = await models.Subscription.countDocuments({ org_id, version_uuid: subscription.version_uuid });
           if( subCount != 1 ) {
             throw new RazeeValidationError( context.req.t( '{{subCount}} other subscription(s) depend on this subscription\'s version. Please update/remove them before removing this subscription and version.', { 'subCount': subCount } ), context );
           }

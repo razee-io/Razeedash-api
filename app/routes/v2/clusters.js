@@ -65,7 +65,7 @@ const addUpdateCluster = async (req, res, next) => {
         res.status(404).send({error: 'Not found, the api requires you to register the cluster first.'});
         return;
       }
-      const total = await Clusters.count({org_id:  req.org._id});
+      const total = await Clusters.countDocuments({org_id:  req.org._id});
       if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
         // Observe the duration for the histogram
         const durationInSeconds = (Date.now() - startTime) / 1000;
@@ -457,7 +457,7 @@ const updateClusterResources = async (req, res, next) => {
               req.log.info({ 'milliseconds': Date.now() - start, 'operation': 'updateClusterResources:addResourceYamlHistObj:newResource', 'data': clusterId}, 'satcon-performance');
 
               // if obj not in db, then adds it
-              const total = await Resources.count({org_id:  req.org._id, deleted: false});
+              const total = await Resources.countDocuments({org_id:  req.org._id, deleted: false});
               if (total >= RESOURCE_LIMITS.MAX_TOTAL ) {
                 // Observe the duration for the histogram
                 const durationInSeconds = (Date.now() - startTime) / 1000;
