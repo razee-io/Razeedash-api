@@ -267,7 +267,7 @@ const createGroups = async () => {
 describe('channel graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);

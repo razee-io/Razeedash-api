@@ -61,7 +61,7 @@ let presetOrgs;
 let presetUsers;
 let presetResources;
 
-const resourceObjId = new ObjectId('cstr01_res01');  //12 chars
+const resourceObjId = new ObjectId('aaaabbbbccccddddeeeefff1');  // 24 chars hex string
 
 const createOrganizations = async () => {
   org01Data = JSON.parse(fs.readFileSync(`${testDataPath}/resource.spec.org_01.json`, 'utf8'));
@@ -184,7 +184,7 @@ const createSubscriptions = async () => {
 };
 const createResources = async () => {
   await models.Resource.create({
-    _id: new ObjectId('aaaabbbbcccc'),
+    _id: new ObjectId('aaaabbbbccccddddeeeefff2'),  // 24 chars hex string
     org_id: shouldNotMatchAny._id,
     cluster_id: 'any_cluster_01',
     selfLink: 'any_selfLink',
@@ -206,7 +206,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
-    _id: new ObjectId( 'cstr01_res02' ),
+    _id: new ObjectId( 'aaaabbbbccccddddeeeefff3' ),  // 24 chars hex string
     org_id: org_01._id,
     cluster_id: 'cluster_01',
     selfLink: '/mybla2/selfLink',
@@ -218,7 +218,7 @@ const createResources = async () => {
   });
 
   await models.Resource.create({
-    _id: new ObjectId('aaaabbbbccc2'),
+    _id: new ObjectId('aaaabbbbccccddddeeeefff4'),  // 24 chars hex string
     org_id: org_02._id,
     cluster_id: 'cluster_04',
     selfLink: '/mybla/cluster04/selfLink1',
@@ -230,7 +230,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
-    _id: new ObjectId('aaaabbbbccc3'),
+    _id: new ObjectId('aaaabbbbccccddddeeeefff5'),  // 24 chars hex string
     org_id: org_02._id,
     cluster_id: 'cluster_04',
     selfLink: '/mybla/cluster04/selfLink2',
@@ -242,7 +242,7 @@ const createResources = async () => {
     searchableDataHash: 'some random hash.',
   });
   await models.Resource.create({
-    _id: new ObjectId('aaaabbbbccc4'),
+    _id: new ObjectId('aaaabbbbccccddddeeeefff6'),  // 24 chars hex string
     org_id: org_01._id,
     cluster_id: 'cluster_03',
     selfLink: '/mybla/selfLink/deleted',
@@ -322,7 +322,7 @@ describe('resource graphql test suite', () => {
 
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongo_url = mongoServer.getUri();
     console.log(`resource.spec.js in memory test mongodb url is ${mongo_url}`);
@@ -464,7 +464,7 @@ describe('resource graphql test suite', () => {
         const meResult = await api.me(token);
 
         const result1 = await api.resourceHistId(token, {
-          id: resourceObjId,
+          id: 'aaaabbbbccccddddeeeefff1', // Same string used to initialize resoureObjId'
           orgId: meResult.data.data.me.orgId,
           filter: 'mybla',
           histId: 'resourceYamlHist_01',

@@ -690,7 +690,7 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, registration}, `${queryName} validating - name is unique`);
 
           // validate the number of total clusters are under the limit
-          const total = await models.Cluster.count({org_id});
+          const total = await models.Cluster.countDocuments({org_id});
           if (total >= CLUSTER_LIMITS.MAX_TOTAL ) {
             throw new RazeeValidationError(context.req.t('You have exceeded the maximum amount of clusters for this org - {{org_id}}', {'org_id':org_id}), context);
           }
@@ -698,7 +698,7 @@ const clusterResolvers = {
           logger.info({req_id, user, org_id, registration}, `${queryName} validating - cluster count ${total} <= ${CLUSTER_LIMITS.MAX_TOTAL}`);
 
           // validate the number of pending clusters are under the limit
-          const total_pending = await models.Cluster.count({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
+          const total_pending = await models.Cluster.countDocuments({org_id, reg_state: {$in: [CLUSTER_REG_STATES.REGISTERING, CLUSTER_REG_STATES.PENDING]}});
           if (total_pending >= CLUSTER_LIMITS.MAX_PENDING ) {
             throw new RazeeValidationError(context.req.t('You have exeeded the maximum amount of pending clusters for this org - {{org_id}}.', {'org_id':org_id}), context);
           }

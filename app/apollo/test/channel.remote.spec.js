@@ -104,7 +104,7 @@ describe('channel remote graphql test suite', () => {
     console.log( 'Setting EXPERIMENTAL env vars' ); // IMPORTANT: Must be deleted in 'after()' to avoid impacting other tests that do not expect these vars to be set.
     process.env.EXPERIMENTAL_GITOPS_ALT = 'true';
 
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
     console.log(`in memory test mongodb url is ${mongoUrl}`);

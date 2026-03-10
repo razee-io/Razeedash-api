@@ -72,7 +72,7 @@ const commonResourcesSearch = async ({ me, queryName, orgId, context, searchFilt
     // `count` is the number of records in this payload (taking into account `limit`)
     const count = resources.length;
     // `totalCount` is the total number of records matching the search
-    const totalCount = await models.Resource.find(searchFilter).count();
+    const totalCount = await models.Resource.countDocuments(searchFilter);
 
     return {
       count,
@@ -145,7 +145,7 @@ const resourceResolvers = {
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
       try {
-        return await models.Resource.count({
+        return await models.Resource.countDocuments({
           org_id: org_id,
           deleted: { $ne: true }, /* Always exclude deleted records */
         });
@@ -255,7 +255,7 @@ const resourceResolvers = {
 
       await validAuth(me, org_id, ACTIONS.READ, TYPES.RESOURCE, queryName, context);
 
-      const searchFilter = { org_id, _id: ObjectId(_id) };
+      const searchFilter = { org_id, _id: new ObjectId(_id) };
       var resource = await commonResourceSearch({ context, org_id, searchFilter, queryFields });
       if(!resource){
         return null;
@@ -385,7 +385,7 @@ const resourceResolvers = {
       // `count` is the number of records in this payload (taking into account `limit`)
       const count = histObjs.length;
       // `totalCount` is the total number of records matching the search
-      const totalCount = await models.ResourceYamlHist.find( searchFilter ).count();
+      const totalCount = await models.ResourceYamlHist.countDocuments( searchFilter );
 
       return {
         count,

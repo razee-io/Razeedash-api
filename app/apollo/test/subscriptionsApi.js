@@ -109,6 +109,7 @@ const subscriptionsFunc = grahqlUrl => {
               orgId
               name
               groups
+              clusterId
               channelUuid
               channelName
               version

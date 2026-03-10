@@ -378,14 +378,14 @@ const createSubscriptions = async () => {
     version_uuid: channelVersion_03_uuid,
   });
 
-  // Subscription 04 is owned by non-admin user
+  // Subscription 04 is owned by non-admin user and has a clusterId mapped instead of groups
   await models.Subscription.create({
     _id: 'fake_id_4',
     org_id: org77._id,
     uuid: subscription_04_uuid,
     name: subscription_04_name,
     owner: user77._id,
-    groups: ['dev'],
+    groups: [],
     clusterId: 'cluster_03',
     channel_uuid: channel_04_uuid,
     channel: channel_04_name,
@@ -481,7 +481,7 @@ describe('subscription graphql test suite', () => {
     process.env.NODE_ENV = 'test';
     rbacSync.testMode(true); // Must be set to trigger/test RBAC Sync
 
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
     console.log(`subscriptions.spec.js in memory test mongodb url is ${mongoUrl}`);
@@ -786,12 +786,13 @@ describe('subscription graphql test suite', () => {
       expect(subscription.channelUuid).to.equal(channel_02_uuid);
       expect(subscription.versionUuid).to.equal(channelVersion_03_uuid);
 
-      //step1, edit the subscription with custom attribute and tags
+      //step1, edit a subscription with custom attribute and tags, clusterId instead of groups
       const result3 = await subscriptionApi.editSubscription(token77, {
         orgId: org77._id,
         uuid: subscription_04_uuid,
         name: 'new-name',
-        groups:['dev'],
+        groups:[],
+        // Dont specify the clusterId -- it should retain the original clusterId
         channelUuid: channel_04_uuid,
         versionUuid: channelVersion_04_uuid,
         custom: {
@@ -810,7 +811,7 @@ describe('subscription graphql test suite', () => {
       expect(result4.data.data.subscription.custom.forEnv).to.equal('new');
       expect(result4.data.data.subscription.custom.forType).to.equal('new');
       expect(result4.data.data.subscription.tags[0]).to.equal('new-test-tag');
-
+      expect(result4.data.data.subscription.clusterId).to.equal('cluster_03');  // The original clusterId, unchanged
     } catch (error) {
       if (error.response) {
         console.error('error encountered:  ', error.response.data);

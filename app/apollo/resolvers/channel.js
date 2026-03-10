@@ -353,7 +353,7 @@ const channelResolvers = {
         }
 
         // Validate the number of total channels is under the limit
-        const total = await models.Channel.count({org_id});
+        const total = await models.Channel.countDocuments({org_id});
         if (total >= CHANNEL_LIMITS.MAX_TOTAL ) {
           throw new RazeeValidationError(context.req.t('Too many configuration channels are registered under {{org_id}}.', {'org_id':org_id}), context);
         }
@@ -916,12 +916,12 @@ const channelResolvers = {
 
         const channel_uuid = channel.uuid;
 
-        const subCount = await models.Subscription.count({ org_id, channel_uuid });
+        const subCount = await models.Subscription.countDocuments({ org_id, channel_uuid });
         if(subCount > 0){
           throw new RazeeValidationError(context.req.t('{{subCount}} subscription(s) depend on this configuration channel. Please update/remove them before removing this configuration channel.', {'subCount':subCount}), context);
         }
 
-        const serSubCount = await models.ServiceSubscription.count({ channel_uuid });
+        const serSubCount = await models.ServiceSubscription.countDocuments({ channel_uuid });
         if(serSubCount > 0){
           throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscription(s) depend on this channel. Please update/remove them before removing this channel.', {'serSubCount':serSubCount}), context);
         }
@@ -1011,11 +1011,11 @@ const channelResolvers = {
         }
 
         if(!deleteSubscriptions) {
-          const subCount = await models.Subscription.count({ org_id, version_uuid: uuid });
+          const subCount = await models.Subscription.countDocuments({ org_id, version_uuid: uuid });
           if(subCount > 0){
             throw new RazeeValidationError(context.req.t('{{subCount}} subscriptions depend on this configuration channel version. Please update/remove them before removing this configuration channel version.', {'subCount':subCount}), context);
           }
-          const serSubCount = await models.ServiceSubscription.count({ version_uuid: uuid });
+          const serSubCount = await models.ServiceSubscription.countDocuments({ version_uuid: uuid });
           if(serSubCount > 0){
             throw new RazeeValidationError(context.req.t('{{serSubCount}} service subscriptions depend on this channel version. Please have them updated/removed before removing this channel version.', {'serSubCount':serSubCount}), context);
           }

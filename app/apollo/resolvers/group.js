@@ -213,7 +213,7 @@ const groupResolvers = {
           throw new NotFoundError(context.req.t('group uuid "{{uuid}}" not found', {'uuid':uuid}));
         }
 
-        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+        const subCount = await models.Subscription.countDocuments({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }
@@ -277,7 +277,7 @@ const groupResolvers = {
           throw new RazeeValidationError(context.req.t('More than one {{type}} matches {{name}}', {'type':'group', 'name':name}), context);
         }
 
-        const subCount = await models.Subscription.count({ org_id: org_id, groups: group.name });
+        const subCount = await models.Subscription.countDocuments({ org_id: org_id, groups: group.name });
         if(subCount > 0){
           throw new ValidationError(context.req.t('{{subCount}} subscriptions depend on this cluster group. Please update/remove them before removing this group.', {'subCount':subCount}));
         }

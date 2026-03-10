@@ -336,7 +336,7 @@ const groupClusters = async () => {
 describe('cluster graphql test suite', () => {
   before(async () => {
     process.env.NODE_ENV = 'test';
-    mongoServer = new MongoMemoryServer( { binary: { version: '4.2.17' } } );
+    mongoServer = new MongoMemoryServer( { binary: { version: '7.0.14' } } );
     await mongoServer.start();
     const mongoUrl = mongoServer.getUri();
     console.log(`    cluster.js in memory test mongodb url is ${mongoUrl}`);
@@ -759,7 +759,7 @@ describe('cluster graphql test suite', () => {
     try {
       const clusterIdToBeDeleted = 'cluster_to_be_deleted';
       await models.Cluster.create({
-        _id: new ObjectId('aaaabbbbcccc'),
+        _id: new ObjectId('aaaabbbbccccddddeeeefff1'),  // 24 chars hex string
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         metadata: {
@@ -779,7 +779,7 @@ describe('cluster graphql test suite', () => {
       });
 
       await models.Resource.create({
-        _id: new ObjectId('ddddeeeeffff'),
+        _id: new ObjectId('aaaabbbbccccddddeeeefff2'),  // 24 chars hex string
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         selfLink: '/mybla/selfLink',
@@ -819,7 +819,7 @@ describe('cluster graphql test suite', () => {
     try {
       const clusterIdToBeDeleted = 'cluster_to_be_deleted';
       await models.Cluster.create({
-        _id: new ObjectId('aaaabbbbcccc'),
+        _id: new ObjectId('aaaabbbbccccddddeeeefff3'),  // 24 chars hex string
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         metadata: {
@@ -839,7 +839,7 @@ describe('cluster graphql test suite', () => {
       });
 
       await models.Resource.create({
-        _id: new ObjectId('aaaabbbbccc2'),
+        _id: new ObjectId('aaaabbbbccccddddeeeefff4'),  // 24 chars hex string
         org_id: org01._id,
         cluster_id: clusterIdToBeDeleted,
         selfLink: '/mybla/selfLink',
@@ -1032,7 +1032,7 @@ describe('cluster graphql test suite', () => {
     try {
       const clusterIdEnableRegUrl = 'cluster_enable_reg_url';
       await models.Cluster.create({
-        _id: new ObjectId('enableRegUrl'),
+        _id: new ObjectId('aaaabbbbccccddddeeeefff5'),  // 24 chars hex string
         org_id: org01._id,
         cluster_id: clusterIdEnableRegUrl,
         reg_state: 'registered',
